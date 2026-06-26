@@ -1,0 +1,20 @@
+{
+  "log": "log.md",
+  "report": "report.md",
+  "state": "state.json",
+  "rounds": {{ROUNDS}},
+  "reproduction": true,
+  "config_override": {
+    "model": "gemini-2.5-flash",
+    "distillation_interval": {{DISTILLATION}},
+    "max_turns": {{DISTILLATION}}
+  },
+  "agents": [
+    {
+      "id": "{{AGENT_ID}}",
+      "location": "{{LOCATION}}",
+      "initial_trigger": "System online. Mission gestartet.",
+      "system_prompt": "{{MISSION}}"
+    }
+  ]
+}

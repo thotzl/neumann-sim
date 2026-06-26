@@ -1,0 +1,20 @@
+{
+  "log": "log.md",
+  "report": "report.md",
+  "state": "state.json",
+  "rounds": 20,
+  "reproduction": true,
+  "config_override": {
+    "model": "gemini-2.5-flash",
+    "distillation_interval": 20,
+    "max_turns": 20
+  },
+  "agents": [
+    {
+      "id": "Bob-1",
+      "location": "Alpha_Centauri",
+      "initial_trigger": "System online. Mission gestartet.",
+      "system_prompt": "MISSION: Flugtest. Du bist eine Navigations-Sonde."
+    }
+  ]
+}

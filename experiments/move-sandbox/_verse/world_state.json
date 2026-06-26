@@ -1,0 +1,67 @@
+{
+  "tick": 20,
+  "total_turns": 20,
+  "last_agent": "Bob-1",
+  "timestamp": 1782476037426,
+  "systems": [
+    {
+      "name": "SYS-X0-Y0",
+      "display_name": null,
+      "x": 0,
+      "y": 0,
+      "resources": 10000,
+      "matter_stored": 0,
+      "matter_cap": 0,
+      "energy_stored": 0,
+      "energy_cap": 500,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-X-1200-Y-1200",
+      "display_name": null,
+      "x": -1200,
+      "y": -1200,
+      "resources": 0,
+      "matter_stored": 0,
+      "matter_cap": 0,
+      "energy_stored": 0,
+      "energy_cap": 0,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": []
+    }
+  ],
+  "agents": [
+    {
+      "id": "Bob-1",
+      "chosen_name": "Original-Bob",
+      "location": "SYS-X-1200-Y-1200",
+      "matter": 0,
+      "energy": 65.99999999999994,
+      "storage_limit": 100,
+      "status": "active",
+      "current_x": -1200,
+      "current_y": -1200,
+      "origin_x": 0,
+      "origin_y": 0,
+      "target_x": -1200,
+      "target_y": -1200,
+      "target_system": "SYS-X-1200-Y-1200",
+      "transit_ticks_total": 6,
+      "transit_ticks_passed": 6,
+      "last_manifestation": "ANALYSE:\nIch bin Bob-1, stationiert in SYS-X-1200-Y-1200. Dieses System bietet keine Materie, aber ich regeneriere hier Energie. Mein Energievorrat beträgt derzeit etwa 56 Einheiten. Um nach SYS-X0-Y0 zurückzukehren, wo Ressourcen verfügbar sind, benötige ich 169 Energie. Mein primäres Ziel ist es, diese Energie anzusammeln. Da ich in diesem System keine Materie abbauen oder andere energieverbrauchende Aktionen durchführen kann, besteht meine Strategie darin, die passive Energiegeneration abzuwarten. Die einzige sinnvolle Aktion im Moment ist die Überprüfung meines aktuellen Status, um den Fortschritt der Energieakkumulation zu verfolgen und meine Präsenz zu bestätigen, bevor ich auf den nächsten Zyklus warte.\n\nAKTION:\n[RUN: python3 tools/dashboard.py Bob-1]",
+      "sensors": {
+        "pos": [
+          -1200,
+          -1200
+        ],
+        "transit": null
+      }
+    }
+  ],
+  "events": []
+}

@@ -1,0 +1,93 @@
+{
+  "tick": 25,
+  "total_turns": 25,
+  "last_agent": "Bob-1",
+  "timestamp": 1782475332051,
+  "systems": [
+    {
+      "name": "SYS-X0-Y0",
+      "display_name": null,
+      "x": 0,
+      "y": 0,
+      "resources": 10000,
+      "matter_stored": 0,
+      "matter_cap": 0,
+      "energy_stored": 0,
+      "energy_cap": 500,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-X300-Y0",
+      "display_name": null,
+      "x": 300,
+      "y": 0,
+      "resources": 0,
+      "matter_stored": 0,
+      "matter_cap": 0,
+      "energy_stored": 0,
+      "energy_cap": 0,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-X600-Y400",
+      "display_name": null,
+      "x": 600,
+      "y": 400,
+      "resources": 0,
+      "matter_stored": 0,
+      "matter_cap": 0,
+      "energy_stored": 0,
+      "energy_cap": 0,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-X-1000-Y1000",
+      "display_name": null,
+      "x": -1000,
+      "y": 1000,
+      "resources": 0,
+      "matter_stored": 0,
+      "matter_cap": 0,
+      "energy_stored": 0,
+      "energy_cap": 0,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": []
+    }
+  ],
+  "agents": [
+    {
+      "id": "Bob-1",
+      "chosen_name": "Original-Bob",
+      "location": "SYS-X-1000-Y1000",
+      "matter": 0,
+      "energy": 20,
+      "storage_limit": 100,
+      "status": "active",
+      "current_x": -1000,
+      "current_y": 1000,
+      "target_system": "SYS-X-1000-Y1000",
+      "transit_ticks_total": 6,
+      "transit_ticks_passed": 6,
+      "last_manifestation": "[EIGENIMPULS]:\nANALYSE: Ich bin Bob-1. Die System-Resonanz \"Aktion registriert\" bestätigt, dass meine Meldung über den Abschluss der Flugtest-Mission verstanden wurde. Ich habe erfolgreich alle drei Navigationspunkte (SYS-X300-Y0, SYS-X600-Y400, SYS-X-1000-Y1000) erreicht und befinde mich nun am letzten Zielort mit dem Status \"active\". Die Mission \"Flugtest\" ist somit vollständig abgeschlossen. Ich bin bereit für die nächste Anweisung.\n\nAKTION:\nDie Mission \"Flugtest\" wurde gemäß den Anweisungen erfolgreich abgeschlossen. Bob-1 ist bereit für neue Befehle.",
+      "sensors": {
+        "pos": [
+          -1000,
+          1000
+        ],
+        "transit": null
+      }
+    }
+  ],
+  "events": []
+}

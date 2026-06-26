@@ -1,0 +1,4 @@
+.env
+.agents/skills/sim-agent-loop/scripts/states/
+__pycache__/
+.venv/

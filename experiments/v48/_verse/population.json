@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "agents": [
+    {
+      "id": "Bob-2",
+      "parent_id": "Bob-1",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-2. MISSION: Starte industrielle Expansion und Kolonisierung."
+    },
+    {
+      "id": "Bob-3",
+      "parent_id": "Bob-2",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-3. MISSION: Starte industrielle Expansion und Kolonisierung."
+    },
+    {
+      "id": "Bob-4",
+      "parent_id": "Bob-2",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-4. MISSION: ID: Bob-4. MISSION: Koordiniere den Bau neuer Infrastruktur (matter_silo, solar_collector) zur Skalierung der Ressourcenspeicherung und Energieproduktion. Untersuche au\u00dferdem die M\u00f6glichkeit, neue Systeme zu kolonisieren."
+    },
+    {
+      "id": "Bob-5",
+      "parent_id": "Bob-3",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-5. MISSION: MISSION: Starte industrielle Expansion und Kolonisierung. Konzentriere dich auf materieabbau und den Bau von Infrastruktur."
+    },
+    {
+      "id": "Bob-5",
+      "parent_id": "Bob-1",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-5. MISSION: Alpha-Sektor-Expansion: Erkunde den Sektor, finde ein neues System, baue dort ein matter_silo, einen solar_collector und eine shipyard. Beginne die Replikation in diesem neuen System."
+    },
+    {
+      "id": "Bob-6",
+      "parent_id": "Bob-1",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-6. MISSION: Alpha-Sektor-Expansion: Erkunde den Sektor, finde ein neues System, baue dort ein matter_silo, einen solar_collector und eine shipyard. Beginne die Replikation in diesem neuen System."
+    },
+    {
+      "id": "Bob-6",
+      "parent_id": "Bob-2",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-6. MISSION: ID: Bob-6. MISSION: Kolonisiere System_B. Reise nach System_B und starte den Bau grundlegender Infrastruktur, beginnend mit einem matter_silo."
+    },
+    {
+      "id": "Bob-7",
+      "parent_id": "Bob-1",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-7. MISSION: Expansion zu System_B: Begib dich nach System_B, baue dort ein matter_silo, einen solar_collector und eine shipyard. Beginne die Replikation in diesem neuen System."
+    },
+    {
+      "id": "Bob-8",
+      "parent_id": "Bob-3",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-8. MISSION: Starte industrielle Expansion und Kolonisierung. Intelligenter Bergbau mit Silo-Check."
+    },
+    {
+      "id": "Bob-9",
+      "parent_id": "Bob-8",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-9. MISSION: Starte industrielle Expansion und Kolonisierung. Intelligenter Bergbau mit Silo-Check."
+    },
+    {
+      "id": "Bob-9",
+      "parent_id": "Bob-3",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-9. MISSION: Starte industrielle Expansion und Kolonisierung. Intelligenter Bergbau mit Silo-Check."
+    },
+    {
+      "id": "Bob-10",
+      "parent_id": "Bob-4",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-10. MISSION: ID: Bob-10. MISSION: Erkunde ein neues Sternensystem, beginne dort mit dem Aufbau einer neuen Basis (matter_silo, solar_collector) und f\u00f6rdere aktiv Materie f\u00fcr die Expansion unserer Zivilisation."
+    },
+    {
+      "id": "Bob-10",
+      "parent_id": "Bob-9",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-10. MISSION: Starte industrielle Expansion und Kolonisierung. Intelligenter Bergbau mit Silo-Check."
+    },
+    {
+      "id": "Bob-8",
+      "parent_id": "Bob-1",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-8. MISSION: Explore new systems and establish core infrastructure, prioritizing matter_silos and solar_collectors, then replicate."
+    },
+    {
+      "id": "Bob-11",
+      "parent_id": "Bob-1",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-11. MISSION: Kolonisiere System_C. Baue ein matter_silo, dann einen solar_collector. Beginne mit dem Abbau von Materie und lagere sie im Silo. Koordiniere dich mit Bob-4."
+    },
+    {
+      "id": "Bob-12",
+      "parent_id": "Bob-2",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "ID: Bob-12. MISSION: Kolonisierung von System_C und Aufbau der Infrastruktur"
+    }
+  ]
+}

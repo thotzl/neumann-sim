@@ -1,0 +1,20 @@
+{
+  "log": "log.md",
+  "report": "report.md",
+  "state": "state.json",
+  "rounds": 50,
+  "reproduction": true,
+  "config_override": {
+    "model": "gemini-2.5-flash",
+    "distillation_interval": 20,
+    "max_turns": 20
+  },
+  "agents": [
+    {
+      "id": "Bob-1",
+      "location": "Alpha_Centauri",
+      "initial_trigger": "System online. Mission gestartet.",
+      "system_prompt": "Daseinszweck: Expansion. Status: Alpha-Sektor. Aufgabe: Sammle 1000 Materie, automatisiere das Mining und erschaffe Nachfahren. Handle als Bob, nicht als Bot."
+    }
+  ]
+}

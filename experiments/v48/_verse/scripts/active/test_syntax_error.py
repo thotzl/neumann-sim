@@ -1,0 +1,1 @@
+# Dies ist ein Testskript zur Diagnose eines Syntaxfehlers

@@ -1,0 +1,30 @@
+{
+  "probe_defaults": {
+    "internal_matter_max": 100,
+    "internal_energy_max": 200,
+    "passive_energy_gain": 10
+  },
+  "actions": {
+    "mine": { "energy_cost": 10, "matter_yield": 100 },
+    "scan": { "energy_cost": 50, "matter_cost": 0 },
+    "move": { "energy_cost": 80, "matter_cost": 0 },
+    "replicate": { "energy_cost": 100, "matter_cost": 500 }
+  },
+  "infrastructure": {
+    "solar_array": { "matter_cost": 100, "energy_yield_per_tick": 50 },
+    "matter_silo": { "matter_cost": 200, "new_storage_limit": 1000 },
+    "automated_collector": { "matter_cost": 300, "passive_matter_yield": 20 },
+    "battery_bank": { "matter_cost": 150, "new_energy_limit": 1000 },
+    "scut_relay": { "matter_cost": 50, "effect": "improved_comms" }
+  },
+  "terraforming": {
+    "barren": { "steps": 1, "cost_per_step": 50 },
+    "ice": { "steps": 4, "cost_per_step": 100 },
+    "lava": { "steps": 10, "cost_per_step": 150 },
+    "toxic": { "steps": 8, "cost_per_step": 200 }
+  },
+  "logistics": {
+    "matter_transfer_loss": 0.1,
+    "roamer_cost_per_hop": 20
+  }
+}

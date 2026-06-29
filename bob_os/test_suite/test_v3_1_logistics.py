@@ -115,7 +115,7 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         from _verse.tools import mine, build, replicate, scan
         mine.mine('Bob-1')
         build.build('Bob-1', 'matter_silo')
-        replicate.replicate('Bob-1', 'Bob-99', 'Test')
+        replicate.replicate('Bob-1', 'Bob-99')
         scan.scan('Bob-1')
 
         # Assertions: Inventar und Status dürfen sich nicht geändert haben

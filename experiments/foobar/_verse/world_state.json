@@ -1,0 +1,104 @@
+{
+  "tick": 50,
+  "total_turns": 50,
+  "last_agent": "Bob-1",
+  "timestamp": 1782740085803,
+  "systems": [
+    {
+      "name": "SYS-X0-Y0",
+      "display_name": null,
+      "x": 0,
+      "y": 0,
+      "resources": 9700,
+      "matter_stored": 0,
+      "matter_cap": 0,
+      "energy_stored": 0,
+      "energy_cap": 500,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": []
+    }
+  ],
+  "agents": [
+    {
+      "id": "Bob-1",
+      "chosen_name": "Original-Bob",
+      "location": "SYS-X0-Y0",
+      "matter": 300,
+      "energy": 500,
+      "storage_limit": 300,
+      "status": "active",
+      "birth_cycle": 0,
+      "current_x": 0,
+      "current_y": 0,
+      "origin_x": 0,
+      "origin_y": 0,
+      "target_x": 0,
+      "target_y": 0,
+      "target_system": null,
+      "transit_ticks_total": 0,
+      "transit_ticks_passed": 0,
+      "sensors": {
+        "id": "Bob-1",
+        "parent_id": null,
+        "chosen_name": "Original-Bob",
+        "status": "active",
+        "location": "SYS-X0-Y0",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 0
+        },
+        "inventory": {
+          "matter": 300,
+          "matter_limit": 300,
+          "energy": 500,
+          "energy_limit": 200
+        },
+        "transit": null,
+        "travel_previews": []
+      }
+    },
+    {
+      "id": "Bob-2",
+      "chosen_name": "Clone",
+      "location": "SYS-X0-Y0",
+      "matter": 0,
+      "energy": 350,
+      "storage_limit": 300,
+      "status": "active",
+      "birth_cycle": 0,
+      "current_x": 0,
+      "current_y": 0,
+      "origin_x": 0,
+      "origin_y": 0,
+      "target_x": 0,
+      "target_y": 0,
+      "target_system": null,
+      "transit_ticks_total": 0,
+      "transit_ticks_passed": 0,
+      "sensors": {
+        "id": "Bob-2",
+        "parent_id": null,
+        "chosen_name": "Clone",
+        "status": "active",
+        "location": "SYS-X0-Y0",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 0
+        },
+        "inventory": {
+          "matter": 0,
+          "matter_limit": 300,
+          "energy": 350,
+          "energy_limit": 200
+        },
+        "transit": null,
+        "travel_previews": []
+      }
+    }
+  ],
+  "events": []
+}

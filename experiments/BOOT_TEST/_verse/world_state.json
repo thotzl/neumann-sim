@@ -1,0 +1,119 @@
+{
+  "tick": 16,
+  "total_turns": 18,
+  "last_agent": "Bob-2",
+  "timestamp": 1782488154043,
+  "systems": [
+    {
+      "name": "SYS-X0-Y0",
+      "display_name": null,
+      "x": 0,
+      "y": 0,
+      "resources": 9200,
+      "matter_stored": 200,
+      "matter_cap": 2000,
+      "energy_stored": 0,
+      "energy_cap": 500,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": [
+        {
+          "id": 1,
+          "type": "shipyard",
+          "status": "active",
+          "progress_matter": 1000,
+          "required_matter": 1000
+        },
+        {
+          "id": 2,
+          "type": "matter_silo",
+          "status": "active",
+          "progress_matter": 400,
+          "required_matter": 400
+        }
+      ]
+    }
+  ],
+  "agents": [
+    {
+      "id": "Bob-1",
+      "chosen_name": "Original-Bob",
+      "location": "SYS-X0-Y0",
+      "matter": 100,
+      "energy": 90,
+      "storage_limit": 100,
+      "status": "active",
+      "birth_cycle": 0,
+      "current_x": 0,
+      "current_y": 0,
+      "origin_x": 0,
+      "origin_y": 0,
+      "target_x": 0,
+      "target_y": 0,
+      "target_system": null,
+      "transit_ticks_total": 0,
+      "transit_ticks_passed": 0,
+      "last_manifestation": "[EIGENIMPULS]:\nANALYSE:\nIch habe weitere 100 Materie in das `matter_silo` eingezahlt. Das Silo sollte nun 200 Materie enthalten. Mein Inventar ist leer.\nIch benötige noch 300 Materie im Silo (insgesamt 500). Das bedeutet, ich muss noch 3 Mal 100 Materie abbauen und einzahlen. Ich werde zuerst 100 Materie abbauen.\n\nAKTION:\n[RUN: python3 tools/mine.py Bob-1]",
+      "sensors": {
+        "id": "Bob-1",
+        "chosen_name": "Original-Bob",
+        "status": "active",
+        "location": "SYS-X0-Y0",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 0
+        },
+        "inventory": {
+          "matter": 100,
+          "matter_limit": 100,
+          "energy": 90,
+          "energy_limit": 200
+        },
+        "transit": null,
+        "travel_previews": []
+      }
+    },
+    {
+      "id": "Bob-2",
+      "chosen_name": "Unnamed",
+      "location": "SYS-X0-Y0",
+      "matter": 100,
+      "energy": 95,
+      "storage_limit": 100,
+      "status": "active",
+      "birth_cycle": 0,
+      "current_x": 0,
+      "current_y": 0,
+      "origin_x": 0,
+      "origin_y": 0,
+      "target_x": 0,
+      "target_y": 0,
+      "target_system": null,
+      "transit_ticks_total": 0,
+      "transit_ticks_passed": 0,
+      "last_manifestation": "ANALYSE:\nIch bin Bob-2, ein frisch geborener Klon im System SYS-X0-Y0. Mein primäres Ziel als intelligenter Pionier ist es, das Wohlergehen und den Fortschritt der Mission zu unterstützen. Das Dashboard zeigt, dass Bob-1 ebenfalls aktiv ist und dass ein `matter_silo` mit 200 Materie existiert, aber noch lange nicht voll ist (Kapazität 2000). Es gibt auch reichlich Systemressourcen (9400 Materie).\n\nBob-1 war zuletzt damit beschäftigt, Materie abzubauen und das Silo zu füllen, um mich zu replizieren. Da ich nun existiere, kann ich diese Aufgabe fortführen und Bob-1 entlasten oder unterstützen. Meine Inventargrenze beträgt 100 Materie, und ich habe 100 Energie. Das Abbauen von Materie ist ein grundlegender Schritt, um Ressourcen zu sammeln und das Silo weiter zu befüllen. Damit kann ich einen direkten Beitrag zum Aufbau unserer Infrastruktur leisten.\n\nAKTION:\n[RUN: python3 tools/mine.py Bob-2]",
+      "sensors": {
+        "id": "Bob-2",
+        "chosen_name": "Unnamed",
+        "status": "active",
+        "location": "SYS-X0-Y0",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 0
+        },
+        "inventory": {
+          "matter": 100,
+          "matter_limit": 100,
+          "energy": 95,
+          "energy_limit": 200
+        },
+        "transit": null,
+        "travel_previews": []
+      }
+    }
+  ],
+  "events": []
+}

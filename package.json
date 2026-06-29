@@ -4,7 +4,9 @@
   "description": "Projekt zur Erforschung autonomer KI-Interaktion in isolierten Umgebungen.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sim": "node run.js",
+    "inject": "node sim_engine/inject.js"
   },
   "keywords": [],
   "author": "",

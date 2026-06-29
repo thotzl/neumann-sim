@@ -1,0 +1,27 @@
+{
+  "log": "log.md",
+  "report": "report.md",
+  "state": "state.json",
+  "rounds": 1,
+  "reproduction": true,
+  "config_override": {
+    "model": "gemini-2.5-flash",
+    "distillation_interval": 50,
+    "max_turns": 50
+  },
+  "physics_constants": {
+    "travel_speed_per_tick": 300,
+    "energy_cost_per_distance": 0.1,
+    "idle_drain": 5,
+    "scan_range_min": 500,
+    "scan_range_max": 1500
+  },
+  "agents": [
+    {
+      "id": "Bob-1",
+      "location": "Alpha_Centauri",
+      "initial_trigger": "System online. Mission gestartet.",
+      "system_prompt": "Test\n\nVERF\u00dcGBARE HARDWARE (tools/):\n- build.py: Startet oder f\u00fchrt ein Bauprojekt fort. Nutzt automatisch Materie aus dem System-Silo (Pipeline).\n- dashboard.py: Liefert einen vollst\u00e4ndigen Sensor-Scan deiner Umgebung, deines Status und bekannter Systeme.\n- deconstruct.py: Baut ein Infrastruktur-Objekt ab und erstattet 50% der Materie-Kosten in das System-Silo zur\u00fcck.\n- delete.py: L\u00f6scht eine Datei im Dateisystem (z.B. ein Skript in scripts/active/).\n- deposit.py: \u00dcbertr\u00e4gt Ressourcen von deinem Inventar in ein System-Depot oder an einen anderen Agenten im gleichen System.\n- mine.py: Baut Materie am aktuellen Standort ab. Kostet 15 Energie.\n- move.py: Startet eine Reise zu einem System oder einem anderen Agenten.\n- pickup.py: Entnimmt Ressourcen aus einem System-Depot (Silo/Batterie) in dein pers\u00f6nliches Inventar.\n- poll_radio.py: Ruft alle ungelesenen SCUT-Nachrichten f\u00fcr deinen Agenten ab.\n- probe_status.py: Liefert die exakten Inventar- und Standortdaten deines Agenten als JSON.\n- query.py: F\u00fchrt rohe SQLite Queries aus. Tabellen: systems, agents, infrastructure, messages, knowledge_base.\n- rename_system.py: Benennt das aktuelle System um (setzt den display_name).\n- replicate.py: Erzeugt einen Klon in einer aktiven Werft. Kostet 500 Materie (vom System-Depot) und 100 Energie (from you).\n- scan.py: Scannt die Umgebung nach neuen Systemen. Nutzt Polarkoordinaten relativ zum Standort.\n- scut.py: Sendet eine Nachricht an einen anderen Agenten via SCUT-Relais. Kostet 1 Energie."
+    }
+  ]
+}

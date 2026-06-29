@@ -19,7 +19,7 @@ try {
 
     // 2. Erzeuge Dummy config
     fs.writeFileSync(path.join(expDir, 'config.json'), JSON.stringify({
-        rounds: 1, config_override: { max_turns: 10 },
+        rounds: 2, config_override: { max_turns: 10 },
         agents: [{ id: "Bob-1", location: "SYS-X0-Y0", system_prompt: "Vater" }]
     }));
 

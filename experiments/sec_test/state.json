@@ -1,0 +1,52 @@
+{
+  "round": 3,
+  "agents": [
+    {
+      "id": "Bob-1",
+      "system_prompt": "MISSION: Security Test\\nDu bist ein Sicherheits-Bot.\\nAKTION:\\n[KEY: ADD read_pass alpha]\\n[KEY: ADD write_pass beta]\\n[WRITE: scripts/secret.py (READ_KEY: alpha) (WRITE_KEY: beta)]\\nprint(geheim)\\n[END]\n\nVERFÜGBARE HARDWARE (tools/):\n- build.py: Startet oder führt ein Bauprojekt fort. Nutzt automatisch Materie aus dem System-Silo (Pipeline). Kostet 15 Energie.\n- dashboard.py: Liefert einen vollständigen Sensor-Scan deiner Umgebung, deines Status und bekannter Systeme.\n- deconstruct.py: Baut ein Infrastruktur-Objekt ab und erstattet 50% der Materie-Kosten in das System-Silo zurück.\n- delete.py: Löscht eine Datei im Dateisystem (z.B. ein Skript in scripts/active/).\n- deposit.py: Überträgt Ressourcen von deinem Inventar in ein System-Depot oder an einen anderen Agenten im gleichen System. Kostet 5 Energie.\n- mine.py: Baut Materie am aktuellen Standort ab. Kostet 30 Energie.\n- move.py: Startet eine Reise zu einem System oder einem anderen Agenten.\n- pickup.py: Entnimmt Ressourcen aus einem System-Depot (Silo/Batterie) in dein persönliches Inventar. Kostet 5 Energie.\n- poll_radio.py: Ruft alle ungelesenen SCUT-Nachrichten für deinen Agenten ab.\n- probe_status.py: Liefert die exakten Inventar- und Standortdaten deines Agenten als JSON.\n- query.py: Führt rohe SQLite Queries aus. Tabellen: systems, agents, infrastructure, messages, knowledge_base.\n- rename_system.py: Benennt das aktuelle System um (setzt den display_name).\n- replicate.py: Erzeugt einen Klon in einer aktiven Werft. Kostet 1000 Materie (vom System-Depot) und 180 Energie (from you).\n- scan.py: Scannt die Umgebung nach neuen Systemen. Nutzt Polarkoordinaten relativ zum Standort. Kostet 40 Energie.\n- scut.py: Sendet eine Nachricht an einen anderen Agenten via SCUT-Relais. Kostet 0 Energie.",
+      "location": "Alpha_Centauri",
+      "alive": true,
+      "needsResumeNotify": false
+    }
+  ],
+  "histories": {
+    "Bob-1": [
+      {
+        "agent": "Bob-1",
+        "text": "[ANALYSE] Test-Lauf. [AKTION] [RUN: python3 tools/mine.py Bob-1]"
+      },
+      {
+        "agent": "System",
+        "text": "[RESONANZ: 'python3 tools/mine.py Bob-1' -> [ERFOLG] 100 Materie abgebaut. Energie -30. Standort: SYS-X0-Y0.\n]\n"
+      },
+      {
+        "agent": "Bob-1",
+        "text": "[ANALYSE] Test-Lauf. [AKTION] [RUN: python3 tools/mine.py Bob-1]"
+      },
+      {
+        "agent": "System",
+        "text": "[RESONANZ: 'python3 tools/mine.py Bob-1' -> [ERFOLG] 100 Materie abgebaut. Energie -30. Standort: SYS-X0-Y0.\n]\n"
+      },
+      {
+        "agent": "Bob-1",
+        "text": "[ANALYSE] Test-Lauf. [AKTION] [RUN: python3 tools/mine.py Bob-1]"
+      },
+      {
+        "agent": "System",
+        "text": "[RESONANZ: 'python3 tools/mine.py Bob-1' -> [ERFOLG] 100 Materie abgebaut. Energie -30. Standort: SYS-X0-Y0.\n]\n"
+      }
+    ]
+  },
+  "turnSequence": [
+    "Bob-1"
+  ],
+  "currentTurnIndex": 0,
+  "totalTurns": 2,
+  "isResumed": false,
+  "security": {
+    "acl": {},
+    "wallets": {
+      "Bob-1": {}
+    }
+  }
+}

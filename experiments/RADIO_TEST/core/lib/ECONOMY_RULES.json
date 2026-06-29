@@ -1,0 +1,52 @@
+{
+  "version": "4.0",
+  "comment": "Master Economy Rules for Bob-OS. Values set to null are planned but not yet implemented in the engine.",
+  
+  "agent_limits": {
+    "matter": 300,
+    "energy": 500,
+    "energy_regen_base": 10,
+    "energy_drain_idle": 5,
+    "max_automation_scripts": 1
+  },
+
+  "tool_costs": {
+    "mine": { "energy": 30, "matter": 0 },
+    "build": { "energy": 15, "matter": 0 },
+    "deposit": { "energy": 5, "matter": 0 },
+    "withdraw": { "energy": 5, "matter": 0 },
+    "transfer": { "energy": 5, "matter": 0 },
+    "scan": { "energy": 40, "matter": 0 },
+    "scut": { "energy": 0, "matter": 0 },
+    "replicate": { "energy": 180, "matter": 1000 },
+    "move_per_unit": { "energy": 0.2, "matter": 0 }
+  },
+
+  "infrastructure": {
+    "matter_silo": { "matter_cost": 400, "matter_capacity_bonus": 2000, "energy_capacity_bonus": 0 },
+    "solar_collector": { "matter_cost": 400, "energy_regen_bonus": 100, "energy_capacity_bonus": 2000 },
+    "matter_harvester": { "matter_cost": 600, "matter_regen_bonus": 50 },
+    "shipyard": { "matter_cost": 1000, "is_replication_hub": true },
+    "battery_bank": { "matter_cost": null, "energy_capacity_bonus": null }
+  },
+
+  "upgrades": {
+    "levels": [1, 2, 3],
+    "storage_level": { "costs": [0, 500, 2000], "benefits": [300, 600, 1200] },
+    "engine_level": { "costs": [0, 500, 2000], "benefits": [1.0, 0.8, 0.5] },
+    "sensor_level": { "costs": [0, 500, 2000], "benefits": [null, null, null] },
+    "core_level": { "costs": [0, 500, 2000], "benefits": [1, 2, 4] }
+  },
+
+  "world_mechanics": {
+    "biomes": {
+      "barren": { "mining_multiplier": 1.0, "build_time_multiplier": 1.0 },
+      "lava": { "mining_multiplier": 2.5, "build_time_multiplier": 3.0 },
+      "toxic": { "mining_multiplier": 1.8, "build_time_multiplier": 2.0 }
+    },
+    "logistics": {
+      "roamer_cost": null,
+      "stellar_bridge_cost": null
+    }
+  }
+}

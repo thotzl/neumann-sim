@@ -1,0 +1,511 @@
+{
+  "tick": 247,
+  "total_turns": 246,
+  "last_agent": "Bob-1",
+  "timestamp": 1782747231408,
+  "systems": [
+    {
+      "name": "SYS-X0-Y0",
+      "display_name": null,
+      "x": 0,
+      "y": 0,
+      "resources": 0,
+      "matter_stored": 2400,
+      "matter_cap": 4000,
+      "energy_stored": 4500,
+      "energy_cap": 4500,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 200,
+      "energy_rate": 0,
+      "infra": [
+        {
+          "id": 1,
+          "type": "matter_silo",
+          "status": "active",
+          "progress_matter": 400,
+          "required_matter": 400
+        },
+        {
+          "id": 2,
+          "type": "shipyard",
+          "status": "active",
+          "progress_matter": 1000,
+          "required_matter": 1000
+        },
+        {
+          "id": 3,
+          "type": "solar_collector",
+          "status": "active",
+          "progress_matter": 400,
+          "required_matter": 400
+        },
+        {
+          "id": 4,
+          "type": "matter_silo",
+          "status": "active",
+          "progress_matter": 400,
+          "required_matter": 400
+        },
+        {
+          "id": 5,
+          "type": "solar_collector",
+          "status": "active",
+          "progress_matter": 400,
+          "required_matter": 400
+        }
+      ]
+    },
+    {
+      "name": "SYS-X0-Y1200",
+      "display_name": null,
+      "x": 0,
+      "y": 1200,
+      "resources": 0,
+      "matter_stored": 185,
+      "matter_cap": 2000,
+      "energy_stored": 4000,
+      "energy_cap": 4000,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 200,
+      "energy_rate": 0,
+      "infra": [
+        {
+          "id": 6,
+          "type": "matter_silo",
+          "status": "active",
+          "progress_matter": 400,
+          "required_matter": 400
+        },
+        {
+          "id": 8,
+          "type": "shipyard",
+          "status": "active",
+          "progress_matter": 1000,
+          "required_matter": 1000
+        },
+        {
+          "id": 9,
+          "type": "solar_collector",
+          "status": "active",
+          "progress_matter": 400,
+          "required_matter": 400
+        }
+      ]
+    },
+    {
+      "name": "SYS-X1400-Y800",
+      "display_name": null,
+      "x": 1400,
+      "y": 800,
+      "resources": 1987,
+      "matter_stored": 0,
+      "matter_cap": 0,
+      "energy_stored": 0,
+      "energy_cap": 0,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-X500-Y500",
+      "display_name": null,
+      "x": 500,
+      "y": 500,
+      "resources": 1540,
+      "matter_stored": 0,
+      "matter_cap": 0,
+      "energy_stored": 0,
+      "energy_cap": 0,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-X800-Y1100",
+      "display_name": null,
+      "x": 800,
+      "y": 1100,
+      "resources": 4801,
+      "matter_stored": 0,
+      "matter_cap": 0,
+      "energy_stored": 0,
+      "energy_cap": 0,
+      "passive_matter_rate": 0,
+      "passive_energy_rate": 0,
+      "energy_rate": 0,
+      "infra": []
+    }
+  ],
+  "agents": [
+    {
+      "id": "Bob-1",
+      "chosen_name": "Original-Bob",
+      "location": "SYS-X0-Y1200",
+      "matter": 0,
+      "energy": 305,
+      "storage_limit": 300,
+      "status": "active",
+      "birth_cycle": 0,
+      "current_x": 0,
+      "current_y": 1200,
+      "origin_x": 0,
+      "origin_y": 1200,
+      "target_x": 0,
+      "target_y": 1200,
+      "target_system": "SYS-X0-Y1200",
+      "transit_ticks_total": 1,
+      "transit_ticks_passed": 1,
+      "sensors": {
+        "id": "Bob-1",
+        "parent_id": null,
+        "chosen_name": "Original-Bob",
+        "status": "active",
+        "location": "SYS-X0-Y1200",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 1200
+        },
+        "inventory": {
+          "matter": 0,
+          "matter_limit": 300,
+          "energy": 305,
+          "energy_limit": 200
+        },
+        "transit": null,
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 1200,
+            "cost": 120,
+            "ticks": 4
+          },
+          {
+            "target": "SYS-X1400-Y800",
+            "dist": 1456,
+            "cost": 145,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X500-Y500",
+            "dist": 860.2,
+            "cost": 86,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X800-Y1100",
+            "dist": 806.2,
+            "cost": 80,
+            "ticks": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "Bob-2",
+      "chosen_name": "Unnamed",
+      "location": "SYS-X0-Y1200",
+      "matter": 0,
+      "energy": 250,
+      "storage_limit": 100,
+      "status": "active",
+      "birth_cycle": 0,
+      "current_x": 0,
+      "current_y": 1200,
+      "origin_x": 0,
+      "origin_y": 1200,
+      "target_x": 0,
+      "target_y": 1200,
+      "target_system": "SYS-X0-Y1200",
+      "transit_ticks_total": 1,
+      "transit_ticks_passed": 1,
+      "sensors": {
+        "id": "Bob-2",
+        "parent_id": "Bob-1",
+        "chosen_name": "Unnamed",
+        "status": "active",
+        "location": "SYS-X0-Y1200",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 1200
+        },
+        "inventory": {
+          "matter": 0,
+          "matter_limit": 100,
+          "energy": 250,
+          "energy_limit": 200
+        },
+        "transit": null,
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 1200,
+            "cost": 120,
+            "ticks": 4
+          },
+          {
+            "target": "SYS-X1400-Y800",
+            "dist": 1456,
+            "cost": 145,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X500-Y500",
+            "dist": 860.2,
+            "cost": 86,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X800-Y1100",
+            "dist": 806.2,
+            "cost": 80,
+            "ticks": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "Bob-3",
+      "chosen_name": "Unnamed",
+      "location": null,
+      "matter": 0,
+      "energy": 336.66666666666663,
+      "storage_limit": 100,
+      "status": "traveling",
+      "birth_cycle": 0,
+      "current_x": 533.3333333333333,
+      "current_y": 1133.3333333333333,
+      "origin_x": 0,
+      "origin_y": 1200,
+      "target_x": 800,
+      "target_y": 1100,
+      "target_system": "SYS-X800-Y1100",
+      "transit_ticks_total": 3,
+      "transit_ticks_passed": 2,
+      "sensors": {
+        "id": "Bob-3",
+        "parent_id": "Bob-1",
+        "chosen_name": "Unnamed",
+        "status": "traveling",
+        "location": null,
+        "birth_cycle": 0,
+        "pos": {
+          "x": 533.3333333333333,
+          "y": 1133.3333333333333
+        },
+        "inventory": {
+          "matter": 0,
+          "matter_limit": 100,
+          "energy": 336.66666666666663,
+          "energy_limit": 200
+        },
+        "transit": {
+          "destination": "SYS-X800-Y1100",
+          "progress_ticks": 2,
+          "total_ticks": 3,
+          "target_pos": {
+            "x": 800,
+            "y": 1100
+          }
+        },
+        "travel_previews": []
+      }
+    },
+    {
+      "id": "Bob-4",
+      "chosen_name": "Unnamed",
+      "location": "SYS-X0-Y1200",
+      "matter": 0,
+      "energy": 400,
+      "storage_limit": 100,
+      "status": "active",
+      "birth_cycle": 0,
+      "current_x": 0,
+      "current_y": 1200,
+      "origin_x": 0,
+      "origin_y": 1200,
+      "target_x": 0,
+      "target_y": 1200,
+      "target_system": "SYS-X0-Y1200",
+      "transit_ticks_total": 1,
+      "transit_ticks_passed": 1,
+      "sensors": {
+        "id": "Bob-4",
+        "parent_id": "Bob-1",
+        "chosen_name": "Unnamed",
+        "status": "active",
+        "location": "SYS-X0-Y1200",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 1200
+        },
+        "inventory": {
+          "matter": 0,
+          "matter_limit": 100,
+          "energy": 400,
+          "energy_limit": 200
+        },
+        "transit": null,
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 1200,
+            "cost": 120,
+            "ticks": 4
+          },
+          {
+            "target": "SYS-X1400-Y800",
+            "dist": 1456,
+            "cost": 145,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X500-Y500",
+            "dist": 860.2,
+            "cost": 86,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X800-Y1100",
+            "dist": 806.2,
+            "cost": 80,
+            "ticks": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "Bob-5",
+      "chosen_name": "Unnamed",
+      "location": "SYS-X0-Y1200",
+      "matter": 0,
+      "energy": 240,
+      "storage_limit": 100,
+      "status": "active",
+      "birth_cycle": 0,
+      "current_x": 0,
+      "current_y": 1200,
+      "origin_x": 0,
+      "origin_y": 1200,
+      "target_x": 0,
+      "target_y": 1200,
+      "target_system": "SYS-X0-Y1200",
+      "transit_ticks_total": 1,
+      "transit_ticks_passed": 1,
+      "sensors": {
+        "id": "Bob-5",
+        "parent_id": "Bob-1",
+        "chosen_name": "Unnamed",
+        "status": "active",
+        "location": "SYS-X0-Y1200",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 1200
+        },
+        "inventory": {
+          "matter": 0,
+          "matter_limit": 100,
+          "energy": 240,
+          "energy_limit": 200
+        },
+        "transit": null,
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 1200,
+            "cost": 120,
+            "ticks": 4
+          },
+          {
+            "target": "SYS-X1400-Y800",
+            "dist": 1456,
+            "cost": 145,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X500-Y500",
+            "dist": 860.2,
+            "cost": 86,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X800-Y1100",
+            "dist": 806.2,
+            "cost": 80,
+            "ticks": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "Bob-6",
+      "chosen_name": "Unnamed",
+      "location": "SYS-X0-Y1200",
+      "matter": 0,
+      "energy": 160,
+      "storage_limit": 100,
+      "status": "active",
+      "birth_cycle": 0,
+      "current_x": 0,
+      "current_y": 1200,
+      "origin_x": 0,
+      "origin_y": 1200,
+      "target_x": 0,
+      "target_y": 1200,
+      "target_system": "SYS-X0-Y1200",
+      "transit_ticks_total": 1,
+      "transit_ticks_passed": 1,
+      "sensors": {
+        "id": "Bob-6",
+        "parent_id": "Bob-1",
+        "chosen_name": "Unnamed",
+        "status": "active",
+        "location": "SYS-X0-Y1200",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 1200
+        },
+        "inventory": {
+          "matter": 0,
+          "matter_limit": 100,
+          "energy": 160,
+          "energy_limit": 200
+        },
+        "transit": null,
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 1200,
+            "cost": 120,
+            "ticks": 4
+          },
+          {
+            "target": "SYS-X1400-Y800",
+            "dist": 1456,
+            "cost": 145,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X500-Y500",
+            "dist": 860.2,
+            "cost": 86,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X800-Y1100",
+            "dist": 806.2,
+            "cost": 80,
+            "ticks": 3
+          }
+        ]
+      }
+    }
+  ],
+  "events": []
+}

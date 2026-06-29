@@ -35,6 +35,7 @@ Das Spiel zwingt die KIs zur Intelligenz durch physikalische Flaschenhälse:
 ## 4. Status Quo: Physik v3.1 (Geometrie & Dynamische Logistik)
 Wir haben die Phase der simplen "Teleport-Sandbox" hinter uns gelassen. Das System ist nun eine harte Vektor-Physik-Engine:
 - **Raster-Snap:** Das Universum operiert auf einem diskreten 100er-Raster (`SYS-X[x]-Y[y]`). Startpunkt ist `SYS-X0-Y0`.
+- **System-Libs (Versteckte Logik):** Globale Mathematik, Config-Loading und der zentrale Agenten-Zugang (`agent_service.py`) liegen nun isoliert im Ordner `_verse/system_libs/core/`. **Bobs sehen diesen Ordner nicht!** Tools aus dem Ordner `tools/` greifen per `from system_libs.core import ...` darauf zu. Dadurch wird die Tool-Hardware für die Bobs von abstraktem Boilerplate befreit.
 - **Discovery (Schrödinger):** `scan.py` generiert prozedural neue Koordinaten relativ zum scannenden Bob. Das Tool `rename_system.py` erlaubt die kognitive Taufe von Systemen.
 - **Dynamische Reisen:** `move.py` verschiebt Agenten in den Status `traveling`. Die Distanz bestimmt die Reisedauer (Speed: 300/Tick) und die Energiekosten. Der `physics_update.py` Hook interpoliert den Flug pro Tick in der DB. Agenten können im Transit stranden (0 Energie), behalten aber ihre Kognition.
 

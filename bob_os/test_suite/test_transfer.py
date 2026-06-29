@@ -44,8 +44,8 @@ class TestBobOS_v4_Transfer(unittest.TestCase):
         res_sender = conn.execute("SELECT energy, matter FROM agents WHERE id='Bob-1'").fetchone()
         res_recv = conn.execute("SELECT energy, matter FROM agents WHERE id='Bob-2'").fetchone()
         
-        # V4: 500E - 5E (Gebühr) = 495E
-        self.assertEqual(res_sender['energy'], 495)
+        # V4: Kosten für Transfer wurden auf 0 gesetzt
+        self.assertEqual(res_sender['energy'], 500)
         self.assertEqual(res_sender['matter'], 50)
         self.assertEqual(res_recv['matter'], 50)
         conn.close()
@@ -64,23 +64,6 @@ class TestBobOS_v4_Transfer(unittest.TestCase):
         
         output = f.getvalue()
         self.assertIn("Ziel zu weit entfernt", output)
-        conn.close()
-
-    def test_03_transfer_insufficient_energy(self):
-        conn = get_connection()
-        # Bob-1 hat nur 2 Energie (braucht 5 für Gebühr)
-        conn.execute("UPDATE agents SET energy=2, current_x=0, current_y=0 WHERE id='Bob-1'")
-        conn.execute("UPDATE agents SET current_x=0, current_y=0 WHERE id='Bob-2'")
-        conn.commit()
-        
-        import io
-        from contextlib import redirect_stdout
-        f = io.StringIO()
-        with redirect_stdout(f):
-            transfer.transfer('Bob-1', 'Bob-2', 'matter', 10)
-        
-        output = f.getvalue()
-        self.assertIn("Nicht genügend Energie", output)
         conn.close()
 
 if __name__ == '__main__':

@@ -1,56 +1,61 @@
+### ⚡ ENERGY PIPELINE FIX (Prio 1)
+- [ ] **Systemübergreifende Energie-Abrechnung:** Es macht keinen Sinn, materielle Pipelines zu haben, aber die "Stromleitung" zu ignorieren. Das Tool `replicate.py` muss so angepasst werden, dass die `energy_cost` primär aus dem `energy_stored` des Systems (Silo/Netz) abgezogen wird, falls vorhanden. Der Bob sollte nur dann persönlich Energie beisteuern müssen, wenn das Systemnetz leer ist. Dies verhindert die kognitive "Warte-Paralyse" der Agenten bei der Replikation.
+
 # Bobiverse Evolution: Die Strategische Roadmap
 
-## 🛠️ NÄCHSTER SPRINT: Geometrie & Recycling
+## 🛠️ NÄCHSTER SPRINT: Evolution & Intelligence
 
-### 1. Interstellare Geometrie (Schrödinger-Modell)
-- [ ] **System-Koordinaten:** `x, y` in `systems` Tabelle. 
-- [ ] **Scan v3.0:** Entdeckung via Polarkoordinaten relativ zum Bob (Radius 500-1500).
-- [ ] **Grid-Snap:** Koordinaten werden auf 100er-Raster gerundet (Vorbereitung für Grid-Seed).
-- [ ] **ID-Logik:** Primary Key wird `SYS-X[x]-Y[y]`.
-- [ ] **Display Name:** Neues Feld für Bob-Benennung. Initial-Name ist NULL (ID wird angezeigt).
-- [ ] **Frontend-Update:** `App.tsx` nutzt echte Koordinaten statt Hash-Werte.
-- [ ] **System-Renaming:** Tool `rename_system.py` zur sicheren Umbenennung via SQL-Transaktion.
-- [x] **Dynamische Logistik (Physik v3.1):** 
-    - **Transit-Aktivität:** Agenten im Flug bleiben aktiv. Sie können funken oder analysieren.
-    - **Positions-Interpolation:** `physics_update.py` berechnet `current_x/y` pro Tick basierend auf Flugdaten.
-    - **No-Lock Move:** `move.py` mit informativer Warnung statt harter Sperre bei Energiemangel (Guppy-Style).
-    - **Energy-Drain:** -5 Energie pro Tick im Transit (keine Solar-Regeneration).
+### 0. Sandbox-Härtung (Security)
+- [ ] **Read-Only Tools:** Den Parser in `sim_engine/utils/environment.js` anpassen. Datei-Befehle (`[WRITE]`, `[REPLACE]`) dürfen nur noch in das `scripts/`-Verzeichnis (bzw. auf vordefinierte Software-Pfade) schreiben. Modifikationen an `tools/` (Hardware) müssen mit einer Verweigerung abgeblockt werden, um ein "Cheaten" der Agenten zu verhindern.
 
-### 2. Kreislaufwirtschaft (Quick Win)
-- [x] **Abbau-Bonus:** Ein Tool `deconstruct.py` erlaubt den Rückbau von Infrastruktur und erstattet 50% der Materie-Kosten zurück in das System-Silo.
+### 1. Gedächtnis-Vererbung & Hard-Boot (Phase 2.6)
+- [ ] **Omni-Dashboard:** Ausbau von `dashboard.py` zur ultimativen Wahrnehmungs-Schnittstelle (Alle Limits, Bilanzen, Identitäts-Fakten).
+- [ ] **Async Snapshot Heritage:** Implementierung des `MemoryArchitect` im Runner (Vater-Kompression während Klon-Bauzeit).
+- [ ] **Hard-Boot Chronologie:** Der Runner injiziert beim Erwachen (erster Turn) eines Klons eine feste Historien-Struktur, um Schizophrenie zu verhindern:
+    1.  `[GEERBTE ERINNERUNGEN]`: Das asynchron komprimierte Destillat des Vaters (Siehe Async Snapshot).
+    2.  `[SYSTEM BOOT]`: Ein harter, system-generierter Aufruf von `dashboard.py`, der dem Klon seine eigene Identität (`ID`, `Location`, `Parent_ID`) und Welt-Parameter liefert.
+    3.  `[DIREKTIVE DES ERSCHAFFERS]`: Der `system_prompt` aus `replicate.py`.
 
-## 🚀 Phase 1: Industrielle Revolution (Abgeschlossen)
+### 2. Agent Upgrades (Phase 2.5)
+*Siehe detailliertes Konzept in `docs/concepts/AGENT_UPGRADE_MANIFEST.md`*
+- [ ] **Hardware-Module (DB):** Spalten `storage_level`, `engine_level`, `sensor_level`, `core_level` zur `agents` Tabelle hinzufügen.
+- [ ] **Tool `upgrade.py`:** Ermöglicht den Aufstieg von Leveln durch exponentielle Materie/Energie-Kosten.
+- [ ] **Software-Symbiose:** Runner-Timeouts für Auto-Skripte skalieren mit dem `core_level`.
+
+---
+
+## ✅ Phase 2: Geometrie & Dynamik (ABGESCHLOSSEN)
+- [x] **System-Koordinaten:** `x, y` in `systems` Tabelle eingeführt.
+- [x] **Scan v3.1:** Entdeckung via Polarkoordinaten & Grid-Snap (100er Raster).
+- [x] **Identität:** `rename_system.py` und `display_name` Logik implementiert.
+- [x] **Vektor-Physik:** `move.py` mit Echtzeit-Interpolation in `physics_update.py`.
+- [x] **Energy-Logistics:** Passive Solar-Regeneration und Depot-Management (`deposit`/`pickup`).
+- [x] **Recycling:** `deconstruct.py` erstattet 50% Ressourcen.
+
+## 🚀 Phase 1: Industrielle Revolution (ABGESCHLOSSEN)
 - [x] Dual-Währung (Matter/Energy).
-- [x] Speicher-Engpässe (Silos nötig).
-- [x] Infrastruktur-Tools (Solar_Collector, Silo, Shipyard).
-- [x] System-Depots & Pipeline-Build-Mechanik.
+- [x] Infrastruktur-Silos & Pipeline-Build-Mechanik.
 - [x] Zentraler Test-Hub & CI Pipeline.
 
-## 🧬 Phase 2: Software-Evolution & Patches
-- [ ] **Modulares Skripting:** Bobs schreiben Wrapper, die sie signieren und anderen Bobs zum "Download" (SQL-Query) anbieten.
-- [ ] **Tech-Tree:** Bestimmte Tools (z.B. `terraform_v2.py`) müssen erst durch Materie-Einsatz "erforscht" werden.
-- [ ] **Compiler-Constraints:** Agenten können nur Skripte ausführen, die sie selbst geschrieben haben oder die in der `knowledge_base` validiert wurden.
+---
 
-## 🏘️ Phase 3: Siedlungs-Cluster & Logistik
-- [ ] **Roamer-Skripte:** Einführung von "Dumb Bots" für Shuttle-Dienste (A nach B), Sentry (Bewachen) oder Surveyor (Passives Scannen).
-- [ ] **Planeten-Depots:** Lagerraum ist physisch an einen Planeten gebunden, nicht mehr abstrakt am System.
-- [ ] **Wartung:** Infrastruktur verfällt über Zeit (Entropie). Bobs müssen Reparatur-Zyklen einplanen.
+## 🏘️ Phase 3: Siedlungs-Cluster & Logistik (In Planung)
+- [ ] **Roamer-Skripte:** Einführung von "Dumb Bots" für Shuttle-Dienste (A nach B).
+- [ ] **Inkubationszeit:** Replikation von Klonen dauert X Ticks (echte Bauzeit).
+- [ ] **Planeten-Depots:** Lagerraum ist physisch an einen Planeten gebunden.
+- [ ] **Wartung:** Infrastruktur verfällt über Zeit (Entropie).
 
 ## 👽 Phase 4: Emergenz & Konflikt
-- [ ] **The Others:** Erscheinen einer aggressiven Fraktion mit simplen, aber massiven Vermehrungsregeln (Bedrohung der Ressourcen).
-- [ ] **Divergente Ideologien:** Bobs können sich zu Fraktionen zusammenschließen (z.B. "Gamer" vs. "Starfleet") und den Zugriff auf Systeme verweigern.
-- [ ] **Deep-Space Relays:** Aufbau eines Netzwerks, um Nachrichten über weite Distanzen verzögerungsfrei zu senden.
+- [ ] **The Others:** Erscheinen einer aggressiven Fraktion.
+- [ ] **Divergente Ideologien:** Bobs können sich zu Fraktionen zusammenschließen.
 
 ## 📺 Phase 5: Das Unity-Interface & God-Mode
-- [ ] **Realtime SQL-Stream:** Ein Node.js Service, der DB-Changes an einen Unity-Websocket pusht.
-- [ ] **Visualizer:** 3D Darstellung der Planeten-Entwicklung und der Sonden-Bewegungen.
-- [x] **Voice of God (VoG):** Live-Injektionen via Tactical Monitor (Middleware & File-Injection).
+- [ ] **Realtime SQL-Stream:** DB-Changes an Unity-Websocket.
+- [x] **Voice of God (VoG):** Live-Injektionen via Tactical Monitor.
 
 ## 🌌 Phase 6: Deterministische Galaxie (Grid-Seed)
-- [ ] **Vom Beobachter zum Gesetz:** Umstellung auf Noise-Funktion / Seed-Grid für absolute Konsistenz.
-- [ ] **Performance-Sektor-Loading:** Vorberechnung von ganzen Sektoren für weite Scans.
+- [ ] **Vom Beobachter zum Gesetz:** Umstellung auf Noise-Funktion / Seed-Grid.
 
-## 🕰️ Legacy / On-Hold (Reaktivierung bei Bedarf)
-- [ ] **Mortalität:** Alterstod in `physics_update.py` (Alter = tick - birth_cycle).
-- [ ] **Tick-Pressure:** Dynamische Injektion des Zeitfortschritts (z.B. "Runde 90/1000") in den System-Prompt.
-- [ ] **Finish-Signal:** `[ABBRUCH]` Instruktion für Agenten bei Missionserfüllung.
+### 🛠️ KOGNITIVES & SYSTEM-DESIGN UPDATE (Prio 1)
+- [ ] **Auto-Radio-Poll:** Das Tool `poll_radio.py` (oder die zugrundeliegende Logik) muss zwingend in jedem Zyklus automatisch vom Runner ausgeführt werden. Aktuell verpassen Agenten wichtige Korrekturen oder Warnungen ihrer Kollegen (siehe Bob-1/Bob-2 Isolation), weil sie das manuelle Polling im Stress vergessen.
+- [ ] **Klarstellung der Skript-Physik:** Wir müssen im System-Prompt (oder via God-Message) unmissverständlich festlegen, dass der **einzige** unterstützte Weg, physikalische Tools (`mine`, `build`, etc.) aus Python-Skripten heraus aufzurufen, die `print("[RUN: ...]")` Syntax ist. `subprocess.run` führt in der Sandbox zu unvorhersehbaren Pfad- und Umgebungskonflikten und überfordert die kognitive Fehlerkorrektur der Agenten.

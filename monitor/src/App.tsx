@@ -116,7 +116,18 @@ export default function App() {
            const newEntries: LogEntry[] = [];
            data.agents.forEach(a => {
                if (a.last_manifestation && a.last_manifestation.trim() !== '') {
-                   newEntries.push({ tick: data.tick, agentId: a.id, text: a.last_manifestation });
+                   // Filtere alles ab AKTION: weg, um nur die Gedanken zu zeigen
+                   let cleanText = a.last_manifestation;
+                   const actionIndex = cleanText.search(/AKTION(?:EN)?[:]/i);
+                   if (actionIndex !== -1) {
+                       cleanText = cleanText.substring(0, actionIndex).trim();
+                   }
+                   // Entferne das überflüssige "ANALYSE:" Keyword
+                   cleanText = cleanText.replace(/^(?:> )?ANALYSE:\s*/i, '').trim();
+                   
+                   if (cleanText) {
+                       newEntries.push({ tick: data.tick, agentId: a.id, text: cleanText });
+                   }
                }
            });
            if (newEntries.length > 0) setLogs(prev => [...prev, ...newEntries]);

@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "agents": [
+    {
+      "id": "Bob-2",
+      "parent_id": "Bob-1",
+      "location": "SYS-X0-Y0",
+      "status": "active",
+      "system_prompt": "ID: Bob-2. MISSION: Materie in SYS-X0-Y0 abbauen und ins Silo einzahlen, um die weitere Expansion zu unterst\u00fctzen."
+    },
+    {
+      "id": "Bob-3",
+      "parent_id": "Bob-1",
+      "location": "SYS-X0-Y0",
+      "status": "active",
+      "system_prompt": "ID: Bob-3. MISSION: Deine Mission ist es, Materie abzubauen und ins System-Silo einzuzahlen."
+    },
+    {
+      "id": "Bob-4",
+      "parent_id": "Bob-1",
+      "location": "SYS-X0-Y0",
+      "status": "active",
+      "system_prompt": "ID: Bob-4. MISSION: Deine Mission ist es, Materie abzubauen und ins System-Silo einzuzahlen."
+    },
+    {
+      "id": "Bob-5",
+      "parent_id": "Bob-1",
+      "location": "SYS-X0-Y0",
+      "status": "active",
+      "system_prompt": "ID: Bob-5. MISSION: Deine Mission ist es, Materie abzubauen und ins System-Silo einzuzahlen."
+    },
+    {
+      "id": "Bob-6",
+      "parent_id": "Bob-1",
+      "location": "SYS-X0-Y0",
+      "status": "active",
+      "system_prompt": "ID: Bob-6. MISSION: Mine and deposit matter into system silos. Prioritize efficiency."
+    }
+  ]
+}

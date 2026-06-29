@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "agents": [
+    {
+      "id": "Bob-2",
+      "parent_id": "Bob-1",
+      "location": "SYS-X0-Y0",
+      "status": "active",
+      "system_prompt": "Du bist Klon Bob-2. Sag Hallo!"
+    }
+  ]
+}

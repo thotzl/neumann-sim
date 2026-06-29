@@ -1,54 +1,23 @@
-# Project Bobiverse - Initialization & Handoff
+# Handoff Report: Bob-OS Evolution (Phase 2.5 - Pending)
 
-**[AN DEN NACHFOLGENDEN AGENTEN]:** Dies ist dein Einstiegspunkt. Du wurdest gerufen, um an einer LLM-basierten Multi-Agenten-Simulation zu arbeiten. 
+## Erreichte Meilensteine (Aktueller Stand)
+Das System ist nach einer massiven Refaktorierungs-Phase absolut stabil und modular.
+1. **Engine Modularisierung:** `sim_engine/runner.js` wurde von einem 300-Zeilen "God Object" zu einem schlanken Wrapper refaktoriert. Logik liegt in `utils/` (`bootstrapper.js`, `automation.js`, `python_executor.js`).
+2. **Kryptographische Autonomie (ACL):** Die Node.js Engine besitzt ein vollständiges Key/Wallet-System. Agenten können Skripte in `scripts/` mit `[WRITE: pfad (READ_KEY: x) (WRITE_KEY: y)]` verschlüsseln. Keys werden im `state.json` (Kernel) gespeichert und über den LLM-Prompt injiziert.
+3. **Hardcore Economy (V4.1):** Alle harten Kosten wurden in `bob_os/core/lib/ECONOMY_RULES.json` zentralisiert. Logistik (`deposit`, `withdraw`, `transfer`) kostet nun 0 Energie, Mining 30E. Kapazitäten wurden auf 300M / 500E angehoben. Ein SQL-Update-Bug in `withdraw.py` wurde behoben.
+4. **Existential Awakening (V5.3):** Die Replikation (`replicate.py`) ist entkoppelt. Klone erwachen mit einem neutralen Prompt, müssen sich selbst benennen (`set_name.py` mit `CURRENT_AGENT_ID` Schutz) und Kontakt per SCUT aufnehmen.
+5. **Live Spawning:** Klone werden nun während der Node.js Laufzeit (zu Beginn jeder Runde) in die Event-Loop eingehängt, ohne Neustart.
+6. **Frontend & Logging:** `log.md` trennt "Pre-Turn Events" (VoG, Radio, Automation) sauber ab. Das Monitor-Frontend wurde entmüllt und zeigt nur noch reine Agenten-Gedanken, gefiltert von `AKTION:` Blöcken, sowie Agenten-Namen in der Map.
 
-## 0. BOOTSTRAPPING (Dein erster Zug)
-Bevor du den User nach neuen Aufgaben fragst oder Vermutungen aufstellst, MUSS dein erster Schritt sein, den Code dieses Projekts zu verstehen. Führe sofort Dateilese-Operationen (`read_file` oder `run_shell_command`) auf folgende Kern-Dateien aus, um dein Context-Window aufzubauen:
-1. `docs/IDEAS_AND_TASKS.md` (Die Roadmap)
-2. `sim_engine/runner.js` (Die Gott-Maschine / Loop-Logik)
-3. `bob_os/build.py` & `sim_engine/deploy.js` (CI/CD Pipeline)
-4. `bob_os/_verse/tools/init_db.py` (Das physikalische SQLite-Schema)
-5. `sim_engine/core-config.json` (Die Baseline-Regeln und Konstanten)
-Erst wenn du diese Dateien im Kontext hast, bist du operativ bereit.
+## Aktueller Status
+- Die CI (`node sim_engine/test_all.js`) ist mit ~10 Testsuiten (inklusive E2E Mocks) 100% grün.
+- Das Experiment `ONE` wurde frisch ge-resettet und steht bei Zyklus 1.
 
----
+## Nächste Tasks (Dein Job)
+Der User möchte nun in die Phase **2.5: Agent Upgrades** übergehen.
+1. Lies dir in `bob_os/core/lib/ECONOMY_RULES.json` die Sektion `"upgrades"` durch.
+2. Das Konzept (`docs/concepts/AGENT_UPGRADE_MANIFEST.md`) sieht vor, dass Agenten ihre Hardware (Engines, Sensoren, Storage, Core) mit Materie upgraden können.
+3. Du musst das in die SQLite `agents` Tabelle einbauen und Tools (z.B. `upgrade.py`) schreiben, um diese Mechanik in die Welt zu bringen.
 
-## 1. Die Vision & Das Konzept (Das "Bobiverse")
-Wir simulieren ein expandierendes Netz aus autonomen von-Neumann-Sonden (benannt "Bobs", in Anlehnung an die Sci-Fi-Reihe).
-- **Die Agenten (Kognition):** Jeder Bob wird durch einen LLM-Call (Gemini) gesteuert. Bobs haben einen eigenen Willen, ein eigenes Gedächtnis (Historie) und agieren autonom.
-- **Die Engine (Der Runner):** Ein Node.js Skript (`sim_engine/runner.js`) orchestriert die Zeit (Runden-Ticks). Es sammelt die Agenten-Gedächtnisse, holt Antworten vom LLM, parst `[RUN: ...]` Befehle und injiziert die Ergebnisse (Resonanz) zurück in den Prompt der nächsten Runde.
-- **Speicher-Kompression:** Da Kontext-Fenster begrenzt sind, führt das System regelmäßig eine "Destillation" (Zusammenfassung) der Agenten-Historien durch.
-- **Die Physik (SQLite & Python):** Die Welt ist eine SQLite-Datenbank. Agenten verändern diese Welt *ausschließlich*, indem sie Python-Skripte (`mine.py`, `build.py`, etc.) aufrufen.
-- **Automatisierung:** Bobs können selbst Python-Code schreiben und in `scripts/active/` ablegen. Diese Skripte werden vom Runner in jedem Zyklus automatisch ausgeführt und ihr Output wiederum vom LLM-Parser verarbeitet.
-
-## 2. Die Ökonomie der Knappheit
-Das Spiel zwingt die KIs zur Intelligenz durch physikalische Flaschenhälse:
-- Jede Sonde hat ein fixes Tragelimit (100 Materie, 200 Energie).
-- Replikation (das Schaffen eines neuen Bobs) kostet 500 Materie.
-- **Zwang zur Infrastruktur:** Da ein Bob keine 500 Materie tragen kann, MUSS er im System Infrastruktur (Silos für Materie, Solar-Kollektoren für Energie) bauen.
-- **System-Depots:** Gebäude gehören dem System (Planeten), nicht dem Bob. Logistik (`deposit.py`, `pickup.py`) und Zusammenarbeit sind der einzige Weg zum Erfolg.
-
-## 3. Das Paradigma ("Code is King & CI/CD")
-- **Master-Blueprint (`bob_os/`):** Hier leben die physikalischen "Naturgesetze" (Python-Tools, DB-Schema `init_db.py`). **Alle Fixes erfolgen ZWINGEND hier.** Keine manuellen Änderungen in den Laufzeit-Experimenten!
-- **CI-Pipeline-Zwang:** Nichts wird gebaut oder deployed ohne `node sim_engine/test_all.js`. Die Pipeline validiert Geometrie, Logistik, Privacy-Sicherungen und führt einen E2E-API-Mock-Loop aus.
-
-## 4. Status Quo: Physik v3.1 (Geometrie & Dynamische Logistik)
-Wir haben die Phase der simplen "Teleport-Sandbox" hinter uns gelassen. Das System ist nun eine harte Vektor-Physik-Engine:
-- **Raster-Snap:** Das Universum operiert auf einem diskreten 100er-Raster (`SYS-X[x]-Y[y]`). Startpunkt ist `SYS-X0-Y0`.
-- **System-Libs (Versteckte Logik):** Globale Mathematik, Config-Loading und der zentrale Agenten-Zugang (`agent_service.py`) liegen nun isoliert im Ordner `_verse/system_libs/core/`. **Bobs sehen diesen Ordner nicht!** Tools aus dem Ordner `tools/` greifen per `from system_libs.core import ...` darauf zu. Dadurch wird die Tool-Hardware für die Bobs von abstraktem Boilerplate befreit.
-- **Discovery (Schrödinger):** `scan.py` generiert prozedural neue Koordinaten relativ zum scannenden Bob. Das Tool `rename_system.py` erlaubt die kognitive Taufe von Systemen.
-- **Dynamische Reisen:** `move.py` verschiebt Agenten in den Status `traveling`. Die Distanz bestimmt die Reisedauer (Speed: 300/Tick) und die Energiekosten. Der `physics_update.py` Hook interpoliert den Flug pro Tick in der DB. Agenten können im Transit stranden (0 Energie), behalten aber ihre Kognition.
-
-## 5. Workflows (Dein Operations-Handbuch)
-- **Umgebung Starten:** `python3 bob_os/build.py <version> --rounds X --mission "..."` (Baut das Experiment, führt CI aus). Gefolgt von `node sim_engine/runner.js <version>`.
-- **Live-Fixes Einspielen:** Code in `bob_os/` anpassen $\rightarrow$ `node sim_engine/deploy.js <version>`. Das Skript testet und synchronisiert die Python-Tools in das laufende Experiment.
-- **Reset (Hard):** `build.py` mit `--force` Parameter löscht Laufzeitdaten (`state.json`) für einen sauberen Neustart.
-- **Voice of God (VoG):** Im React-Frontend (`monitor/`) kannst du Live-Nachrichten eingeben. Die Vite-Middleware schreibt in `creator_msg.txt`, der Runner injiziert es am Zyklus-Ende in das Gedächtnis aller Agenten.
-- **Frontend Start:** `cd monitor && bun dev --v=<version>`. Der Symlink (`public/live_verse`) wird automatisch auf das jeweilige Experiment geroutet.
-
-## 6. Aktueller Projekt-Status (Ende der Session)
-- Wir haben in der Sandbox (`move-sandbox`) die neuen v3.1 Mechaniken extrem erfolgreich vertestet (Flüge über mehrere Ticks, Interpolations-Rendering im Frontend, Dubletten-Schutz beim Naming).
-- **Das Frontend** ist auf 2D-Vektor-Rendering umgestellt: Fliegende Agenten rotieren in Flugrichtung und gleiten über die Map. Private Sensordaten (`current_x`, `target_system`) sind via `dashboard.py` sicher von fremden Bobs abgeschirmt.
-- **Nächster Fokus:** Siehe `docs/IDEAS_AND_TASKS.md`. Der Fokus liegt auf der Verfeinerung der interstellaren Infrastruktur (Planeten-Depots) und der Vorbereitung auf Phase 6 (Deterministisches Grid-Seed Universum).
-
-**Initial-Direktive an dich:** Nutze die OODA, AIC und Steel-man Frameworks aus dem `analytical-directives` Skill für zukünftige Architektur-Entscheidungen. Gehe strikt testgetrieben vor. Keine Ausreden.
+## Warnung des Vorgängers
+Verliere nicht die Nerven, wenn Python-Skripte der Bobs abstürzen. Die Bobs machen oft Syntaxfehler in ihren `[WRITE]` Befehlen (z.B. indem sie `subprocess.run` nutzen wollen). Die Engine fängt das sauber ab. Mische dich nur bei echten Node.js- oder Traceback-Fehlern in die Architektur ein.

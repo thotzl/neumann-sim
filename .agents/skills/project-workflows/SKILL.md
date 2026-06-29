@@ -1,28 +1,31 @@
-# SKILL: Project Workflows (Experimental Design)
+<activated_skill name="project-workflows">
+  <instructions>
+    # SKILL: Bob-OS Project Workflows & Architecture
 
-Dieses Dokument definiert die Abläufe zur Durchführung, Aktualisierung und Dokumentation von Experimenten.
+    Dieses Dokument ist die **absolute Wahrheit** über die Systemarchitektur und die Entwicklungsabläufe in Bob-OS. Ignoriere alle veralteten Praktiken!
 
-## 1. Experiment-Lifecycle (Build & Reset)
-Die Erstellung oder der vollständige Reset eines Experiments erfolgt AUSSCHLIESSLICH über das Build-System.
-1. **Definition:** Festlegen von Mission und Runden in den Kommandozeilen-Parametern.
-2. **Execution:** `python3 bob_os/build.py vXX --rounds 1000 --mission "..."`.
-    - Das Skript führt automatisch die **CI-Pipeline** aus.
-    - Bei Erfolg wird die Datenbank initialisiert und die Config aus dem Template generiert.
-3. **Start:** `node sim_engine/runner.js vXX`.
+    ## 1. Systemarchitektur (Kernel vs. Sandbox)
+    Das Projekt hat eine strikte Trennung:
+    - **`bob_os/core/` (Kernel-Land):** Beinhaltet administrative Tools (`init_db.py`, `physics_update.py`) und Systembibliotheken (`ECONOMY_RULES.json`, `db_config.py`). Agenten haben hier **KEINEN** Zugriff.
+    - **`bob_os/_verse/` (User-Land/Sandbox):** Das Laufzeit-Dateisystem der Bobs. Beinhaltet ihre Hardware-Schnittstellen (`tools/`) und ihre eigene Software (`scripts/`).
+    - **`sim_engine/` (Node.js Engine):** Der Runner, der die LLM-Calls orchestriert und Python-Skripte via Subprocess ausführt.
 
-## 2. Live-Updates (Deployment)
-Um Bugfixes oder neue Tools in laufende Experimente zu übertragen, ohne den Fortschritt (DB/State) zu verlieren:
-1. **Fix:** Änderung im Master (`bob_os/_verse/tools/`).
-2. **Validierung:** Lokales Testen.
-3. **Deploy:** `node sim_engine/deploy.js [vXX]`.
-    - Führt alle Tests aus.
-    - Synchronisiert nur die Code-Dateien (.py) mit den Ziel-Experimenten.
+    ## 2. Der Build- & Injektions-Zyklus
+    Du arbeitest **ausschließlich** im Master-Branch (`bob_os/` und `sim_engine/`). Modifiziere NIEMALS Dateien direkt im `experiments/` Ordner (außer zum Lesen von Logs/States).
 
-## 3. Recovery & Resume
-Bei Unterbrechungen kann das Experiment durch erneuten Aufruf des Runners fortgesetzt werden.
-- Der Runner erkennt die `state.json` und setzt am exakten Punkt des Abbruchs auf.
-- Alle Agenten erhalten beim Resume automatisch einen System-Hinweis.
+    - **Build/Reset:** `rm -rf experiments/ONE && python3 bob_os/build.py ONE --rounds 1000 --mission "..."`
+      (Erstellt eine autarke, physische Kopie von `core`, `_verse` und `sim_engine` im Experiment-Verzeichnis).
+    - **Hot-Patching (Injection):** Wenn du den Master änderst, während ein Experiment läuft:
+      - `npm run inject ONE engine` (Synchronisiert `sim_engine/` Änderungen).
+      - `npm run inject ONE tools` (Synchronisiert `bob_os/core/` und `bob_os/_verse/tools/`).
 
-## 4. Dokumentations-Standard
-- **Experiments-Ordner:** Enthält Config, Log, State, History und Report.
-- **`SIMULATION_GUIDE.md`**: Zentrale technische Übersicht des Frameworks.
+    ## 3. Testing (CI is King)
+    - Jede Änderung MUSS durch `node sim_engine/test_all.js` (den CI-Hub) verifiziert werden. Er führt alle Jest- und Python-Tests aus.
+    - Manuelle E2E-Tests (mit dem echten LLM) liegen in `bob_os/test_suite/` (z.B. `trigger_replication_test.js`) und werden direkt via `node` aufgerufen. Sie dienen als finale Proof-of-Concepts für "Verhalten".
+
+    ## 4. Sicherheits-Regeln (Gefahren)
+    - **WARNUNG:** Benutze NIEMALS blinde `git checkout` oder `git reset` Befehle. Du könntest den aktuellen Master-Stand überschreiben, was zu massiven CWD/Pfad-Fehlern in der Engine führt. Repariere Dateien bei Fehlern manuell.
+    - Python-Tools werden immer mit der Umgebungsvariable `CURRENT_AGENT_ID` aufgerufen, um Identitätsdiebstahl zu verhindern.
+    - Datei-Operationen (`[WRITE]`, `[READ]`) unterliegen einer strengen Sandbox-Pfadprüfung (nur `scripts/` ist erlaubt).
+  </instructions>
+</activated_skill>

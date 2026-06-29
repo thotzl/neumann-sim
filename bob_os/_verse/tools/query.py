@@ -1,7 +1,7 @@
 import sqlite3
 import sys
 import json
-from db_config import get_connection
+from core.lib.db_config import get_connection
 
 def query(sql):
     try:
@@ -21,7 +21,7 @@ def query(sql):
 
 if __name__ == "__main__":
     if "--help" in sys.argv:
-        print("Syntax: python3 tools/query.py \"<SQL_STATEMENT>\"")
+        print("Syntax: python3 tools/ python3 tools/query.py \"<SQL_STATEMENT>\"")
         print("Beschreibung: Führt rohe SQLite Queries aus. Tabellen: systems, agents, infrastructure, messages, knowledge_base.")
         print("Beispiel: python3 tools/query.py \"SELECT * FROM agents WHERE location='Alpha_Centauri'\"")
     elif len(sys.argv) > 1:

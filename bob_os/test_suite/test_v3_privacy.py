@@ -5,11 +5,11 @@ import json
 import sys
 
 # Pfade für Tools hinzufügen
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../_verse/tools')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import init_db
-import dashboard
-from db_config import get_connection
+from core.bin import init_db
+from _verse.tools import dashboard
+from core.lib.db_config import get_connection
 
 TEST_DB = 'test_universe_privacy.db'
 TEST_POP = 'test_population_privacy.json'
@@ -37,13 +37,7 @@ class TestBobOS_v3_Privacy(unittest.TestCase):
         conn.close()
 
         # Wir fangen den stdout von dashboard.py ab
-        import io
-        from contextlib import redirect_stdout
-        f = io.StringIO()
-        with redirect_stdout(f):
-            dashboard.get_dashboard('Bob-1')
-        
-        output = json.loads(f.getvalue())
+        output = dashboard.get_dashboard('Bob-1')
         
         # 1. Bob-2 sollte in den public agents sein, aber OHNE current_x/y
         bob2_public = next(a for a in output['agents'] if a['id'] == 'Bob-2')
@@ -56,7 +50,7 @@ class TestBobOS_v3_Privacy(unittest.TestCase):
         self.assertIn('you', output)
         self.assertEqual(output['you']['id'], 'Bob-1')
         self.assertIn('pos', output['you'])
-        self.assertEqual(output['you']['pos'][0], 0)
+        self.assertEqual(output['you']['pos']['x'], 0)
 
 if __name__ == '__main__':
     unittest.main()

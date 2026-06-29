@@ -2,12 +2,12 @@ const fs = require('fs');
 const path = require('path');
 
 // Mock api_client auf Modulebene für den gesamten Test
-jest.mock('../.agents/skills/sim-agent-loop/scripts/utils/api_client', () => ({
+jest.mock('../sim_engine/utils/api_client', () => ({
     callGemini: jest.fn()
 }));
 
-const { finalizeSimulation } = require('../.agents/skills/sim-agent-loop/scripts/utils/state_manager');
-const { callGemini } = require('../.agents/skills/sim-agent-loop/scripts/utils/api_client');
+const { finalizeSimulation } = require('../sim_engine/utils/state_manager');
+const { callGemini } = require('../sim_engine/utils/api_client');
 
 const tempDir = path.join(__dirname, 'integration_final_test');
 

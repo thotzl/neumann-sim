@@ -1,4 +1,4 @@
-const { writeLogHeader, appendTurnLog } = require('../.agents/skills/sim-agent-loop/scripts/utils/logger');
+const { writeLogHeader, appendTurnLog } = require('../sim_engine/utils/logger');
 const fs = require('fs');
 const path = require('path');
 
@@ -16,22 +16,25 @@ describe('Logger (Live FS)', () => {
     });
 
     test('writeLogHeader sollte eine neue Datei mit korrektem Header erstellen', () => {
-        const config = { model: "m", max_turns: 10, distillation_interval: 5 };
-        const agents = [{ id: "A", system_prompt: "P" }];
+        const config = { model: "m", distillation_interval: 5, global_system_instruction: "Global" };
         
-        writeLogHeader(lFile, "vTest", config, agents);
+        writeLogHeader(lFile, config, false);
         
         const content = fs.readFileSync(lFile, 'utf8');
-        expect(content).toContain('# Log vTest');
-        expect(content).toContain('### A System-Prompt');
+        expect(content).toContain(`# Log ${lFile}`);
+        expect(content).toContain('**Model:** m');
+        expect(content).toContain('Global');
     });
 
-    test('appendTurnLog sollte Turns anhängen', () => {
+    test('appendTurnLog sollte Turns anhängen inklusive Pre-Turn Events', () => {
         fs.writeFileSync(lFile, "Header\n");
-        appendTurnLog(lFile, 1, "Agent1", 1, 1, "Manifest", "FB", false);
+        const preEvents = "[SCUT EMPFANGEN]:\nHallo Welt";
+        appendTurnLog(lFile, 1, "Agent1", 1, 1, "Manifest", "FB", false, preEvents);
         
         const content = fs.readFileSync(lFile, 'utf8');
         expect(content).toContain('### Zyklus 1 - Zug Agent1');
+        expect(content).toContain('**Pre-Turn Events:**');
+        expect(content).toContain('Hallo Welt');
         expect(content).toContain('Manifest');
     });
 });

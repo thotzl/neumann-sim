@@ -31,7 +31,15 @@ class TestStateExporter(unittest.TestCase):
             passive_energy_rate INTEGER, 
             energy_rate INTEGER
         )''')
-        cursor.execute("CREATE TABLE agents (id TEXT, chosen_name TEXT, location TEXT, matter INTEGER, energy INTEGER, storage_limit INTEGER, status TEXT, birth_cycle INTEGER)")
+        cursor.execute('''CREATE TABLE agents (
+            id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, 
+            matter INTEGER DEFAULT 0, energy INTEGER DEFAULT 100, 
+            storage_limit INTEGER DEFAULT 100, status TEXT, birth_cycle INTEGER DEFAULT 0,
+            target_system TEXT DEFAULT NULL, origin_x INTEGER DEFAULT 0, origin_y INTEGER DEFAULT 0,
+            target_x INTEGER DEFAULT 0, target_y INTEGER DEFAULT 0,
+            transit_ticks_total INTEGER DEFAULT 0, transit_ticks_passed INTEGER DEFAULT 0,
+            current_x REAL DEFAULT 0, current_y REAL DEFAULT 0
+        )''')
         cursor.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER)")
         
         cursor.execute("INSERT INTO systems (name, display_name, x, y, resources, matter_cap) VALUES ('SYS-X0-Y0', 'Home', 0, 0, 1000, 2000)")

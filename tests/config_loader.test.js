@@ -1,4 +1,4 @@
-const { loadConfig, deepMerge } = require('../.agents/skills/sim-agent-loop/scripts/utils/config_loader');
+const { loadConfig, deepMerge } = require('../sim_engine/utils/config_loader');
 const fs = require('fs');
 const path = require('path');
 

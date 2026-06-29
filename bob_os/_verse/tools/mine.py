@@ -1,9 +1,12 @@
 import sqlite3
 import sys
-from db_config import get_connection
-from core import agent_service
+from core.lib.db_config import get_connection
+from core.lib import agent_service, config_service
 
 def mine(agent_id):
+    rules = config_service.get_economy_rules()
+    cost = rules.get('tool_costs', {}).get('mine', {}).get('energy', 30)
+    
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -11,8 +14,8 @@ def mine(agent_id):
     if not agent: return
     if not agent_service.require_active_status(agent, 'Abbau'): return
 
-    if agent['energy'] < 15:
-        print("[FEHLER] Batterie leer (braucht 15 Energie).")
+    if agent['energy'] < cost:
+        print(f"[FEHLER] Batterie leer (braucht {cost} Energie).")
         return
         
     if agent['matter'] >= agent['storage_limit']:
@@ -27,16 +30,18 @@ def mine(agent_id):
 
     amount = min(100, res[0], agent['storage_limit'] - agent['matter'])
     cursor.execute("UPDATE systems SET resources = resources - ? WHERE name = ?", (amount, agent['location']))
-    cursor.execute("UPDATE agents SET matter = matter + ?, energy = energy - 15 WHERE id = ?", (amount, agent['id']))
+    cursor.execute("UPDATE agents SET matter = matter + ?, energy = energy - ? WHERE id = ?", (amount, cost, agent['id']))
     
     conn.commit()
     conn.close()
-    print(f"[ERFOLG] {amount} Materie abgebaut. Energie -15. Standort: {agent['location']}.")
+    print(f"[ERFOLG] {amount} Materie abgebaut. Energie -{cost}. Standort: {agent['location']}.")
 
 if __name__ == "__main__":
     if "--help" in sys.argv:
+        rules = config_service.get_economy_rules()
+        cost = rules.get('tool_costs', {}).get('mine', {}).get('energy', 30)
         print("Syntax: python3 tools/mine.py <deine_id>")
-        print("Beschreibung: Baut Materie am aktuellen Standort ab. Kostet 15 Energie.")
+        print(f"Beschreibung: Baut Materie am aktuellen Standort ab. Kostet {cost} Energie.")
     elif len(sys.argv) > 1:
         mine(sys.argv[1])
     else:

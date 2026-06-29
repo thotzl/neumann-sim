@@ -1,4 +1,4 @@
-const { buildAgentContext, callGemini } = require('../.agents/skills/sim-agent-loop/scripts/utils/api_client');
+const { buildAgentContext, callGemini } = require('../sim_engine/utils/api_client');
 
 global.fetch = jest.fn();
 
@@ -30,14 +30,13 @@ describe('API Client - Context & Communication', () => {
 
         test('sollte Langzeitgedächtnis injizieren', () => {
             const ctx = buildAgentContext('A', [], "ALTES WISSEN", "E", "G", "I", false);
-            expect(ctx.contents[0].parts[0].text).toContain("[KOLLEKTIVES GEDÄCHTNIS]");
+            expect(ctx.contents[0].parts[0].text).toContain("[GEDÄCHTNIS-EXTRAKT]");
             expect(ctx.contents[0].parts[0].text).toContain("ALTES WISSEN");
         });
 
         test('sollte Formraum injizieren', () => {
             const ctx = buildAgentContext('A', [], "M", "DATEI-LISTE", "G", "I", false);
-            expect(ctx.contents[0].parts[0].text).toContain("[FORMRAUM]");
-            expect(ctx.contents[0].parts[0].text).toContain("DATEI-LISTE");
+            expect(ctx.system_instruction.parts[0].text).toContain("DATEI-LISTE");
         });
     });
 

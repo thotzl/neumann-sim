@@ -1,4 +1,4 @@
-const { validateConfig, validateEnvironment } = require('../.agents/skills/sim-agent-loop/scripts/utils/validator');
+const { validateConfig, validateEnvironment } = require('../sim_engine/utils/validator');
 const fs = require('fs');
 const path = require('path');
 

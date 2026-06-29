@@ -6,7 +6,7 @@ const path = require('path');
 const vArg = process.argv.find(arg => arg.startsWith('--v='));
 const version = vArg ? vArg.split('=')[1] : 'v48';
 
-const universeDir = path.resolve(__dirname, `../experiments/${version}/_verse`);
+const experimentDir = path.resolve(__dirname, `../experiments/${version}`);
 
 const server = http.createServer((req, res) => {
     // CORS Header
@@ -26,8 +26,8 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const data = JSON.parse(body);
-                if (data.message && fs.existsSync(universeDir)) {
-                    const msgFile = path.join(universeDir, 'creator_msg.txt');
+                if (data.message && fs.existsSync(experimentDir)) {
+                    const msgFile = path.join(experimentDir, 'creator_msg.txt');
                     // Schreibe die Nachricht in die Datei
                     fs.writeFileSync(msgFile, data.message);
                     res.writeHead(200, { 'Content-Type': 'application/json' });

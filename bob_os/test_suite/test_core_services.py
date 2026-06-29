@@ -3,8 +3,8 @@ import os
 import sys
 import math
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../_verse/tools')))
-from core import physics_service
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from core.lib import physics_service
 
 class TestCoreServices(unittest.TestCase):
     

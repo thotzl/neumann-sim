@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 export type Agent = {
   id: string;
+  parent_id?: string | null;
   chosen_name: string;
   location: string | null;
   matter: number;
@@ -9,6 +10,7 @@ export type Agent = {
   storage_limit: number;
   status: string;
   last_manifestation: string;
+  birth_cycle: number;
   current_x: number;
   current_y: number;
   origin_x: number;
@@ -16,10 +18,7 @@ export type Agent = {
   target_x: number;
   target_y: number;
   target_system: string | null;
-  sensors?: {
-    pos: [number, number];
-    transit: { destination: string; progress: string } | null;
-  };
+  sensors?: any;
 }
 
 export type System = {
@@ -43,7 +42,7 @@ export type WorldState = {
   timestamp: number;
   systems: System[];
   agents: Agent[];
-  events: any[];
+  events: string[];
 }
 
 interface LogEntry {
@@ -240,12 +239,32 @@ export default function App() {
       <aside className="ui-panel" style={{ position: 'absolute', top: '70px', left: '10px', bottom: '20px', width: '220px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '15px', overflowY: 'auto', padding: '10px', background: 'rgba(10, 10, 12, 0.9)', border: '1px solid #333', borderRadius: '8px' }}>
         {selectedAgentId && state.agents.find(a => a.id === selectedAgentId)?.sensors && (
           <div style={{ padding: '8px', background: 'rgba(52,152,219,0.1)', border: '1px solid #3498db', borderRadius: '4px', marginBottom: '5px' }}>
-            <div style={{ fontSize: '0.7rem', color: '#3498db', fontWeight: 'bold', marginBottom: '5px' }}>{selectedAgentId.toUpperCase()}'S SENSORS</div>
-            <div style={{ fontSize: '0.65rem' }}>POS: ({Math.round(state.agents.find(a => a.id === selectedAgentId)!.sensors!.pos[0])}, {Math.round(state.agents.find(a => a.id === selectedAgentId)!.sensors!.pos[1])})</div>
-            {state.agents.find(a => a.id === selectedAgentId)!.sensors!.transit && (
-                <div style={{ fontSize: '0.65rem', color: '#f1c40f', marginTop: '4px' }}>
-                  MOVING TO: {state.agents.find(a => a.id === selectedAgentId)!.sensors!.transit!.destination}<br/>
-                  ETA: {state.agents.find(a => a.id === selectedAgentId)!.sensors!.transit!.progress}
+            <div style={{ fontSize: '0.7rem', color: '#3498db', fontWeight: 'bold', marginBottom: '5px' }}>{selectedAgentId?.toUpperCase()}'S SENSORS</div>
+            <div style={{ fontSize: '0.55rem', color: '#888', marginBottom: '4px' }}>
+              NAME: {state.agents.find(a => a.id === selectedAgentId)?.sensors?.chosen_name || 'Unnamed'}<br/>
+              STATUS: <span style={{color: state.agents.find(a => a.id === selectedAgentId)?.sensors?.status === 'active' ? '#00ff00' : '#f1c40f'}}>{(state.agents.find(a => a.id === selectedAgentId)?.sensors?.status || 'UNKNOWN').toUpperCase()}</span><br/>
+              LOC: {state.agents.find(a => a.id === selectedAgentId)?.sensors?.location || 'Deep Space'}<br/>
+              AGE: Tick {state.agents.find(a => a.id === selectedAgentId)?.sensors?.birth_cycle || 0}<br/>
+              {state.agents.find(a => a.id === selectedAgentId)?.sensors?.parent_id && (
+                <span style={{ background: '#555', color: '#eee', padding: '1px 3px', borderRadius: '2px', fontSize: '0.45rem', display: 'inline-block', marginTop: '2px' }}>
+                  KLON VON {state.agents.find(a => a.id === selectedAgentId)?.sensors?.parent_id?.toUpperCase()}
+                </span>
+              )}
+            </div>
+            
+            <div style={{ fontSize: '0.65rem', marginTop: '6px' }}>POS: ({Math.round(state.agents.find(a => a.id === selectedAgentId)?.sensors?.pos?.x || 0)}, {Math.round(state.agents.find(a => a.id === selectedAgentId)?.sensors?.pos?.y || 0)})</div>
+            <div style={{ fontSize: '0.65rem', color: '#a8c7fa' }}>
+              INV: {state.agents.find(a => a.id === selectedAgentId)?.sensors?.inventory?.matter || 0}/{state.agents.find(a => a.id === selectedAgentId)?.sensors?.inventory?.matter_limit || 0}M, {state.agents.find(a => a.id === selectedAgentId)?.sensors?.inventory?.energy || 0}/{state.agents.find(a => a.id === selectedAgentId)?.sensors?.inventory?.energy_limit || 0}E
+            </div>
+            
+            {state.agents.find(a => a.id === selectedAgentId)?.sensors?.transit ? (
+                <div style={{ fontSize: '0.65rem', color: '#f1c40f', marginTop: '4px', borderTop: '1px solid #444', paddingTop: '4px' }}>
+                  MOVING TO: {state.agents.find(a => a.id === selectedAgentId)!.sensors!.transit.destination}<br/>
+                  ETA: {state.agents.find(a => a.id === selectedAgentId)!.sensors!.transit.progress_ticks}/{state.agents.find(a => a.id === selectedAgentId)!.sensors!.transit.total_ticks}
+                </div>
+            ) : (
+                <div style={{ fontSize: '0.55rem', color: '#555', marginTop: '4px', borderTop: '1px solid #444', paddingTop: '4px' }}>
+                  PREVIEWS: {state.agents.find(a => a.id === selectedAgentId)?.sensors?.travel_previews?.length || 0} ROUTES
                 </div>
             )}
             <button onClick={() => setSelectedAgentId(null)} style={{ marginTop: '8px', fontSize: '0.6rem', padding: '2px 5px', background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '3px', cursor: 'pointer', width: '100%' }}>DESELECT</button>
@@ -275,7 +294,7 @@ export default function App() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: a.id === selectedAgentId ? '#3498db' : '#fff' }}>{a.id}</div>
-                      <div style={{ fontSize: '0.55rem', color: '#555' }}>{a.status.toUpperCase()}</div>
+                      <div style={{ fontSize: '0.55rem', color: '#555' }}>{(a.status || 'unknown').toUpperCase()}</div>
                   </div>
                 </div>
               ))}
@@ -283,6 +302,17 @@ export default function App() {
           );
         })}
       </aside>
+
+      {/* GLOBAL SYSTEM EVENTS */}
+      {state.events && state.events.length > 0 && (
+        <div style={{ position: 'absolute', top: '70px', right: '350px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '5px', pointerEvents: 'none' }}>
+          {state.events.slice(-5).map((e, idx) => (
+            <div key={`event-${idx}`} style={{ background: 'rgba(46, 204, 113, 0.2)', border: '1px solid #2ecc71', color: '#2ecc71', padding: '5px 10px', borderRadius: '4px', fontSize: '0.65rem', backdropFilter: 'blur(5px)', boxShadow: '0 0 10px rgba(46, 204, 113, 0.3)' }}>
+              {e}
+            </div>
+          ))}
+        </div>
+      )}
 
       <aside className="ui-panel" style={{ position: 'absolute', top: '70px', right: '10px', bottom: '20px', width: '320px', zIndex: 10, background: 'rgba(10, 10, 12, 0.95)', border: '1px solid #333', borderRadius: '8px', padding: '10px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         <div style={{ color: '#555', fontSize: '0.7rem', letterSpacing: '1px', marginBottom: '10px', textTransform: 'uppercase', borderBottom: '1px solid #333', paddingBottom: '5px' }}>

@@ -1,56 +1,63 @@
-import sqlite3
 import sys
-from db_config import get_connection
+import sqlite3
+from core.lib.db_config import get_connection
+from core.lib import agent_service, config_service, system_service
 
-def deposit(agent_id, target, resource, amount):
+def deposit(agent_id, target_type, resource_type, amount):
+    rules = config_service.get_economy_rules()
+    tool_cost = rules.get('tool_costs', {}).get('deposit', {}).get('energy', 5)
+    
+    amount = int(amount)
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, location, matter, energy FROM agents WHERE id = ? OR chosen_name = ?", (agent_id, agent_id))
-    initiator = cursor.fetchone()
-    if not initiator: return
-    amount = int(amount)
-    sys_name = initiator['location']
 
-    if target.lower() == 'silo':
-        cursor.execute("SELECT * FROM systems WHERE name = ?", (sys_name,))
-        target_obj = cursor.fetchone()
-        is_agent = False
-    else:
-        cursor.execute("SELECT id, location, matter, energy, storage_limit FROM agents WHERE (id = ? OR chosen_name = ?) AND location = ?", (target, target, sys_name))
-        target_obj = cursor.fetchone()
-        is_agent = True
-        if not target_obj:
-            print(f"[FEHLER] Ziel '{target}' nicht in {sys_name} gefunden.")
-            return
-
-    init_val = initiator['matter'] if resource == "matter" else initiator['energy']
-    if init_val < amount:
-        print(f"[FEHLER] Du hast nur {init_val} {resource}. (Versuch: {amount})")
+    agent = agent_service.get_agent_or_fail(cursor, agent_id)
+    if not agent:
+        conn.close()
         return
 
-    if not is_agent:
-        current_stored = target_obj[f'{resource}_stored']
-        max_cap = target_obj[f'{resource}_cap']
-        if resource == "matter" and current_stored + amount > max_cap:
-            print(f"[FEHLER] Depot voll ({current_stored}/{max_cap}).")
-            return
-        cursor.execute(f"UPDATE systems SET {resource}_stored = {resource}_stored + ? WHERE name = ?", (amount, sys_name))
-    else:
-        limit = target_obj['storage_limit'] if resource == "matter" else 200
-        current = target_obj['matter'] if resource == "matter" else target_obj['energy']
-        if current + amount > limit: amount = limit - current
-        cursor.execute(f"UPDATE agents SET {resource} = {resource} + ? WHERE id = ?", (amount, target_obj['id']))
+    if agent['energy'] < tool_cost:
+        print(f"[DENIED] Insufficient energy ({agent['energy']}/{tool_cost}E).")
+        conn.close()
+        return
 
-    cursor.execute(f"UPDATE agents SET {resource} = {resource} - ? WHERE id = ?", (amount, initiator['id']))
+    sys_name = agent['location']
+    system = system_service.get_system_or_fail(cursor, sys_name)
+    if not system:
+        conn.close()
+        return
+
+    if resource_type == 'matter':
+        if agent['matter'] < amount:
+            print(f"[ERROR] Insufficient matter. Has {agent['matter']}, tried to deposit {amount}.")
+            conn.close()
+            return
+        
+        if system['matter_stored'] + amount > system['matter_cap']:
+            print(f"[ERROR] Silo full. Max capacity: {system['matter_cap']}.")
+            conn.close()
+            return
+        
+        cursor.execute("UPDATE agents SET matter = matter - ?, energy = energy - ? WHERE id = ?", (amount, tool_cost, agent['id']))
+        system_service.update_system_resources(cursor, sys_name, matter_change=amount)
+        print(f"[SUCCESS] {amount} matter transferred to silo. Energy -{tool_cost}.")
+
+    else:
+        print(f"[ERROR] Agents cannot deposit {resource_type} directly into the system depot.")
+        conn.close()
+        return
+
     conn.commit()
     conn.close()
-    print(f"[ERFOLG] {amount} {resource} an {target} übertragen.")
 
 if __name__ == "__main__":
     if "--help" in sys.argv:
-        print("Syntax: python3 tools/deposit.py <deine_id> <ziel_id|'silo'> <matter|energy> <menge>")
-        print("Beschreibung: Überträgt Ressourcen von deinem Inventar in ein System-Depot oder an einen anderen Agenten im gleichen System.")
-    elif len(sys.argv) > 4:
-        deposit(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
-    else:
-        print("Fehler: Syntax: python3 tools/deposit.py <id> <target|'silo'> <resource> <amount>. Nutze --help.")
+        rules = config_service.get_economy_rules()
+        cost = rules.get('tool_costs', {}).get('deposit', {}).get('energy', 5)
+        print("Syntax: python3 tools/deposit.py <agent_id> <'silo'> <matter|energy> <amount>")
+        print(f"Beschreibung: Überträgt Ressourcen von deinem Inventar in ein System-Depot (Silo). Kostet {cost} Energie.")
+        sys.exit(0)
+    if len(sys.argv) != 5:
+        print("Syntax: python3 tools/deposit.py <agent_id> <'silo'> <matter|energy> <amount>")
+        sys.exit(1)
+    deposit(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

@@ -1,5 +1,5 @@
-const { cleanSystemTags, countTotalTurns } = require('../.agents/skills/sim-agent-loop/scripts/utils/logic_helpers');
-const { TAGS } = require('../.agents/skills/sim-agent-loop/scripts/utils/constants');
+const { cleanSystemTags, countTotalTurns } = require('../sim_engine/utils/logic_helpers');
+const { TAGS } = require('../sim_engine/utils/constants');
 
 describe('Logic Helpers - Precise Tag Cleaning', () => {
     test('sollte leeren String zurückgeben, wenn Input falsy ist', () => {

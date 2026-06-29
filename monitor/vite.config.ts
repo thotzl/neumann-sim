@@ -18,7 +18,8 @@ const vogPlugin = () => ({
             const publicVerse = path.resolve(__dirname, 'public/live_verse');
             if (fs.existsSync(publicVerse) && data.message) {
                 const realVerse = fs.realpathSync(publicVerse);
-                const msgFile = path.join(realVerse, 'creator_msg.txt');
+                const expRoot = path.dirname(realVerse);
+                const msgFile = path.join(expRoot, 'creator_msg.txt');
                 fs.writeFileSync(msgFile, data.message);
                 res.setHeader('Content-Type', 'application/json');
                 res.end(JSON.stringify({ status: 'success' }));

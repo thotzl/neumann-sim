@@ -5,11 +5,11 @@ import json
 import sys
 
 # Pfade für Tools hinzufügen
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../_verse/tools')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import init_db
-import rename_system
-from db_config import get_connection
+from core.bin import init_db
+from _verse.tools import rename_system
+from core.lib.db_config import get_connection
 
 TEST_DB = 'test_universe_naming.db'
 TEST_POP = 'test_population_naming.json'
@@ -39,7 +39,7 @@ class TestBobOS_v3_Naming(unittest.TestCase):
             rename_system.rename('Bob-1', 'Heimat')
         
         output = f.getvalue()
-        self.assertTrue("[ERFOLG]" in output)
+        self.assertTrue("[SUCCESS]" in output)
         
         conn = get_connection()
         sys_name = conn.execute("SELECT display_name FROM systems WHERE name='SYS-X0-Y0'").fetchone()[0]

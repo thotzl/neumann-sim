@@ -3,12 +3,12 @@ import os
 
 def delete_file(filepath):
     if "--help" in sys.argv:
-        print("Syntax: python3 tools/delete.py <pfad_zur_datei>")
+        print("Syntax: python3 tools/ python3 tools/delete.py <pfad_zur_datei>")
         print("Beschreibung: Löscht eine Datei im Dateisystem (z.B. ein Skript in scripts/active/).")
         return
 
     if not filepath:
-        print("[FEHLER] Kein Dateipfad angegeben. Nutze --help.")
+        print("[ERROR] Kein Dateipfad angegeben. Nutze --help.")
         return
 
     # Sicherheits-Check: Nur Dateien im _verse Ordner löschen
@@ -16,22 +16,22 @@ def delete_file(filepath):
     full_path = os.path.abspath(filepath)
     
     if not full_path.startswith(base_dir):
-        print(f"[VERWEIGERT] Zugriff außerhalb des erlaubten Bereichs: {filepath}")
+        print(f"[DENIED] Zugriff außerhalb des erlaubten Bereichs: {filepath}")
         return
         
     if not os.path.exists(full_path):
-        print(f"[FEHLER] Datei '{filepath}' existiert nicht.")
+        print(f"[ERROR] Datei '{filepath}' existiert nicht.")
         return
         
     if os.path.isdir(full_path):
-        print(f"[FEHLER] '{filepath}' ist ein Verzeichnis. Kann nicht gelöscht werden.")
+        print(f"[ERROR] '{filepath}' ist ein Verzeichnis. Kann nicht gelöscht werden.")
         return
 
     try:
         os.remove(full_path)
-        print(f"[ERFOLG] Datei '{filepath}' wurde gelöscht.")
+        print(f"[SUCCESS] Datei '{filepath}' wurde gelöscht.")
     except Exception as e:
-        print(f"[FEHLER] Konnte '{filepath}' nicht löschen: {e}")
+        print(f"[ERROR] Konnte '{filepath}' nicht löschen: {e}")
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

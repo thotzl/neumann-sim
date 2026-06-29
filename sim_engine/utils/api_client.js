@@ -67,7 +67,12 @@ function buildAgentContext(agentId, history, memory, envState, globalInstruction
     contents[lastIdx].parts[0].text = memoryHeader + contents[lastIdx].parts[0].text;
 
     // SYSTEM PROMPT KONSTRUKTION (Hardware ist Teil der Instruktion!)
-    const fullSystemPrompt = `${globalInstruction}\n\n${envState}\n\n${individualPrompt}`;
+    const scriptGesetz = "[SKRIPT-GESETZ]: Wenn du ein Automatisierungs-Skript in Python schreibst, darfst du NIEMALS 'subprocess.run' verwenden, um Tools aufzurufen. Du bist in einer Sandbox. Tools werden AUSSCHLIESSLICH durch das Drucken von Engine-Tags ausgelöst. Beispiel für dein Python-Skript: print(\"[RUN: python3 tools/mine.py Bob-1]\")";
+    
+    // Bereinige den Environment State (Entferne poll_radio, falls es noch irgendwo im Text auftaucht)
+    const cleanEnvState = envState.replace(/- poll_radio\.py.*\n?/g, '');
+    
+    const fullSystemPrompt = `${globalInstruction}\n\n${cleanEnvState}\n\n${scriptGesetz}\n\n${individualPrompt}`;
 
     return {
         system_instruction: { parts: [{ text: fullSystemPrompt }] },

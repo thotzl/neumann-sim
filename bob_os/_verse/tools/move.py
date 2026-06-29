@@ -1,7 +1,7 @@
 import sqlite3
 import sys
-from db_config import get_connection
-from core import physics_service, config_service, agent_service
+from core.lib.db_config import get_connection
+from core.lib import physics_service, config_service, agent_service
 
 def move(agent_id, target):
     conn = get_connection()
@@ -14,7 +14,7 @@ def move(agent_id, target):
         return
 
     if agent['status'] == 'traveling':
-        print(f"[VERWEIGERT] Triebwerke bereits aktiv. Ziel: {agent.get('target_system') or 'unbekannt'}.")
+        print(f"[DENIED] Engines already active. Target: {agent.get('target_system') or 'unknown'}.")
         conn.close()
         return
 
@@ -31,10 +31,10 @@ def move(agent_id, target):
         target_agent = agent_service.get_agent_or_fail(cursor, target, "id, current_x, current_y")
         if target_agent:
             target_x, target_y = target_agent['current_x'], target_agent['current_y']
-            target_name = f"Abfangen: {target_agent['id']}"
+            target_name = f"Intercept: {target_agent['id']}"
 
     if target_x is None:
-        print(f"[FEHLER] Ziel '{target}' nicht identifizierbar.")
+        print(f"[ERROR] Target not identifiable.")
         conn.close()
         return
 
@@ -47,8 +47,8 @@ def move(agent_id, target):
 
     # 4. Warnsystem
     if agent['energy'] < total_energy_cost:
-        print(f"[WARNUNG] Energie ({agent['energy']}) reicht nicht für die vollständige Reise ({total_energy_cost}E).")
-        print(f"[HINWEIS] Reise wird dennoch eingeleitet. Gefahr zu stranden!")
+        print(f"[WARNING] Energy insufficient for the complete journey ({total_energy_cost}E).")
+        print(f"[HINT] Journey initiated anyway. Risk of stranding!")
     
     # 5. Reise initiieren
     cursor.execute("""
@@ -66,14 +66,14 @@ def move(agent_id, target):
     conn.commit()
     conn.close()
     
-    print(f"[ERFOLG] Reise nach {target_name} eingeleitet.")
-    print(f"[INFO] Distanz: {dist:.1f}. Dauer: {ticks_total} Ticks. Erwartete Kosten: {total_energy_cost}E.")
+    print(f"[SUCCESS] Journey initiated to.")
+    print(f"[INFO] Distance: {dist:.1f}. Duration: {ticks_total} Ticks. Expected costs: {total_energy_cost}E.")
 
 if __name__ == "__main__":
     if "--help" in sys.argv:
-        print("Syntax: python3 tools/move.py <deine_id> <ziel>")
+        print("Syntax: python3 tools/ python3 tools/move.py <deine_id> <ziel>")
         print("Beschreibung: Startet eine Reise zu einem System oder einem anderen Agenten.")
     elif len(sys.argv) > 2: 
         move(sys.argv[1], sys.argv[2])
     else:
-        print("[VERWEIGERT] Syntax: python3 tools/move.py <agent_id> <ziel>")
+        print("[DENIED] Syntax: python3 tools/move.py <agent_id> <ziel>")

@@ -6,16 +6,16 @@ import sys
 import math
 
 # Pfade für Tools hinzufügen
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../_verse/tools')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import init_db
-import mine
-import build
-import deposit
-import pickup
-import physics_update
-import move
-from db_config import get_connection
+from core.bin import init_db
+from _verse.tools import mine
+from _verse.tools import build
+from _verse.tools import deposit
+from _verse.tools import withdraw
+from core.bin import physics_update
+from _verse.tools import move
+from core.lib.db_config import get_connection
 
 TEST_DB = 'test_universe_v3_1.db'
 TEST_POP = 'test_population_v3_1.json'
@@ -24,6 +24,8 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
+        from core.lib import config_service
+        cls.rules = config_service.get_economy_rules()
         os.environ['TEST_DB_PATH'] = TEST_DB
         os.environ['TEST_POP_PATH'] = TEST_POP
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
@@ -44,7 +46,7 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         conn.close()
 
     def test_02_move_initiation(self):
-        # Erstelle ein Zielsystem bei (600, 0) -> Distanz 600 -> 2 Ticks bei Speed 300
+        # Erstelle ein Zielsystem bei (600, 0) -> Distanz 600
         conn = get_connection()
         conn.execute("INSERT INTO systems (name, x, y, resources) VALUES ('SYS-X600-Y0', 600, 0, 1000)")
         conn.commit()
@@ -56,13 +58,13 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         self.assertEqual(agent['status'], 'traveling')
         self.assertIsNone(agent['location'])
         self.assertEqual(agent['target_system'], 'SYS-X600-Y0')
+        # Speed 300 -> 2 Ticks
         self.assertEqual(agent['transit_ticks_total'], 2)
         conn.close()
 
     def test_03_transit_interpolation(self):
         conn = get_connection()
-        # Bob-1 ist bei (0,0), Ziel (600,0), ticks_total=2, ticks_passed=0, energy=85 (nach mine in anderem test?)
-        # Wir setzen energy fest für Vorhersagbarkeit
+        # Bob-1 ist bei (0,0), Ziel (600,0), ticks_total=2, ticks_passed=0, energy=100
         conn.execute("UPDATE agents SET energy=100, transit_ticks_passed=0 WHERE id='Bob-1'")
         conn.commit()
         conn.close()
@@ -74,8 +76,13 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         agent = conn.execute("SELECT current_x, current_y, transit_ticks_passed, energy, status FROM agents WHERE id='Bob-1'").fetchone()
         self.assertEqual(agent['current_x'], 300) # 600 * (1/2)
         self.assertEqual(agent['transit_ticks_passed'], 1)
-        # Kosten: (600*0.1)/2 + 5 (idle) = 30 + 5 = 35. 100 - 35 = 65.
-        self.assertEqual(agent['energy'], 65)
+        
+        # Kosten: (Distanz * move_per_unit) / ticks_total + idle_drain
+        move_cost = (600 * self.rules['tool_costs']['move_per_unit']['energy']) / 2
+        idle_drain = self.rules['agent_limits']['energy_drain_idle']
+        expected_energy = 100 - (move_cost + idle_drain)
+        
+        self.assertEqual(agent['energy'], expected_energy)
         self.assertEqual(agent['status'], 'traveling')
         conn.close()
         
@@ -87,8 +94,12 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         self.assertEqual(agent['current_x'], 600)
         self.assertEqual(agent['status'], 'active')
         self.assertEqual(agent['location'], 'SYS-X600-Y0')
-        # Kosten: 65 - 35 = 30. Danach aktive Regeneration (+10 - 5 = +5) -> 35.
-        self.assertEqual(agent['energy'], 35)
+        
+        # Ankunftskosten + passive Regeneration (regen_base - idle_drain)
+        regen = self.rules['agent_limits']['energy_regen_base'] - self.rules['agent_limits']['energy_drain_idle']
+        final_energy = max(0, expected_energy - (move_cost + idle_drain)) + regen
+        
+        self.assertEqual(agent['energy'], final_energy)
         conn.close()
 
     def test_04_transit_tool_guards(self):
@@ -101,7 +112,7 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         conn.commit()
 
         # Tools im Transit testen (sollten alle fehlschlagen/verweigert werden)
-        import mine, build, replicate, scan
+        from _verse.tools import mine, build, replicate, scan
         mine.mine('Bob-1')
         build.build('Bob-1', 'matter_silo')
         replicate.replicate('Bob-1', 'Bob-99', 'Test')
@@ -129,7 +140,7 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         agent = conn.execute("SELECT target_x, target_y, target_system FROM agents WHERE id='Bob-1'").fetchone()
         self.assertEqual(agent['target_x'], 300)
         self.assertEqual(agent['target_y'], 400)
-        self.assertTrue('Abfangen' in agent['target_system'])
+        self.assertTrue('Intercept' in agent['target_system'])
         conn.close()
 
 if __name__ == '__main__':

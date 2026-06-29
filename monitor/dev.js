@@ -29,7 +29,7 @@ console.log(`🚀 Starte Monitor für Experiment: ${version}`);
 console.log(`🔗 Link: public/live_verse -> experiments/${version}/_verse`);
 
 // VoG API Server starten
-const vogServer = spawn('node', ['vog_server.js', `--v=${version}`], {
+const vogServer = spawn('node', ['vog_server.cjs', `--v=${version}`], {
     stdio: 'inherit',
     shell: true
 });

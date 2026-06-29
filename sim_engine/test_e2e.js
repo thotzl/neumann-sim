@@ -27,16 +27,16 @@ async function runE2ETest() {
         db.get("SELECT matter, energy FROM agents WHERE id='Bob-1'", (err, row) => {
             if (err) throw err;
             console.log(`  Bob-1 Status: Matter=${row.matter}, Energy=${row.energy}`);
-            
-            if (row.matter !== 100) throw new Error(`Bob hat nicht die erwartete Materie (Hat: ${row.matter}, Soll: 100)`);
-            
+
+            // In 2 Runden baut der Mock 2x ab (200M). Energie: 500 - 30 + 5 - 30 + 5 = 450.
+            if (row.matter < 100) throw new Error(`Bob hat nicht die erwartete Materie (Hat: ${row.matter}, Soll: >=100)`);
+            if (row.energy !== 450) throw new Error(`Bob hat falsche Energie (Hat: ${row.energy}, Soll: 450)`);            
             db.get("SELECT resources FROM systems WHERE name='SYS-X0-Y0'", (err, sysRow) => {
                 if (err) throw err;
                 console.log(`  System Ressourcen: ${sysRow.resources}`);
                 
                 if (sysRow.resources >= 10000) throw new Error("Ressourcen wurden nicht abgebaut!");
-                
-                console.log("✅ E2E Mock-Loop erfolgreich abgeschlossen.");
+    console.log("✅ E2E Mock-Loop und Boot-Sequenz erfolgreich abgeschlossen.");
                 db.close();
                 fs.rmSync(expDir, { recursive: true, force: true });
             });

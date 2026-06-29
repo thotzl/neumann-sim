@@ -1,8 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-// Manueller .env Parser
-const envPath = path.join(__dirname, '../.env');
+// Manueller .env Parser (sucht iterativ nach oben)
+let envPath = path.join(__dirname, '.env');
+let currentDir = __dirname;
+while (!fs.existsSync(envPath) && currentDir !== path.parse(currentDir).root) {
+    currentDir = path.dirname(currentDir);
+    envPath = path.join(currentDir, '.env');
+}
+
 if (fs.existsSync(envPath)) {
     const envFile = fs.readFileSync(envPath, 'utf8');
     envFile.split('\n').forEach(line => {
@@ -18,16 +24,30 @@ const apiClient = require('./utils/api_client');
 const stateManager = require('./utils/state_manager');
 const logger = require('./utils/logger');
 const stateExporter = require('./utils/state_exporter');
-const { TAGS } = require('./utils/constants');
+
+// --- Neu ausgelagerte Services ---
+const bootstrapper = require('./utils/bootstrapper');
+const automation = require('./utils/automation');
+const vogService = require('./utils/vog');
+const memoryCtrl = require('./utils/memory_controller');
+const { runPython } = require('./utils/python_executor');
+// ---------------------------------
 
 async function run() {
     const version = process.argv[2];
-    if (!version) {
-        console.error("Bitte Version angeben (z.B. v38)");
+    let vDir;
+
+    if (version) {
+        vDir = path.join(process.cwd(), 'experiments', version);
+    } else {
+        vDir = path.dirname(__dirname); 
+    }
+
+    if (!fs.existsSync(vDir)) {
+        console.error(`Experiment-Verzeichnis nicht gefunden: ${vDir}`);
         process.exit(1);
     }
 
-    const vDir = path.join(__dirname, '../experiments', version);
     const config = configLoader.loadConfig(
         path.join(__dirname, './core-config.json'),
         path.join(vDir, 'config.json')
@@ -40,172 +60,177 @@ async function run() {
     const populationFile = path.join(universeDir, 'population.json');
     const logFile = path.join(vDir, config.log || 'log.md');
 
-    function syncPopulation(file, state) {
-        if (!fs.existsSync(file)) {
-            const initialPop = { 
-                version: 1, 
-                agents: state.agents.filter(a => a.alive).map(a => ({
-                    id: a.id, location: a.location || ".", system_prompt: a.system_prompt, status: "active" 
-                }))
-            };
-            fs.writeFileSync(file, JSON.stringify(initialPop, null, 2));
-            return;
-        }
-        try {
-            const data = fs.readFileSync(file, 'utf8');
-            const popData = JSON.parse(data);
-            if (!Array.isArray(popData.agents)) return;
-            popData.agents.forEach(pAgent => {
-                let existing = state.agents.find(a => a.id === pAgent.id);
-                if (!existing) {
-                    const fallbackPrompt = state.agents[0] ? state.agents[0].system_prompt : ".";
-                    const newAgent = {
-                        id: pAgent.id,
-                        system_prompt: pAgent.system_prompt || pAgent.prompt || fallbackPrompt,
-                        location: pAgent.location || ".",
-                        alive: pAgent.status === "active",
-                        needsResumeNotify: true
-                    };
-                    state.agents.push(newAgent);
-                    const parentId = pAgent.parent_id;
-                    if (parentId && state.histories[parentId]) {
-                        state.histories[pAgent.id] = JSON.parse(JSON.stringify(state.histories[parentId]));
-                    } else {
-                        state.histories[pAgent.id] = [];
-                    }
-                } else {
-                    existing.system_prompt = pAgent.system_prompt || pAgent.prompt || existing.system_prompt;
-                    existing.location = pAgent.location || ".";
-                    existing.alive = (pAgent.status === "active");
-                }
-            });
-        } catch (e) {}
-    }
-
     let state = stateManager.loadState(stateFile);
     if (!state) {
         state = {
-            round: 1,
+            round: 0,
             agents: config.agents.map(a => ({
-                id: a.id, system_prompt: a.system_prompt, location: a.location || ".", alive: true, needsResumeNotify: false
+                id: a.id,
+                system_prompt: a.system_prompt || a.prompt,
+                location: a.location || ".",
+                alive: true,
+                needsResumeNotify: false
             })),
             histories: {},
             turnSequence: [],
             currentTurnIndex: 0,
             totalTurns: 0,
-            isResumed: false
+            isResumed: false,
+            security: { acl: {}, wallets: {} }
         };
         state.agents.forEach(a => { state.histories[a.id] = []; });
     } else {
         state.isResumed = true;
         state.agents.forEach(a => a.needsResumeNotify = true);
+        if (!state.security) state.security = { acl: {}, wallets: {} };
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
-    let simActive = true;
+    logger.writeLogHeader(logFile, config, state.isResumed);
+    
+    // Bootstrapper: Hard-Boot / Vererbung / Population Sync
+    bootstrapper.syncPopulation(populationFile, universeDir, vDir, state, logger, logFile, state.round);
+    stateManager.saveState(stateFile, state);
 
-    for (let r = state.round; r <= config.rounds && simActive; r++) {
-        state.round = r;
-        console.log(`Zyklus ${r}/${config.rounds}...`);
-        syncPopulation(populationFile, state);
-        state.turnSequence = state.agents.filter(a => a.alive).map(a => a.id);
-        
-        // Log-Header schreiben falls neue Datei
-        if (!fs.existsSync(logFile)) {
-            const firstAgent = state.agents[0];
-            const envState = envManager.getEnvState(universeDir);
-            logger.writeLogHeader(logFile, config, firstAgent.system_prompt, envState);
-        }
-
-        while (state.currentTurnIndex < state.turnSequence.length && simActive) {
-            const agent = state.agents.find(a => a.id === state.turnSequence[state.currentTurnIndex]);
-            if (!agent || !agent.alive) { state.currentTurnIndex++; continue; }
-
-            console.log(`  Zug: ${agent.id}`);
-            const envState = envManager.getEnvState(universeDir);
-            const globalInstr = config.global_system_instruction || "";
-
-            // Distillation Logic... (abgekürzt für Stabilität)
-            const maxTurns = config.max_turns || 20;
-            if (state.histories[agent.id].length >= maxTurns) {
-                const compressed = await stateManager.runIndividualDistillation(apiUrl, state.histories[agent.id], agent.id);
-                if (compressed) state.histories[agent.id] = [{ agent: 'System', text: `[GEDÄCHTNIS-EXTRAKT]: ${compressed}` }];
-            }
-
-            const payload = apiClient.buildAgentContext(
-                agent.id, state.histories[agent.id], "", envState, globalInstr, agent.system_prompt, config.anonymity
-            );
-
-            try {
-                let reply = await apiClient.callGemini(apiUrl, payload);
-                const feedback = envManager.processActions(reply, universeDir);
-                state.histories[agent.id].push({ tick: r, agent: agent.id, text: reply, feedback: feedback });
-                state.totalTurns++;                
-                // Logge den Turn
-                logger.appendTurnLog(logFile, r, agent.id, state.totalTurns, state.histories[agent.id].length, reply, feedback);
-                
-                state.currentTurnIndex++;
-                stateManager.saveState(stateFile, state);
-                stateExporter.exportWorldState(universeDir, state, agent.id);
-            } catch (err) {
-                console.error(`Fehler bei Agent ${agent.id}: ${err.message}`);
-                simActive = false;
-            }
-        }
-        state.currentTurnIndex = 0;
-        
-        // --- AUTOMATION EXECUTION ---
-        const activeScriptsDir = path.join(universeDir, 'scripts', 'active');
-        if (fs.existsSync(activeScriptsDir)) {
-            const scripts = fs.readdirSync(activeScriptsDir).filter(f => f.endsWith('.py'));
-            let autoOutput = "";
-            for (const script of scripts) {
-                try {
-                    const out = require('child_process').execSync(`python3 scripts/active/${script}`, { cwd: universeDir, timeout: 5000 }).toString().trim();
-                    if (out) {
-                        const feedback = envManager.processActions(out, universeDir);
-                        autoOutput += `\n[Skript: ${script}]:\n${out}\n[Ergebnis]:\n${feedback}`;
-                    }
-                } catch (e) {
-                    const err = e.stderr ? e.stderr.toString() : e.message;
-                    autoOutput += `\n[Skript: ${script} FEHLGESCHLAGEN]:\n${err.trim()}`;
-                }
-            }
-            if (autoOutput) {
-                const sysFeedback = `[AUTOMATION-ERGEBNIS]:${autoOutput}`;
-                state.agents.forEach(a => {
-                    if (a.alive && state.histories[a.id]) {
-                        state.histories[a.id].push({ tick: r, agent: 'System', text: sysFeedback });
-                    }
-                });
-                // Logge das System-Event für alle sichtbar ins log.md
-                logger.appendTurnLog(logFile, r, 'System (Automation)', state.totalTurns, 0, sysFeedback, "");
-            }
-        }
-
-        // --- VOICE OF GOD (Creator Injection) ---
-        const creatorMsgFile = path.join(universeDir, 'creator_msg.txt');
-        if (fs.existsSync(creatorMsgFile)) {
-            try {
-                const msg = fs.readFileSync(creatorMsgFile, 'utf8').trim();
-                if (msg) {
-                    const creatorFeedback = `[SYSTEM-BROADCAST (Voice of God)]:\n${msg}`;
-                    state.agents.forEach(a => {
-                        if (a.alive && state.histories[a.id]) {
-                            state.histories[a.id].push({ tick: r, agent: 'Creator', text: creatorFeedback });
-                        }
-                    });
-                    console.log(`\n[VoG] Nachricht an den Schwarm gesendet: ${msg}\n`);
-                    // Logge das VoG-Event ins log.md
-                    logger.appendTurnLog(logFile, r, 'Creator', state.totalTurns, 0, creatorFeedback, "");
-                }
-                fs.unlinkSync(creatorMsgFile);
-            } catch (e) { console.error("[VoG] Fehler beim Lesen/Löschen der Nachricht:", e); }
-        }
-
-        // Physics Update am Ende der Runde
-        try { require('child_process').execSync(`python3 tools/physics_update.py`, { cwd: universeDir }); } catch (e) {}
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (!apiKey) {
+        console.error("FEHLER: Kein GEMINI_API_KEY in .env gefunden.");
+        process.exit(1);
     }
+    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + (config.config_override?.model || config.model) + ':generateContent?key=' + apiKey;
+
+    async function turn() {
+        if (state.round >= config.rounds) return false;
+
+        const activeAgents = state.agents.filter(a => a.alive);
+        if (activeAgents.length === 0) {
+            console.log("Alle Agenten offline.");
+            return false;
+        }
+
+        if (state.currentTurnIndex === 0) {
+            state.round++;
+            console.log(`\nZyklus ${state.round}/${config.rounds}...`);
+            state.turnSequence = activeAgents.map(a => a.id);
+        }
+
+        const agentId = state.turnSequence[state.currentTurnIndex];
+        const agent = state.agents.find(a => a.id === agentId);
+
+        if (!agent || !agent.alive) {
+            state.currentTurnIndex++;
+            if (state.currentTurnIndex >= state.turnSequence.length) state.currentTurnIndex = 0;
+            return true;
+        }
+
+        console.log(`  Zug: ${agent.id}`);
+        const envState = envManager.getEnvState(universeDir);
+        const globalInstr = config.global_system_instruction || "";
+
+        // Voice of God Message abfragen (Temporär, um Destillations-Löschung zu verhindern)
+        const vogMessage = vogService.processVoG(vDir);
+
+        // Memory Kompression (Destillation)
+        await memoryCtrl.handleDistillation(agent.id, state, config, apiUrl);
+
+        // Automatisierung ausführen
+        const autoOutput = automation.runAutomations(agent.id, vDir, universeDir, state);
+
+        // Auto-Radio Poll (Erzwungenes Einlesen neuer SCUT-Nachrichten)
+        let radioOutput = "";
+        try {
+            // Führt den System-Service aus dem Kernel (core/bin) aus
+            const out = runPython(vDir, `core/bin/poll_radio.py`, [agent.id], { cwd: vDir });
+            if (out && out.trim() && !out.includes("Keine neuen Nachrichten.")) {
+                radioOutput = `[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${out.trim()}`;
+            }
+        } catch (e) {
+            console.error(`[RADIO-ERROR] bei Agent ${agent.id}:`, e.message);
+        }
+
+        // Vorbereiten der Payload
+        let promptText = "";
+        let contextArray = [...state.histories[agent.id]];
+
+        if (agent.needsResumeNotify) {
+            promptText += `\n[SYSTEM NOTIFICATION]: Die Simulation wurde manuell pausiert und nun fortgesetzt. Deine letzten Gedanken und System-Zustände wurden erfolgreich rekonstruiert.\n`;
+            agent.needsResumeNotify = false;
+        }
+
+        if (autoOutput) {
+            promptText += `\n${autoOutput}\n`;
+        }
+        
+        if (radioOutput) {
+            promptText += `\n${radioOutput}\n`;
+        }
+
+        // Wallet Injection
+        const myWallet = state.security.wallets[agent.id] || {};
+        if (Object.keys(myWallet).length > 0) {
+            promptText += `\n[DEIN SCHLÜSSELBUND]: ${JSON.stringify(myWallet)}\n`;
+        } else {
+            promptText += `\n[DEIN SCHLÜSSELBUND]: Leer.\n`;
+        }
+
+        promptText += `\nAktuelle Umgebung:\n${envState}\n`;
+        
+        if (vogMessage) {
+            promptText += `\n==================================================\n`;
+            promptText += `🛑 PRIORITÄTS-OVERRIDE (VOICE OF GOD) 🛑\n`;
+            promptText += `${vogMessage}\n`;
+            promptText += `(Du MUSST diese Nachricht in deiner kommenden ANALYSE verarbeiten!)\n`;
+            promptText += `==================================================\n`;
+        }
+
+        promptText += `\nAntworte strikt im Protokoll-Format (ANALYSE, gefolgt von AKTION).`;
+        contextArray.push({ agent: "System", text: promptText });
+
+        const payload = apiClient.buildAgentContext(
+            agent.id,
+            contextArray,
+            null, // memory
+            envState,
+            globalInstr,
+            agent.system_prompt,
+            config.anonymity
+        );
+
+        let responseText = await apiClient.callGemini(apiUrl, payload);
+
+        let preTurnEvents = "";
+        if (vogMessage) preTurnEvents += `${vogMessage}\n`;
+        if (radioOutput) preTurnEvents += `[SCUT EMPFANGEN]:\n${radioOutput.replace('[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n', '')}\n`;
+        if (autoOutput) preTurnEvents += `[AUTOMATISIERUNG]:\n${autoOutput}\n`;
+
+        if (responseText) {
+            let feedback = envManager.processActions(responseText, universeDir, agent.id, state);
+            state.histories[agent.id].push({ agent: agent.id, text: responseText });
+            state.histories[agent.id].push({ agent: "System", text: feedback });
+            
+            logger.appendTurnLog(logFile, state.round, agent.id, state.totalTurns, state.histories[agent.id].length, responseText, feedback, false, preTurnEvents);
+            stateExporter.exportWorldState(universeDir, state, agent.id);
+            stateManager.saveState(stateFile, state);
+            state.totalTurns++;
+        } else {
+            console.log(`Fehler bei Agent ${agent.id}: Leere oder fehlerhafte Antwort.`);
+            return false;
+        }
+
+        state.currentTurnIndex++;
+        if (state.currentTurnIndex >= state.turnSequence.length) {
+            state.currentTurnIndex = 0;
+            
+            // Physics Update am Ende der Runde (Via Executor)
+            try { 
+                runPython(vDir, `core/bin/physics_update.py`);
+            } catch (e) {
+                console.error("[PHYSICS-ERROR] Update fehlgeschlagen:", e.message);
+            }
+        }
+        return true;
+    }
+
+    while (await turn()) {}
     console.log("Simulation beendet.");
 }
 

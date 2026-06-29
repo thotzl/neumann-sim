@@ -5,16 +5,16 @@ import json
 import sys
 
 # Pfade für Tools hinzufügen
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../_verse/tools')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import init_db
-import mine
-import build
-import deposit
-import pickup
-import physics_update
-import deconstruct
-from db_config import get_connection
+from core.bin import init_db
+from _verse.tools import mine
+from _verse.tools import build
+from _verse.tools import deposit
+from _verse.tools import withdraw
+from core.bin import physics_update
+from _verse.tools import deconstruct
+from core.lib.db_config import get_connection
 
 TEST_DB = 'test_universe_v3.db'
 TEST_POP = 'test_population_v3.json'
@@ -23,6 +23,8 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
+        from core.lib import config_service
+        cls.rules = config_service.get_economy_rules()
         os.environ['TEST_DB_PATH'] = TEST_DB
         os.environ['TEST_POP_PATH'] = TEST_POP
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
@@ -40,8 +42,12 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         mine.mine('Bob-1')
         conn = get_connection()
         res = conn.execute("SELECT energy, matter, location FROM agents WHERE id='Bob-1'").fetchone()
+        
+        start_energy = self.rules['agent_limits']['energy']
+        mine_cost = self.rules['tool_costs']['mine']['energy']
+        
         self.assertEqual(res['location'], 'SYS-X0-Y0')
-        self.assertEqual(res['energy'], 85)
+        self.assertEqual(res['energy'], start_energy - mine_cost)
         self.assertEqual(res['matter'], 100)
         conn.close()
 
@@ -64,13 +70,14 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
 
     def test_04_storage_full_edge_case(self):
         conn = get_connection()
-        conn.execute("UPDATE agents SET matter=100, energy=200 WHERE id='Bob-1'")
+        limit = self.rules['agent_limits']['matter']
+        conn.execute("UPDATE agents SET matter=?, energy=200 WHERE id='Bob-1'", (limit,))
         conn.commit()
         
         mine.mine('Bob-1')
         
         res = conn.execute("SELECT energy, matter FROM agents WHERE id='Bob-1'").fetchone()
-        self.assertEqual(res['matter'], 100)
+        self.assertEqual(res['matter'], limit)
         self.assertEqual(res['energy'], 200) # Keine Änderung da Abbau abgelehnt
         conn.close()
 

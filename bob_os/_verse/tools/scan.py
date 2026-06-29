@@ -2,42 +2,40 @@ import sqlite3
 import random
 import math
 import sys
-from db_config import get_connection
+from core.lib.db_config import get_connection
+from core.lib import config_service, agent_service
 
 def scan(agent_id):
+    rules = config_service.get_economy_rules()
+    cost = rules.get('tool_costs', {}).get('scan', {}).get('energy', 40)
+    
     conn = get_connection()
     cursor = conn.cursor()
     
     # 1. Hole Standort des Agenten
-    cursor.execute("SELECT location, energy, status FROM agents WHERE id = ? OR chosen_name = ?", (agent_id, agent_id))
-    agent = cursor.fetchone()
+    agent = agent_service.get_agent_or_fail(cursor, agent_id)
     if not agent:
-        print(f"[FEHLER] Agent {agent_id} nicht gefunden.")
         conn.close()
         return
 
     if agent['status'] == 'traveling':
-        print("[VERWEIGERT] Tiefenscan waehrend des Flugs unmoeglich. Sensoren durch Antrieb gestoert.")
+        print("[DENIED] Deep scan impossible during transit.")
         conn.close()
         return
 
-    if agent['energy'] < 20:
-        print("[VERWEIGERT] Nicht genügend Energie für Tiefenscan (braucht 20).")
+    if agent['energy'] < cost:
+        print(f"[DENIED] Insufficient energy ({agent['energy']}/{cost}E).")
         conn.close()
         return
 
     # 2. Hole Koordinaten des aktuellen Systems
     cursor.execute("SELECT x, y FROM systems WHERE name = ?", (agent['location'],))
     origin = cursor.fetchone()
-    if not origin:
-        # Fallback für unbekannte Orte (sollte nicht passieren)
-        origin_x, origin_y = 0, 0
-    else:
-        origin_x, origin_y = origin['x'], origin['y']
+    origin_x, origin_y = (origin['x'], origin['y']) if origin else (0, 0)
 
     # 3. Generiere neuen Punkt (Schrödinger-Modell)
-    # Distanz 500 - 1500, Winkel 0 - 360
-    dist = random.randint(500, 1500)
+    phys = config_service.get_physics_constants()
+    dist = random.randint(phys['scan_range_min'], phys['scan_range_max'])
     angle = random.uniform(0, 360)
     
     raw_x = origin_x + dist * math.cos(math.radians(angle))
@@ -54,22 +52,24 @@ def scan(agent_id):
     res = random.randint(1000, 5000)
     try:
         cursor.execute("INSERT INTO systems (name, x, y, resources) VALUES (?, ?, ?, ?)", (sys_id, snap_x, snap_y, res))
-        cursor.execute("UPDATE agents SET energy = energy - 20 WHERE id = ?", (agent_id,))
+        cursor.execute("UPDATE agents SET energy = energy - ? WHERE id = ?", (cost, agent['id']))
         conn.commit()
-        print(f"[SCAN] Neue Gravitations-Anomalie entdeckt: {sys_id}")
-        print(f"[INFO] Position: ({snap_x}, {snap_y}). Ressourcen-Schätzung: {res}. Energie -20.")
+        print(f"[SCAN] New gravity anomaly detected: {sys_id}")
+        print(f"[INFO] Pos: ({snap_x}, {snap_y}). Res: ~{res}. Energy -{cost}.")
     except sqlite3.IntegrityError:
-        print(f"[INFO] Scan in Sektor {sys_id} ergebnislos. Sektor bereits kartografiert.")
+        print(f"[INFO] Scan result in sector {sys_id} inconclusive. Sector already mapped.")
     except Exception as e:
-        print(f"[FEHLER] Scan fehlgeschlagen: {e}")
+        print(f"[ERROR] Scan failed: {e}")
     
     conn.close()
 
 if __name__ == "__main__":
     if "--help" in sys.argv:
+        rules = config_service.get_economy_rules()
+        cost = rules.get('tool_costs', {}).get('scan', {}).get('energy', 40)
         print("Syntax: python3 tools/scan.py <deine_id>")
-        print("Beschreibung: Scannt die Umgebung nach neuen Systemen. Nutzt Polarkoordinaten relativ zum Standort.")
+        print(f"Beschreibung: Scannt die Umgebung nach neuen Systemen. Nutzt Polarkoordinaten relativ zum Standort. Kostet {cost} Energie.")
     elif len(sys.argv) > 1:
         scan(sys.argv[1])
     else:
-        print("[VERWEIGERT] Syntax: python3 tools/scan.py <agent_id>")
+        print("[DENIED] Syntax: python3 tools/scan.py <agent_id>")

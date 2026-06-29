@@ -13,10 +13,10 @@ describe('State Manager (Advanced Integration)', () => {
         jest.resetModules();
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
         mockCallGemini = jest.fn();
-        jest.doMock('../.agents/skills/sim-agent-loop/scripts/utils/api_client', () => ({
+        jest.doMock('../sim_engine/utils/api_client', () => ({
             callGemini: mockCallGemini
         }));
-        sm = require('../.agents/skills/sim-agent-loop/scripts/utils/state_manager');
+        sm = require('../sim_engine/utils/state_manager');
     });
 
     afterEach(() => {

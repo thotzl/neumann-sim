@@ -21,6 +21,7 @@ async function start() {
     const tests = [
         { name: "Python Core Services Tests", cmd: "python3 bob_os/test_suite/test_core_services.py" },
         { name: "Python P2P Transfer Tests", cmd: "python3 bob_os/test_suite/test_transfer.py" },
+        { name: "Python V5 Identity Guard Tests", cmd: "python3 bob_os/test_suite/test_v5_identity.py" },
         { name: "Python Physics v3 (Geometry) Unit Tests", cmd: "python3 -m unittest discover -s bob_os/test_suite -p 'test_v3_*.py'" },
         { name: "Python Logistics v3.1 (Transit) Tests", cmd: "python3 bob_os/test_suite/test_v3_1_logistics.py" },
         { name: "JS Environment Core Tests", cmd: "node bob_os/test_suite/test_environment.js" },

@@ -86,10 +86,6 @@ async function run() {
     }
 
     logger.writeLogHeader(logFile, config, state.isResumed);
-    
-    // Bootstrapper: Hard-Boot / Vererbung / Population Sync
-    bootstrapper.syncPopulation(populationFile, universeDir, vDir, state, logger, logFile, state.round);
-    stateManager.saveState(stateFile, state);
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!apiKey) {
@@ -101,15 +97,19 @@ async function run() {
     async function turn() {
         if (state.round >= config.rounds) return false;
 
-        const activeAgents = state.agents.filter(a => a.alive);
-        if (activeAgents.length === 0) {
-            console.log("Alle Agenten offline.");
-            return false;
-        }
-
         if (state.currentTurnIndex === 0) {
             state.round++;
             console.log(`\nZyklus ${state.round}/${config.rounds}...`);
+            
+            // Lade neue Klone aus der JSON (Live-Spawning)
+            bootstrapper.syncPopulation(populationFile, universeDir, vDir, state, logger, logFile, state.round);
+            stateManager.saveState(stateFile, state);
+            
+            const activeAgents = state.agents.filter(a => a.alive);
+            if (activeAgents.length === 0) {
+                console.log("Alle Agenten offline.");
+                return false;
+            }
             state.turnSequence = activeAgents.map(a => a.id);
         }
 

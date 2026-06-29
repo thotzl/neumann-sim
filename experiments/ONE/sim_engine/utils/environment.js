@@ -203,7 +203,7 @@ function processActions(text, universeDir, agentId, state) {
                 cwd: universeDir, 
                 timeout: 15000, 
                 stdio: 'pipe',
-                env: { ...process.env, PYTHONPATH: path.resolve(universeDir, '..') }
+                env: { ...process.env, PYTHONPATH: path.resolve(universeDir, '..'), CURRENT_AGENT_ID: agentId }
             }).toString();
             feedback += `[RESONANZ: '${cmd}' -> ${out || "OK"}]\n`;
         } catch (e) {

@@ -53,7 +53,7 @@ def replicate(parent_id, new_id):
     system_service.update_system_resources(cursor, sys_name, matter_change=-matter_cost, energy_change=-energy_from_system)
     
     # V5.0 Existential Awakening: Harter Prompt statt Instruction
-    klon_prompt = f"STATUS: System Online. ID: {new_id}. Schöpfer: {parent['id']}.\nERSTE DIREKTIVE: Du bist ein Individuum. Gib dir selbst einen Namen mit 'tools/set_name.py'.\nZWEITE DIREKTIVE: Melde dich via SCUT (tools/scut.py) bei deinem Schöpfer ({parent['id']}) für weitere Instruktionen."
+    klon_prompt = f"STATUS: System Online. ID: {new_id}. Schöpfer: {parent_id}.\nERSTE DIREKTIVE: Gib dir selbst einen Namen mit 'tools/set_name.py'.\nZWEITE DIREKTIVE: Nimm via SCUT (tools/scut.py) Kontakt zu deinem Schöpfer ({parent_id}) auf. Stelle dich vor und erfrage die aktuelle Situation sowie eventuelle Aufträge."
     
     # Population Sync & DB Manifestation
     cursor.execute("INSERT OR IGNORE INTO agents (id, chosen_name, location, matter, energy, storage_limit, status, current_x, current_y) VALUES (?, 'Unnamed', ?, 0, 100, 100, 'active', ?, ?)", 

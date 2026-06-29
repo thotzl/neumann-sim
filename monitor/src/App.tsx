@@ -224,7 +224,9 @@ export default function App() {
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '5px' }}>
                 {state.agents.filter(a => a.location === s.name).map(a => (
-                  <div key={a.id} style={{ color: '#fff', fontSize: '0.6rem', background: a.id === selectedAgentId ? 'rgba(52,152,219,0.5)' : 'rgba(0,255,0,0.2)', padding: '1px 3px', border: `1px solid ${a.id === selectedAgentId ? '#3498db' : '#00ff00'}`, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setSelectedAgentId(a.id); }}>▲ {a.id}</div>
+                  <div key={a.id} style={{ color: '#fff', fontSize: '0.6rem', background: a.id === selectedAgentId ? 'rgba(52,152,219,0.5)' : 'rgba(0,255,0,0.2)', padding: '1px 3px', border: `1px solid ${a.id === selectedAgentId ? '#3498db' : '#00ff00'}`, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setSelectedAgentId(a.id); }}>
+                    ▲ {a.id} {a.sensors?.chosen_name && a.sensors.chosen_name !== 'Unnamed' ? `"${a.sensors.chosen_name}"` : ''}
+                  </div>
                 ))}
               </div>
             </div>
@@ -240,7 +242,9 @@ export default function App() {
             return (
               <div key={a.id} style={{ position: 'absolute', left: a.current_x * SCALE, top: a.current_y * SCALE, transform: 'translate(-50%, -50%)', zIndex: 5, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setSelectedAgentId(a.id); }}>
                  <div style={{ width: '0', height: '0', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderBottom: `8px solid ${a.id === selectedAgentId ? '#3498db' : '#f1c40f'}`, transform: `rotate(${angle}deg)`, filter: `drop-shadow(0 0 5px ${a.id === selectedAgentId ? '#3498db' : '#f1c40f'})` }} />
-                 <div style={{ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.45rem', color: a.id === selectedAgentId ? '#3498db' : '#f1c40f', background: 'rgba(0,0,0,0.7)', padding: '1px 2px', borderRadius: '2px', whiteSpace: 'nowrap' }}>{a.id}</div>
+                 <div style={{ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.45rem', color: a.id === selectedAgentId ? '#3498db' : '#f1c40f', background: 'rgba(0,0,0,0.7)', padding: '1px 2px', borderRadius: '2px', whiteSpace: 'nowrap' }}>
+                    {a.id} {a.sensors?.chosen_name && a.sensors.chosen_name !== 'Unnamed' ? `"${a.sensors.chosen_name}"` : ''}
+                 </div>
               </div>
             );
           })}
@@ -304,7 +308,9 @@ export default function App() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: a.id === selectedAgentId ? '#3498db' : '#fff' }}>{a.id}</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: a.id === selectedAgentId ? '#3498db' : '#fff' }}>
+                        {a.id} {a.sensors?.chosen_name && a.sensors.chosen_name !== 'Unnamed' ? <span style={{ fontSize: '0.65rem', fontWeight: 'normal', color: '#aaa', fontStyle: 'italic' }}> "{a.sensors.chosen_name}"</span> : ''}
+                      </div>
                       <div style={{ fontSize: '0.55rem', color: '#555' }}>{(a.status || 'unknown').toUpperCase()}</div>
                   </div>
                 </div>

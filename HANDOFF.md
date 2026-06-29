@@ -1,23 +1,32 @@
-# Handoff Report: Bob-OS Evolution (Phase 2.5 - Pending)
+# 🔐 Bob-OS Final Handoff Report (Session End)
 
-## Erreichte Meilensteine (Aktueller Stand)
-Das System ist nach einer massiven Refaktorierungs-Phase absolut stabil und modular.
-1. **Engine Modularisierung:** `sim_engine/runner.js` wurde von einem 300-Zeilen "God Object" zu einem schlanken Wrapper refaktoriert. Logik liegt in `utils/` (`bootstrapper.js`, `automation.js`, `python_executor.js`).
-2. **Kryptographische Autonomie (ACL):** Die Node.js Engine besitzt ein vollständiges Key/Wallet-System. Agenten können Skripte in `scripts/` mit `[WRITE: pfad (READ_KEY: x) (WRITE_KEY: y)]` verschlüsseln. Keys werden im `state.json` (Kernel) gespeichert und über den LLM-Prompt injiziert.
-3. **Hardcore Economy (V4.1):** Alle harten Kosten wurden in `bob_os/core/lib/ECONOMY_RULES.json` zentralisiert. Logistik (`deposit`, `withdraw`, `transfer`) kostet nun 0 Energie, Mining 30E. Kapazitäten wurden auf 300M / 500E angehoben. Ein SQL-Update-Bug in `withdraw.py` wurde behoben.
-4. **Existential Awakening (V5.3):** Die Replikation (`replicate.py`) ist entkoppelt. Klone erwachen mit einem neutralen Prompt, müssen sich selbst benennen (`set_name.py` mit `CURRENT_AGENT_ID` Schutz) und Kontakt per SCUT aufnehmen.
-5. **Live Spawning:** Klone werden nun während der Node.js Laufzeit (zu Beginn jeder Runde) in die Event-Loop eingehängt, ohne Neustart.
-6. **Frontend & Logging:** `log.md` trennt "Pre-Turn Events" (VoG, Radio, Automation) sauber ab. Das Monitor-Frontend wurde entmüllt und zeigt nur noch reine Agenten-Gedanken, gefiltert von `AKTION:` Blöcken, sowie Agenten-Namen in der Map.
+## 1. System Status: "Ready for Phase 2.5"
+The Bob-OS engine is currently in its most stable and modular state (v5.3). All core logic is separated into Kernel-Land (`core/`) and User-Land (`_verse/`).
 
-## Aktueller Status
-- Die CI (`node sim_engine/test_all.js`) ist mit ~10 Testsuiten (inklusive E2E Mocks) 100% grün.
-- Das Experiment `ONE` wurde frisch ge-resettet und steht bei Zyklus 1.
+**Active Experiment:** `ONE` (Reset to Cycle 1, clean start).
+**CI Status:** 100% Green (Run `node sim_engine/test_all.js` to verify).
 
-## Nächste Tasks (Dein Job)
-Der User möchte nun in die Phase **2.5: Agent Upgrades** übergehen.
-1. Lies dir in `bob_os/core/lib/ECONOMY_RULES.json` die Sektion `"upgrades"` durch.
-2. Das Konzept (`docs/concepts/AGENT_UPGRADE_MANIFEST.md`) sieht vor, dass Agenten ihre Hardware (Engines, Sensoren, Storage, Core) mit Materie upgraden können.
-3. Du musst das in die SQLite `agents` Tabelle einbauen und Tools (z.B. `upgrade.py`) schreiben, um diese Mechanik in die Welt zu bringen.
+## 2. Mandatory Knowledge (Blueprints)
+All technical knowledge has been distilled into **Local Skills** in `.agents/skills/`.
+**First Action for the next agent:** Activate all project-specific skills:
+`activate_skill bob-os-ops`, `activate_skill bob-os-core`, `activate_skill bob-os-economy`, `activate_skill bob-os-testing`.
 
-## Warnung des Vorgängers
-Verliere nicht die Nerven, wenn Python-Skripte der Bobs abstürzen. Die Bobs machen oft Syntaxfehler in ihren `[WRITE]` Befehlen (z.B. indem sie `subprocess.run` nutzen wollen). Die Engine fängt das sauber ab. Mische dich nur bei echten Node.js- oder Traceback-Fehlern in die Architektur ein. Keine destruktiven Git-Befehle (kein checkout/reset)!
+## 3. Key Achievements of this Session
+- **Architectural Split:** Strict separation between Agent Sandbox and Admin Kernel.
+- **V4.1 Economy:** High extraction costs, 0-cost logistics, centralized in `ECONOMY_RULES.json`.
+- **Security ACL:** Node.js-level cryptographic protection for agent scripts (Read/Write Keys).
+- **V5.3 Awakening:** Neutral clone spawning. Klone receive identity directives, not instructions.
+- **Identity Proofing:** `CURRENT_AGENT_ID` prevents Bobs from impersonating each other via CLI.
+- **Engine Refactoring:** Monolith `runner.js` split into modular utilities (`utils/`).
+
+## 4. Immediate Next Tasks
+1. **Agent Upgrades (Phase 2.5):** Implement Hardware Leveling (Storage, Engine, Sensors) as defined in `docs/concepts/AGENT_UPGRADE_MANIFEST.md` and `ECONOMY_RULES.json`.
+2. **Deep Space Navigation:** Update `move.py` to allow flying to raw X/Y coordinates.
+3. **Python Sandbox:** (Optional/Security) Implement `core/bin/sandbox.py` to block Python-level `open(..., 'w')` exploits.
+
+## 5. Defensive Directives
+- **NEVER** use `git reset --hard` or `git checkout <file>` without explicit user consent.
+- **NEVER** modify `experiments/` files directly. Always use `npm run inject`.
+- If a Python script in the automation loop throws a `SyntaxError`, it is an agent error. Let it be. Only intervene on Node.js/Engine level crashes.
+
+**The Engine is ready. The Bobs are waiting.**

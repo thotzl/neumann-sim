@@ -4,61 +4,73 @@ import sys
 import subprocess
 import sqlite3
 
+# Root-Verzeichnis finden
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(BASE_DIR)
-
-from core.bin import init_db
+from core.lib import db_config
 
 class TestUBCL(unittest.TestCase):
     def setUp(self):
-        self.test_db = os.path.join(BASE_DIR, "ubcl_test.db")
+        self.test_db = "ubcl_test.db"
         os.environ['TEST_DB_PATH'] = self.test_db
-        os.environ['BOB_ID'] = 'Bob-Alpha'
-        os.environ['PYTHONPATH'] = BASE_DIR
-
         if os.path.exists(self.test_db): os.remove(self.test_db)
-
-        init_db.init()
+        
         conn = sqlite3.connect(self.test_db)
         c = conn.cursor()
-        c.execute("INSERT OR REPLACE INTO agents (id, chosen_name, location, energy, matter, storage_limit, status) VALUES ('Bob-Alpha', 'Alpha', 'SYS-X0-Y0', 100, 50, 300, 'active')")
+        c.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL)")
+        c.execute("CREATE TABLE systems (name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, extractable_matter_in_core INTEGER, raw_matter_depot INTEGER DEFAULT 0, depot_matter_capacity INTEGER DEFAULT 0, energy_depot INTEGER DEFAULT 0, depot_energy_capacity INTEGER DEFAULT 0, matter_generation_per_cycle INTEGER DEFAULT 0, energy_generation_per_cycle INTEGER DEFAULT 0, refined_matter_depot INTEGER DEFAULT 0)")
+        c.execute("CREATE TABLE messages (sender TEXT, receiver TEXT, content TEXT)")
+        c.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1)")
+        c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
+
+        c.execute("INSERT OR REPLACE INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status) VALUES ('Bob-Alpha', 'Alpha', 'SYS-X0-Y0', 100, 50, 300, 'active')")
+        c.execute("INSERT INTO systems (name, extractable_matter_in_core, depot_energy_capacity, x, y) VALUES ('SYS-X0-Y0', 1000, 500, 0, 0)")
         conn.commit()
         conn.close()
 
     def tearDown(self):
         if os.path.exists(self.test_db): os.remove(self.test_db)
+        if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
-    def test_cli_mine(self):
+    def test_cli_mine_functional(self):
         env = os.environ.copy()
         env['PYTHONPATH'] = BASE_DIR
+        env['BOB_ID'] = 'Bob-Alpha'
+        
+        # Teste Unified Functional Syntax via CLI
         cmd = [sys.executable, os.path.join(BASE_DIR, 'core', 'bin', 'bob.py'), 'mine()']
         result = subprocess.run(cmd, capture_output=True, text=True, env=env)
         
-        # Hartes Debugging: Wenn es kein SUCCESS gab, wirf eine Exception mit allem, was wir haben
+        # Debugging: Wenn es kein SUCCESS gab, wirf eine Exception mit allem, was wir haben
         if "[SUCCESS]" not in result.stdout:
             conn = sqlite3.connect(self.test_db)
             agent_data = conn.execute("SELECT * FROM agents").fetchall()
             sys_data = conn.execute("SELECT * FROM systems").fetchall()
             conn.close()
-            
-            raise RuntimeError(
-                f"\nCLI MINE FAILED.\n"
-                f"STDOUT: {result.stdout}\n"
-                f"STDERR: {result.stderr}\n"
-                f"RETURN CODE: {result.returncode}\n"
-                f"DB AGENTS: {agent_data}\n"
+            raise Exception(
+                f"CLI Mine failed. STDOUT: {result.stdout}, STDERR: {result.stderr}, "
+                f"DB AGENTS: {agent_data}, "
                 f"DB SYSTEMS: {sys_data}"
             )
             
-        self.assertIn("[SUCCESS]", result.stdout)
+        self.assertIn('[SUCCESS] 100 matter mined', result.stdout)
+
+    def test_cli_scut_keywords(self):
+        env = os.environ.copy()
+        env['PYTHONPATH'] = BASE_DIR
+        env['BOB_ID'] = 'Bob-Alpha'
+        # Teste, ob der Parser receiver_id und message korrekt an die SDK weitergibt
+        cmd = [sys.executable, os.path.join(BASE_DIR, 'core', 'bin', 'bob.py'), 'scut(receiver_id=Bob-Alpha, message=Test)']
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        self.assertIn('[SUCCESS] Message sent.', result.stdout)
 
     def test_cli_storage(self):
         env = os.environ.copy()
         env['PYTHONPATH'] = BASE_DIR
+        env['BOB_ID'] = 'Bob-Alpha'
         cmd = [sys.executable, os.path.join(BASE_DIR, 'core', 'bin', 'bob.py'), 'storage()']
         result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-        self.assertIn("'energy': 100", result.stdout)
+        self.assertIn('energy_inventory: 100', result.stdout)
 
 if __name__ == '__main__':
     unittest.main()
-

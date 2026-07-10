@@ -1,0 +1,101 @@
+{
+  "round": 4,
+  "currentTurnIndex": 0,
+  "totalTurns": 6,
+  "agents": [
+    {
+      "id": "Bob-1",
+      "location": "SYS-A",
+      "alive": true,
+      "needsResumeNotify": false
+    },
+    {
+      "id": "Bob-2",
+      "location": "SYS-A",
+      "alive": true,
+      "needsResumeNotify": false,
+      "system_prompt": "Test Klon"
+    }
+  ],
+  "turnSequence": [
+    "Bob-1",
+    "Bob-2"
+  ],
+  "histories": {
+    "Bob-1": [
+      {
+        "agent": "System",
+        "text": "Boot"
+      },
+      {
+        "agent": "Bob-1",
+        "text": "\nANALYSE: Ich erstelle ein Skript und lade Bob-2 ein.\nAKTION:\n[WRITE: scripts/active/auto.py (READ_KEY: secret)]\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n[END]\n[RUN: bob scut(receiver_id=Bob-2, message=Der Schlüssel ist secret)]"
+      },
+      {
+        "agent": "System",
+        "text": "[ERFOLG: 'scripts/active/auto.py' manifestiert]\n[RESONANZ: 'bob scut(receiver_id=Bob-2, message=Der Schlüssel ist secret)' ::\n[SUCCESS] Message sent.]\n"
+      },
+      {
+        "agent": "Bob-1",
+        "text": "ANALYSE: Nichts.\nAKTION:\n"
+      },
+      {
+        "agent": "System",
+        "text": ""
+      },
+      {
+        "agent": "Bob-1",
+        "text": "ANALYSE: Nichts.\nAKTION:\n"
+      },
+      {
+        "agent": "System",
+        "text": ""
+      }
+    ],
+    "Bob-2": [
+      {
+        "agent": "System",
+        "text": "Boot"
+      },
+      {
+        "agent": "Bob-2",
+        "text": "\nANALYSE: Ich warte.\nAKTION:\n[RUN: bob poll()]"
+      },
+      {
+        "agent": "System",
+        "text": "[RESONANZ: 'bob poll()' ::\nOK]\n"
+      },
+      {
+        "agent": "Bob-2",
+        "text": "\nANALYSE: Ich nutze den Key, lese das Skript und fliege nach SYS-B.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: bob move(target_system=SYS-B)]"
+      },
+      {
+        "agent": "System",
+        "text": "[ERFOLG: Key 'auth' zu Schlüsselbund hinzugefügt.]\n[INHALT VON 'scripts/active/auto.py':\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n]\n[RESONANZ: 'bob move(target_system=SYS-B)' ::\n[SUCCESS] Journey initiated to SYS-B. ETA: 2 Ticks.]\n"
+      },
+      {
+        "agent": "Bob-2",
+        "text": "\nANALYSE: Ich nutze den Key, lese das Skript und fliege nach SYS-B.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: bob move(target_system=SYS-B)]"
+      },
+      {
+        "agent": "System",
+        "text": "[ERFOLG: Key 'auth' zu Schlüsselbund hinzugefügt.]\n[INHALT VON 'scripts/active/auto.py':\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n]\n[RESONANZ: 'bob move(target_system=SYS-B)' ::\n[VERWEIGERT] Engines active. Move impossible in interstellar space.]\n"
+      }
+    ]
+  },
+  "security": {
+    "acl": {
+      "scripts/active/auto.py": {
+        "owner": "Bob-1",
+        "read_key": "secret"
+      }
+    },
+    "wallets": {
+      "Bob-1": {},
+      "Bob-2": {
+        "auth": "secret"
+      }
+    }
+  },
+  "isResumed": true
+}

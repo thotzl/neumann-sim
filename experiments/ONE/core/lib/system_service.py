@@ -7,32 +7,24 @@ def get_system_or_fail(cursor, system_name):
     cursor.execute("SELECT * FROM systems WHERE name = ?", (system_name,))
     system = cursor.fetchone()
     if not system:
-        print(f"[ERROR] System {system_name} not found.")
-        return None
+        print(f"[ERROR] System '{system_name}' nicht gefunden.")
     return system
 
-def get_infrastructure_at_location(cursor, system_name, infra_type=None, status=None):
-    """
-    Sucht Infrastruktur an einem Standort. Optional gefiltert nach Typ/Status.
-    """
-    query = "SELECT * FROM infrastructure WHERE system_name = ?"
-    params = [system_name]
-    
-    if infra_type:
-        query += " AND type = ?"
-        params.append(infra_type)
-    if status:
-        query += " AND status = ?"
-        params.append(status)
-        
-    cursor.execute(query, tuple(params))
+def get_infrastructure_at_location(cursor, system_name):
+    cursor.execute("SELECT * FROM infrastructure WHERE system_name = ?", (system_name,))
     return cursor.fetchall()
 
 def update_system_resources(cursor, system_name, matter_change=0, energy_change=0):
-    """
-    Ändert Depot-Bestände eines Systems.
-    """
+    updates = []
+    params = []
+    
     if matter_change != 0:
-        cursor.execute("UPDATE systems SET matter_stored = matter_stored + ? WHERE name = ?", (matter_change, system_name))
+        updates.append("raw_matter_depot = raw_matter_depot + ?")
+        params.append(matter_change)
     if energy_change != 0:
-        cursor.execute("UPDATE systems SET energy_stored = energy_stored + ? WHERE name = ?", (energy_change, system_name))
+        updates.append("energy_depot = energy_depot + ?")
+        params.append(energy_change)
+        
+    if updates:
+        params.append(system_name)
+        cursor.execute(f"UPDATE systems SET {', '.join(updates)} WHERE name = ?", tuple(params))

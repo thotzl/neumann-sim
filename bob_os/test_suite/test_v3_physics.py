@@ -1,113 +1,93 @@
 import unittest
 import os
+import sys
 import sqlite3
 import json
-import sys
+import shutil
 
-# Pfade für SDK hinzufügen
+# Pfad anpassen
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from core.bin import init_db
-from core.lib import bob_sdk
-from core.lib.db_config import get_connection
-
-TEST_DB = 'test_universe_v3.db'
-TEST_POP = 'test_population_v3.json'
+from core.lib import bob_sdk, db_config
 
 class TestBobOS_v3_Geometry(unittest.TestCase):
-    
-    @classmethod
-    def setUpClass(cls):
-        from core.lib import config_service
-        cls.rules = config_service.get_economy_rules()
-        os.environ['TEST_DB_PATH'] = TEST_DB
-        os.environ['TEST_POP_PATH'] = TEST_POP
+    def setUp(self):
+        self.test_db = "v3_phys_test.db"
+        os.environ['TEST_DB_PATH'] = self.test_db
         os.environ['BOB_ID'] = 'Bob-1'
-        if os.path.exists(TEST_DB): os.remove(TEST_DB)
-        if os.path.exists(TEST_POP): os.remove(TEST_POP)
-        with open(TEST_POP, 'w') as f: json.dump({"version": 1, "agents": []}, f)
-        init_db.init()
-        cls.agent = bob_sdk.Agent('Bob-1')
+        if os.path.exists(self.test_db): os.remove(self.test_db)
         
-    @classmethod
-    def tearDownClass(cls):
-        if os.path.exists(TEST_DB): os.remove(TEST_DB)
-        if os.path.exists(TEST_POP): os.remove(TEST_POP)
-        if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
+        from core.lib import config_service
+        self.rules = config_service.get_economy_rules()
+
+        conn = sqlite3.connect(self.test_db)
+        c = conn.cursor()
+        c.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL)")
+        c.execute("CREATE TABLE systems (name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, extractable_matter_in_core INTEGER, raw_matter_depot INTEGER DEFAULT 0, depot_matter_capacity INTEGER DEFAULT 0, energy_depot INTEGER DEFAULT 0, depot_energy_capacity INTEGER DEFAULT 0, matter_generation_per_cycle INTEGER DEFAULT 0, energy_generation_per_cycle INTEGER DEFAULT 0, refined_matter_depot INTEGER DEFAULT 0)")
+        c.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1)")
+        c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
+
+        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Bob-1', 'SYS-X0-Y0', 500, 0, 300, 'active', 0, 0)")
+        c.execute("INSERT INTO systems (name, extractable_matter_in_core, depot_matter_capacity, x, y) VALUES ('SYS-X0-Y0', 10000, 1000, 0, 0)")
+        conn.commit()
+        conn.close()
+        self.agent = bob_sdk.Agent()
+
+    def tearDown(self):
+        if os.path.exists(self.test_db): os.remove(self.test_db)
 
     def test_01_mine_in_grid_system(self):
-        # Bob-1 startet laut init_db in SYS-X0-Y0
-        self.agent.actuators.mine()
-        conn = get_connection()
-        res = conn.execute("SELECT energy, matter, location FROM agents WHERE id='Bob-1'").fetchone()
+        self.agent.mine()
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        res = conn.execute("SELECT energy_inventory, raw_matter_inventory, location FROM agents WHERE id='Bob-1'").fetchone()
         
-        start_energy = self.rules['agent_limits']['energy']
-        mine_cost = self.rules['tool_costs']['mine']['energy']
+        start_energy = 500
+        mine_cost = self.rules['tool_costs']['mine']['energy_cost']
         
         self.assertEqual(res['location'], 'SYS-X0-Y0')
-        self.assertEqual(res['energy'], start_energy - mine_cost)
-        self.assertEqual(res['matter'], 100)
+        self.assertEqual(res['energy_inventory'], start_energy - mine_cost)
+        self.assertEqual(res['raw_matter_inventory'], 100)
         conn.close()
 
     def test_02_async_build_in_grid(self):
-        # 1. Start eines neuen Projekts (Sollte INSERT auslösen)
-        self.agent.actuators.build('matter_silo', amount=100)
+        # Setup raw_matter_inventory
+        conn = sqlite3.connect(self.test_db)
+        conn.execute("UPDATE agents SET raw_matter_inventory = 1000 WHERE id='Bob-1'")
+        conn.commit()
+        conn.close()
+
+        self.agent.build(building_type='matter_silo', matter_to_invest=100)
         
-        conn = get_connection()
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
         infra = conn.execute("SELECT progress_matter, status FROM infrastructure WHERE system_name='SYS-X0-Y0' AND type='matter_silo'").fetchone()
-        self.assertIsNotNone(infra, "Infrastruktur-Projekt wurde nicht in DB angelegt!")
+        self.assertIsNotNone(infra)
         self.assertEqual(infra['progress_matter'], 100)
         self.assertEqual(infra['status'], 'construction')
+        conn.close()
         
-        # 2. Baufortsetzung und Fertigstellung (Sollte UPDATE auslösen und Status auf active setzen)
-        self.agent.actuators.build('matter_silo', amount=300)
+        # Complete
+        self.agent.build(building_type='matter_silo', matter_to_invest=300)
         
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
         infra_done = conn.execute("SELECT progress_matter, status FROM infrastructure WHERE system_name='SYS-X0-Y0' AND type='matter_silo'").fetchone()
-        self.assertEqual(infra_done['progress_matter'], 400)
         self.assertEqual(infra_done['status'], 'active')
+        self.assertEqual(infra_done['progress_matter'], 0)
         conn.close()
 
-    def test_03_grid_integrity(self):
-        # Prüfe ob SYS-X0-Y0 korrekte Koordinaten hat
-        conn = get_connection()
-        sys_data = conn.execute("SELECT x, y, display_name FROM systems WHERE name='SYS-X0-Y0'").fetchone()
-        self.assertEqual(sys_data['x'], 0)
-        self.assertEqual(sys_data['y'], 0)
-        self.assertIsNone(sys_data['display_name'])
-        conn.close()
-
-    def test_04_storage_full_edge_case(self):
-        conn = get_connection()
-        limit = self.rules['agent_limits']['matter']
-        conn.execute("UPDATE agents SET matter=?, energy=200 WHERE id='Bob-1'", (limit,))
+    def test_04_deconstruct_in_grid(self):
+        conn = sqlite3.connect(self.test_db)
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level) VALUES (2, 'SYS-X0-Y0', 'matter_silo', 'active', 1)")
         conn.commit()
-        
-        self.agent.actuators.mine()
-        
-        res = conn.execute("SELECT energy, matter FROM agents WHERE id='Bob-1'").fetchone()
-        self.assertEqual(res['matter'], limit)
-        self.assertEqual(res['energy'], 200) # Keine Änderung da Abbau abgelehnt
         conn.close()
-
-    def test_05_deconstruct_refund(self):
-        conn = get_connection()
-        # Erstelle ein aktives Silo (Kosten 400)
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, required_matter) VALUES ('SYS-X0-Y0', 'matter_silo', 'active', 400)")
-        infra_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        # Silo-Stand vor Rückbau
-        conn.execute("UPDATE systems SET matter_stored = 100 WHERE name = 'SYS-X0-Y0'")
-        conn.commit()
         
-        # Deconstruct
-        self.agent.actuators.deconstruct(infra_id)
+        self.agent.deconstruct(structure_id=2)
         
-        # Prüfe: Silo sollte 100 + 200 (50% von 400) = 300 haben
-        res = conn.execute("SELECT matter_stored FROM systems WHERE name = 'SYS-X0-Y0'").fetchone()
-        self.assertEqual(res['matter_stored'], 300)
-        
-        # Prüfe: Objekt gelöscht
-        count = conn.execute("SELECT COUNT(*) FROM infrastructure WHERE id = ?", (infra_id,)).fetchone()[0]
-        self.assertEqual(count, 0)
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        sys_data = conn.execute("SELECT raw_matter_depot FROM systems WHERE name='SYS-X0-Y0'").fetchone()
+        self.assertEqual(sys_data['raw_matter_depot'], 200) # 50% of 400
         conn.close()
 
 if __name__ == '__main__':

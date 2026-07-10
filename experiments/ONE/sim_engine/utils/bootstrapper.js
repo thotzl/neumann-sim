@@ -54,7 +54,7 @@ function syncPopulation(populationFile, universeDir, vDir, state, logger, logFil
 import sqlite3
 import sys
 conn = sqlite3.connect(sys.argv[1])
-conn.execute("INSERT OR IGNORE INTO agents (id, chosen_name, location, matter, energy, storage_limit, status, current_x, current_y) VALUES (?, 'Unnamed', ?, 0, 100, 100, 'active', 0, 0)", (sys.argv[2], sys.argv[3]))
+conn.execute("INSERT OR IGNORE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y) VALUES (?, 'Unnamed', ?, 0, 100, 100, 'active', 0, 0)", (sys.argv[2], sys.argv[3]))
 conn.commit()
 conn.close()
 `;

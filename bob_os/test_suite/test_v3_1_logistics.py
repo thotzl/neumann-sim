@@ -35,12 +35,12 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
     def test_01_transit_initiation(self):
         # Reise von SYS-X0-Y0 nach SYS-X400-Y400
         conn = db_config.get_connection()
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, resources) VALUES ('SYS-X400-Y400', 400, 400, 5000)")
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core) VALUES ('SYS-X400-Y400', 400, 400, 5000)")
         conn.commit()
         conn.close()
 
         # Nutze die SDK!
-        success = self.agent.actuators.move('SYS-X400-Y400')
+        success = self.agent.move('SYS-X400-Y400')
         self.assertTrue(success)
         
         conn = db_config.get_connection()
@@ -51,7 +51,7 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
 
     def test_02_blocked_actions_during_transit(self):
         # Während Transit darf mine() nicht funktionieren (SDK Check)
-        success = self.agent.actuators.mine()
+        success = self.agent.mine()
         self.assertFalse(success)
 
     def test_03_arrival_after_ticks(self):

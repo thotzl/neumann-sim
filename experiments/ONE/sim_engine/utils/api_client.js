@@ -3,8 +3,12 @@ const fs = require('fs');
 async function callGemini(apiUrl, payload, retries = 3) {
     // E2E Mock Bypass
     if (process.env.E2E_MOCK === 'true') {
-        // Nur Abbau, um Ressourcen-Abnahme zu testen
-        return "[ANALYSE] Test-Lauf. [AKTION:] [RUN: bob mine]";
+        const agentId = process.env.CURRENT_MOCK_AGENT;
+        const envVarName = `E2E_MOCK_RESPONSE_${agentId ? agentId.toUpperCase().replace('-', '') : ''}`;
+        if (process.env[envVarName]) {
+            return process.env[envVarName];
+        }
+        return "[ANALYSE] Test-Lauf. [AKTION:] [RUN: bob mine()]";
     }
 
     for (let i = 0; i < retries; i++) {

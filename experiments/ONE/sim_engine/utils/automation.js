@@ -17,7 +17,7 @@ function runSystemAutomations(vDir, universeDir, state) {
 
         try {
             // Führe Skript im Namen des Besitzers aus
-            const out = runPython(vDir, `_verse/${scriptRelPath}`, [], { bobId: ownerId });
+            const out = runPython(vDir, `_verse/${scriptRelPath}`, [], { bobId: ownerId, aclState: state.security?.acl || {} });
             if (out) {
                 // Die Aktionen werden weiterhin im Kontext des Besitzers verarbeitet
                 const feedback = envManager.processActions(out, universeDir, ownerId, state);

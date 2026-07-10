@@ -14,7 +14,7 @@ try {
 
     // Manipuliere DB für Instant-Replikation (Werft + Materie)
     const dbPath = path.join(expDir, '_verse/universe.db');
-    execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); conn.execute('INSERT OR REPLACE INTO infrastructure (system_name, type, status) VALUES (\\'SYS-X0-Y0\\', \\'shipyard\\', \\'active\\')'); conn.execute('UPDATE systems SET matter_stored = 1000, matter_cap = 1000 WHERE name = \\'SYS-X0-Y0\\''); conn.execute('UPDATE agents SET energy = 200 WHERE id = \\'Bob-1\\''); conn.commit(); conn.close();"`);
+    execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); conn.execute('INSERT OR REPLACE INTO infrastructure (system_name, type, status) VALUES (\\'SYS-X0-Y0\\', \\'shipyard\\', \\'active\\')'); conn.execute('UPDATE systems SET raw_matter_depot = 1000, depot_matter_capacity = 1000 WHERE name = \\'SYS-X0-Y0\\''); conn.execute('UPDATE agents SET energy_inventory = 200 WHERE id = \\'Bob-1\\''); conn.commit(); conn.close();"`);
 
     // Schreibe eine gezielte Config für Bob-1
     const config = JSON.parse(fs.readFileSync(path.join(expDir, 'config.json'), 'utf8'));

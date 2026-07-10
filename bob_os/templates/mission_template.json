@@ -6,8 +6,7 @@
   "reproduction": true,
   "config_override": {
     "model": "gemini-2.5-flash",
-    "distillation_interval": 50,
-    "max_turns": 50
+    "token_limit": 15000
   },
   "physics_constants": {
     "travel_speed_per_tick": 300,

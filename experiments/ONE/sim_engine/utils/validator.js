@@ -2,7 +2,7 @@
  * Boot-Validator zur Sicherstellung der System-Integrität.
  */
 function validateConfig(config) {
-    const required = ['model', 'distillation_interval', 'root_name', 'global_system_instruction'];
+    const required = ['model', 'token_limit', 'root_name', 'global_system_instruction'];
     required.forEach(field => {
         if (config[field] === undefined) {
             throw new Error(`BOOT-FEHLER: Fehlendes Konfigurationsfeld: ${field}`);

@@ -1,0 +1,166 @@
+{
+  "tick": 4,
+  "total_turns": 6,
+  "last_agent": "Bob-1",
+  "timestamp": 1783730060691,
+  "systems": [
+    {
+      "name": "SYS-X0-Y0",
+      "display_name": null,
+      "x": 0,
+      "y": 0,
+      "extractable_matter_in_core": 10000,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 0,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-A",
+      "display_name": null,
+      "x": 0,
+      "y": 0,
+      "extractable_matter_in_core": 4700,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 0,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-B",
+      "display_name": null,
+      "x": 600,
+      "y": 0,
+      "extractable_matter_in_core": 5000,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 0,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": []
+    }
+  ],
+  "agents": [
+    {
+      "id": "Bob-1",
+      "chosen_name": "Original-Bob",
+      "location": "SYS-A",
+      "raw_matter_inventory": 300,
+      "energy_inventory": 440,
+      "matter_storage_capacity": 1000,
+      "status": "active",
+      "birth_cycle": 0,
+      "target_system": null,
+      "origin_x": 0,
+      "origin_y": 0,
+      "target_x": 0,
+      "target_y": 0,
+      "transit_ticks_total": 0,
+      "transit_ticks_passed": 0,
+      "current_x": 0,
+      "current_y": 0,
+      "refined_matter_inventory": 0,
+      "last_manifestation": "ANALYSE: Nichts.\nAKTION:\n",
+      "sensors": {
+        "id": "Bob-1",
+        "parent_id": null,
+        "chosen_name": "Original-Bob",
+        "status": "active",
+        "location": "SYS-A",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 0
+        },
+        "inventory": {
+          "raw_matter_inventory": 300,
+          "matter_limit": 1000,
+          "energy_inventory": 440,
+          "energy_limit": 200,
+          "refined_matter_inventory": 0
+        },
+        "transit": null,
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 0,
+            "cost": 0,
+            "ticks": 1
+          },
+          {
+            "target": "SYS-B",
+            "dist": 600,
+            "cost": 60,
+            "ticks": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "Bob-2",
+      "chosen_name": "Klon",
+      "location": "SYS-B",
+      "raw_matter_inventory": 0,
+      "energy_inventory": 390,
+      "matter_storage_capacity": 100,
+      "status": "active",
+      "birth_cycle": 0,
+      "target_system": "SYS-B",
+      "origin_x": 0,
+      "origin_y": 0,
+      "target_x": 600,
+      "target_y": 0,
+      "transit_ticks_total": 2,
+      "transit_ticks_passed": 2,
+      "current_x": 600,
+      "current_y": 0,
+      "refined_matter_inventory": 0,
+      "last_manifestation": "\nANALYSE: Ich nutze den Key, lese das Skript und fliege nach SYS-B.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: bob move(target_system=SYS-B)]",
+      "sensors": {
+        "id": "Bob-2",
+        "parent_id": "Bob-1",
+        "chosen_name": "Klon",
+        "status": "active",
+        "location": "SYS-B",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 600,
+          "y": 0
+        },
+        "inventory": {
+          "raw_matter_inventory": 0,
+          "matter_limit": 100,
+          "energy_inventory": 390,
+          "energy_limit": 200,
+          "refined_matter_inventory": 0
+        },
+        "transit": null,
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 600,
+            "cost": 60,
+            "ticks": 2
+          },
+          {
+            "target": "SYS-A",
+            "dist": 600,
+            "cost": 60,
+            "ticks": 2
+          }
+        ]
+      }
+    }
+  ],
+  "events": []
+}

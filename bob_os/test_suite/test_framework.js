@@ -35,8 +35,8 @@ function testExporterHook() {
     
     const db = new sqlite3.Database(dbPath);
     db.serialize(() => {
-        db.run("CREATE TABLE systems (name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, resources INTEGER, matter_stored INTEGER, matter_cap INTEGER, energy_stored INTEGER, energy_cap INTEGER, passive_matter_rate INTEGER, passive_energy_rate INTEGER, energy_rate INTEGER)");
-        db.run("CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, matter INTEGER, energy INTEGER, storage_limit INTEGER, status TEXT, birth_cycle INTEGER)");
+        db.run("CREATE TABLE systems (name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, extractable_matter_in_core INTEGER, raw_matter_depot INTEGER, depot_matter_capacity INTEGER, energy_depot INTEGER, depot_energy_capacity INTEGER, passive_matter_rate INTEGER, passive_energy_rate INTEGER, energy_rate INTEGER)");
+        db.run("CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, raw_matter_inventory INTEGER, energy_inventory INTEGER, matter_storage_capacity INTEGER, status TEXT, birth_cycle INTEGER)");
         db.run("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER)");
         db.run("INSERT INTO systems (name, x, y) VALUES ('SYS-X0Y0', 0, 0)");
         db.run("INSERT INTO agents (id, location) VALUES ('Bob-1', 'SYS-X0Y0')", () => {

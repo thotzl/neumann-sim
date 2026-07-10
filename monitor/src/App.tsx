@@ -1,361 +1,248 @@
 import { useState, useEffect, useRef } from 'react';
+import { WorldState, LogEntry, LogCategory, Selection } from './types';
+import { LogPanel } from './components/LogPanel';
+import { ExplorerPanel } from './components/ExplorerPanel';
+import { InspectorPanel } from './components/InspectorPanel';
 
-export type Agent = {
-  id: string;
-  parent_id?: string | null;
-  chosen_name: string;
-  location: string | null;
-  matter: number;
-  energy: number;
-  storage_limit: number;
-  status: string;
-  last_manifestation: string;
-  birth_cycle: number;
-  current_x: number;
-  current_y: number;
-  origin_x: number;
-  origin_y: number;
-  target_x: number;
-  target_y: number;
-  target_system: string | null;
-  sensors?: any;
-}
-
-export type System = {
-  name: string;
-  display_name: string | null;
-  x: number;
-  y: number;
-  resources: number;
-  energy_rate: number;
-  matter_stored: number;
-  matter_cap: number;
-  energy_stored: number;
-  energy_cap: number;
-  infra: Array<{ type: string; status: string; progress_matter: number; required_matter: number }>;
-}
-
-export type WorldState = {
-  tick: number;
-  total_turns: number;
-  last_agent: string;
-  timestamp: number;
-  systems: System[];
-  agents: Agent[];
-  events: string[];
-}
-
-interface LogEntry {
-  tick: number;
-  agentId: string;
-  text: string;
-}
-
-// Physik-Skalierung für das UI (100 Grid-Einheiten = 50 Pixel)
 const SCALE = 0.5;
+
+const getColorForId = (id: string) => {
+  const numbersOnly = id.replace(/\D+/g, '');
+  const hashSeed = numbersOnly || id;
+  let hash = 0;
+  for (let i = 0; i < hashSeed.length; i++) {
+    hash = hashSeed.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return {
+    solid: `hsl(${hue}, 70%, 50%)`,
+    glow: `hsla(${hue}, 70%, 50%, 0.5)`
+  };
+};
 
 export default function App() {
   const [state, setState] = useState<WorldState | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const lastProcessedTick = useRef<number>(-1);
+  const [filters, setFilters] = useState<Record<LogCategory, boolean>>({ thought: true, action: true, system: true, scut: true });
   
-  const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 0.8 });
+  const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
+  const mapRef = useRef<HTMLDivElement>(null);
   
+  const lastProcessedTick = useRef<number>(-1);
   const [vogMsg, setVogMsg] = useState("");
-  const [vogStatus, setVogStatus] = useState("");
-  
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
 
-  const handleSendVoG = async () => {
-      if (!vogMsg.trim()) return;
-      setVogStatus("Sending...");
-      try {
-          const res = await fetch('/api/vog', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ message: vogMsg })
-          });
-          if (res.ok) {
-              setVogStatus("Sent!");
-              setVogMsg("");
-              setTimeout(() => setVogStatus(""), 2000);
-          } else {
-              setVogStatus("Error!");
-          }
-      } catch (e) { setVogStatus("Failed."); }
+  const focusBounds = (coords: {x: number, y: number}[]) => {
+    if (!mapRef.current || coords.length === 0) return;
+    const rect = mapRef.current.getBoundingClientRect();
+    if (coords.length === 1) {
+       setCamera({ x: -coords[0].x * SCALE, y: -coords[0].y * SCALE, zoom: 1.2 });
+       return;
+    }
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    coords.forEach(c => {
+       minX = Math.min(minX, c.x * SCALE); maxX = Math.max(maxX, c.x * SCALE);
+       minY = Math.min(minY, c.y * SCALE); maxY = Math.max(maxY, c.y * SCALE);
+    });
+    const padding = 120;
+    const width = maxX - minX + padding * 2;
+    const height = maxY - minY + padding * 2;
+    const newZoom = Math.min(Math.max(0.2, Math.min(rect.width / width, rect.height / height)), 2);
+    const centerX = minX + (maxX - minX) / 2;
+    const centerY = minY + (maxY - minY) / 2;
+    setCamera({ x: -centerX, y: -centerY, zoom: newZoom });
   };
+
+  const focusAllBobs = () => {
+     if (!state) return;
+     const coords = state.agents.map(a => a.status === 'traveling' ? {x: a.current_x, y: a.current_y} : {x: state.systems.find(s => s.name === a.location)?.x || 0, y: state.systems.find(s => s.name === a.location)?.y || 0});
+     focusBounds(coords);
+  };
+
+  const focusAllSystems = () => {
+     if (!state) return;
+     focusBounds(state.systems.map(s => ({x: s.x, y: s.y})));
+  };
+
+  const focusHome = () => { setCamera({ x: 0, y: 0, zoom: 1 }); };
+
+  useEffect(() => {
+     if (state && state.tick === Math.max(0, lastProcessedTick.current) && lastProcessedTick.current < 2) {
+        focusHome();
+     }
+  }, [state]);
 
   useEffect(() => {
     const loadHistory = async () => {
-        try {
-            const res = await fetch('/live_verse/history.json');
-            if (res.ok) {
-                const historyData = await res.json();
-                setLogs(historyData);
-                if (historyData.length > 0) {
-                    lastProcessedTick.current = Math.max(...historyData.map((d: any) => d.tick === "?" ? 0 : d.tick));
-                }
-            }
-        } catch (e) { console.log("Keine Historie gefunden."); }
+      try {
+        const res = await fetch('/live_verse/history.json');
+        if (res.ok) {
+          const historyData = await res.json();
+          const parsedLogs: LogEntry[] = historyData.map((d: any, i: number) => {
+            const agentId = d.agent || d.agentId || 'System';
+            const isSystem = agentId === 'System';
+            const isScut = d.text.includes('SCUT') || d.text.includes('scut(');
+            let type: LogCategory = isSystem ? 'system' : (isScut ? 'scut' : 'action');
+            if (!isSystem && !isScut && d.text.includes('ANALYSE:')) type = 'thought';
+            return { id: `hist-${i}`, tick: d.tick === "?" ? 0 : d.tick, agentId: agentId, type, text: d.text.trim() };
+          });
+          setLogs(parsedLogs);
+          if (parsedLogs.length > 0) lastProcessedTick.current = Math.max(...parsedLogs.map(l => l.tick));
+        }
+      } catch (e) {}
     };
     loadHistory();
 
     const poll = async () => {
       try {
         const res = await fetch('/live_verse/world_state.json');
-        if (!res.ok) throw new Error('Experiment nicht aktiv');
+        if (!res.ok) return;
         const data: WorldState = await res.json();
         setState(data);
-        setError(null);
-        
         if (data.tick > lastProcessedTick.current) {
            const newEntries: LogEntry[] = [];
            data.agents.forEach(a => {
-               if (a.last_manifestation && a.last_manifestation.trim() !== '') {
-                   // Filtere alles ab AKTION: weg, um nur die Gedanken zu zeigen
-                   let cleanText = a.last_manifestation;
-                   const actionIndex = cleanText.search(/AKTION(?:EN)?[:]/i);
-                   if (actionIndex !== -1) {
-                       cleanText = cleanText.substring(0, actionIndex).trim();
-                   }
-                   // Entferne das überflüssige "ANALYSE:" Keyword
-                   cleanText = cleanText.replace(/^(?:> )?ANALYSE:\s*/i, '').trim();
-                   
-                   if (cleanText) {
-                       newEntries.push({ tick: data.tick, agentId: a.id, text: cleanText });
+               if (a.last_manifestation?.trim()) {
+                   let raw = a.last_manifestation;
+                   const actionIdx = raw.search(/AKTION(?:EN)?[:]/i);
+                   if (actionIdx !== -1) {
+                       const thought = raw.substring(0, actionIdx).replace(/^(?:> )?ANALYSE:\s*/i, '').replace(/\[EIGENIMPULS\]:\s*/i, '').trim();
+                       const action = raw.substring(actionIdx).replace(/^AKTION(?:EN)?[:]\s*/i, '').trim();
+                       if (thought) newEntries.push({ id: `t-${data.tick}-${a.id}`, tick: data.tick, agentId: a.id, type: 'thought', text: thought });
+                       if (action) newEntries.push({ id: `a-${data.tick}-${a.id}`, tick: data.tick, agentId: a.id, type: action.includes('scut') ? 'scut' : 'action', text: action });
+                   } else {
+                       const isSystem = raw.includes('[SYSTEM') || raw.includes('[OBSERVER');
+                       newEntries.push({ id: `u-${data.tick}-${a.id}`, tick: data.tick, agentId: a.id, type: isSystem ? 'system' : 'action', text: raw });
                    }
                }
            });
            if (newEntries.length > 0) setLogs(prev => [...prev, ...newEntries]);
            lastProcessedTick.current = data.tick;
         }
-      } catch (err: any) { setError(err.message); }
+      } catch (err) {}
     };
     const interval = setInterval(poll, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const agentsByLocation = state ? state.agents.reduce((acc, agent) => {
-    if (!acc[agent.location]) acc[agent.location] = [];
-    acc[agent.location].push(agent);
-    return acc;
-  }, {} as Record<string, Agent[]>) : {};
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!mapRef.current) return;
+    const zoomFactor = -e.deltaY * 0.001;
+    const newZoom = Math.min(Math.max(0.1, camera.zoom + zoomFactor), 4);
+    setCamera(prev => ({ ...prev, zoom: newZoom }));
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.ui-panel')) return;
     setIsDragging(true);
     dragStart.current = { x: e.clientX - camera.x, y: e.clientY - camera.y };
   };
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
-    setCamera(prev => ({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y, zoom: prev.zoom }));
-  };
-  const handleMouseUp = () => setIsDragging(false);
-  const handleWheel = (e: React.WheelEvent) => {
-    if ((e.target as HTMLElement).closest('.ui-panel')) return;
-    const delta = -e.deltaY * 0.001;
-    setCamera(prev => ({ ...prev, zoom: Math.min(Math.max(0.1, prev.zoom + delta), 4) }));
+    setCamera(prev => ({ ...prev, x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y }));
   };
 
-  if (!state) return <div style={{color: 'white', background: '#0a0a0c', height: '100vh', padding: '20px'}}>Warte auf Daten...</div>;
+  if (!state) return <div style={{color: '#38bdf8', background: '#020203', height: '100vh', padding: '40px', fontFamily: 'monospace'}}>INITIALIZING C2 LINK...</div>;
+
+  const selectedAgent = selection?.type === 'agent' ? state.agents.find(a => a.id === selection.id) : null;
+  const selectedSystem = selection?.type === 'system' ? state.systems.find(s => s.name === selection.id) : null;
 
   return (
-    <div style={{ background: '#0a0a0c', color: '#e0e0e0', height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', fontFamily: 'monospace', overflow: 'hidden' }}>
-      
-      <header className="ui-panel" style={{ position: 'absolute', top: '10px', left: '10px', right: '10px', display: 'flex', justifyContent: 'space-between', zIndex: 10, background: 'rgba(22, 22, 26, 0.9)', padding: '10px 20px', borderRadius: '8px', backdropFilter: 'blur(10px)', border: '1px solid #333' }}>
-        <h1 style={{ margin: 0, fontSize: '1.2rem', color: '#00ff00', textShadow: '0 0 10px rgba(0,255,0,0.5)' }}>BOB-OS TACTICAL v3.0 (GRID)</h1>
-        <div style={{ fontSize: '0.9rem', display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <span>TICK: {state.tick}</span>
-          <span>ACTIVE: {state.agents.length}</span>
+    <div style={{ background: '#020203', color: '#a8b2c1', height: '100vh', width: '100vw', display: 'grid', gridTemplateColumns: '320px 1fr 450px', overflow: 'hidden' }}>
+      <ExplorerPanel state={state} selection={selection} setSelection={setSelection} focusBounds={focusBounds} />
+
+      {/* CENTER: TACTICAL MAP */}
+      <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10, display: 'flex', gap: '10px' }}>
+           <button className="scifi-button" onClick={focusHome} style={{ background: 'rgba(15,23,42,0.8)', color: '#fcd34d', border: '1px solid #fcd34d', padding: '8px 16px', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', backdropFilter: 'blur(4px)', textTransform: 'uppercase', letterSpacing: '1px' }}>🏠 HOME</button>
+           <button onClick={focusAllBobs} style={{ background: 'rgba(15,23,42,0.8)', color: '#10b981', border: '1px solid #10b981', padding: '8px 16px', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', backdropFilter: 'blur(4px)', textTransform: 'uppercase', letterSpacing: '1px' }}>🎯 SWARM</button>
+           <button onClick={focusAllSystems} style={{ background: 'rgba(15,23,42,0.8)', color: '#38bdf8', border: '1px solid #38bdf8', padding: '8px 16px', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', backdropFilter: 'blur(4px)', textTransform: 'uppercase', letterSpacing: '1px' }}>🌍 GALAXY</button>
         </div>
-      </header>
 
-      <div 
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: '#050508', zIndex: 1, cursor: isDragging ? 'grabbing' : 'grab' }}
-        onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onWheel={handleWheel}
-      >
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
-          transformOrigin: '0 0',
-          transition: isDragging ? 'none' : 'transform 0.1s ease-out'
-        }}>
-          
-          <svg style={{ position: 'absolute', top: 0, left: 0, width: 0, height: 0, overflow: 'visible', pointerEvents: 'none' }}>
-            {/* System Lines */}
-            {state.systems.map((s) => {
-              if (s.name === 'SYS-X0-Y0') return null;
-              return (
-                <line 
-                  key={`line-${s.name}`} 
-                  x1={0} y1={0} 
-                  x2={s.x * SCALE} y2={s.y * SCALE} 
-                  stroke="rgba(230,126,34,0.15)" 
-                  strokeWidth="1"
-                  strokeDasharray="5,5"
-                />
-              );
-            })}
+        <div 
+          ref={mapRef} className="radar-grid"
+          style={{ flex: 1, background: '#020203', overflow: 'hidden', cursor: isDragging ? 'grabbing' : 'grab', position: 'relative' }}
+          onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={() => setIsDragging(false)} onMouseLeave={() => setIsDragging(false)} onWheel={handleWheel}
+        >
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: `translate(calc(-50% + ${camera.x}px), calc(-50% + ${camera.y}px)) scale(${camera.zoom})`, transformOrigin: 'center center', transition: isDragging ? 'none' : 'transform 0.15s ease-out' }}>
+            <svg style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible', pointerEvents: 'none' }}>
+               {/* Transit Lines */}
+               {state.agents.filter(a => a.status === 'traveling').map((a) => (
+                  <line key={`route-${a.id}`} x1={a.origin_x * SCALE} y1={a.origin_y * SCALE} x2={a.target_x * SCALE} y2={a.target_y * SCALE} stroke="rgba(56,189,248,0.25)" strokeWidth="1" strokeDasharray="4,4" />
+               ))}
+            </svg>
 
-            {/* Agent Flight Routes */}
-            {state.agents.filter(a => a.status === 'traveling').map((a) => {
-              return (
-                <line 
-                  key={`route-${a.id}`} 
-                  x1={a.origin_x * SCALE} y1={a.origin_y * SCALE} 
-                  x2={a.target_x * SCALE} y2={a.target_y * SCALE} 
-                  stroke={a.id === selectedAgentId ? "rgba(52,152,219,0.8)" : "rgba(255,255,255,0.5)"}
-                  strokeWidth={a.id === selectedAgentId ? "2" : "1"}
-                  strokeDasharray="3,3"
-                />
-              );
-            })}
-          </svg>
-
-          {state.systems.map((s) => (
-            <div key={s.name} style={{ position: 'absolute', left: s.x * SCALE, top: s.y * SCALE, transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-              <div style={{ width: '30px', height: '30px', background: s.display_name ? '#3498db' : '#e67e22', borderRadius: '50%', boxShadow: `0 0 20px ${s.display_name ? 'rgba(52,152,219,0.4)' : 'rgba(230,126,34,0.4)'}`, margin: '0 auto' }} />
-              <div style={{ marginTop: '8px', fontWeight: 'bold', fontSize: '0.8rem' }}>{s.display_name || s.name}</div>
-              <div style={{ fontSize: '0.6rem', color: '#555' }}>({s.x}, {s.y})</div>
+            {/* Traveling Agents (Asteroids Style Ships) */}
+            {state.agents.filter(a => a.status === 'traveling').map(a => {
+              const dx = a.target_x - a.origin_x; 
+              const dy = a.target_y - a.origin_y;
+              const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90; // +90 because CSS triangle points UP by default
+              const isSel = selection?.type === 'agent' && selection.id === a.id;
+              const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : a.id;
+              const shipColor = isSel ? '#fff' : '#0ea5e9'; // Cyber-Blue
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '5px' }}>
-                {state.agents.filter(a => a.location === s.name).map(a => (
-                  <div key={a.id} style={{ color: '#fff', fontSize: '0.6rem', background: a.id === selectedAgentId ? 'rgba(52,152,219,0.5)' : 'rgba(0,255,0,0.2)', padding: '1px 3px', border: `1px solid ${a.id === selectedAgentId ? '#3498db' : '#00ff00'}`, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setSelectedAgentId(a.id); }}>
-                    ▲ {a.id} {a.sensors?.chosen_name && a.sensors.chosen_name !== 'Unnamed' ? `"${a.sensors.chosen_name}"` : ''}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+              return (
+                <div 
+                   key={a.id} className="agent-dot-container" 
+                   onClick={(e) => { e.stopPropagation(); setSelection({type: 'agent', id: a.id}); }} 
+                   style={{ position: 'absolute', left: a.current_x * SCALE, top: a.current_y * SCALE, transform: 'translate(-50%, -50%)', zIndex: 5, cursor: 'pointer' }}
+                >
+                   {/* Triangle Hack via Borders */}
+                   <div style={{ 
+                      width: 0, height: 0, 
+                      borderLeft: '6px solid transparent', 
+                      borderRight: '6px solid transparent', 
+                      borderBottom: `14px solid ${shipColor}`, 
+                      transform: `rotate(${angle}deg)`, 
+                      filter: `drop-shadow(0 0 8px ${shipColor})`,
+                      transition: 'all 0.1s' 
+                   }} />
+                   <div className="agent-tooltip">{displayName}</div>
+                </div>
+              );
+            })}
 
-          {/* TRAVELING AGENTS */}
-          {state.agents.filter(a => a.status === 'traveling').map(a => {
-            // Berechne Winkel für die Schiffs-Ausrichtung
-            const dx = a.target_x - a.origin_x;
-            const dy = a.target_y - a.origin_y;
-            let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90; // +90 wegen CSS Triangle Base
-
-            return (
-              <div key={a.id} style={{ position: 'absolute', left: a.current_x * SCALE, top: a.current_y * SCALE, transform: 'translate(-50%, -50%)', zIndex: 5, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setSelectedAgentId(a.id); }}>
-                 <div style={{ width: '0', height: '0', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderBottom: `8px solid ${a.id === selectedAgentId ? '#3498db' : '#f1c40f'}`, transform: `rotate(${angle}deg)`, filter: `drop-shadow(0 0 5px ${a.id === selectedAgentId ? '#3498db' : '#f1c40f'})` }} />
-                 <div style={{ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.45rem', color: a.id === selectedAgentId ? '#3498db' : '#f1c40f', background: 'rgba(0,0,0,0.7)', padding: '1px 2px', borderRadius: '2px', whiteSpace: 'nowrap' }}>
-                    {a.id} {a.sensors?.chosen_name && a.sensors.chosen_name !== 'Unnamed' ? `"${a.sensors.chosen_name}"` : ''}
+            {/* Systems */}
+            {state.systems.map((s) => {
+               const isSel = selection?.type === 'system' && selection.id === s.name;
+               const colors = getColorForId(s.name);
+               return (
+                 <div key={s.name} onClick={(e) => { e.stopPropagation(); setSelection({type: 'system', id: s.name}); }} style={{ position: 'absolute', left: s.x * SCALE, top: s.y * SCALE, transform: 'translate(-50%, -50%)', textAlign: 'center', cursor: 'pointer' }}>
+                   <div style={{ width: '40px', height: '40px', background: colors.solid, borderRadius: '50%', border: isSel ? '3px solid #fff' : '2px solid rgba(255,255,255,0.2)', boxShadow: `0 0 50px ${colors.glow}, inset 0 0 10px rgba(255,255,255,0.3)`, margin: '0 auto', transition: 'all 0.2s' }} />
+                   <div style={{ marginTop: '12px', fontWeight: 700, fontSize: '1rem', color: isSel ? '#fff' : '#94a3b8', textShadow: '0 0 10px black', letterSpacing: '1px' }}>{s.display_name || s.name}</div>
+                   <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', marginTop: '12px', maxWidth: '140px' }}>
+                      {state.agents.filter(a => a.location === s.name && a.status !== 'traveling').map(a => {
+                        const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : a.id;
+                        const isASel = selection?.id === a.id;
+                        const shipColor = isASel ? '#fff' : '#0ea5e9';
+                        return (
+                           <div key={a.id} className="agent-dot-container" onClick={(e) => { e.stopPropagation(); setSelection({type: 'agent', id: a.id}); }}>
+                              <div style={{ 
+                                 width: 0, height: 0, 
+                                 borderLeft: '5px solid transparent', 
+                                 borderRight: '5px solid transparent', 
+                                 borderBottom: `11px solid ${shipColor}`, 
+                                 filter: `drop-shadow(0 0 5px ${shipColor})`,
+                                 cursor: 'pointer',
+                                 transition: 'all 0.2s',
+                                 transform: isASel ? 'scale(1.2)' : 'scale(1)'
+                              }} />
+                              <div className="agent-tooltip">{displayName}</div>
+                           </div>
+                        )
+                      })}
+                   </div>
                  </div>
-              </div>
-            );
-          })}
+               )
+            })}
+          </div>
         </div>
+
+        <InspectorPanel selection={selection} setSelection={setSelection} selectedAgent={selectedAgent} selectedSystem={selectedSystem} />
       </div>
 
-      <aside className="ui-panel" style={{ position: 'absolute', top: '70px', left: '10px', bottom: '20px', width: '220px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '15px', overflowY: 'auto', padding: '10px', background: 'rgba(10, 10, 12, 0.9)', border: '1px solid #333', borderRadius: '8px' }}>
-        {selectedAgentId && state.agents.find(a => a.id === selectedAgentId)?.sensors && (
-          <div style={{ padding: '8px', background: 'rgba(52,152,219,0.1)', border: '1px solid #3498db', borderRadius: '4px', marginBottom: '5px' }}>
-            <div style={{ fontSize: '0.7rem', color: '#3498db', fontWeight: 'bold', marginBottom: '5px' }}>{selectedAgentId?.toUpperCase()}'S SENSORS</div>
-            <div style={{ fontSize: '0.55rem', color: '#888', marginBottom: '4px' }}>
-              NAME: {state.agents.find(a => a.id === selectedAgentId)?.sensors?.chosen_name || 'Unnamed'}<br/>
-              STATUS: <span style={{color: state.agents.find(a => a.id === selectedAgentId)?.sensors?.status === 'active' ? '#00ff00' : '#f1c40f'}}>{(state.agents.find(a => a.id === selectedAgentId)?.sensors?.status || 'UNKNOWN').toUpperCase()}</span><br/>
-              LOC: {state.agents.find(a => a.id === selectedAgentId)?.sensors?.location || 'Deep Space'}<br/>
-              AGE: Tick {state.agents.find(a => a.id === selectedAgentId)?.sensors?.birth_cycle || 0}<br/>
-              {state.agents.find(a => a.id === selectedAgentId)?.sensors?.parent_id && (
-                <span style={{ background: '#555', color: '#eee', padding: '1px 3px', borderRadius: '2px', fontSize: '0.45rem', display: 'inline-block', marginTop: '2px' }}>
-                  KLON VON {state.agents.find(a => a.id === selectedAgentId)?.sensors?.parent_id?.toUpperCase()}
-                </span>
-              )}
-            </div>
-            
-            <div style={{ fontSize: '0.65rem', marginTop: '6px' }}>POS: ({Math.round(state.agents.find(a => a.id === selectedAgentId)?.sensors?.pos?.x || 0)}, {Math.round(state.agents.find(a => a.id === selectedAgentId)?.sensors?.pos?.y || 0)})</div>
-            <div style={{ fontSize: '0.65rem', color: '#a8c7fa' }}>
-              INV: {state.agents.find(a => a.id === selectedAgentId)?.sensors?.inventory?.matter || 0}/{state.agents.find(a => a.id === selectedAgentId)?.sensors?.inventory?.matter_limit || 0}M, {state.agents.find(a => a.id === selectedAgentId)?.sensors?.inventory?.energy || 0}/{state.agents.find(a => a.id === selectedAgentId)?.sensors?.inventory?.energy_limit || 0}E
-            </div>
-            
-            {state.agents.find(a => a.id === selectedAgentId)?.sensors?.transit ? (
-                <div style={{ fontSize: '0.65rem', color: '#f1c40f', marginTop: '4px', borderTop: '1px solid #444', paddingTop: '4px' }}>
-                  MOVING TO: {state.agents.find(a => a.id === selectedAgentId)!.sensors!.transit.destination}<br/>
-                  ETA: {state.agents.find(a => a.id === selectedAgentId)!.sensors!.transit.progress_ticks}/{state.agents.find(a => a.id === selectedAgentId)!.sensors!.transit.total_ticks}
-                </div>
-            ) : (
-                <div style={{ fontSize: '0.55rem', color: '#555', marginTop: '4px', borderTop: '1px solid #444', paddingTop: '4px' }}>
-                  PREVIEWS: {state.agents.find(a => a.id === selectedAgentId)?.sensors?.travel_previews?.length || 0} ROUTES
-                </div>
-            )}
-            <button onClick={() => setSelectedAgentId(null)} style={{ marginTop: '8px', fontSize: '0.6rem', padding: '2px 5px', background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '3px', cursor: 'pointer', width: '100%' }}>DESELECT</button>
-          </div>
-        )}
-        {Object.entries(agentsByLocation).map(([location, agents]) => {
-          const isInterstellar = location === 'null' || !location;
-          const sys = state.systems.find(s => s.name === location);
-          const locName = isInterstellar ? 'Interstellarer Raum' : (sys?.display_name || location);
-          return (
-            <div key={location} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '0.65rem', color: isInterstellar ? '#f1c40f' : '#888', letterSpacing: '1px', textTransform: 'uppercase', borderBottom: '1px solid #333', paddingBottom: '4px' }}>
-                {isInterstellar ? '🚀' : '📍'} {locName} ({agents.length})
-              </div>
-              {agents.map(a => (
-                <div 
-                  key={a.id} 
-                  onClick={() => setSelectedAgentId(a.id)}
-                  style={{ 
-                    padding: '6px', 
-                    background: a.id === selectedAgentId ? 'rgba(52,152,219,0.15)' : 'rgba(255,255,255,0.03)', 
-                    borderLeft: `2px solid ${a.id === selectedAgentId ? '#3498db' : '#00ff00'}`, 
-                    borderRadius: '0 4px 4px 0',
-                    cursor: 'pointer',
-                    transition: 'background 0.2s'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: a.id === selectedAgentId ? '#3498db' : '#fff' }}>
-                        {a.id} {a.sensors?.chosen_name && a.sensors.chosen_name !== 'Unnamed' ? <span style={{ fontSize: '0.65rem', fontWeight: 'normal', color: '#aaa', fontStyle: 'italic' }}> "{a.sensors.chosen_name}"</span> : ''}
-                      </div>
-                      <div style={{ fontSize: '0.55rem', color: '#555' }}>{(a.status || 'unknown').toUpperCase()}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          );
-        })}
-      </aside>
-
-      {/* GLOBAL SYSTEM EVENTS */}
-      {state.events && state.events.length > 0 && (
-        <div style={{ position: 'absolute', top: '70px', right: '350px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '5px', pointerEvents: 'none' }}>
-          {state.events.slice(-5).map((e, idx) => (
-            <div key={`event-${idx}`} style={{ background: 'rgba(46, 204, 113, 0.2)', border: '1px solid #2ecc71', color: '#2ecc71', padding: '5px 10px', borderRadius: '4px', fontSize: '0.65rem', backdropFilter: 'blur(5px)', boxShadow: '0 0 10px rgba(46, 204, 113, 0.3)' }}>
-              {e}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <aside className="ui-panel" style={{ position: 'absolute', top: '70px', right: '10px', bottom: '20px', width: '320px', zIndex: 10, background: 'rgba(10, 10, 12, 0.95)', border: '1px solid #333', borderRadius: '8px', padding: '10px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ color: '#555', fontSize: '0.7rem', letterSpacing: '1px', marginBottom: '10px', textTransform: 'uppercase', borderBottom: '1px solid #333', paddingBottom: '5px' }}>
-          Comms Log
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, overflowY: 'auto' }}>
-          {[...logs].reverse().map((entry, i) => {
-            const isCreator = entry.agentId === 'Creator' || entry.agentId === 'System';
-            return (
-              <div key={i} style={{ fontSize: '0.7rem', background: isCreator ? 'rgba(155, 89, 182, 0.1)' : 'rgba(255,255,255,0.02)', borderLeft: isCreator ? '2px solid #9b59b6' : 'none', padding: '6px', borderRadius: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                    <span style={{ color: isCreator ? '#9b59b6' : '#00ff00', fontWeight: 'bold' }}>[{entry.agentId}]</span>
-                    <span style={{ color: '#444', fontSize: '0.55rem' }}>T {entry.tick}</span>
-                </div>
-                <div style={{ color: isCreator ? '#e8c1ff' : '#bbb', whiteSpace: 'pre-wrap' }}>{entry.text}</div>
-              </div>
-            );
-          })}
-        </div>
-        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #333', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <input type="text" value={vogMsg} onChange={(e) => setVogMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendVoG()} placeholder="God Message..." style={{ flex: 1, background: '#111', border: '1px solid #333', color: '#00ff00', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }} />
-            <button onClick={handleSendVoG} style={{ background: '#3498db', color: '#fff', border: 'none', padding: '0 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem' }}>SEND</button>
-          </div>
-        </div>
-      </aside>
+      <LogPanel logs={logs} filters={filters} setFilters={setFilters} vogMsg={vogMsg} setVogMsg={setVogMsg} />
     </div>
   );
 }

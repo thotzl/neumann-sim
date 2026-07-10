@@ -33,14 +33,14 @@ class TestBobOS_v3_Naming(unittest.TestCase):
         if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
     def test_01_rename_success(self):
-        self.agent.actuators.rename_system('Heimat')
+        self.agent.rename_system('Heimat')
         conn = db_config.get_connection()
         sys_name = conn.execute("SELECT display_name FROM systems WHERE name='SYS-X0-Y0'").fetchone()[0]
         self.assertEqual(sys_name, 'Heimat')
         conn.close()
 
     def test_02_set_agent_name(self):
-        self.agent.actuators.set_name('Commander-Bob')
+        self.agent.set_name('Commander-Bob')
         conn = db_config.get_connection()
         name = conn.execute("SELECT chosen_name FROM agents WHERE id='Bob-1'").fetchone()[0]
         self.assertEqual(name, 'Commander-Bob')

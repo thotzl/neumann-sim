@@ -23,6 +23,11 @@ class TestV8FunctionalParser(unittest.TestCase):
         self.assertEqual(res['method'], 'mine')
         self.assertEqual(res['params'], {})
 
+    def test_scan_no_args(self):
+        res = parse_functional_string("scan()")
+        self.assertEqual(res['method'], 'scan')
+        self.assertEqual(res['params'], {})
+
     def test_keyword_args_simple(self):
         res = parse_functional_string("build(type=matter_silo, amount=100)")
         self.assertEqual(res['method'], 'build')
@@ -37,9 +42,9 @@ class TestV8FunctionalParser(unittest.TestCase):
         self.assertEqual(res['params']['msg'], 'Hallo Welt')
 
     def test_spacing_tolerance(self):
-        res = parse_functional_string("  withdraw ( resource = energy , amount = 50 ) ")
+        res = parse_functional_string("  withdraw ( resource = energy_inventory , amount = 50 ) ")
         self.assertEqual(res['method'], 'withdraw')
-        self.assertEqual(res['params']['resource'], 'energy')
+        self.assertEqual(res['params']['resource'], 'energy_inventory')
         self.assertEqual(res['params']['amount'], '50')
 
     # --- GREEDY & COMMA HANDLING ---

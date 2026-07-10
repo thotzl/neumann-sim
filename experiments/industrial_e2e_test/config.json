@@ -1,0 +1,26 @@
+{
+  "log": "log.md",
+  "report": "report.md",
+  "state": "state.json",
+  "rounds": 5,
+  "reproduction": true,
+  "config_override": {
+    "model": "gemini-2.5-flash",
+    "token_limit": 15000
+  },
+  "physics_constants": {
+    "travel_speed_per_tick": 300,
+    "energy_cost_per_distance": 0.1,
+    "idle_drain": 5,
+    "scan_range_min": 500,
+    "scan_range_max": 1500
+  },
+  "agents": [
+    {
+      "id": "Bob-1",
+      "location": "Alpha_Centauri",
+      "initial_trigger": "System online. Mission gestartet.",
+      "system_prompt": "Industrial Test"
+    }
+  ]
+}

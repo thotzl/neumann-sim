@@ -17,12 +17,13 @@ function exportWorldState(universeDir, state, lastAgentId) {
             let systemsProcessed = 0;
             if (systems.length === 0) finish(systems, []);
             systems.forEach(sys => {
-                db.all("SELECT id, type, status, progress_matter, required_matter FROM infrastructure WHERE system_name = ?", [sys.name], (err, infra) => {
+                db.all("SELECT id, type, status, health, max_health, level, progress_matter, required_matter FROM infrastructure WHERE system_name = ?", [sys.name], (err, infra) => {
                     sys.infra = infra || [];
                     systemsProcessed++;
                     if (systemsProcessed === systems.length) {
                         // V3.1: Alle neuen Agenten-Felder exportieren
-            db.all("SELECT id, chosen_name, location, matter, energy, storage_limit, status, birth_cycle, current_x, current_y, origin_x, origin_y, target_x, target_y, target_system, transit_ticks_total, transit_ticks_passed FROM agents", (err, agents) => {                            finish(systems, agents || []);
+                        db.all("SELECT * FROM agents", (err, agents) => {
+                            finish(systems, agents || []);
                         });
                     }
                 });
@@ -80,10 +81,11 @@ function exportWorldState(universeDir, state, lastAgentId) {
                 birth_cycle: a.birth_cycle,
                 pos: { x: a.current_x, y: a.current_y },
                 inventory: {
-                    matter: a.matter,
-                    matter_limit: a.storage_limit,
-                    energy: a.energy,
-                    energy_limit: 200
+                    raw_matter_inventory: a.raw_matter_inventory,
+                    matter_limit: a.matter_storage_capacity,
+                    energy_inventory: a.energy_inventory,
+                    energy_limit: 200,
+                    refined_matter_inventory: a.refined_matter_inventory
                 },
                 transit: a.status === 'traveling' ? {
                     destination: a.target_system,

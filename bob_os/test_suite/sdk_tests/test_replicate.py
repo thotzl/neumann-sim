@@ -34,12 +34,12 @@ class TestReplicate(unittest.TestCase):
         # Setup: Werft und genug Materie im Depot
         conn = db_config.get_connection()
         conn.execute("INSERT INTO infrastructure (system_name, type, status, required_matter) VALUES ('SYS-X0-Y0', 'shipyard', 'active', 1000)")
-        conn.execute("UPDATE systems SET matter_stored = 1000, energy_stored = 180 WHERE name = 'SYS-X0-Y0'")
-        conn.execute("UPDATE agents SET energy = 100 WHERE id = 'Bob-1'")
+        conn.execute("UPDATE systems SET raw_matter_depot = 1000, energy_depot = 180 WHERE name = 'SYS-X0-Y0'")
+        conn.execute("UPDATE agents SET energy_inventory = 100 WHERE id = 'Bob-1'")
         conn.commit()
         conn.close()
 
-        success = self.agent.actuators.replicate('Bob-2')
+        success = self.agent.replicate(new_agent_id='Bob-2')
         self.assertTrue(success)
 
         # Überprüfe Population JSON
@@ -47,16 +47,16 @@ class TestReplicate(unittest.TestCase):
             pop = json.load(f)
         self.assertEqual(len(pop['agents']), 1)
         self.assertEqual(pop['agents'][0]['id'], 'Bob-2')
-        self.assertIn("Lege mit 'tools/set_name.py' deine individuelle Identität fest", pop['agents'][0]['system_prompt'])
+        self.assertIn("Lege mit 'set_name' deine individuelle Identität fest", pop['agents'][0]['system_prompt'])
 
         # Überprüfe DB
         conn = db_config.get_connection()
-        sys_data = conn.execute("SELECT matter_stored, energy_stored FROM systems WHERE name = 'SYS-X0-Y0'").fetchone()
-        self.assertEqual(sys_data['matter_stored'], 0) # 1000 - 1000
-        self.assertEqual(sys_data['energy_stored'], 0) # 180 - 180
+        sys_data = conn.execute("SELECT raw_matter_depot, energy_depot FROM systems WHERE name = 'SYS-X0-Y0'").fetchone()
+        self.assertEqual(sys_data['raw_matter_depot'], 0) # 1000 - 1000
+        self.assertEqual(sys_data['energy_depot'], 0) # 180 - 180
         
-        bob1 = conn.execute("SELECT energy FROM agents WHERE id = 'Bob-1'").fetchone()
-        self.assertEqual(bob1['energy'], 100) # Keine Kosten für Bob-1, da Netz genug hatte
+        bob1 = conn.execute("SELECT energy_inventory FROM agents WHERE id = 'Bob-1'").fetchone()
+        self.assertEqual(bob1['energy_inventory'], 100) # Keine Kosten für Bob-1, da Netz genug hatte
         conn.close()
 
 if __name__ == '__main__':

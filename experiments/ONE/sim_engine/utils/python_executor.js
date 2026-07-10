@@ -6,9 +6,16 @@ const path = require('path');
  */
 function runPython(vDir, scriptPath, args = [], options = {}) {
     const bobId = options.bobId || null;
-    const env = { ...process.env, PYTHONPATH: path.resolve(vDir) };
+    const coreLibPath = path.resolve(vDir, 'core', 'lib');
+    const env = { 
+        ...process.env, 
+        PYTHONPATH: `${path.resolve(vDir)}:${coreLibPath}` 
+    };
     if (bobId) {
         env.BOB_ID = bobId;
+    }
+    if (options.aclState) {
+        env.BOB_ACL = JSON.stringify(options.aclState);
     }
 
     const defaultOptions = {

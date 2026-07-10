@@ -13,3 +13,21 @@ def calc_eta(dist, speed):
 
 def linear_interpolate(start, end, progress):
     return start + (end - start) * progress
+
+def calculate_scan_coordinates(origin_x, origin_y, distance, angle_degrees, grid_size=100):
+    """
+    Berechnet die Zielkoordinaten eines Scans und snappt sie auf das planetare Grid.
+    """
+    raw_x = origin_x + distance * math.cos(math.radians(angle_degrees))
+    raw_y = origin_y + distance * math.sin(math.radians(angle_degrees))
+    
+    snap_x = int(round(raw_x / float(grid_size)) * grid_size)
+    snap_y = int(round(raw_y / float(grid_size)) * grid_size)
+    
+    return snap_x, snap_y
+
+def calculate_upgrade_cost(base_cost, upgrade_multiplier):
+    """
+    Berechnet die absoluten Materie-Kosten für ein Infrastruktur-Upgrade.
+    """
+    return int(base_cost * upgrade_multiplier)

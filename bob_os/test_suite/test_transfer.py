@@ -15,7 +15,7 @@ class TestTransfer(unittest.TestCase):
         if os.path.exists(self.test_db): os.remove(self.test_db)
         conn = sqlite3.connect(self.test_db)
         c = conn.cursor()
-        c.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, location TEXT, energy INTEGER, matter INTEGER, storage_limit INTEGER, status TEXT, current_x REAL, current_y INTEGER)")
+        c.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y INTEGER)")
         c.execute("INSERT INTO agents VALUES ('Bob-1', 'SYS-A', 100, 50, 300, 'active', 0, 0)")
         c.execute("INSERT INTO agents VALUES ('Bob-2', 'SYS-A', 50, 0, 100, 'active', 0, 0)")
         conn.commit()
@@ -32,12 +32,12 @@ class TestTransfer(unittest.TestCase):
         self.assertTrue(success)
         
         status1 = self.agent.sensors.storage()
-        self.assertEqual(status1['matter'], 0)
+        self.assertEqual(status1['raw_matter_inventory'], 0)
         
         # Check Bob-2 via DB
         conn = db_config.get_connection()
-        res2 = conn.execute("SELECT matter FROM agents WHERE id='Bob-2'").fetchone()
-        self.assertEqual(res2['matter'], 50)
+        res2 = conn.execute("SELECT raw_matter_inventory FROM agents WHERE id='Bob-2'").fetchone()
+        self.assertEqual(res2['raw_matter_inventory'], 50)
         conn.close()
 
     def test_p2p_transfer_energy(self):
@@ -46,11 +46,11 @@ class TestTransfer(unittest.TestCase):
         self.assertTrue(success)
         
         status1 = self.agent.sensors.storage()
-        self.assertEqual(status1['energy'], 50)
+        self.assertEqual(status1['energy_inventory'], 50)
         
         conn = db_config.get_connection()
-        res2 = conn.execute("SELECT energy FROM agents WHERE id='Bob-2'").fetchone()
-        self.assertEqual(res2['energy'], 100) # 50 + 50
+        res2 = conn.execute("SELECT energy_inventory FROM agents WHERE id='Bob-2'").fetchone()
+        self.assertEqual(res2['energy_inventory'], 100) # 50 + 50
         conn.close()
 
 if __name__ == '__main__':

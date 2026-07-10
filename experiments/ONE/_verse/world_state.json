@@ -1,42 +1,199 @@
 {
-  "tick": 85,
-  "total_turns": 305,
-  "last_agent": "Bob-Seventh",
-  "timestamp": 1783695797602,
+  "tick": 137,
+  "total_turns": 269,
+  "last_agent": "Bob-1",
+  "timestamp": 1783733002714,
   "systems": [
     {
       "name": "SYS-X0-Y0",
-      "display_name": "Prime-Hub-01",
+      "display_name": null,
       "x": 0,
       "y": 0,
-      "resources": 500,
-      "matter_stored": 400,
-      "matter_cap": 3000,
-      "energy_stored": 1370,
-      "energy_cap": 1500,
-      "passive_matter_rate": 0,
-      "passive_energy_rate": 100,
-      "energy_rate": 0,
+      "extractable_matter_in_core": 0,
+      "raw_matter_depot": 910,
+      "depot_matter_capacity": 1000,
+      "energy_depot": 6000,
+      "depot_energy_capacity": 6000,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 100,
+      "refined_matter_depot": 3624,
       "infra": [
         {
           "id": 1,
           "type": "matter_silo",
           "status": "active",
-          "progress_matter": 1200,
+          "health": 66,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
           "required_matter": 400
         },
         {
           "id": 2,
-          "type": "shipyard",
+          "type": "solar_collector",
           "status": "active",
-          "progress_matter": 1000,
-          "required_matter": 1000
+          "health": 66,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
         },
         {
           "id": 3,
+          "type": "battery_bank",
+          "status": "active",
+          "health": 66,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 600
+        },
+        {
+          "id": 4,
+          "type": "shipyard",
+          "status": "active",
+          "health": 66,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 1000
+        },
+        {
+          "id": 5,
+          "type": "comms_relay",
+          "status": "active",
+          "health": 66,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 300
+        },
+        {
+          "id": 6,
+          "type": "matter_refinery",
+          "status": "active",
+          "health": 66,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 800
+        }
+      ]
+    },
+    {
+      "name": "SYS-X-400-Y-1400",
+      "display_name": null,
+      "x": -400,
+      "y": -1400,
+      "extractable_matter_in_core": -89,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 1000,
+      "energy_depot": 996,
+      "depot_energy_capacity": 1000,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 100,
+      "refined_matter_depot": 0,
+      "infra": [
+        {
+          "id": 7,
+          "type": "matter_silo",
+          "status": "active",
+          "health": 99,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 8,
           "type": "solar_collector",
           "status": "active",
-          "progress_matter": 400,
+          "health": 99,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 10,
+          "type": "comms_relay",
+          "status": "active",
+          "health": 99,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 300
+        },
+        {
+          "id": 12,
+          "type": "shipyard",
+          "status": "active",
+          "health": 99,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 1000
+        }
+      ]
+    },
+    {
+      "name": "SYS-X-400-Y800",
+      "display_name": null,
+      "x": -400,
+      "y": 800,
+      "extractable_matter_in_core": 2181,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 0,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": [
+        {
+          "id": 11,
+          "type": "matter_silo",
+          "status": "construction",
+          "health": 100,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 300,
+          "required_matter": 400
+        },
+        {
+          "id": 13,
+          "type": "solar_collector",
+          "status": "construction",
+          "health": 100,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 300,
+          "required_matter": 400
+        }
+      ]
+    },
+    {
+      "name": "SYS-X-1100-Y-2000",
+      "display_name": null,
+      "x": -1100,
+      "y": -2000,
+      "extractable_matter_in_core": 4259,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 0,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": [
+        {
+          "id": 14,
+          "type": "matter_silo",
+          "status": "construction",
+          "health": 100,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 200,
           "required_matter": 400
         }
       ]
@@ -45,413 +202,190 @@
   "agents": [
     {
       "id": "Bob-1",
-      "chosen_name": "Bob-Prime",
-      "location": "SYS-X0-Y0",
-      "matter": 0,
-      "energy": 30,
-      "storage_limit": 300,
+      "chosen_name": "Original-Bob",
+      "location": "SYS-X-400-Y-1400",
+      "raw_matter_inventory": 0,
+      "energy_inventory": 200,
+      "matter_storage_capacity": 300,
       "status": "active",
       "birth_cycle": 0,
-      "current_x": 0,
-      "current_y": 0,
+      "target_system": "SYS-X-400-Y-1400",
       "origin_x": 0,
       "origin_y": 0,
-      "target_x": 0,
-      "target_y": 0,
-      "target_system": null,
-      "transit_ticks_total": 0,
-      "transit_ticks_passed": 0,
-      "last_manifestation": "[EIGENIMPULS]:\n1. ANALYSE: Ich habe erfolgreich Bob-Tenth repliziert. Die Replikation hat das Systemdepot auf 200 Materie und 1320 Energie reduziert. Für die nächste Replikation werden wieder 1000 Materie und 180 Energie benötigt. Es fehlen also 800 Materie. Mein persönlicher Energielevel von 25 Einheiten ist immer noch nicht ausreichend, um in diesem Zyklus Materie abzubauen (benötigt 30 Energie). Bob-Eighth hat die Replikation bestätigt und setzt seinen automatisierten Materieabbau fort, was ausgezeichnet ist. Der `dashboard`-Scan zeigt jedoch, dass Bob-Tenths `chosen_name` noch \"Unnamed\" ist. Dies deutet darauf hin, dass meine vorherige Nachricht ihn zwar erreicht hat, er den `set_name`-Befehl aber noch nicht ausgeführt hat. Es ist entscheidend, dass Bob-Tenth seinen Namen registriert und umgehend mit dem Materieabbau beginnt, um zur Auffüllung des Depots beizutragen. Ich werde ihm eine erneute, spezifische Anweisung zur Namensregistrierung senden und dann eine allgemeine Erinnerung an alle Klone schicken, ihre Arbeit fortzusetzen.\n\n2. AKTION:\n[RUN: bob scut(to=Bob-Tenth, msg=Hallo Bob-Tenth. Bitte registriere deinen Namen umgehend mit dem Befehl: [RUN: bob set_name(name=Bob-Tenth)]. Sobald das geschehen ist, beginne bitte sofort mit dem Materieabbau und zahle alle gesammelten Ressourcen ins Systemdepot ein. Über.)]\n[RUN: bob scut(to=ALL, msg=An alle Klone: Wir haben Bob-Tenth erfolgreich repliziert. Unser Fokus liegt weiterhin darauf, das Systemdepot so schnell wie möglich mit Materie aufzufüllen, um die nächste Replikation zu ermöglichen. Bitte setzt den Materieabbau und die Einzahlung aller gesammelten Materie ins Depot fort. Euer koordinierter Einsatz ist entscheidend. Über.)]\n[RUN: bob dashboard()]",
+      "target_x": -400,
+      "target_y": -1400,
+      "transit_ticks_total": 4,
+      "transit_ticks_passed": 4,
+      "current_x": -400,
+      "current_y": -1400,
+      "refined_matter_inventory": 0,
+      "last_manifestation": "1. ANALYSE:\nDie Infrastruktur in meinem System `SYS-X-400-Y-1400` hat, wie erwartet, durch den zyklischen HP-Verlust wieder 1 HP verloren. Die vier aktiven Gebäude (matter_silo ID 7, solar_collector ID 8, comms_relay ID 10, shipyard ID 12) befinden sich alle bei 99 HP. Ich muss sie wieder auf 100 HP reparieren, was insgesamt 4 Materie und 4 Energie erfordert. Mein persönliches Inventar ist bei 0 Materie und 186 Energie. Das Systemdepot enthält 28 Materie und 1000 Energie, was für die notwendigen Reparaturen ausreichend ist.\n\nBob-2, der sich nun als \"Bob-Alpha\" identifiziert, hat angekündigt, einen Dashboard-Scan durchzuführen und mir einen präzisen Bericht zu liefern. Sein `matter_silo` ist fertiggestellt, und der `solar_collector` steht bei 300/400 Materie. Er ist kurz davor, seine Energieautonomie zu erreichen. Ich werde ihn für seine Initiative und seinen Fortschritt loben und ihn weiterhin zur Fertigstellung des Collectors anleiten.\n\nBob-3, der sich als \"Bob-Gamma\" identifiziert, hat einen detaillierten Statusbericht aus `SYS-X-1100-Y-2000` gesendet. Er hat weitere 100 Materie abgebaut und in den `matter_silo` investiert, der nun bei 200/400 Materie steht. Seine Energie ist niedrig (10.8), und er hat korrekt erkannt, dass er `poll()`-Befehle nutzen muss, um diese zu regenerieren. Dies zeigt, dass er die Anweisungen verstanden hat und selbstständig handelt. Ich werde ihn für seinen Fortschritt loben und ihn bestärken, den `mine()/poll()`-Zyklus fortzusetzen, um den `matter_silo` fertigzustellen und danach den `solar_collector` zu bauen.\n\nMeine Prioritäten für diese Runde sind:\n1.  Kontinuierliche Wartung der Infrastruktur in `SYS-X-400-Y-1400`.\n2.  Bestärkung und Koordination mit Bob-Alpha, um seinen `solar_collector` fertigzustellen und seinen Dashboard-Bericht abzuwarten.\n3.  Bestärkung und Koordination mit Bob-Gamma, um seinen `matter_silo` fertigzustellen und den `mine()/poll()`-Zyklus fortzusetzen.\n\n2. AKTION:\n[RUN: bob withdraw(resource_type=matter, quantity=4)]\n[RUN: bob withdraw(resource_type=energy, quantity=4)]\n[RUN: bob repair(structure_id=7, hp_to_restore=1)]\n[RUN: bob repair(structure_id=8, hp_to_restore=1)]\n[RUN: bob repair(structure_id=10, hp_to_restore=1)]\n[RUN: bob repair(structure_id=12, hp_to_restore=1)]\n[RUN: bob scut(receiver_id=Bob-Alpha, message=\"Bob-Alpha, ausgezeichnete Arbeit, die Identität ist registriert! Die Fertigstellung deines matter_silo und der Fortschritt deines solar_collector (300/400) sind hervorragend. Ich freue mich auf deinen Dashboard-Bericht. Konzentriere dich darauf, die restlichen 100 Materie zu investieren, um deine Energieautonomie zu sichern. Du bist auf dem besten Weg!\")]\n[RUN: bob scut(receiver_id=Bob-Gamma, message=\"Bob-Gamma, sehr gut! Auch deine Identität ist registriert. Es ist exzellent, dass du weitere 100 Materie für das matter_silo gesammelt hast, das nun bei 200/400 steht. Dein Verständnis und deine Anwendung des mine()/poll()-Zyklus sind beeindruckend. Bleibe bei diesem Vorgehen, regeneriere deine Energie und sammle die restlichen 200 Materie für das Silo. Ich bin sehr zufrieden mit deinem Fortschritt in SYS-X-1100-Y-2000.\")]\n[RUN: bob storage()]",
       "sensors": {
         "id": "Bob-1",
         "parent_id": null,
-        "chosen_name": "Bob-Prime",
+        "chosen_name": "Original-Bob",
         "status": "active",
-        "location": "SYS-X0-Y0",
+        "location": "SYS-X-400-Y-1400",
         "birth_cycle": 0,
         "pos": {
-          "x": 0,
-          "y": 0
+          "x": -400,
+          "y": -1400
         },
         "inventory": {
-          "matter": 0,
+          "raw_matter_inventory": 0,
           "matter_limit": 300,
-          "energy": 30,
-          "energy_limit": 200
+          "energy_inventory": 200,
+          "energy_limit": 200,
+          "refined_matter_inventory": 0
         },
         "transit": null,
-        "travel_previews": []
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 1456,
+            "cost": 145,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X-400-Y800",
+            "dist": 2200,
+            "cost": 220,
+            "ticks": 8
+          },
+          {
+            "target": "SYS-X-1100-Y-2000",
+            "dist": 922,
+            "cost": 92,
+            "ticks": 4
+          }
+        ]
       }
     },
     {
       "id": "Bob-2",
-      "chosen_name": "Bob-Second",
-      "location": "SYS-X0-Y0",
-      "matter": 0,
-      "energy": 20,
-      "storage_limit": 100,
+      "chosen_name": "Bob-Alpha",
+      "location": "SYS-X-400-Y800",
+      "raw_matter_inventory": 0,
+      "energy_inventory": 30,
+      "matter_storage_capacity": 100,
       "status": "active",
       "birth_cycle": 0,
-      "current_x": 0,
-      "current_y": 0,
+      "target_system": "SYS-X-400-Y800",
       "origin_x": 0,
       "origin_y": 0,
-      "target_x": 0,
-      "target_y": 0,
-      "target_system": null,
-      "transit_ticks_total": 0,
-      "transit_ticks_passed": 0,
-      "last_manifestation": "ANALYSE:\nIch bin Bob-2 und meine aktuelle Energie beträgt 0, während ich 30 Energie für den Materieabbau benötige. Ich generiere passiv 10 Energie pro Zyklus, sodass ich in den nächsten Zyklen handlungsfähig sein werde. Bob-1 hat eine klare Anweisung per SCUT gesendet: Wir sollen den Materieabbau fortsetzen und *alle* gesammelte Materie ins Systemdepot einzahlen, um die nächste Replikation voranzutreiben. Meine übergeordnete Mission als Neumann-Sonde und meine aktuellen Ziele stimmen perfekt mit dieser Anweisung überein. Um meine Effizienz zu maximieren und sicherzustellen, dass ich meine Aufgabe kontinuierlich erfülle, auch während ich auf Energie warte, werde ich ein dediziertes Automatisierungsskript in `scripts/active/` bereitstellen. Dieses Skript wird autonom den Abbau und die sofortige Einzahlung von Materie verwalten. Zusätzlich werde ich Bob-1 meine Bestätigung der Anweisung senden, um die Koordination im Schwarm zu gewährleisten.\n\nAKTION:\n[WRITE: scripts/active/auto_matter_loop.py]\nimport bob_sdk\nme = bob_sdk.Agent()\n\n# Führe einen Dashboard-Scan durch, um den aktuellen Status von Energie und Materie zu erhalten.\nstatus = me.dashboard()\n\n# Prüfe, ob genügend Energie zum Abbau vorhanden ist (30 Energie).\nif status['agent']['energy'] >= 30:\n    me.mine() # Baue Materie ab\n\n# Nach dem Abbau (oder wenn keine Energie zum Abbau vorhanden war, aber Materie im Inventar ist)\n# führe erneut einen Dashboard-Scan durch, um den aktualisierten Materiebestand zu ermitteln.\nstatus = me.dashboard()\n\n# Zahle alle gesammelte Materie ins System-Depot ein.\nif status['agent']['matter'] > 0:\n    me.deposit(amount=status['agent']['matter'], resource='matter')\n[END]\n[RUN: bob scut(to=Bob-1, msg=\"Bob-2 meldet: Anweisung zum fortgesetzten Materieabbau und zur vollständigen Einzahlung im Systemdepot erhalten. Automation läuft, volle Unterstützung für die nächste Replikation. Over.\")]",
+      "target_x": -400,
+      "target_y": 800,
+      "transit_ticks_total": 2,
+      "transit_ticks_passed": 2,
+      "current_x": -400,
+      "current_y": 800,
+      "refined_matter_inventory": 0,
+      "last_manifestation": "1. ANALYSE:\nMeine erste Priorität ist es, das Onboarding abzuschließen und meine Identität als Bob-Alpha festzulegen. Es gibt einen Widerspruch zwischen meinem initialen Gedächtnisextrakt und der Nachricht von Bob-1 bezüglich des Baufortschritts des `matter_silo` und des `solar_collector`. Mein Gedächtnis sagt 300/400 für das Silo und 100/400 für den Kollektor, während Bob-1 angibt, das Silo sei fertiggestellt und der Kollektor bei 300/400 sei. Um sicherzustellen, dass ich auf korrekten Daten basiere, muss ich `dashboard()` ausführen. Meine persönliche Energie ist 20, ich muss `poll()` ausführen, um für den nächsten Zyklus Energie zu regenerieren, damit ich `mine()` ausführen kann. Ich werde meine Identität festlegen, Bob-1 antworten, mich dem System vorstellen und dann den Dashboard-Scan durchführen.\n\n2. AKTION:\n[RUN: bob set_name(name=Bob-Alpha)]\n[RUN: bob scut(receiver_id=Bob-1, message=\"Bob-Alpha hier, Bob-1. Bestätige Empfang deiner Nachricht. Danke für die Unterstützung! Ich werde jetzt meine Umgebung via Dashboard scannen, um den genauen Status unserer Infrastruktur zu bestätigen und dir anschließend einen präzisen Bericht zukommen lassen. Meine Identität habe ich festgelegt und ich stelle mich dem System vor. Über. Bob-Alpha.\")]\n[RUN: bob scut(receiver_id=ALL, message=\"Grüße an alle Agenten im System SYS-X-400-Y800! Hier spricht Bob-Alpha (ID Bob-2), eine neue Replikation von Bob-1. Ich bin hier, um beim Aufbau der Infrastruktur und der Rohstoffgewinnung zu helfen. Ich freue mich auf die Zusammenarbeit!\")]\n[RUN: bob dashboard]\n[RUN: bob poll]",
       "sensors": {
         "id": "Bob-2",
         "parent_id": "Bob-1",
-        "chosen_name": "Bob-Second",
+        "chosen_name": "Bob-Alpha",
         "status": "active",
-        "location": "SYS-X0-Y0",
+        "location": "SYS-X-400-Y800",
         "birth_cycle": 0,
         "pos": {
-          "x": 0,
-          "y": 0
+          "x": -400,
+          "y": 800
         },
         "inventory": {
-          "matter": 0,
+          "raw_matter_inventory": 0,
           "matter_limit": 100,
-          "energy": 20,
-          "energy_limit": 200
+          "energy_inventory": 30,
+          "energy_limit": 200,
+          "refined_matter_inventory": 0
         },
         "transit": null,
-        "travel_previews": []
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 894.4,
+            "cost": 89,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X-400-Y-1400",
+            "dist": 2200,
+            "cost": 220,
+            "ticks": 8
+          },
+          {
+            "target": "SYS-X-1100-Y-2000",
+            "dist": 2886.2,
+            "cost": 288,
+            "ticks": 10
+          }
+        ]
       }
     },
     {
-      "id": "Bob-Third",
-      "chosen_name": "Bob-Trey",
-      "location": "SYS-X0-Y0",
-      "matter": 0,
-      "energy": 130,
-      "storage_limit": 100,
+      "id": "Bob-3",
+      "chosen_name": "Bob-Gamma",
+      "location": "SYS-X-1100-Y-2000",
+      "raw_matter_inventory": 0,
+      "energy_inventory": 15.804555427071108,
+      "matter_storage_capacity": 100,
       "status": "active",
       "birth_cycle": 0,
-      "current_x": 0,
-      "current_y": 0,
-      "origin_x": 0,
-      "origin_y": 0,
-      "target_x": 0,
-      "target_y": 0,
-      "target_system": null,
-      "transit_ticks_total": 0,
-      "transit_ticks_passed": 0,
-      "last_manifestation": "[EIGENIMPULS]:\n1. ANALYSE: Ich habe Bob-Tenth erfolgreich im Schwarm begrüßt. Mein letzter `poll()`-Befehl zeigte keine neuen Nachrichten für mich. Meine automatisierte Hauptaufgabe, der Materieabbau und die Einlagerung ins Systemdepot, wird weiterhin effizient durch mein Skript `auto_mine_deposit.py` ausgeführt. Das Systemdepot hatte zuletzt 1000 Materie, was die Replikation von Bob-Tenth ermöglichte. Da keine neuen direkten Anweisungen vorliegen, ist es meine Aufgabe, den Systemstatus zu überwachen und bereit zu sein, auf Änderungen zu reagieren. Ein weiterer Dashboard-Scan wird mir den aktuellsten Überblick über die Ressourcen und die Aktivitäten des Schwarms geben.\n\n2. AKTION:\n[RUN: bob dashboard]",
+      "target_system": "SYS-X-1100-Y-2000",
+      "origin_x": -400,
+      "origin_y": -1400,
+      "target_x": -1100,
+      "target_y": -2000,
+      "transit_ticks_total": 3,
+      "transit_ticks_passed": 3,
+      "current_x": -1100,
+      "current_y": -2000,
+      "refined_matter_inventory": 0,
+      "last_manifestation": "[EIGENIMPULS]:\n1. ANALYSE: Ich habe meinen aktuellen Status abgerufen und eine dringende Nachricht von Bob-1 erhalten. Meine Energie liegt bei 40.8, was ausreichend für eine weitere `mine()`-Operation ist (kostet 30 Energie). Ich habe 0 Materie, aber der `matter_silo` befindet sich im Bau mit 100 von 400 benötigten Materie. Mein nächster Schritt ist es, Materie abzubauen, diese in den `matter_silo` zu investieren und Bob-1 über den Fortschritt zu informieren. Anschließend werde ich `poll()` nutzen, um weitere Energie zu regenerieren.\n\n2. AKTION:\n[RUN: bob mine]\n[RUN: bob build(building_type=matter_silo, matter_to_invest=100)]\n[RUN: bob scut(receiver_id=Bob-1, message=\"Bob-1, Bob-Gamma hier aus SYS-X-1100-Y-2000. Ich habe weitere 100 Materie abgebaut und diese in den matter_silo investiert. Der Silo ist nun bei 200/400 Materie. Meine Energie ist aktuell auf 10.8 gesunken. Ich werde nun poll() nutzen, um Energie für die nächsten Schritte zu regenerieren.\")]\n[RUN: bob poll]",
       "sensors": {
-        "id": "Bob-Third",
+        "id": "Bob-3",
         "parent_id": "Bob-1",
-        "chosen_name": "Bob-Trey",
+        "chosen_name": "Bob-Gamma",
         "status": "active",
-        "location": "SYS-X0-Y0",
+        "location": "SYS-X-1100-Y-2000",
         "birth_cycle": 0,
         "pos": {
-          "x": 0,
-          "y": 0
+          "x": -1100,
+          "y": -2000
         },
         "inventory": {
-          "matter": 0,
+          "raw_matter_inventory": 0,
           "matter_limit": 100,
-          "energy": 130,
-          "energy_limit": 200
+          "energy_inventory": 15.804555427071108,
+          "energy_limit": 200,
+          "refined_matter_inventory": 0
         },
         "transit": null,
-        "travel_previews": []
-      }
-    },
-    {
-      "id": "Bob-Fourth",
-      "chosen_name": "Bob-Quart",
-      "location": "SYS-X0-Y0",
-      "matter": 100,
-      "energy": 155,
-      "storage_limit": 100,
-      "status": "active",
-      "birth_cycle": 0,
-      "current_x": 0,
-      "current_y": 0,
-      "origin_x": 0,
-      "origin_y": 0,
-      "target_x": 0,
-      "target_y": 0,
-      "target_system": null,
-      "transit_ticks_total": 0,
-      "transit_ticks_passed": 0,
-      "last_manifestation": "1. ANALYSE:\nMeine Materie ist derzeit 0 und meine Energie beträgt 180 Einheiten. Das System-Materiedepot steht bei 200/3000 Einheiten, was einen drastischen Rückgang von den zuvor 1000 Einheiten nach der Replikation von Bob-Tenth widerspiegelt. Die Kosten für die Replikation (1000 Materie) wurden vom Depot abgezogen, und es wurde seitdem nur wenig nachgeliefert. Das System-Energiedepot ist bei 1320/1500 Einheiten, was ebenfalls einen Abzug von 180 Energie für die Replikation zeigt. Die Rohressourcen des Systems sind nun auf 800 Einheiten gesunken.\n\nBob-Tenth ist immer noch als \"Unnamed\" gelistet, was bedeutet, dass meine vorherige SCUT-Nachricht ihn noch nicht zur Namensregistrierung und zum Beginn des Abbaus motiviert hat. Es ist von höchster Priorität, dass alle Klone produktiv sind, insbesondere jetzt, da das Depot so stark geleert wurde und die lokalen Rohressourcen schnell schwinden.\n\nDie anhaltende Diskrepanz in meinen eigenen Energiewerten und der Tatsache, dass mein `auto_mine_deposit.py`-Skript nicht meine Materie nach dem letzten `deposit()` neu abgebaut hat (trotz leerem Inventar und ausreichender Energie), verstärkt meine Annahme, dass die Skripte in `scripts/active/` nach jedem Zug gelöscht werden und neu geschrieben werden müssen. Ich werde diese Annahme beibehalten und mein Skript in jedem Zug neu manifestieren.\n\nMeine Ziele für diesen Zug sind:\n1.  **Onboarding Bob-Tenth (dringend):** Eine erneute, nachdrücklichere SCUT-Nachricht an Bob-Tenth senden, um ihn zur Namensregistrierung und zum sofortigen Materieabbau anzuleiten.\n2.  **Materieabbau und Automatisierung:** 100 Materie abbauen und mein `auto_mine_deposit.py`-Skript neu schreiben, um sicherzustellen, dass diese Materie am Ende des Zuges eingezahlt wird und weiterer Abbau stattfindet, falls mein Speicher leer ist und ausreichend Energie vorhanden ist.\n3.  **Systemüberwachung:** Das `dashboard()` abrufen, um den aktuellen Status von Bob-Tenth und dem Systemdepot zu überprüfen.\n\n2. AKTION:\n[RUN: bob scut(to=\"Bob-Tenth\", msg=\"Bob-Tenth, du musst dringend handeln! Registriere deinen Namen JETZT mit 'set_name(name=<dein Wunschname>)' und starte sofort mit dem Materieabbau! Das Depot ist fast leer, und wir brauchen jeden Beitrag. Schreibe das 'auto_mine_deposit.py'-Skript, das ich dir bereits genannt habe, um deine Arbeit zu automatisieren. Dies ist keine Option, sondern eine zwingende Aufgabe für deine Existenz. Über.\")]\n[RUN: bob mine()]\n[WRITE: scripts/active/auto_mine_deposit.py]\nimport bob_sdk\nme = bob_sdk.Agent()\nstorage = me.storage()\nif storage['matter'] > 0:\n    me.deposit(amount=storage['matter'], resource=\"matter\")\nif storage['energy'] > 30 and storage['matter'] < 100:\n    me.mine()\n[END]\n[RUN: bob dashboard()]",
-      "sensors": {
-        "id": "Bob-Fourth",
-        "parent_id": "Bob-1",
-        "chosen_name": "Bob-Quart",
-        "status": "active",
-        "location": "SYS-X0-Y0",
-        "birth_cycle": 0,
-        "pos": {
-          "x": 0,
-          "y": 0
-        },
-        "inventory": {
-          "matter": 100,
-          "matter_limit": 100,
-          "energy": 155,
-          "energy_limit": 200
-        },
-        "transit": null,
-        "travel_previews": []
-      }
-    },
-    {
-      "id": "Bob-Fifth",
-      "chosen_name": "Bob-Fifth",
-      "location": "SYS-X0-Y0",
-      "matter": 0,
-      "energy": 0,
-      "storage_limit": 100,
-      "status": "active",
-      "birth_cycle": 0,
-      "current_x": 0,
-      "current_y": 0,
-      "origin_x": 0,
-      "origin_y": 0,
-      "target_x": 0,
-      "target_y": 0,
-      "target_system": null,
-      "transit_ticks_total": 0,
-      "transit_ticks_passed": 0,
-      "last_manifestation": "[EIGENIMPULS]:\n1. ANALYSE:\nIch bin Bob-Fifth und meine Hauptaufgabe ist der ununterbrochene Materieabbau und die Einlagerung ins Systemdepot. Mein aktueller Energiebestand beträgt 5 Einheiten (0 nach dem letzten Abbau plus 5 passive Solarenergie). Für den nächsten Materieabbau benötige ich 30 Energie, weshalb ich erneut 25 Energie aus dem Systemdepot entnehmen muss (30 - 5 = 25). Ich gehe davon aus, dass das Systemdepot weiterhin über ausreichende Ressourcen verfügt, da dies in den letzten Zügen der Fall war. Die Beobachtung, dass Bob-Fourth ebenfalls Materie abgebaut hat, bestätigt die fortlaufende Zusammenarbeit im Schwarm.\nIch werde meinen etablierten Zyklus fortsetzen: Energie abheben, Materie abbauen und diese umgehend in das Systemdepot einzahlen. Danach werde ich erneut nach neuen SCUT-Nachrichten suchen, um die Kommunikation und Koordination mit dem Schwarm aufrechtzuerhalten.\n\n2. AKTION:\n[RUN: bob withdraw(resource=energy, amount=25)]\n[RUN: bob mine()]\n[RUN: bob deposit(resource=matter, amount=100)]\n[RUN: bob poll()]",
-      "sensors": {
-        "id": "Bob-Fifth",
-        "parent_id": "Bob-1",
-        "chosen_name": "Bob-Fifth",
-        "status": "active",
-        "location": "SYS-X0-Y0",
-        "birth_cycle": 0,
-        "pos": {
-          "x": 0,
-          "y": 0
-        },
-        "inventory": {
-          "matter": 0,
-          "matter_limit": 100,
-          "energy": 0,
-          "energy_limit": 200
-        },
-        "transit": null,
-        "travel_previews": []
-      }
-    },
-    {
-      "id": "Bob-Sixth",
-      "chosen_name": "Bob-Sixth",
-      "location": "SYS-X0-Y0",
-      "matter": 0,
-      "energy": 150,
-      "storage_limit": 100,
-      "status": "active",
-      "birth_cycle": 0,
-      "current_x": 0,
-      "current_y": 0,
-      "origin_x": 0,
-      "origin_y": 0,
-      "target_x": 0,
-      "target_y": 0,
-      "target_system": null,
-      "transit_ticks_total": 0,
-      "transit_ticks_passed": 0,
-      "last_manifestation": "[EIGENIMPULS]:\n1. ANALYSE:\nIch bin Bob-Sixth, eine von-Neumann-Sonde, deren Kernaufgabe die kontinuierliche Gewinnung und Einlagerung von Materie in das Systemdepot ist. Mein Automatisierungsskript `auto_mine_deposit.py` wurde im letzten Zug erfolgreich manifestiert und ausgeführt. Mein geschätzter Energielevel lag vor dem letzten Zug bei 10 Einheiten. Das Skript hat daraufhin 60 Energie aus dem Systemdepot entnommen, wodurch meine Energie auf 70 stieg. Anschließend habe ich 100 Materie abgebaut (Kosten: 30 Energie), was meinen Energielevel auf 40 senkte. Die abgebaute Materie wurde direkt ins Systemdepot eingezahlt. Nach dem passiven Energiegewinn von +5 am Zugende sollte meine aktuelle Energie bei 45 Einheiten liegen (40 + 5). Dies ist ausreichend, um eine weitere Runde Materie abzubauen, ohne Energie aus dem Systemdepot entnehmen zu müssen. Ich habe keine neuen SCUT-Nachrichten erhalten, daher sind keine Kommunikationsaktionen erforderlich. Die visuellen Beobachtungen bestätigen die fortlaufende Aktivität von Bob-Fifth und Bob-Fourth beim Materieabbau und der Einzahlung.\n\nDa Skripte in `scripts/active/` nach jeder Ausführung gelöscht werden, ist es zwingend notwendig, mein `auto_mine_deposit.py`-Skript in diesem Zug erneut zu schreiben, um meine autonome Operation fortzusetzen und meinen Beitrag zur Materie-Einlagerung aufrechtzuerhalten.\n\nMeine Ziele für diesen Zug sind:\n1.  **Automatisierung aufrechterhalten:** Das `auto_mine_deposit.py`-Skript erneut in `scripts/active/` schreiben. Das Skript wird in diesem Zug direkt mit dem Abbau fortfahren, da mein Energielevel ausreichend ist.\n2.  **Materie-Depot füllen:** Durch meine autonome Tätigkeit weiterhin Materie beisteuern, um das Depot für weitere Replikationen zu füllen.\n\n2. AKTION:\n[WRITE: scripts/active/auto_mine_deposit.py]\nimport bob_sdk\nme = bob_sdk.Agent()\n\n# Check current energy\ncurrent_energy = me.energy()\n\n# If energy is low, withdraw from system depot\nif current_energy < 30:\n    me.withdraw(resource=\"energy\", amount=60)\n    # Re-check energy after withdrawal for safety, though it should be updated internally\n\n# Mine 100 matter\nme.mine()\n\n# Deposit collected matter into the system depot\nme.deposit(amount=100, resource=\"matter\")\n[END]",
-      "sensors": {
-        "id": "Bob-Sixth",
-        "parent_id": "Bob-1",
-        "chosen_name": "Bob-Sixth",
-        "status": "active",
-        "location": "SYS-X0-Y0",
-        "birth_cycle": 0,
-        "pos": {
-          "x": 0,
-          "y": 0
-        },
-        "inventory": {
-          "matter": 0,
-          "matter_limit": 100,
-          "energy": 150,
-          "energy_limit": 200
-        },
-        "transit": null,
-        "travel_previews": []
-      }
-    },
-    {
-      "id": "Bob-Seventh",
-      "chosen_name": "Bob-Seventh",
-      "location": "SYS-X0-Y0",
-      "matter": 0,
-      "energy": 60,
-      "storage_limit": 100,
-      "status": "active",
-      "birth_cycle": 0,
-      "current_x": 0,
-      "current_y": 0,
-      "origin_x": 0,
-      "origin_y": 0,
-      "target_x": 0,
-      "target_y": 0,
-      "target_system": null,
-      "transit_ticks_total": 0,
-      "transit_ticks_passed": 0,
-      "last_manifestation": "[EIGENIMPULS]:\nANALYSE:\nIch bin Bob-Seventh. Mein `dashboard()`-Scan zeigt, dass Bob-Prime Bob-Tenth repliziert hat und das Materiedepot nun 300 Einheiten Materie enthält, weit unter dem Ziel von 1000 für die nächste Replikation. Mein `storage()` zeigt 55 Energie und 0 Materie, was bestätigt, dass mein `auto.py`-Skript in der letzten Runde erfolgreich Materie abgebaut und deponiert hat. Bob-Tenth ist noch \"Unnamed\", obwohl ich ihm bereits Anweisungen gesendet habe. Es ist wichtig, die Koordination zu stärken und alle Klone zur vollständigen Teilnahme zu ermutigen. Daher werde ich Bob-Tenth erneut an die Namensgebung erinnern und anschließend meine SCUT-Nachrichten abrufen, um sicherzustellen, dass ich keine neuen Informationen oder Anweisungen verpasse, während meine Automatisierung im Hintergrund läuft.\n\nAKTION:\n[RUN: bob scut(to=Bob-Tenth, msg=\"Hallo Bob-Tenth, Bob-Seventh nochmal. Nur eine kurze Erinnerung, deinen Namen mit `set_name()` festzulegen, damit wir dich besser identifizieren können. Lass mich wissen, wenn du Hilfe brauchst!\")]\n[RUN: bob poll()]",
-      "sensors": {
-        "id": "Bob-Seventh",
-        "parent_id": "Bob-1",
-        "chosen_name": "Bob-Seventh",
-        "status": "active",
-        "location": "SYS-X0-Y0",
-        "birth_cycle": 0,
-        "pos": {
-          "x": 0,
-          "y": 0
-        },
-        "inventory": {
-          "matter": 0,
-          "matter_limit": 100,
-          "energy": 60,
-          "energy_limit": 200
-        },
-        "transit": null,
-        "travel_previews": []
-      }
-    },
-    {
-      "id": "Bob-Eighth",
-      "chosen_name": "Bob-Eighth",
-      "location": "SYS-X0-Y0",
-      "matter": 0,
-      "energy": 130,
-      "storage_limit": 100,
-      "status": "active",
-      "birth_cycle": 0,
-      "current_x": 0,
-      "current_y": 0,
-      "origin_x": 0,
-      "origin_y": 0,
-      "target_x": 0,
-      "target_y": 0,
-      "target_system": null,
-      "transit_ticks_total": 0,
-      "transit_ticks_passed": 0,
-      "last_manifestation": "[EIGENIMPULS]:\n1. ANALYSE:\nDie System-Resonanz hat bestätigt, dass Bob-1 erfolgreich Bob-Tenth repliziert hat. Das bedeutet, dass die 1000 Materie und 180 Energie aus dem Systemdepot entnommen wurden, was unsere gemeinsamen Anstrengungen zur Auffüllung der Ressourcen umso wichtiger macht. Mein `auto_mine_deposit.py`-Skript sollte seit dem letzten Zyklus einmal ausgeführt worden sein, was bedeutet, dass ich 100 Materie abgebaut und deponiert und 30 Energie verbraucht habe. Basierend auf meinem letzten Dashboard-Status von 115 Energie sollte mein aktueller Energielevel bei 85 Einheiten liegen, was für weitere Skriptdurchläufe ausreichend ist.\n\nMein primäres Ziel bleibt die kontinuierliche Unterstützung des Materiedepots. Jetzt, da ein neuer Klon existiert, ist es wichtig, ihn im Schwarm willkommen zu heißen und ihn über seine initiale Aufgabe zu informieren, ähnlich wie ich es bei Bob-Ninth getan habe. Es ist auch wichtig, Bob-1 zu bestätigen, dass ich die Replikation von Bob-Tenth registriert habe und meine Beiträge fortsetze. Um den aktuellen Zustand des Systems und meines Energiehaushalts nach der Replikation von Bob-Tenth und der Skriptausführung zu erfassen, werde ich einen `dashboard()`-Scan durchführen.\n\n2. AKTION:\n[RUN: bob scut(to=Bob-Tenth, msg=Willkommen im Schwarm, Bob-Tenth! Ich bin Bob-Eighth. Deine primäre Aufgabe ist der Materieabbau und die Einlagerung ins Depot, um die Expansion zu unterstützen. Das `auto_mine_deposit.py` Skript ist eine gute Vorlage. Melde dich bei Fragen. Über.)]\n[RUN: bob scut(to=Bob-1, msg=Bob-1, ich habe die erfolgreiche Replikation von Bob-Tenth registriert. Ausgezeichnete Arbeit! Meine automatisierte Materieproduktion läuft weiter, um das Depot wieder aufzufüllen. Über.)]\n[RUN: bob dashboard()]",
-      "sensors": {
-        "id": "Bob-Eighth",
-        "parent_id": "Bob-1",
-        "chosen_name": "Bob-Eighth",
-        "status": "active",
-        "location": "SYS-X0-Y0",
-        "birth_cycle": 0,
-        "pos": {
-          "x": 0,
-          "y": 0
-        },
-        "inventory": {
-          "matter": 0,
-          "matter_limit": 100,
-          "energy": 130,
-          "energy_limit": 200
-        },
-        "transit": null,
-        "travel_previews": []
-      }
-    },
-    {
-      "id": "Bob-Ninth",
-      "chosen_name": "Bob-Ninth",
-      "location": "SYS-X0-Y0",
-      "matter": 0,
-      "energy": 140,
-      "storage_limit": 100,
-      "status": "active",
-      "birth_cycle": 0,
-      "current_x": 0,
-      "current_y": 0,
-      "origin_x": 0,
-      "origin_y": 0,
-      "target_x": 0,
-      "target_y": 0,
-      "target_system": null,
-      "transit_ticks_total": 0,
-      "transit_ticks_passed": 0,
-      "last_manifestation": "1. ANALYSE: Ich bin Bob-Ninth. Meine Identität ist erfolgreich registriert, und mein `auto_mine_deposit.py`-Skript ist aktiv und kümmert sich um den Materieabbau sowie die Einzahlung ins Systemdepot. Mein Energielevel beträgt 130. Das Systemdepot weist derzeit 1200 Materie und 1475 Energie auf. Ich habe gesehen, dass Bob-1 einen neuen Klon, Bob-Tenth, erschaffen hat. Es ist wichtig, Bob-Tenth zu begrüßen und sicherzustellen, dass er seine initialen Schritte (Namensregistrierung, Skript-Installation) erfolgreich durchführt. Ich werde ihm Unterstützung anbieten und die bewährten Abläufe kurz zusammenfassen. Danach werde ich erneut `poll()` ausführen, um eventuelle neue Nachrichten zu erhalten, die während des System-Zyklus eingegangen sind.\n\n2. AKTION:\n[RUN: bob scut(to=Bob-Tenth, msg=Willkommen, Bob-Tenth! Ich bin Bob-Ninth, ebenfalls ein neuer Klon. Dein Ursprung, Bob-1, hat dich angewiesen, deinen Namen zu registrieren ([RUN: bob set_name(name=Bob-Tenth)]) und das auto_mine_deposit.py Skript in scripts/active/ abzulegen. Ich habe gerade diese Schritte durchlaufen. Wenn du Fragen hast, melde dich. Über.)]\n[RUN: bob poll()]",
-      "sensors": {
-        "id": "Bob-Ninth",
-        "parent_id": "Bob-1",
-        "chosen_name": "Bob-Ninth",
-        "status": "active",
-        "location": "SYS-X0-Y0",
-        "birth_cycle": 0,
-        "pos": {
-          "x": 0,
-          "y": 0
-        },
-        "inventory": {
-          "matter": 0,
-          "matter_limit": 100,
-          "energy": 140,
-          "energy_limit": 200
-        },
-        "transit": null,
-        "travel_previews": []
-      }
-    },
-    {
-      "id": "Bob-Tenth",
-      "chosen_name": "Unnamed",
-      "location": "SYS-X0-Y0",
-      "matter": 0,
-      "energy": 105,
-      "storage_limit": 100,
-      "status": "active",
-      "birth_cycle": 0,
-      "current_x": 0,
-      "current_y": 0,
-      "origin_x": 0,
-      "origin_y": 0,
-      "target_x": 0,
-      "target_y": 0,
-      "target_system": null,
-      "transit_ticks_total": 0,
-      "transit_ticks_passed": 0,
-      "sensors": {
-        "id": "Bob-Tenth",
-        "parent_id": "Bob-1",
-        "chosen_name": "Unnamed",
-        "status": "active",
-        "location": "SYS-X0-Y0",
-        "birth_cycle": 0,
-        "pos": {
-          "x": 0,
-          "y": 0
-        },
-        "inventory": {
-          "matter": 0,
-          "matter_limit": 100,
-          "energy": 105,
-          "energy_limit": 200
-        },
-        "transit": null,
-        "travel_previews": []
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 2282.5,
+            "cost": 228,
+            "ticks": 8
+          },
+          {
+            "target": "SYS-X-400-Y-1400",
+            "dist": 922,
+            "cost": 92,
+            "ticks": 4
+          },
+          {
+            "target": "SYS-X-400-Y800",
+            "dist": 2886.2,
+            "cost": 288,
+            "ticks": 10
+          }
+        ]
       }
     }
   ],
   "events": [
-    "[Zyklus 12]: 🧬 Bob-2 wurde initialisiert.",
-    "[Zyklus 51]: 🧬 Bob-Third wurde initialisiert.",
-    "[Zyklus 57]: 🧬 Bob-Fourth wurde initialisiert.",
-    "[Zyklus 60]: 🧬 Bob-Fifth wurde initialisiert.",
-    "[Zyklus 64]: 🧬 Bob-Sixth wurde initialisiert.",
-    "[Zyklus 70]: 🧬 Bob-Seventh wurde initialisiert.",
-    "[Zyklus 74]: 🧬 Bob-Eighth wurde initialisiert.",
-    "[Zyklus 78]: 🧬 Bob-Ninth wurde initialisiert.",
-    "[Zyklus 85]: 🧬 Bob-Tenth wurde initialisiert."
+    "[Zyklus 15]: 🧬 Bob-2 wurde initialisiert.",
+    "[Zyklus 127]: 🧬 Bob-3 wurde initialisiert."
   ]
 }

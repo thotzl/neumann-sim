@@ -22,19 +22,19 @@ class TestStateExporter(unittest.TestCase):
             display_name TEXT,
             x INTEGER,
             y INTEGER,
-            resources INTEGER, 
-            matter_stored INTEGER, 
-            matter_cap INTEGER, 
-            energy_stored INTEGER, 
-            energy_cap INTEGER, 
+            extractable_matter_in_core INTEGER, 
+            raw_matter_depot INTEGER, 
+            depot_matter_capacity INTEGER, 
+            energy_depot INTEGER, 
+            depot_energy_capacity INTEGER, 
             passive_matter_rate INTEGER, 
             passive_energy_rate INTEGER, 
             energy_rate INTEGER
         )''')
         cursor.execute('''CREATE TABLE agents (
             id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, 
-            matter INTEGER DEFAULT 0, energy INTEGER DEFAULT 100, 
-            storage_limit INTEGER DEFAULT 100, status TEXT, birth_cycle INTEGER DEFAULT 0,
+            raw_matter_inventory INTEGER DEFAULT 0, energy_inventory INTEGER DEFAULT 100, 
+            matter_storage_capacity INTEGER DEFAULT 100, status TEXT, birth_cycle INTEGER DEFAULT 0,
             target_system TEXT DEFAULT NULL, origin_x INTEGER DEFAULT 0, origin_y INTEGER DEFAULT 0,
             target_x INTEGER DEFAULT 0, target_y INTEGER DEFAULT 0,
             transit_ticks_total INTEGER DEFAULT 0, transit_ticks_passed INTEGER DEFAULT 0,
@@ -42,8 +42,8 @@ class TestStateExporter(unittest.TestCase):
         )''')
         cursor.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER)")
         
-        cursor.execute("INSERT INTO systems (name, display_name, x, y, resources, matter_cap) VALUES ('SYS-X0-Y0', 'Home', 0, 0, 1000, 2000)")
-        cursor.execute("INSERT INTO agents (id, chosen_name, location, matter, energy, storage_limit, status) VALUES ('Bob-1', 'Original', 'SYS-X0-Y0', 50, 100, 100, 'active')")
+        cursor.execute("INSERT INTO systems (name, display_name, x, y, extractable_matter_in_core, depot_matter_capacity) VALUES ('SYS-X0-Y0', 'Home', 0, 0, 1000, 2000)")
+        cursor.execute("INSERT INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status) VALUES ('Bob-1', 'Original', 'SYS-X0-Y0', 50, 100, 100, 'active')")
         cursor.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS-X0-Y0', 'matter_silo', 'active')")
         conn.commit()
         conn.close()

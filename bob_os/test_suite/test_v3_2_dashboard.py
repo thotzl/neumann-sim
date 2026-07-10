@@ -35,9 +35,9 @@ class TestBobOS_v3_2_Dashboard(unittest.TestCase):
     def test_01_schema_stability(self):
         conn = db_config.get_connection()
         # Lege Testdaten an
-        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy, matter, status, storage_limit) VALUES ('Bob-1', 'SYS-X0-Y0', 0, 0, 100, 100, 'active', 300)")
-        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy, matter, status, chosen_name) VALUES ('Bob-2', 'SYS-X0-Y0', 0, 0, 50, 0, 'active', 'Bob-Zwei')")
-        conn.execute("INSERT OR REPLACE INTO systems (name, x, y, resources, matter_stored, energy_stored) VALUES ('SYS-X0-Y0', 0, 0, 1000, 0, 0)")
+        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy_inventory, raw_matter_inventory, status, matter_storage_capacity) VALUES ('Bob-1', 'SYS-X0-Y0', 0, 0, 100, 100, 'active', 300)")
+        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy_inventory, raw_matter_inventory, status, chosen_name) VALUES ('Bob-2', 'SYS-X0-Y0', 0, 0, 50, 0, 'active', 'Bob-Zwei')")
+        conn.execute("INSERT OR REPLACE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-X0-Y0', 0, 0, 1000, 0, 0)")
         conn.commit()
         conn.close()
 
@@ -50,13 +50,13 @@ class TestBobOS_v3_2_Dashboard(unittest.TestCase):
         entities = self.agent.sensors.entities()
         bob2 = next(e for e in entities if e['id'] == 'Bob-2')
         self.assertEqual(bob2['chosen_name'], 'Bob-Zwei')
-        self.assertNotIn('energy', bob2) # Privacy Check
+        self.assertNotIn('energy_inventory', bob2) # Privacy Check
 
         # Test Personal Storage Sensor
         storage = self.agent.sensors.storage()
-        self.assertEqual(storage['energy'], 100)
-        self.assertEqual(storage['matter'], 100)
-        self.assertEqual(storage['storage_limit'], 300)
+        self.assertEqual(storage['energy_inventory'], 100)
+        self.assertEqual(storage['raw_matter_inventory'], 100)
+        self.assertEqual(storage['matter_storage_capacity'], 300)
 
 if __name__ == '__main__':
     unittest.main()

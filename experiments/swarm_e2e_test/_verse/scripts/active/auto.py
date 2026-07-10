@@ -1,0 +1,1 @@
+import bob_sdk; me = bob_sdk.Agent(); me.mine()

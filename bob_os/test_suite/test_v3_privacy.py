@@ -35,7 +35,7 @@ class TestBobOS_v3_Privacy(unittest.TestCase):
     def test_01_entity_privacy(self):
         conn = db_config.get_connection()
         # Bob-2 hat viel Energie und Materie
-        conn.execute("INSERT OR REPLACE INTO agents (id, location, energy, matter, status) VALUES ('Bob-2', 'SYS-X0-Y0', 500, 300, 'active')")
+        conn.execute("INSERT OR REPLACE INTO agents (id, location, energy_inventory, raw_matter_inventory, status) VALUES ('Bob-2', 'SYS-X0-Y0', 500, 300, 'active')")
         conn.commit()
         conn.close()
 
@@ -43,9 +43,9 @@ class TestBobOS_v3_Privacy(unittest.TestCase):
         bob2 = next(e for e in entities if e['id'] == 'Bob-2')
         
         # Diese Felder dürfen NICHT im Output sein
-        self.assertNotIn('energy', bob2)
-        self.assertNotIn('matter', bob2)
-        self.assertNotIn('storage_limit', bob2)
+        self.assertNotIn('energy_inventory', bob2)
+        self.assertNotIn('raw_matter_inventory', bob2)
+        self.assertNotIn('matter_storage_capacity', bob2)
         
         # Diese Felder sind öffentliche Metadaten
         self.assertIn('id', bob2)

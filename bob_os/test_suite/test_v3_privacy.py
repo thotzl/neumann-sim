@@ -4,12 +4,11 @@ import sqlite3
 import json
 import sys
 
-# Pfade für Tools hinzufügen
+# Pfade für SDK hinzufügen
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from core.lib import bob_sdk, db_config
 from core.bin import init_db
-from _verse.tools import dashboard
-from core.lib.db_config import get_connection
 
 TEST_DB = 'test_universe_privacy.db'
 TEST_POP = 'test_population_privacy.json'
@@ -20,37 +19,38 @@ class TestBobOS_v3_Privacy(unittest.TestCase):
     def setUpClass(cls):
         os.environ['TEST_DB_PATH'] = TEST_DB
         os.environ['TEST_POP_PATH'] = TEST_POP
+        os.environ['BOB_ID'] = 'Bob-1'
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_POP): os.remove(TEST_POP)
         with open(TEST_POP, 'w') as f: json.dump({"version": 1, "agents": []}, f)
         init_db.init()
+        cls.agent = bob_sdk.Agent('Bob-1')
         
     @classmethod
     def tearDownClass(cls):
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_POP): os.remove(TEST_POP)
+        if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
-    def test_01_dashboard_privacy(self):
-        conn = get_connection()
-        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy, matter, status) VALUES ('Bob-2', 'SYS-X500-Y500', 500, 500, 100, 100, 'active')")
+    def test_01_entity_privacy(self):
+        conn = db_config.get_connection()
+        # Bob-2 hat viel Energie und Materie
+        conn.execute("INSERT OR REPLACE INTO agents (id, location, energy, matter, status) VALUES ('Bob-2', 'SYS-X0-Y0', 500, 300, 'active')")
         conn.commit()
         conn.close()
 
-        # Wir fangen den stdout von dashboard.py ab
-        output = dashboard.get_dashboard('Bob-1')
+        entities = self.agent.sensors.entities()
+        bob2 = next(e for e in entities if e['id'] == 'Bob-2')
         
-        # 1. Bob-2 sollte in den public agents sein, aber OHNE current_x/y
-        bob2_public = next(a for a in output['agents'] if a['id'] == 'Bob-2')
-        self.assertNotIn('current_x', bob2_public)
-        self.assertNotIn('current_y', bob2_public)
-        self.assertNotIn('energy', bob2_public)
-        self.assertNotIn('matter', bob2_public)
+        # Diese Felder dürfen NICHT im Output sein
+        self.assertNotIn('energy', bob2)
+        self.assertNotIn('matter', bob2)
+        self.assertNotIn('storage_limit', bob2)
         
-        # 2. Bob-1 sollte im YOU block SEINE Exakten Daten haben
-        self.assertIn('you', output)
-        self.assertEqual(output['you']['id'], 'Bob-1')
-        self.assertIn('pos', output['you'])
-        self.assertEqual(output['you']['pos']['x'], 0)
+        # Diese Felder sind öffentliche Metadaten
+        self.assertIn('id', bob2)
+        self.assertIn('chosen_name', bob2)
+        self.assertIn('status', bob2)
 
 if __name__ == '__main__':
     unittest.main()

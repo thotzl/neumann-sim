@@ -23,7 +23,13 @@ try {
     }
 
     // 2. Test: Normaler Build
-    execSync(`python3 bob_os/build.py ${expName} --rounds 1 --skip-tests --mission "Test"`, { stdio: 'ignore' });
+    try {
+        execSync(`python3 bob_os/build.py ${expName} --rounds 1 --skip-tests --mission "Test"`, { stdio: 'pipe' });
+    } catch (e) {
+        console.error("Build-Output (stderr):", e.stderr.toString());
+        console.error("Build-Output (stdout):", e.stdout.toString());
+        throw e;
+    }
     
     // 3. Test: Wurden core und sim_engine mitkopiert?
     if (!fs.existsSync(path.join(expDir, 'sim_engine/runner.js'))) {

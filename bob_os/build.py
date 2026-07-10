@@ -5,44 +5,27 @@ import subprocess
 import argparse
 import json
 
-def get_tool_documentation(tools_dir, exp_dir):
-    """Scannt tools_dir und extrahiert Beschreibungen aus --help."""
-    docs = []
-    if not os.path.exists(tools_dir): return ""
-    
-    # Sortiere alphabetisch für Konsistenz
-    tool_files = sorted([f for f in os.listdir(tools_dir) if f.endswith('.py')])
-    
-    for tool in tool_files:
-        try:
-            tool_path = os.path.abspath(os.path.join(tools_dir, tool))
-            
-            # PYTHONPATH muss auf exp_dir zeigen, damit core.lib gefunden wird
-            env = os.environ.copy()
-            env["PYTHONPATH"] = os.path.abspath(exp_dir)
-            
-            # Führe das Tool aus (relativ zum experiment root)
-            result = subprocess.run(
-                ['python3', tool_path, '--help'],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env, timeout=5,
-                cwd=exp_dir
-            )
-            
-            output = result.stdout.strip()
-            if output:
-                # Extrahiere die Zeile mit "Beschreibung:"
-                desc_line = "Keine Beschreibung verfügbar."
-                for line in output.split('\n'):
-                    if "Beschreibung:" in line:
-                        desc_line = line.replace("Beschreibung:", "").strip()
-                        break
-                docs.append(f"- {tool}: {desc_line}")
-            else:
-                docs.append(f"- {tool}: (Keine Hilfe-Ausgabe)")
-        except Exception as e:
-            docs.append(f"- {tool}: (Fehler: {str(e)})")
-            
-    return "\n".join(docs)
+def get_tool_documentation(exp_dir):
+    """Ruft bob.py --help auf und liefert die V8.0 Doku zurück."""
+    try:
+        env = os.environ.copy()
+        env["PYTHONPATH"] = os.path.abspath(exp_dir)
+        bob_path = os.path.join(exp_dir, 'core', 'bin', 'bob.py')
+        
+        result = subprocess.run(
+            ['python3', bob_path, '--help'],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env, timeout=5,
+            cwd=exp_dir
+        )
+        output = result.stdout.strip()
+        
+        # Wir nehmen nur den Teil zwischen den Trennlinien
+        parts = output.split("-" * 50)
+        if len(parts) >= 2:
+            return parts[1].strip()
+        return output
+    except Exception as e:
+        return f"(Fehler beim Laden der Tool-Doku: {str(e)})"
 
 def build_experiment(args):
     # --- PRE-BUILD HOOK (CI) ---
@@ -76,19 +59,19 @@ def build_experiment(args):
         if args.force:
             print(f"[RESET] Lösche alte Struktur für {args.version}...")
             for d in [target_verse, target_core, target_engine]:
-                if os.path.exists(d): shutil.rmtree(d)
+                if os.path.exists(d): shutil.rmtree(d, ignore_errors=True)
             for f in ['state.json', 'log.md', 'world_state.json', 'history.json', 'report.md']:
                 p = os.path.join(exp_dir, f)
                 if os.path.exists(p): os.remove(p)
     else:
-        os.makedirs(exp_dir)
+        os.makedirs(exp_dir, exist_ok=True)
 
     # 1. Kopiere Blueprints (Autarkie)
     shutil.copytree(source_verse, target_verse, dirs_exist_ok=True)
     shutil.copytree(source_core, target_core, dirs_exist_ok=True)
     shutil.copytree(source_engine, target_engine, dirs_exist_ok=True)
 
-    # 2. Initialisiere DB (aus dem neuen core/bin Ordner)
+    # 2. Initialisiere DB
     print(f"Initialisiere Datenbank für {args.version}...")
     env = os.environ.copy()
     env["PYTHONPATH"] = os.path.abspath(exp_dir)
@@ -96,7 +79,7 @@ def build_experiment(args):
 
     # 3. Generiere Tool-Dokumentation für den Prompt
     print("Generiere Tool-Dokumentation...")
-    tool_docs = get_tool_documentation(os.path.join(target_verse, 'tools'), exp_dir)
+    tool_docs = get_tool_documentation(exp_dir)
 
     # 4. Erstelle Config aus Template
     config_file = os.path.join(exp_dir, 'config.json')
@@ -106,11 +89,10 @@ def build_experiment(args):
             
         template["rounds"] = args.rounds
         
-        # Erweitere Mission um Tool-Doku
-        mission_text = args.mission
-        full_prompt = f"{mission_text}\n\nVERFÜGBARE HARDWARE (tools/):\n{tool_docs}"
-        
-        template["agents"][0]["system_prompt"] = full_prompt
+        # In V8.0 Architektur steht im system_prompt NUR noch die Mission.
+        # Hardware-Doku und Ethik werden dynamisch von der Engine (api_client.js)
+        # und dem global_system_instruction (core-config.json) hinzugefügt.
+        template["agents"][0]["system_prompt"] = args.mission
         
         if args.agent != "Bob-1":
             template["agents"][0]["id"] = args.agent
@@ -124,8 +106,8 @@ def build_experiment(args):
     # 5. Post-Build Sanity Check
     required_paths = [
         os.path.join(target_verse, 'universe.db'),
-        os.path.join(target_verse, 'tools', 'mine.py'),
-        os.path.join(target_core, 'lib', 'config_service.py'),
+        os.path.join(target_core, 'bin', 'bob.py'),
+        os.path.join(target_core, 'lib', 'bob_sdk.py'),
         config_file
     ]
     missing = [p for p in required_paths if not os.path.exists(p)]

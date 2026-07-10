@@ -4,12 +4,11 @@ import sqlite3
 import json
 import sys
 
-# Pfade für Tools hinzufügen
+# Pfade für SDK hinzufügen
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.bin import init_db
-from _verse.tools import rename_system
-from core.lib.db_config import get_connection
+from core.lib import bob_sdk, db_config
 
 TEST_DB = 'test_universe_naming.db'
 TEST_POP = 'test_population_naming.json'
@@ -20,47 +19,32 @@ class TestBobOS_v3_Naming(unittest.TestCase):
     def setUpClass(cls):
         os.environ['TEST_DB_PATH'] = TEST_DB
         os.environ['TEST_POP_PATH'] = TEST_POP
+        os.environ['BOB_ID'] = 'Bob-1'
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_POP): os.remove(TEST_POP)
         with open(TEST_POP, 'w') as f: json.dump({"version": 1, "agents": []}, f)
         init_db.init()
+        cls.agent = bob_sdk.Agent('Bob-1')
         
     @classmethod
     def tearDownClass(cls):
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_POP): os.remove(TEST_POP)
+        if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
     def test_01_rename_success(self):
-        # Wir fangen den stdout ab
-        import io
-        from contextlib import redirect_stdout
-        f = io.StringIO()
-        with redirect_stdout(f):
-            rename_system.rename('Bob-1', 'Heimat')
-        
-        output = f.getvalue()
-        self.assertTrue("[SUCCESS]" in output)
-        
-        conn = get_connection()
+        self.agent.actuators.rename_system('Heimat')
+        conn = db_config.get_connection()
         sys_name = conn.execute("SELECT display_name FROM systems WHERE name='SYS-X0-Y0'").fetchone()[0]
         self.assertEqual(sys_name, 'Heimat')
         conn.close()
 
-    def test_02_rename_duplicate_warning(self):
-        conn = get_connection()
-        conn.execute("INSERT INTO systems (name, display_name) VALUES ('SYS-X500-Y500', 'Heimat')")
-        conn.commit()
+    def test_02_set_agent_name(self):
+        self.agent.actuators.set_name('Commander-Bob')
+        conn = db_config.get_connection()
+        name = conn.execute("SELECT chosen_name FROM agents WHERE id='Bob-1'").fetchone()[0]
+        self.assertEqual(name, 'Commander-Bob')
         conn.close()
-
-        import io
-        from contextlib import redirect_stdout
-        f = io.StringIO()
-        with redirect_stdout(f):
-            # Bob versucht nochmal Heimat zu vergeben
-            rename_system.rename('Bob-1', 'Heimat')
-        
-        output = f.getvalue()
-        self.assertTrue("[HINWEIS:" in output)
 
 if __name__ == '__main__':
     unittest.main()

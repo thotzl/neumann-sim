@@ -4,16 +4,11 @@ import sqlite3
 import json
 import sys
 
-# Pfade für Tools hinzufügen
+# Pfade für SDK hinzufügen
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.bin import init_db
-from _verse.tools import mine
-from _verse.tools import build
-from _verse.tools import deposit
-from _verse.tools import withdraw
-from core.bin import physics_update
-from _verse.tools import deconstruct
+from core.lib import bob_sdk
 from core.lib.db_config import get_connection
 
 TEST_DB = 'test_universe_v3.db'
@@ -27,19 +22,22 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         cls.rules = config_service.get_economy_rules()
         os.environ['TEST_DB_PATH'] = TEST_DB
         os.environ['TEST_POP_PATH'] = TEST_POP
+        os.environ['BOB_ID'] = 'Bob-1'
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_POP): os.remove(TEST_POP)
         with open(TEST_POP, 'w') as f: json.dump({"version": 1, "agents": []}, f)
         init_db.init()
+        cls.agent = bob_sdk.Agent('Bob-1')
         
     @classmethod
     def tearDownClass(cls):
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_POP): os.remove(TEST_POP)
+        if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
     def test_01_mine_in_grid_system(self):
         # Bob-1 startet laut init_db in SYS-X0-Y0
-        mine.mine('Bob-1')
+        self.agent.actuators.mine()
         conn = get_connection()
         res = conn.execute("SELECT energy, matter, location FROM agents WHERE id='Bob-1'").fetchone()
         
@@ -52,11 +50,21 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         conn.close()
 
     def test_02_async_build_in_grid(self):
-        # Bauen in SYS-X0-Y0
-        build.build('Bob-1', 'matter_silo')
+        # 1. Start eines neuen Projekts (Sollte INSERT auslösen)
+        self.agent.actuators.build('matter_silo', amount=100)
+        
         conn = get_connection()
-        infra = conn.execute("SELECT progress_matter FROM infrastructure WHERE system_name='SYS-X0-Y0' AND type='matter_silo'").fetchone()
+        infra = conn.execute("SELECT progress_matter, status FROM infrastructure WHERE system_name='SYS-X0-Y0' AND type='matter_silo'").fetchone()
+        self.assertIsNotNone(infra, "Infrastruktur-Projekt wurde nicht in DB angelegt!")
         self.assertEqual(infra['progress_matter'], 100)
+        self.assertEqual(infra['status'], 'construction')
+        
+        # 2. Baufortsetzung und Fertigstellung (Sollte UPDATE auslösen und Status auf active setzen)
+        self.agent.actuators.build('matter_silo', amount=300)
+        
+        infra_done = conn.execute("SELECT progress_matter, status FROM infrastructure WHERE system_name='SYS-X0-Y0' AND type='matter_silo'").fetchone()
+        self.assertEqual(infra_done['progress_matter'], 400)
+        self.assertEqual(infra_done['status'], 'active')
         conn.close()
 
     def test_03_grid_integrity(self):
@@ -74,7 +82,7 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         conn.execute("UPDATE agents SET matter=?, energy=200 WHERE id='Bob-1'", (limit,))
         conn.commit()
         
-        mine.mine('Bob-1')
+        self.agent.actuators.mine()
         
         res = conn.execute("SELECT energy, matter FROM agents WHERE id='Bob-1'").fetchone()
         self.assertEqual(res['matter'], limit)
@@ -91,7 +99,7 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         conn.commit()
         
         # Deconstruct
-        deconstruct.deconstruct('Bob-1', infra_id)
+        self.agent.actuators.deconstruct(infra_id)
         
         # Prüfe: Silo sollte 100 + 200 (50% von 400) = 300 haben
         res = conn.execute("SELECT matter_stored FROM systems WHERE name = 'SYS-X0-Y0'").fetchone()

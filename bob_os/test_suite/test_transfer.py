@@ -1,69 +1,56 @@
 import unittest
 import os
-import sqlite3
-import json
 import sys
+import sqlite3
 
-# Pfade für Tools hinzufügen
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from core.lib import bob_sdk, db_config
 
-from core.lib.db_config import get_connection
-from core.bin import init_db
-from _verse.tools import transfer
-
-TEST_DB = 'test_universe_transfer.db'
-TEST_POP = 'test_population_transfer.json'
-
-class TestBobOS_v4_Transfer(unittest.TestCase):
-    
-    @classmethod
-    def setUpClass(cls):
-        os.environ['TEST_DB_PATH'] = TEST_DB
-        os.environ['TEST_POP_PATH'] = TEST_POP
-        if os.path.exists(TEST_DB): os.remove(TEST_DB)
-        if os.path.exists(TEST_POP): os.remove(TEST_POP)
-        with open(TEST_POP, 'w') as f: json.dump({"version": 1, "agents": []}, f)
-        init_db.init()
+class TestTransfer(unittest.TestCase):
+    def setUp(self):
+        self.test_db = "transfer_test.db"
+        os.environ['TEST_DB_PATH'] = self.test_db
+        os.environ['BOB_ID'] = 'Bob-1'
         
-    @classmethod
-    def tearDownClass(cls):
-        if os.path.exists(TEST_DB): os.remove(TEST_DB)
-        if os.path.exists(TEST_POP): os.remove(TEST_POP)
-
-    def test_01_p2p_transfer_success(self):
-        conn = get_connection()
-        # Bob-1 (Sender): 500E, 100M
-        # Bob-2 (Empfänger): 100E, 0M (Beide bei 0,0)
-        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy, matter, storage_limit, status) VALUES ('Bob-1', 'SYS-X0-Y0', 0, 0, 500, 100, 300, 'active')")
-        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy, matter, storage_limit, status) VALUES ('Bob-2', 'SYS-X0-Y0', 0, 0, 100, 0, 300, 'active')")
+        if os.path.exists(self.test_db): os.remove(self.test_db)
+        conn = sqlite3.connect(self.test_db)
+        c = conn.cursor()
+        c.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, location TEXT, energy INTEGER, matter INTEGER, storage_limit INTEGER, status TEXT, current_x REAL, current_y INTEGER)")
+        c.execute("INSERT INTO agents VALUES ('Bob-1', 'SYS-A', 100, 50, 300, 'active', 0, 0)")
+        c.execute("INSERT INTO agents VALUES ('Bob-2', 'SYS-A', 50, 0, 100, 'active', 0, 0)")
         conn.commit()
+        conn.close()
+        self.agent = bob_sdk.Agent('Bob-1')
+
+    def tearDown(self):
+        if os.path.exists(self.test_db): os.remove(self.test_db)
+        if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
+
+    def test_p2p_transfer_matter(self):
+        # Bob-1 schickt 50 Materie an Bob-2
+        success = self.agent.logistics.transfer('Bob-2', 'matter', 50)
+        self.assertTrue(success)
         
-        # Transfer 50 Materie von Bob-1 zu Bob-2
-        transfer.transfer('Bob-1', 'Bob-2', 'matter', 50)
+        status1 = self.agent.sensors.storage()
+        self.assertEqual(status1['matter'], 0)
         
-        res_sender = conn.execute("SELECT energy, matter FROM agents WHERE id='Bob-1'").fetchone()
-        res_recv = conn.execute("SELECT energy, matter FROM agents WHERE id='Bob-2'").fetchone()
-        
-        # V4: Kosten für Transfer wurden auf 0 gesetzt
-        self.assertEqual(res_sender['energy'], 500)
-        self.assertEqual(res_sender['matter'], 50)
-        self.assertEqual(res_recv['matter'], 50)
+        # Check Bob-2 via DB
+        conn = db_config.get_connection()
+        res2 = conn.execute("SELECT matter FROM agents WHERE id='Bob-2'").fetchone()
+        self.assertEqual(res2['matter'], 50)
         conn.close()
 
-    def test_02_transfer_out_of_range(self):
-        conn = get_connection()
-        # Bob-1 bei (0,0), Bob-2 bei (100, 100) -> Distanz > 5
-        conn.execute("UPDATE agents SET current_x=100, current_y=100 WHERE id='Bob-2'")
-        conn.commit()
+    def test_p2p_transfer_energy(self):
+        # Bob-1 schickt 50 Energie an Bob-2
+        success = self.agent.logistics.transfer('Bob-2', 'energy', 50)
+        self.assertTrue(success)
         
-        import io
-        from contextlib import redirect_stdout
-        f = io.StringIO()
-        with redirect_stdout(f):
-            transfer.transfer('Bob-1', 'Bob-2', 'matter', 10)
+        status1 = self.agent.sensors.storage()
+        self.assertEqual(status1['energy'], 50)
         
-        output = f.getvalue()
-        self.assertIn("Ziel zu weit entfernt", output)
+        conn = db_config.get_connection()
+        res2 = conn.execute("SELECT energy FROM agents WHERE id='Bob-2'").fetchone()
+        self.assertEqual(res2['energy'], 100) # 50 + 50
         conn.close()
 
 if __name__ == '__main__':

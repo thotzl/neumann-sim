@@ -60,6 +60,9 @@ async function run() {
     const populationFile = path.join(universeDir, 'population.json');
     const logFile = path.join(vDir, config.log || 'log.md');
 
+    // Stelle sicher, dass Tools die richtige Datenbank finden (SDK Support)
+    process.env.TEST_DB_PATH = path.join(universeDir, 'universe.db');
+
     let state = stateManager.loadState(stateFile);
     if (!state) {
         state = {
@@ -132,15 +135,11 @@ async function run() {
         // Memory Kompression (Destillation)
         await memoryCtrl.handleDistillation(agent.id, state, config, apiUrl);
 
-        // Automatisierung ausführen
-        const autoOutput = automation.runAutomations(agent.id, vDir, universeDir, state);
-
         // Auto-Radio Poll (Erzwungenes Einlesen neuer SCUT-Nachrichten)
         let radioOutput = "";
         try {
-            // Führt den System-Service aus dem Kernel (core/bin) aus
-            const out = runPython(vDir, `core/bin/poll_radio.py`, [agent.id], { cwd: vDir });
-            if (out && out.trim() && !out.includes("Keine neuen Nachrichten.")) {
+            const out = runPython(vDir, `core/bin/bob.py`, ['poll()'], { bobId: agent.id });
+            if (out && out.trim()) {
                 radioOutput = `[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${out.trim()}`;
             }
         } catch (e) {
@@ -156,12 +155,22 @@ async function run() {
             agent.needsResumeNotify = false;
         }
 
-        if (autoOutput) {
-            promptText += `\n${autoOutput}\n`;
-        }
-        
         if (radioOutput) {
             promptText += `\n${radioOutput}\n`;
+        }
+
+        // Visuelle Beobachtungen (Phase 2)
+        try {
+            const obsOut = runPython(vDir, `core/bin/bob.py`, ['dashboard()'], { bobId: agent.id });
+            const obs = JSON.parse(obsOut);
+            if (obs.visual_observations && obs.visual_observations.length > 0) {
+                promptText += `\n[VISUELLE BEOBACHTUNGEN (SYSTEM)]:\n`;
+                obs.visual_observations.forEach(o => {
+                    promptText += `- ${o.description}\n`;
+                });
+            }
+        } catch (e) {
+            console.error(`[SENSOR-ERROR] bei Agent ${agent.id}:`, e.message);
         }
 
         // Wallet Injection
@@ -200,7 +209,6 @@ async function run() {
         let preTurnEvents = "";
         if (vogMessage) preTurnEvents += `${vogMessage}\n`;
         if (radioOutput) preTurnEvents += `[SCUT EMPFANGEN]:\n${radioOutput.replace('[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n', '')}\n`;
-        if (autoOutput) preTurnEvents += `[AUTOMATISIERUNG]:\n${autoOutput}\n`;
 
         if (responseText) {
             let feedback = envManager.processActions(responseText, universeDir, agent.id, state);
@@ -220,9 +228,48 @@ async function run() {
         if (state.currentTurnIndex >= state.turnSequence.length) {
             state.currentTurnIndex = 0;
             
-            // Physics Update am Ende der Runde (Via Executor)
+            console.log(`  System-Runde (Automatisierung & Physik)...`);
+            
+            // 1. System-Automatisierung (Fix: O(N²) Vampir-Bug)
+            const systemAutoOutput = automation.runSystemAutomations(vDir, universeDir, state);
+            if (systemAutoOutput) {
+                logger.appendTurnLog(logFile, state.round, "System", 0, 0, "[SYSTEM AUTOMATION RUN]", systemAutoOutput, true, "");
+            }
+
+            // 2. Physics Update am Ende der Runde (Via Executor)
             try { 
                 runPython(vDir, `core/bin/physics_update.py`);
+                
+                // 3. Observer Log & Bereinigung visueller Ereignisse (Phase 2)
+                const dbScript = `
+import sqlite3
+import os
+import sys
+
+conn = sqlite3.connect(os.environ['TEST_DB_PATH'])
+conn.row_factory = sqlite3.Row
+cursor = conn.cursor()
+
+# Sammle alle Events
+cursor.execute("SELECT location, description FROM visual_events ORDER BY rowid ASC")
+events = cursor.fetchall()
+
+if events:
+    print("--- [OBSERVER LOG] ---")
+    for e in events:
+        print(f"[{e['location']}]: {e['description']}")
+    print("----------------------")
+
+cursor.execute("DELETE FROM visual_events")
+conn.commit()
+conn.close()
+`;
+                const observerOut = require('child_process').execFileSync('python3', ['-c', dbScript], { env: { ...process.env, TEST_DB_PATH: path.join(universeDir, 'universe.db') }, encoding: 'utf8' });
+                
+                if (observerOut && observerOut.trim()) {
+                    logger.appendTurnLog(logFile, state.round, "System", 0, 0, "[GLOBAL EVENTS]", observerOut.trim(), true, "");
+                }
+
             } catch (e) {
                 console.error("[PHYSICS-ERROR] Update fehlgeschlagen:", e.message);
             }

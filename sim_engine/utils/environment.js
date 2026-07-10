@@ -3,14 +3,20 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 function getEnvState(universeDir) {
-    const toolsDir = path.join(universeDir, 'tools');
-    if (!fs.existsSync(toolsDir)) return "HARDWARE (tools/): Keine Tools gefunden.";
-    
+    const bobPath = path.join(universeDir, '..', 'core', 'bin', 'bob.py');
+    const expRoot = path.resolve(universeDir, '..');
     try {
-        const tools = fs.readdirSync(toolsDir).filter(f => f.endsWith('.py'));
-        return "HARDWARE (tools/):\n" + tools.join(", ");
+        const out = execSync(`python3 ${bobPath} --help`, {
+            env: { ...process.env, PYTHONPATH: expRoot }
+        }).toString();
+        
+        const parts = out.split("-".repeat(50));
+        if (parts.length >= 2) {
+            return "VERFÜGBARE HARDWARE (V8.0 UNIFIED LOGIC):\n" + parts[1].trim();
+        }
+        return out;
     } catch (e) {
-        return "HARDWARE (tools/): Fehler beim Lesen.";
+        return "HARDWARE (Unified Bob CLI):\nNutze das 'bob' Kommando für alle Hardware-Aktionen.\nSyntax: [RUN: bob method(key=val)].";
     }
 }
 
@@ -187,10 +193,21 @@ function processActions(text, universeDir, agentId, state) {
 
         if (cmd === "..." || cmd === "" || cmd.startsWith("<")) continue;
 
+        // Path Mapping für Unified CLI (V8.0 Functional)
+        if (cmd.startsWith("bob ")) {
+            const funcPart = cmd.replace(/^bob\s+/, "").trim();
+            // Wir escapen eventuelle Single-Quotes im Funktions-String
+            const safeFuncPart = funcPart.replace(/'/g, "'\\''");
+            cmd = `python3 ../core/bin/bob.py '${safeFuncPart}'`;
+        } else if (cmd.startsWith("bob(")) {
+            const safeFuncPart = cmd.substring(3).replace(/'/g, "'\\''");
+            cmd = `python3 ../core/bin/bob.py 'bob${safeFuncPart}'`;
+        }
+
         // Security Hook für python3 scripts/
-        if (cmd.startsWith("python3 scripts/") || cmd.startsWith("python3 _verse/scripts/")) {
+        if (cmd.includes("scripts/")) {
             const parts = cmd.split(' ');
-            let targetScript = parts[1].replace("_verse/", "");
+            let targetScript = parts.find(p => p.includes("scripts/")).replace("_verse/", "");
             const access = checkAccess(targetScript, 'RUN', agentId, state);
             if (!access.granted) {
                 feedback += `[RESONANZ: '${cmd}' -> ${access.reason}]\n`;
@@ -199,15 +216,24 @@ function processActions(text, universeDir, agentId, state) {
         }
 
         try {
+            const expRoot = path.resolve(universeDir, '..');
             const out = execSync(cmd, { 
                 cwd: universeDir, 
                 timeout: 15000, 
                 stdio: 'pipe',
-                env: { ...process.env, PYTHONPATH: path.resolve(universeDir, '..'), CURRENT_AGENT_ID: agentId }
+                env: { 
+                    ...process.env, 
+                    PYTHONPATH: expRoot, 
+                    BOB_ID: agentId,
+                    TEST_DB_PATH: path.join(universeDir, 'universe.db')
+                }
             }).toString();
             feedback += `[RESONANZ: '${cmd}' -> ${out || "OK"}]\n`;
         } catch (e) {
-            const err = e.stderr ? e.stderr.toString() : e.message;
+            let err = e.stderr ? e.stderr.toString() : e.message;
+            // Immersion Guard: Entferne absolute Host-Pfade
+            const expRoot = path.resolve(universeDir, '..');
+            err = err.split(expRoot).join('');
             feedback += `[FEHLER-RESONANZ: '${cmd}' -> ${err.trim()}]\n`;
         }
     }

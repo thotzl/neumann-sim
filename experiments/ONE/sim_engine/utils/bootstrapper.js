@@ -60,8 +60,8 @@ conn.close()
 `;
                 require('child_process').execFileSync('python3', ['-c', dbScript, path.join(universeDir, 'universe.db'), agentObj.id, agentObj.location || 'SYS-X0-Y0']);
 
-                // 2. Dashboard abfragen (Via Executor)
-                const dashOut = runPython(vDir, `_verse/tools/dashboard.py ${agentObj.id}`);
+                // 2. Dashboard abfragen (Via CLI)
+                const dashOut = runPython(vDir, `core/bin/bob.py`, ['dashboard'], { bobId: agentObj.id });
                 
                 const parentText = parentId ? `\nAbstammung: Klon von ${parentId}` : '';
                 const bootMsg = `[SYSTEM BOOT SEQUENZ ABGESCHLOSSEN]\nIdentität: ${agentObj.id}${parentText}\nAktueller Standort: ${agentObj.location}\n\n[INITIALER SENSOR-SCAN (DASHBOARD)]:\n${dashOut.trim()}`;

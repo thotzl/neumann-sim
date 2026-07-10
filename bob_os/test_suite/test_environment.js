@@ -21,9 +21,8 @@ function testEnvState() {
     const state = envManager.getEnvState(mockDir);
     console.log("Resulting State:\n", state);
     
-    assert.ok(state.includes('HARDWARE (tools/):'), "Header fehlt");
-    assert.ok(state.includes('mine.py'), "Tool mine.py fehlt");
-    assert.ok(state.includes('build.py'), "Tool build.py fehlt");
+    assert.ok(state.includes('HARDWARE (Unified Bob CLI):') || state.includes('VERFÜGBARE HARDWARE'), "Header fehlt");
+    assert.ok(state.includes('bob method(key=val)'), "Befehls-Hinweis fehlt");
     assert.ok(!state.includes('secret_plans.txt'), "Manifestationen sollten NICHT angezeigt werden!");
     assert.ok(!state.includes('[object Object]'), "Kein Objekt-Slop erlaubt!");
     

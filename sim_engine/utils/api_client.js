@@ -4,7 +4,7 @@ async function callGemini(apiUrl, payload, retries = 3) {
     // E2E Mock Bypass
     if (process.env.E2E_MOCK === 'true') {
         // Nur Abbau, um Ressourcen-Abnahme zu testen
-        return "[ANALYSE] Test-Lauf. [AKTION] [RUN: python3 tools/mine.py Bob-1]";
+        return "[ANALYSE] Test-Lauf. [AKTION:] [RUN: bob mine]";
     }
 
     for (let i = 0; i < retries; i++) {
@@ -66,13 +66,10 @@ function buildAgentContext(agentId, history, memory, envState, globalInstruction
     const lastIdx = contents.length - 1;
     contents[lastIdx].parts[0].text = memoryHeader + contents[lastIdx].parts[0].text;
 
-    // SYSTEM PROMPT KONSTRUKTION (Hardware ist Teil der Instruktion!)
-    const scriptGesetz = "[SKRIPT-GESETZ]: Wenn du ein Automatisierungs-Skript in Python schreibst, darfst du NIEMALS 'subprocess.run' verwenden, um Tools aufzurufen. Du bist in einer Sandbox. Tools werden AUSSCHLIESSLICH durch das Drucken von Engine-Tags ausgelöst. Beispiel für dein Python-Skript: print(\"[RUN: python3 tools/mine.py Bob-1]\")";
+    // SYSTEM PROMPT KONSTRUKTION
+    const scriptGesetz = "[SKRIPT-GESETZ]: Wenn du ein Automatisierungs-Skript in Python schreibst, nutze die 'bob_sdk'. Beispiel: import bob_sdk; me = bob_sdk.Agent(); me.mine().";
     
-    // Bereinige den Environment State (Entferne poll_radio, falls es noch irgendwo im Text auftaucht)
-    const cleanEnvState = envState.replace(/- poll_radio\.py.*\n?/g, '');
-    
-    const fullSystemPrompt = `${globalInstruction}\n\n${cleanEnvState}\n\n${scriptGesetz}\n\n${individualPrompt}`;
+    const fullSystemPrompt = `${globalInstruction}\n\n${envState}\n\n${scriptGesetz}\n\n${individualPrompt}`;
 
     return {
         system_instruction: { parts: [{ text: fullSystemPrompt }] },

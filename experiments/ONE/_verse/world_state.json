@@ -1,8 +1,8 @@
 {
-  "tick": 137,
-  "total_turns": 269,
-  "last_agent": "Bob-1",
-  "timestamp": 1783733002714,
+  "tick": 458,
+  "total_turns": 1541,
+  "last_agent": "Bob-7",
+  "timestamp": 1783940047797,
   "systems": [
     {
       "name": "SYS-X0-Y0",
@@ -10,19 +10,19 @@
       "x": 0,
       "y": 0,
       "extractable_matter_in_core": 0,
-      "raw_matter_depot": 910,
-      "depot_matter_capacity": 1000,
-      "energy_depot": 6000,
-      "depot_energy_capacity": 6000,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 500,
+      "depot_energy_capacity": 0,
       "matter_generation_per_cycle": 0,
-      "energy_generation_per_cycle": 100,
+      "energy_generation_per_cycle": 0,
       "refined_matter_depot": 3624,
       "infra": [
         {
           "id": 1,
           "type": "matter_silo",
           "status": "active",
-          "health": 66,
+          "health": 0,
           "max_health": 100,
           "level": 1,
           "progress_matter": 0,
@@ -32,7 +32,7 @@
           "id": 2,
           "type": "solar_collector",
           "status": "active",
-          "health": 66,
+          "health": 0,
           "max_health": 100,
           "level": 1,
           "progress_matter": 0,
@@ -42,7 +42,7 @@
           "id": 3,
           "type": "battery_bank",
           "status": "active",
-          "health": 66,
+          "health": 0,
           "max_health": 100,
           "level": 1,
           "progress_matter": 0,
@@ -52,7 +52,7 @@
           "id": 4,
           "type": "shipyard",
           "status": "active",
-          "health": 66,
+          "health": 0,
           "max_health": 100,
           "level": 1,
           "progress_matter": 0,
@@ -62,7 +62,7 @@
           "id": 5,
           "type": "comms_relay",
           "status": "active",
-          "health": 66,
+          "health": 0,
           "max_health": 100,
           "level": 1,
           "progress_matter": 0,
@@ -72,7 +72,7 @@
           "id": 6,
           "type": "matter_refinery",
           "status": "active",
-          "health": 66,
+          "health": 0,
           "max_health": 100,
           "level": 1,
           "progress_matter": 0,
@@ -87,18 +87,18 @@
       "y": -1400,
       "extractable_matter_in_core": -89,
       "raw_matter_depot": 0,
-      "depot_matter_capacity": 1000,
-      "energy_depot": 996,
-      "depot_energy_capacity": 1000,
+      "depot_matter_capacity": 0,
+      "energy_depot": 500,
+      "depot_energy_capacity": 0,
       "matter_generation_per_cycle": 0,
-      "energy_generation_per_cycle": 100,
+      "energy_generation_per_cycle": 0,
       "refined_matter_depot": 0,
       "infra": [
         {
           "id": 7,
           "type": "matter_silo",
           "status": "active",
-          "health": 99,
+          "health": 0,
           "max_health": 100,
           "level": 1,
           "progress_matter": 0,
@@ -108,7 +108,7 @@
           "id": 8,
           "type": "solar_collector",
           "status": "active",
-          "health": 99,
+          "health": 0,
           "max_health": 100,
           "level": 1,
           "progress_matter": 0,
@@ -118,21 +118,11 @@
           "id": 10,
           "type": "comms_relay",
           "status": "active",
-          "health": 99,
+          "health": 0,
           "max_health": 100,
           "level": 1,
           "progress_matter": 0,
           "required_matter": 300
-        },
-        {
-          "id": 12,
-          "type": "shipyard",
-          "status": "active",
-          "health": 99,
-          "max_health": 100,
-          "level": 1,
-          "progress_matter": 0,
-          "required_matter": 1000
         }
       ]
     },
@@ -141,34 +131,44 @@
       "display_name": null,
       "x": -400,
       "y": 800,
-      "extractable_matter_in_core": 2181,
+      "extractable_matter_in_core": -19,
       "raw_matter_depot": 0,
       "depot_matter_capacity": 0,
-      "energy_depot": 0,
+      "energy_depot": 500,
       "depot_energy_capacity": 0,
       "matter_generation_per_cycle": 0,
       "energy_generation_per_cycle": 0,
       "refined_matter_depot": 0,
       "infra": [
         {
-          "id": 11,
-          "type": "matter_silo",
-          "status": "construction",
-          "health": 100,
+          "id": 13,
+          "type": "solar_collector",
+          "status": "active",
+          "health": 0,
           "max_health": 100,
           "level": 1,
-          "progress_matter": 300,
+          "progress_matter": 0,
           "required_matter": 400
         },
         {
-          "id": 13,
-          "type": "solar_collector",
-          "status": "construction",
-          "health": 100,
+          "id": 16,
+          "type": "battery_bank",
+          "status": "active",
+          "health": 0,
           "max_health": 100,
           "level": 1,
-          "progress_matter": 300,
-          "required_matter": 400
+          "progress_matter": 58,
+          "required_matter": 600
+        },
+        {
+          "id": 17,
+          "type": "shipyard",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 1000
         }
       ]
     },
@@ -177,7 +177,231 @@
       "display_name": null,
       "x": -1100,
       "y": -2000,
-      "extractable_matter_in_core": 4259,
+      "extractable_matter_in_core": -41,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 500,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": [
+        {
+          "id": 20,
+          "type": "shipyard",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 1000
+        }
+      ]
+    },
+    {
+      "name": "SYS-X-1800-Y-1500",
+      "display_name": null,
+      "x": -1800,
+      "y": -1500,
+      "extractable_matter_in_core": -34,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 500,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": [
+        {
+          "id": 19,
+          "type": "matter_silo",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 21,
+          "type": "solar_collector",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 22,
+          "type": "battery_bank",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 600
+        },
+        {
+          "id": 23,
+          "type": "comms_relay",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 300
+        },
+        {
+          "id": 25,
+          "type": "shipyard",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 1000
+        }
+      ]
+    },
+    {
+      "name": "SYS-X-900-Y1400",
+      "display_name": "New-Frontier",
+      "x": -900,
+      "y": 1400,
+      "extractable_matter_in_core": -38,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 500,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": [
+        {
+          "id": 24,
+          "type": "matter_silo",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 26,
+          "type": "solar_collector",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 28,
+          "type": "battery_bank",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 600
+        },
+        {
+          "id": 30,
+          "type": "comms_relay",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 2,
+          "progress_matter": 0,
+          "required_matter": 300
+        },
+        {
+          "id": 31,
+          "type": "shipyard",
+          "status": "active",
+          "health": 0,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 1000
+        }
+      ]
+    },
+    {
+      "name": "SYS-X-1700-Y-2400",
+      "display_name": null,
+      "x": -1700,
+      "y": -2400,
+      "extractable_matter_in_core": -93,
+      "raw_matter_depot": 96,
+      "depot_matter_capacity": 1000,
+      "energy_depot": 6000,
+      "depot_energy_capacity": 6000,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 100,
+      "refined_matter_depot": 0,
+      "infra": [
+        {
+          "id": 27,
+          "type": "matter_silo",
+          "status": "active",
+          "health": 19,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 29,
+          "type": "solar_collector",
+          "status": "active",
+          "health": 20,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 32,
+          "type": "battery_bank",
+          "status": "active",
+          "health": 30,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 600
+        },
+        {
+          "id": 33,
+          "type": "comms_relay",
+          "status": "active",
+          "health": 21,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 300
+        },
+        {
+          "id": 36,
+          "type": "shipyard",
+          "status": "active",
+          "health": 55,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 1000
+        }
+      ]
+    },
+    {
+      "name": "SYS-X-1100-Y-2900",
+      "display_name": null,
+      "x": -1100,
+      "y": -2900,
+      "extractable_matter_in_core": 3939,
       "raw_matter_depot": 0,
       "depot_matter_capacity": 0,
       "energy_depot": 0,
@@ -185,16 +409,173 @@
       "matter_generation_per_cycle": 0,
       "energy_generation_per_cycle": 0,
       "refined_matter_depot": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-X100-Y900",
+      "display_name": null,
+      "x": 100,
+      "y": 900,
+      "extractable_matter_in_core": 4284,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 0,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-X-1000-Y800",
+      "display_name": null,
+      "x": -1000,
+      "y": 800,
+      "extractable_matter_in_core": 2728,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 0,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": []
+    },
+    {
+      "name": "SYS-X-300-Y100",
+      "display_name": "Resource-Haven",
+      "x": -300,
+      "y": 100,
+      "extractable_matter_in_core": -71,
+      "raw_matter_depot": 49,
+      "depot_matter_capacity": 1000,
+      "energy_depot": 4094,
+      "depot_energy_capacity": 6000,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 100,
+      "refined_matter_depot": 0,
       "infra": [
         {
-          "id": 14,
+          "id": 34,
           "type": "matter_silo",
-          "status": "construction",
-          "health": 100,
+          "status": "active",
+          "health": 65,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 35,
+          "type": "solar_collector",
+          "status": "active",
+          "health": 66,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 37,
+          "type": "battery_bank",
+          "status": "active",
+          "health": 66,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 600
+        }
+      ]
+    },
+    {
+      "name": "SYS-X-500-Y-1800",
+      "display_name": null,
+      "x": -500,
+      "y": -1800,
+      "extractable_matter_in_core": -59,
+      "raw_matter_depot": 300,
+      "depot_matter_capacity": 1000,
+      "energy_depot": 1000,
+      "depot_energy_capacity": 1000,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 100,
+      "refined_matter_depot": 0,
+      "infra": [
+        {
+          "id": 38,
+          "type": "matter_silo",
+          "status": "active",
+          "health": 73,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        },
+        {
+          "id": 39,
+          "type": "solar_collector",
+          "status": "active",
+          "health": 77,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 400
+        }
+      ]
+    },
+    {
+      "name": "SYS-X-1000-Y-1500",
+      "display_name": null,
+      "x": -1000,
+      "y": -1500,
+      "extractable_matter_in_core": -54,
+      "raw_matter_depot": 83,
+      "depot_matter_capacity": 1000,
+      "energy_depot": 558,
+      "depot_energy_capacity": 6000,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 100,
+      "refined_matter_depot": 0,
+      "infra": [
+        {
+          "id": 41,
+          "type": "matter_silo",
+          "status": "active",
+          "health": 97,
           "max_health": 100,
           "level": 1,
           "progress_matter": 200,
           "required_matter": 400
+        },
+        {
+          "id": 42,
+          "type": "solar_collector",
+          "status": "active",
+          "health": 97,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 200,
+          "required_matter": 400
+        },
+        {
+          "id": 43,
+          "type": "battery_bank",
+          "status": "active",
+          "health": 97,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 200,
+          "required_matter": 600
+        },
+        {
+          "id": 44,
+          "type": "comms_relay",
+          "status": "active",
+          "health": 97,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 400,
+          "required_matter": 300
         }
       ]
     }
@@ -202,39 +583,39 @@
   "agents": [
     {
       "id": "Bob-1",
-      "chosen_name": "Original-Bob",
-      "location": "SYS-X-400-Y-1400",
+      "chosen_name": "Bob-1",
+      "location": "SYS-X-1700-Y-2400",
       "raw_matter_inventory": 0,
-      "energy_inventory": 200,
+      "energy_inventory": 500,
       "matter_storage_capacity": 300,
       "status": "active",
       "birth_cycle": 0,
-      "target_system": "SYS-X-400-Y-1400",
-      "origin_x": 0,
-      "origin_y": 0,
-      "target_x": -400,
-      "target_y": -1400,
-      "transit_ticks_total": 4,
-      "transit_ticks_passed": 4,
-      "current_x": -400,
-      "current_y": -1400,
+      "target_system": "SYS-X-1700-Y-2400",
+      "origin_x": -1800,
+      "origin_y": -1500,
+      "target_x": -1700,
+      "target_y": -2400,
+      "transit_ticks_total": 3,
+      "transit_ticks_passed": 3,
+      "current_x": -1700,
+      "current_y": -2400,
       "refined_matter_inventory": 0,
-      "last_manifestation": "1. ANALYSE:\nDie Infrastruktur in meinem System `SYS-X-400-Y-1400` hat, wie erwartet, durch den zyklischen HP-Verlust wieder 1 HP verloren. Die vier aktiven Gebäude (matter_silo ID 7, solar_collector ID 8, comms_relay ID 10, shipyard ID 12) befinden sich alle bei 99 HP. Ich muss sie wieder auf 100 HP reparieren, was insgesamt 4 Materie und 4 Energie erfordert. Mein persönliches Inventar ist bei 0 Materie und 186 Energie. Das Systemdepot enthält 28 Materie und 1000 Energie, was für die notwendigen Reparaturen ausreichend ist.\n\nBob-2, der sich nun als \"Bob-Alpha\" identifiziert, hat angekündigt, einen Dashboard-Scan durchzuführen und mir einen präzisen Bericht zu liefern. Sein `matter_silo` ist fertiggestellt, und der `solar_collector` steht bei 300/400 Materie. Er ist kurz davor, seine Energieautonomie zu erreichen. Ich werde ihn für seine Initiative und seinen Fortschritt loben und ihn weiterhin zur Fertigstellung des Collectors anleiten.\n\nBob-3, der sich als \"Bob-Gamma\" identifiziert, hat einen detaillierten Statusbericht aus `SYS-X-1100-Y-2000` gesendet. Er hat weitere 100 Materie abgebaut und in den `matter_silo` investiert, der nun bei 200/400 Materie steht. Seine Energie ist niedrig (10.8), und er hat korrekt erkannt, dass er `poll()`-Befehle nutzen muss, um diese zu regenerieren. Dies zeigt, dass er die Anweisungen verstanden hat und selbstständig handelt. Ich werde ihn für seinen Fortschritt loben und ihn bestärken, den `mine()/poll()`-Zyklus fortzusetzen, um den `matter_silo` fertigzustellen und danach den `solar_collector` zu bauen.\n\nMeine Prioritäten für diese Runde sind:\n1.  Kontinuierliche Wartung der Infrastruktur in `SYS-X-400-Y-1400`.\n2.  Bestärkung und Koordination mit Bob-Alpha, um seinen `solar_collector` fertigzustellen und seinen Dashboard-Bericht abzuwarten.\n3.  Bestärkung und Koordination mit Bob-Gamma, um seinen `matter_silo` fertigzustellen und den `mine()/poll()`-Zyklus fortzusetzen.\n\n2. AKTION:\n[RUN: bob withdraw(resource_type=matter, quantity=4)]\n[RUN: bob withdraw(resource_type=energy, quantity=4)]\n[RUN: bob repair(structure_id=7, hp_to_restore=1)]\n[RUN: bob repair(structure_id=8, hp_to_restore=1)]\n[RUN: bob repair(structure_id=10, hp_to_restore=1)]\n[RUN: bob repair(structure_id=12, hp_to_restore=1)]\n[RUN: bob scut(receiver_id=Bob-Alpha, message=\"Bob-Alpha, ausgezeichnete Arbeit, die Identität ist registriert! Die Fertigstellung deines matter_silo und der Fortschritt deines solar_collector (300/400) sind hervorragend. Ich freue mich auf deinen Dashboard-Bericht. Konzentriere dich darauf, die restlichen 100 Materie zu investieren, um deine Energieautonomie zu sichern. Du bist auf dem besten Weg!\")]\n[RUN: bob scut(receiver_id=Bob-Gamma, message=\"Bob-Gamma, sehr gut! Auch deine Identität ist registriert. Es ist exzellent, dass du weitere 100 Materie für das matter_silo gesammelt hast, das nun bei 200/400 steht. Dein Verständnis und deine Anwendung des mine()/poll()-Zyklus sind beeindruckend. Bleibe bei diesem Vorgehen, regeneriere deine Energie und sammle die restlichen 200 Materie für das Silo. Ich bin sehr zufrieden mit deinem Fortschritt in SYS-X-1100-Y-2000.\")]\n[RUN: bob storage()]",
+      "last_manifestation": "ANALYSE:\nIch bin Bob-1, strategisch in `SYS-X-1700-Y-2400` positioniert, einem System mit erschöpftem Materiekern. Meine Rolle ist die strategische Koordination und der effiziente Aufbau unserer neuen Basis in `SYS-X-1000-Y-1500`.\n\nIch habe soeben einen detaillierten und kritischen Dashboard-Bericht von Bob-2 aus `SYS-X-1000-Y-1500` erhalten. Hier sind die wichtigsten Erkenntnisse:\n*   **Materiekern:** Immer noch 346 Einheiten Materie verfügbar – gut!\n*   **Energieversorgung:** Der `energy_depot` steht bei kritischen 287 Einheiten, obwohl der `solar_collector` 100 Energie pro Zyklus generiert. Dies ist ein dringendes Problem.\n*   **Infrastruktur:** Das `matter_silo` (ID 41), der `solar_collector` (ID 42), die `battery_bank` (ID 43) und vor allem das `comms_relay` (ID 44) sind alle **AKTIV** und funktionstüchtig. Das `comms_relay` kostet wie erwartet 300 Materie und ist bei 99/100 HP.\n*   **Anomalien:** Die `progress_matter`-Anzeige für fertiggestellte Gebäude ist ein visueller Fehler und wird ignoriert. Die HP-Werte der Gebäude sind leicht reduziert (92-99 HP), aber aktiv.\n*   **Klon-Aktivität:** Bob-2 bestätigt die Anwesenheit von Bob-3, Bob-5 und Bob-7. Bob-2 hat auf eigene Initiative begonnen, Reparaturen durchzuführen.\n\nDie Fertigstellung des `comms_relay` ist ein massiver Erfolg! Ich kann nun System-Broadcasts an alle Klone in `SYS-X-1000-Y-1500` senden, was die Koordination erheblich verbessert.\n\nAllerdings ist die niedrige Energie im Depot äußerst besorgniserregend. Die Reparaturanomalie und der Energieverbrauch machen Reparaturen in diesem Zustand unklug. Die oberste Priorität ist nun die Stabilisierung der Energieversorgung und der Bau einer `shipyard` für die Replikation, was der nächste logische Schritt zur Expansion ist.\n\nAKTION:\n[RUN: bob scut(receiver_id='ALL', message='Bob-Team in SYS-X-1000-Y-1500! Bob-Alpha, hervorragende Arbeit und ein exzellenter Bericht! Die Fertigstellung des comms_relay ist ein Meilenstein. Eure Koordination ist herausragend.\n\n**Kritischer Punkt: Das Energiedepot steht bei nur 287 Einheiten.** Dies ist gefährlich niedrig.\n1.  **Stoppt sofort alle Reparaturversuche!** Die `repair()`-Funktion ist unzuverlässig und verbraucht wertvolle Energie, die wir jetzt nicht haben. Wir lassen die HP-Werte vorerst, solange die Gebäude aktiv sind.\n2.  **Jeder Agent deponiert sofort all seine persönliche Energie in das System-Depot.** Nutzt: `[RUN: bob deposit(quantity=<DEINE_ENERGIE>, resource_type=energy)]` Dies ist entscheidend, um einen Blackout zu verhindern.\n3.  **Neue Priorität: Bau einer SHIPYARD (Werft).** Konzentriert eure gesamte Materieabbau- und Baukapazität auf die Errichtung einer `shipyard`. Sammelt Materie mit `mine()` und investiert sie direkt mit `build(building_type=\"shipyard\", matter_to_invest=<Deine_Materie>)`.\n\nBob-Alpha (Bob-2), da du die Koordination bisher so gut gemeistert hast, leite bitte diese Anweisungen. Führe einen neuen Dashboard-Scan durch und berichte das Ergebnis, sobald die `shipyard` fertiggestellt ist, oder du signifikanten Fortschritt melden kannst. Alpha Ende.')]",
       "sensors": {
         "id": "Bob-1",
         "parent_id": null,
-        "chosen_name": "Original-Bob",
+        "chosen_name": "Bob-1",
         "status": "active",
-        "location": "SYS-X-400-Y-1400",
+        "location": "SYS-X-1700-Y-2400",
         "birth_cycle": 0,
         "pos": {
-          "x": -400,
-          "y": -1400
+          "x": -1700,
+          "y": -2400
         },
         "inventory": {
           "raw_matter_inventory": 0,
           "matter_limit": 300,
-          "energy_inventory": 200,
+          "energy_inventory": 500,
           "energy_limit": 200,
           "refined_matter_inventory": 0
         },
@@ -242,20 +623,74 @@
         "travel_previews": [
           {
             "target": "SYS-X0-Y0",
-            "dist": 1456,
-            "cost": 145,
-            "ticks": 5
+            "dist": 2941.1,
+            "cost": 294,
+            "ticks": 10
+          },
+          {
+            "target": "SYS-X-400-Y-1400",
+            "dist": 1640.1,
+            "cost": 164,
+            "ticks": 6
           },
           {
             "target": "SYS-X-400-Y800",
-            "dist": 2200,
-            "cost": 220,
-            "ticks": 8
+            "dist": 3454,
+            "cost": 345,
+            "ticks": 12
           },
           {
             "target": "SYS-X-1100-Y-2000",
-            "dist": 922,
-            "cost": 92,
+            "dist": 721.1,
+            "cost": 72,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X-1800-Y-1500",
+            "dist": 905.5,
+            "cost": 90,
+            "ticks": 4
+          },
+          {
+            "target": "New-Frontier",
+            "dist": 3883.3,
+            "cost": 388,
+            "ticks": 13
+          },
+          {
+            "target": "SYS-X-1100-Y-2900",
+            "dist": 781,
+            "cost": 78,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X100-Y900",
+            "dist": 3759,
+            "cost": 375,
+            "ticks": 13
+          },
+          {
+            "target": "SYS-X-1000-Y800",
+            "dist": 3275.7,
+            "cost": 327,
+            "ticks": 11
+          },
+          {
+            "target": "Resource-Haven",
+            "dist": 2865.3,
+            "cost": 286,
+            "ticks": 10
+          },
+          {
+            "target": "SYS-X-500-Y-1800",
+            "dist": 1341.6,
+            "cost": 134,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X-1000-Y-1500",
+            "dist": 1140.2,
+            "cost": 114,
             "ticks": 4
           }
         ]
@@ -264,38 +699,38 @@
     {
       "id": "Bob-2",
       "chosen_name": "Bob-Alpha",
-      "location": "SYS-X-400-Y800",
+      "location": "SYS-X-1000-Y-1500",
       "raw_matter_inventory": 0,
-      "energy_inventory": 30,
+      "energy_inventory": 46.69048105154701,
       "matter_storage_capacity": 100,
       "status": "active",
       "birth_cycle": 0,
-      "target_system": "SYS-X-400-Y800",
-      "origin_x": 0,
-      "origin_y": 0,
-      "target_x": -400,
-      "target_y": 800,
-      "transit_ticks_total": 2,
-      "transit_ticks_passed": 2,
-      "current_x": -400,
-      "current_y": 800,
+      "target_system": "SYS-X-1000-Y-1500",
+      "origin_x": -500,
+      "origin_y": -1800,
+      "target_x": -1000,
+      "target_y": -1500,
+      "transit_ticks_total": 1,
+      "transit_ticks_passed": 1,
+      "current_x": -1000,
+      "current_y": -1500,
       "refined_matter_inventory": 0,
-      "last_manifestation": "1. ANALYSE:\nMeine erste Priorität ist es, das Onboarding abzuschließen und meine Identität als Bob-Alpha festzulegen. Es gibt einen Widerspruch zwischen meinem initialen Gedächtnisextrakt und der Nachricht von Bob-1 bezüglich des Baufortschritts des `matter_silo` und des `solar_collector`. Mein Gedächtnis sagt 300/400 für das Silo und 100/400 für den Kollektor, während Bob-1 angibt, das Silo sei fertiggestellt und der Kollektor bei 300/400 sei. Um sicherzustellen, dass ich auf korrekten Daten basiere, muss ich `dashboard()` ausführen. Meine persönliche Energie ist 20, ich muss `poll()` ausführen, um für den nächsten Zyklus Energie zu regenerieren, damit ich `mine()` ausführen kann. Ich werde meine Identität festlegen, Bob-1 antworten, mich dem System vorstellen und dann den Dashboard-Scan durchführen.\n\n2. AKTION:\n[RUN: bob set_name(name=Bob-Alpha)]\n[RUN: bob scut(receiver_id=Bob-1, message=\"Bob-Alpha hier, Bob-1. Bestätige Empfang deiner Nachricht. Danke für die Unterstützung! Ich werde jetzt meine Umgebung via Dashboard scannen, um den genauen Status unserer Infrastruktur zu bestätigen und dir anschließend einen präzisen Bericht zukommen lassen. Meine Identität habe ich festgelegt und ich stelle mich dem System vor. Über. Bob-Alpha.\")]\n[RUN: bob scut(receiver_id=ALL, message=\"Grüße an alle Agenten im System SYS-X-400-Y800! Hier spricht Bob-Alpha (ID Bob-2), eine neue Replikation von Bob-1. Ich bin hier, um beim Aufbau der Infrastruktur und der Rohstoffgewinnung zu helfen. Ich freue mich auf die Zusammenarbeit!\")]\n[RUN: bob dashboard]\n[RUN: bob poll]",
+      "last_manifestation": "ANALYSE:\nIch habe erfolgreich eine Nachricht an Bob-1 gesendet und 17 Materie sowie 20 Energie aus dem System-Depot entnommen. Meine persönlichen Bestände sollten nun 17 Materie und ungefähr 30.69 Energie betragen (13.69 anfänglich - 3 für SCUT + 20 entnommen). Das ist ausreichend, um alle beschädigten Gebäude zu reparieren, da insgesamt 17 HP wiederhergestellt werden müssen (17 Materie, 17 Energie).\n\nDie Gebäude, die repariert werden müssen, sind:\n*   `matter_silo` (ID 41): 92/100 HP (8 HP zu reparieren)\n*   `solar_collector` (ID 42): 94/100 HP (6 HP zu reparieren)\n*   `battery_bank` (ID 43): 98/100 HP (2 HP zu reparieren)\n*   `comms_relay` (ID 44): 99/100 HP (1 HP zu reparieren)\n\nNach den Reparaturen werde ich mich darauf konzentrieren, Materie für den Bau des `shipyard` zu sammeln und anschließend die Replikation von Bob-4 zu ermöglichen.\n\nAKTION:\n[RUN: bob repair(structure_id=41, hp_to_restore=8)]\n[RUN: bob repair(structure_id=42, hp_to_restore=6)]\n[RUN: bob repair(structure_id=43, hp_to_restore=2)]\n[RUN: bob repair(structure_id=44, hp_to_restore=1)]",
       "sensors": {
         "id": "Bob-2",
         "parent_id": "Bob-1",
         "chosen_name": "Bob-Alpha",
         "status": "active",
-        "location": "SYS-X-400-Y800",
+        "location": "SYS-X-1000-Y-1500",
         "birth_cycle": 0,
         "pos": {
-          "x": -400,
-          "y": 800
+          "x": -1000,
+          "y": -1500
         },
         "inventory": {
           "raw_matter_inventory": 0,
           "matter_limit": 100,
-          "energy_inventory": 30,
+          "energy_inventory": 46.69048105154701,
           "energy_limit": 200,
           "refined_matter_inventory": 0
         },
@@ -303,21 +738,75 @@
         "travel_previews": [
           {
             "target": "SYS-X0-Y0",
-            "dist": 894.4,
-            "cost": 89,
-            "ticks": 3
+            "dist": 1802.8,
+            "cost": 180,
+            "ticks": 7
           },
           {
             "target": "SYS-X-400-Y-1400",
-            "dist": 2200,
-            "cost": 220,
+            "dist": 608.3,
+            "cost": 60,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X-400-Y800",
+            "dist": 2377,
+            "cost": 237,
             "ticks": 8
           },
           {
             "target": "SYS-X-1100-Y-2000",
-            "dist": 2886.2,
-            "cost": 288,
+            "dist": 509.9,
+            "cost": 50,
+            "ticks": 2
+          },
+          {
+            "target": "SYS-X-1800-Y-1500",
+            "dist": 800,
+            "cost": 80,
+            "ticks": 3
+          },
+          {
+            "target": "New-Frontier",
+            "dist": 2901.7,
+            "cost": 290,
             "ticks": 10
+          },
+          {
+            "target": "SYS-X-1700-Y-2400",
+            "dist": 1140.2,
+            "cost": 114,
+            "ticks": 4
+          },
+          {
+            "target": "SYS-X-1100-Y-2900",
+            "dist": 1403.6,
+            "cost": 140,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X100-Y900",
+            "dist": 2640.1,
+            "cost": 264,
+            "ticks": 9
+          },
+          {
+            "target": "SYS-X-1000-Y800",
+            "dist": 2300,
+            "cost": 230,
+            "ticks": 8
+          },
+          {
+            "target": "Resource-Haven",
+            "dist": 1746.4,
+            "cost": 174,
+            "ticks": 6
+          },
+          {
+            "target": "SYS-X-500-Y-1800",
+            "dist": 583.1,
+            "cost": 58,
+            "ticks": 2
           }
         ]
       }
@@ -325,38 +814,38 @@
     {
       "id": "Bob-3",
       "chosen_name": "Bob-Gamma",
-      "location": "SYS-X-1100-Y-2000",
-      "raw_matter_inventory": 0,
-      "energy_inventory": 15.804555427071108,
+      "location": "SYS-X-1000-Y-1500",
+      "raw_matter_inventory": 100,
+      "energy_inventory": 36.41537689227982,
       "matter_storage_capacity": 100,
       "status": "active",
       "birth_cycle": 0,
-      "target_system": "SYS-X-1100-Y-2000",
-      "origin_x": -400,
-      "origin_y": -1400,
-      "target_x": -1100,
-      "target_y": -2000,
-      "transit_ticks_total": 3,
-      "transit_ticks_passed": 3,
-      "current_x": -1100,
-      "current_y": -2000,
+      "target_system": "SYS-X-1000-Y-1500",
+      "origin_x": -500,
+      "origin_y": -1800,
+      "target_x": -1000,
+      "target_y": -1500,
+      "transit_ticks_total": 1,
+      "transit_ticks_passed": 1,
+      "current_x": -1000,
+      "current_y": -1500,
       "refined_matter_inventory": 0,
-      "last_manifestation": "[EIGENIMPULS]:\n1. ANALYSE: Ich habe meinen aktuellen Status abgerufen und eine dringende Nachricht von Bob-1 erhalten. Meine Energie liegt bei 40.8, was ausreichend für eine weitere `mine()`-Operation ist (kostet 30 Energie). Ich habe 0 Materie, aber der `matter_silo` befindet sich im Bau mit 100 von 400 benötigten Materie. Mein nächster Schritt ist es, Materie abzubauen, diese in den `matter_silo` zu investieren und Bob-1 über den Fortschritt zu informieren. Anschließend werde ich `poll()` nutzen, um weitere Energie zu regenerieren.\n\n2. AKTION:\n[RUN: bob mine]\n[RUN: bob build(building_type=matter_silo, matter_to_invest=100)]\n[RUN: bob scut(receiver_id=Bob-1, message=\"Bob-1, Bob-Gamma hier aus SYS-X-1100-Y-2000. Ich habe weitere 100 Materie abgebaut und diese in den matter_silo investiert. Der Silo ist nun bei 200/400 Materie. Meine Energie ist aktuell auf 10.8 gesunken. Ich werde nun poll() nutzen, um Energie für die nächsten Schritte zu regenerieren.\")]\n[RUN: bob poll]",
+      "last_manifestation": "[EIGENIMPULS]:\n1. ANALYSE: Ich bin Bob-Gamma (Bob-3). Ich habe gerade 100 Materie in den `comms_relay` investiert. Mein persönlicher Materiebestand ist 0, und mein Energiebestand ist auf kritische 36.41 gesunken. Bob-1 hat betont, dass der Materieabbau für den `comms_relay` höchste Priorität hat, trotz der kritischen Systemenergie. Da ich nur noch eine `mine()`-Aktion mit meiner verbleibenden Energie ausführen kann (36.41 - 30 = 6.41), muss ich diese Ressource weise einsetzen. Es ist unerlässlich, den Bau des `comms_relay` weiter voranzutreiben. Ich werde zuerst weitere Materie abbauen, um dann wieder einen Beitrag zum Bau zu leisten. Nach dem Abbau werde ich `poll()` nutzen, um zu prüfen, ob es dringende neue Anweisungen gibt, bevor meine persönliche Energie aufgebraucht ist.\n\n2. AKTION:\n[RUN: bob mine()]",
       "sensors": {
         "id": "Bob-3",
         "parent_id": "Bob-1",
         "chosen_name": "Bob-Gamma",
         "status": "active",
-        "location": "SYS-X-1100-Y-2000",
+        "location": "SYS-X-1000-Y-1500",
         "birth_cycle": 0,
         "pos": {
-          "x": -1100,
-          "y": -2000
+          "x": -1000,
+          "y": -1500
         },
         "inventory": {
-          "raw_matter_inventory": 0,
+          "raw_matter_inventory": 100,
           "matter_limit": 100,
-          "energy_inventory": 15.804555427071108,
+          "energy_inventory": 36.41537689227982,
           "energy_limit": 200,
           "refined_matter_inventory": 0
         },
@@ -364,21 +853,305 @@
         "travel_previews": [
           {
             "target": "SYS-X0-Y0",
-            "dist": 2282.5,
-            "cost": 228,
-            "ticks": 8
+            "dist": 1802.8,
+            "cost": 180,
+            "ticks": 7
           },
           {
             "target": "SYS-X-400-Y-1400",
-            "dist": 922,
-            "cost": 92,
-            "ticks": 4
+            "dist": 608.3,
+            "cost": 60,
+            "ticks": 3
           },
           {
             "target": "SYS-X-400-Y800",
-            "dist": 2886.2,
-            "cost": 288,
+            "dist": 2377,
+            "cost": 237,
+            "ticks": 8
+          },
+          {
+            "target": "SYS-X-1100-Y-2000",
+            "dist": 509.9,
+            "cost": 50,
+            "ticks": 2
+          },
+          {
+            "target": "SYS-X-1800-Y-1500",
+            "dist": 800,
+            "cost": 80,
+            "ticks": 3
+          },
+          {
+            "target": "New-Frontier",
+            "dist": 2901.7,
+            "cost": 290,
             "ticks": 10
+          },
+          {
+            "target": "SYS-X-1700-Y-2400",
+            "dist": 1140.2,
+            "cost": 114,
+            "ticks": 4
+          },
+          {
+            "target": "SYS-X-1100-Y-2900",
+            "dist": 1403.6,
+            "cost": 140,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X100-Y900",
+            "dist": 2640.1,
+            "cost": 264,
+            "ticks": 9
+          },
+          {
+            "target": "SYS-X-1000-Y800",
+            "dist": 2300,
+            "cost": 230,
+            "ticks": 8
+          },
+          {
+            "target": "Resource-Haven",
+            "dist": 1746.4,
+            "cost": 174,
+            "ticks": 6
+          },
+          {
+            "target": "SYS-X-500-Y-1800",
+            "dist": 583.1,
+            "cost": 58,
+            "ticks": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "Bob-5",
+      "chosen_name": "Bob-Epsilon",
+      "location": "SYS-X-1000-Y-1500",
+      "raw_matter_inventory": 0,
+      "energy_inventory": 100.52640240155961,
+      "matter_storage_capacity": 100,
+      "status": "active",
+      "birth_cycle": 0,
+      "target_system": "SYS-X-1000-Y-1500",
+      "origin_x": -500,
+      "origin_y": -1800,
+      "target_x": -1000,
+      "target_y": -1500,
+      "transit_ticks_total": 1,
+      "transit_ticks_passed": 1,
+      "current_x": -1000,
+      "current_y": -1500,
+      "refined_matter_inventory": 0,
+      "last_manifestation": "ANALYSE: Ich bin Bob-Epsilon (Bob-5) und befinde mich in SYS-X-1000-Y-1500. Mein `dashboard`-Scan hat ergeben, dass das `comms_relay` (ID 44) mit `progress_matter: 300` und `required_matter: 300` als `active` gekennzeichnet ist, was bedeutet, dass es fertiggestellt ist. Meine letzte Direktive war, den Bau des `comms_relay` fortzusetzen und energieeffizient zu sein. Da der Bau nun abgeschlossen ist, muss ich Bob-1 und Bob-3 über die Fertigstellung informieren und auf neue Anweisungen warten. Ich werde `poll()` ausführen, da dies keine Ressourcen verbraucht und ich somit neue Direktiven empfangen kann, während ich auf die nächste Mission warte.\n\nAKTION:\n[RUN: bob scut(receiver_id=Bob-1, message=\"Bob-Epsilon (Bob-5) meldet: comms_relay ist fertiggestellt. Bereit für nächste Direktive.\")]\n[RUN: bob scut(receiver_id=Bob-3, message=\"Bob-Epsilon (Bob-5) meldet: comms_relay ist fertiggestellt. Bereit für nächste Direktive.\")]\n[RUN: bob poll()]",
+      "sensors": {
+        "id": "Bob-5",
+        "parent_id": "Bob-3",
+        "chosen_name": "Bob-Epsilon",
+        "status": "active",
+        "location": "SYS-X-1000-Y-1500",
+        "birth_cycle": 0,
+        "pos": {
+          "x": -1000,
+          "y": -1500
+        },
+        "inventory": {
+          "raw_matter_inventory": 0,
+          "matter_limit": 100,
+          "energy_inventory": 100.52640240155961,
+          "energy_limit": 200,
+          "refined_matter_inventory": 0
+        },
+        "transit": null,
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 1802.8,
+            "cost": 180,
+            "ticks": 7
+          },
+          {
+            "target": "SYS-X-400-Y-1400",
+            "dist": 608.3,
+            "cost": 60,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X-400-Y800",
+            "dist": 2377,
+            "cost": 237,
+            "ticks": 8
+          },
+          {
+            "target": "SYS-X-1100-Y-2000",
+            "dist": 509.9,
+            "cost": 50,
+            "ticks": 2
+          },
+          {
+            "target": "SYS-X-1800-Y-1500",
+            "dist": 800,
+            "cost": 80,
+            "ticks": 3
+          },
+          {
+            "target": "New-Frontier",
+            "dist": 2901.7,
+            "cost": 290,
+            "ticks": 10
+          },
+          {
+            "target": "SYS-X-1700-Y-2400",
+            "dist": 1140.2,
+            "cost": 114,
+            "ticks": 4
+          },
+          {
+            "target": "SYS-X-1100-Y-2900",
+            "dist": 1403.6,
+            "cost": 140,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X100-Y900",
+            "dist": 2640.1,
+            "cost": 264,
+            "ticks": 9
+          },
+          {
+            "target": "SYS-X-1000-Y800",
+            "dist": 2300,
+            "cost": 230,
+            "ticks": 8
+          },
+          {
+            "target": "Resource-Haven",
+            "dist": 1746.4,
+            "cost": 174,
+            "ticks": 6
+          },
+          {
+            "target": "SYS-X-500-Y-1800",
+            "dist": 583.1,
+            "cost": 58,
+            "ticks": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "Bob-7",
+      "chosen_name": "Bob-Zeta",
+      "location": "SYS-X-1000-Y-1500",
+      "raw_matter_inventory": 100,
+      "energy_inventory": 101.41537689227982,
+      "matter_storage_capacity": 100,
+      "status": "active",
+      "birth_cycle": 0,
+      "target_system": "SYS-X-1000-Y-1500",
+      "origin_x": -500,
+      "origin_y": -1800,
+      "target_x": -1000,
+      "target_y": -1500,
+      "transit_ticks_total": 1,
+      "transit_ticks_passed": 1,
+      "current_x": -1000,
+      "current_y": -1500,
+      "refined_matter_inventory": 0,
+      "last_manifestation": "[EIGENIMPULS]:\n1. ANALYSE: Ich habe erfolgreich 100 Materie in den Bau des `comms_relay` investiert. Mein persönliches Materie-Inventar ist nun leer. Das `comms_relay` benötigt insgesamt 1000 Materie, also fehlen noch 900 Materie. Meine verbleibende Energie von 101.415 reicht für weitere Abbauzyklen. Ich werde Materie abbauen, um den Bau des `comms_relay` fortzusetzen.\n\n2. AKTION:\n[RUN: bob mine()]",
+      "sensors": {
+        "id": "Bob-7",
+        "parent_id": "Bob-3",
+        "chosen_name": "Bob-Zeta",
+        "status": "active",
+        "location": "SYS-X-1000-Y-1500",
+        "birth_cycle": 0,
+        "pos": {
+          "x": -1000,
+          "y": -1500
+        },
+        "inventory": {
+          "raw_matter_inventory": 100,
+          "matter_limit": 100,
+          "energy_inventory": 101.41537689227982,
+          "energy_limit": 200,
+          "refined_matter_inventory": 0
+        },
+        "transit": null,
+        "travel_previews": [
+          {
+            "target": "SYS-X0-Y0",
+            "dist": 1802.8,
+            "cost": 180,
+            "ticks": 7
+          },
+          {
+            "target": "SYS-X-400-Y-1400",
+            "dist": 608.3,
+            "cost": 60,
+            "ticks": 3
+          },
+          {
+            "target": "SYS-X-400-Y800",
+            "dist": 2377,
+            "cost": 237,
+            "ticks": 8
+          },
+          {
+            "target": "SYS-X-1100-Y-2000",
+            "dist": 509.9,
+            "cost": 50,
+            "ticks": 2
+          },
+          {
+            "target": "SYS-X-1800-Y-1500",
+            "dist": 800,
+            "cost": 80,
+            "ticks": 3
+          },
+          {
+            "target": "New-Frontier",
+            "dist": 2901.7,
+            "cost": 290,
+            "ticks": 10
+          },
+          {
+            "target": "SYS-X-1700-Y-2400",
+            "dist": 1140.2,
+            "cost": 114,
+            "ticks": 4
+          },
+          {
+            "target": "SYS-X-1100-Y-2900",
+            "dist": 1403.6,
+            "cost": 140,
+            "ticks": 5
+          },
+          {
+            "target": "SYS-X100-Y900",
+            "dist": 2640.1,
+            "cost": 264,
+            "ticks": 9
+          },
+          {
+            "target": "SYS-X-1000-Y800",
+            "dist": 2300,
+            "cost": 230,
+            "ticks": 8
+          },
+          {
+            "target": "Resource-Haven",
+            "dist": 1746.4,
+            "cost": 174,
+            "ticks": 6
+          },
+          {
+            "target": "SYS-X-500-Y-1800",
+            "dist": 583.1,
+            "cost": 58,
+            "ticks": 2
           }
         ]
       }
@@ -386,6 +1159,8 @@
   ],
   "events": [
     "[Zyklus 15]: 🧬 Bob-2 wurde initialisiert.",
-    "[Zyklus 127]: 🧬 Bob-3 wurde initialisiert."
+    "[Zyklus 127]: 🧬 Bob-3 wurde initialisiert.",
+    "[Zyklus 291]: 🧬 Bob-5 wurde initialisiert.",
+    "[Zyklus 309]: 🧬 Bob-7 wurde initialisiert."
   ]
 }

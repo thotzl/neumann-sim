@@ -52,7 +52,11 @@ class Agent:
     def transfer(self, receiver_id, resource_type, quantity): return self.logistics.transfer(receiver_id, resource_type, quantity)
     
     def scut(self, receiver_id, message): return self.comms.scut(receiver_id, message)
-    def poll(self): return self.comms.poll_radio()
+    def wait(self): 
+        print("[SUCCESS] Waiting...")
+        return True
+    
+    def _internal_poll(self): return self.comms._system_poll_radio()
     
     def scan(self): return self.sensors.scan()
     def storage(self): return self.sensors.storage()
@@ -134,6 +138,9 @@ class Actuators:
             print(f"[ERROR] Infrastructure ID {structure_id} not found.")
             return False
             
+        system = system_service.get_system_or_fail(cursor, agent['location'])
+        if not system: return False
+
         global_settings = self.rules.get('global_settings', {})
         hp_to_restore = int(hp_to_restore)
         hp_needed = infra['max_health'] - infra['health']
@@ -143,20 +150,49 @@ class Actuators:
             return False
             
         actual_repair = min(hp_to_restore, hp_needed)
-        
         cost_m = global_settings.get('repair_cost_matter_per_hp', 1) * actual_repair
         cost_e = global_settings.get('repair_cost_energy_per_hp', 1) * actual_repair
         
-        if agent['energy_inventory'] < cost_e or agent['raw_matter_inventory'] < cost_m:
-            print(f"[ERROR] Not enough resources for repair (need {cost_e}E and {cost_m}M). You have {agent['energy_inventory']}E and {agent['raw_matter_inventory']}M.")
+        # Pipeline Logic Matter
+        available_depot_matter = system['raw_matter_depot']
+        available_inventory_matter = agent['raw_matter_inventory']
+        total_available_m = available_depot_matter + available_inventory_matter
+
+        if total_available_m < cost_m:
+            print(f"[ERROR] Not enough matter for repair. Need {cost_m}M, have {available_inventory_matter}M in inventory and {available_depot_matter}M in depot.")
             return False
+            
+        # Pipeline Logic Energy
+        available_depot_energy = system['energy_depot']
+        available_inventory_energy = agent['energy_inventory']
+        total_available_e = available_depot_energy + available_inventory_energy
+        
+        if total_available_e < cost_e:
+            print(f"[ERROR] Not enough energy for repair. Need {cost_e}E, have {available_inventory_energy}E in battery and {available_depot_energy}E in depot.")
+            return False
+
+        matter_from_depot = min(cost_m, available_depot_matter)
+        matter_from_inventory = cost_m - matter_from_depot
+        
+        energy_from_depot = min(cost_e, available_depot_energy)
+        energy_from_inventory = cost_e - energy_from_depot
+
+        # Ressourcen abziehen
+        if energy_from_inventory > 0:
+            cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ? WHERE id = ?", (energy_from_inventory, self.agent.id))
+        if energy_from_depot > 0:
+            cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (energy_from_depot, agent['location']))
+            
+        if matter_from_inventory > 0:
+            agent_service.consume_resources(cursor, self.agent.id, matter=matter_from_inventory)
+        if matter_from_depot > 0:
+            cursor.execute("UPDATE systems SET raw_matter_depot = raw_matter_depot - ? WHERE name = ?", (matter_from_depot, agent['location']))
         
         new_health = infra['health'] + actual_repair
         status = 'active' if new_health > 0 else infra['status']
         
         cursor.execute("UPDATE infrastructure SET health = ?, status = ? WHERE id = ?", (new_health, status, structure_id))
-        agent_service.consume_resources(cursor, agent['id'], energy=cost_e, matter=cost_m)
-        print(f"[SUCCESS] Structure {structure_id} repaired to {new_health} HP (Cost: {cost_m}M, {cost_e}E).")
+        print(f"[SUCCESS] Structure {structure_id} repaired to {new_health} HP (Cost paid: {energy_from_depot}E from Depot / {energy_from_inventory}E from Battery | {matter_from_depot}M from Depot / {matter_from_inventory}M from Inventory).")
         return True
 
     @agent_service.with_agent_context(require_active=True, action_name='Build')
@@ -164,17 +200,48 @@ class Actuators:
         infra_rules = self.rules.get('infrastructure', {}).get(building_type, {"matter_cost": 400})
         total_cost = infra_rules.get('matter_cost', 400)
         matter_to_invest = int(matter_to_invest)
+        build_cost_e = self.rules.get('tool_costs', {}).get('build', {}).get('energy_cost', 15)
         
-        if agent['raw_matter_inventory'] < matter_to_invest:
-            print(f"[ERROR] Not enough matter in inventory ({agent['raw_matter_inventory']} < {matter_to_invest}).")
+        system = system_service.get_system_or_fail(cursor, agent['location'])
+        if not system: return False
+
+        # Pipeline Logic Matter
+        available_depot_matter = system['raw_matter_depot']
+        available_inventory_matter = agent['raw_matter_inventory']
+        total_available_m = available_depot_matter + available_inventory_matter
+
+        if total_available_m < matter_to_invest:
+            print(f"[ERROR] Not enough matter available. Need {matter_to_invest}, but only have {available_inventory_matter} in inventory and {available_depot_matter} in depot.")
             return False
+
+        # Pipeline Logic Energy
+        available_depot_energy = system['energy_depot']
+        available_inventory_energy = agent['energy_inventory']
+        total_available_e = available_depot_energy + available_inventory_energy
+        
+        if total_available_e < build_cost_e:
+            print(f"[ERROR] Not enough energy to build. Need {build_cost_e}E, but only have {available_inventory_energy}E in battery and {available_depot_energy}E in depot.")
+            return False
+
+        matter_from_depot = min(matter_to_invest, available_depot_matter)
+        matter_from_inventory = matter_to_invest - matter_from_depot
+        
+        energy_from_depot = min(build_cost_e, available_depot_energy)
+        energy_from_inventory = build_cost_e - energy_from_depot
+
+        # Ressourcen abziehen
+        if energy_from_inventory > 0:
+            cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ? WHERE id = ?", (energy_from_inventory, self.agent.id))
+        if energy_from_depot > 0:
+            cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (energy_from_depot, agent['location']))
+            
+        if matter_from_inventory > 0:
+            agent_service.consume_resources(cursor, self.agent.id, matter=matter_from_inventory)
+        if matter_from_depot > 0:
+            cursor.execute("UPDATE systems SET raw_matter_depot = raw_matter_depot - ? WHERE name = ?", (matter_from_depot, agent['location']))
 
         cursor.execute("SELECT * FROM infrastructure WHERE system_name = ? AND type = ?", (agent['location'], building_type))
         existing = cursor.fetchone()
-        
-        build_cost_e = self.rules.get('tool_costs', {}).get('build', {}).get('energy_cost', 15)
-        if agent['energy_inventory'] < build_cost_e: return False
-        cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ? WHERE id = ?", (build_cost_e, self.agent.id))
         
         if existing:
             if existing['status'] == 'active':
@@ -183,27 +250,28 @@ class Actuators:
                 upgrade_cost = physics_service.calculate_upgrade_cost(total_cost, upgrade_multiplier)
                 
                 cursor.execute("UPDATE infrastructure SET progress_matter = progress_matter + ? WHERE id = ?", (matter_to_invest, existing['id']))
-                agent_service.consume_resources(cursor, self.agent.id, matter=matter_to_invest)
 
                 if existing['progress_matter'] + matter_to_invest >= upgrade_cost:
                     new_lvl = existing['level'] + 1
                     cursor.execute("UPDATE infrastructure SET level = ?, progress_matter = 0, health = max_health WHERE id = ?", (new_lvl, existing['id']))
-                    print(f"[SUCCESS] {building_type} upgraded to Level {new_lvl}!")
+                    print(f"[SUCCESS] {building_type} upgraded to Level {new_lvl}! (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
                 else:
-                    print(f"[SUCCESS] {matter_to_invest} matter invested in {building_type} Upgrade (Lvl {existing['level']}).")
+                    print(f"[SUCCESS] {matter_to_invest} matter invested in {building_type} Upgrade (Lvl {existing['level']}). (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
             else:
                 cursor.execute("UPDATE infrastructure SET progress_matter = progress_matter + ? WHERE id = ?", (matter_to_invest, existing['id']))
-                agent_service.consume_resources(cursor, self.agent.id, matter=matter_to_invest)
                 if existing['progress_matter'] + matter_to_invest >= total_cost:
                     cursor.execute("UPDATE infrastructure SET status = 'active', progress_matter = 0 WHERE id = ?", (existing['id'],))
-                    print(f"[SUCCESS] {building_type} completed!")
+                    print(f"[SUCCESS] {building_type} completed! (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
+                else:
+                    print(f"[SUCCESS] {matter_to_invest} matter invested in {building_type} Construction. (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
         else:
             cursor.execute("INSERT INTO infrastructure (system_name, type, status, progress_matter, required_matter, level, health, max_health) VALUES (?, ?, 'construction', ?, ?, 1, 100, 100)", 
                            (agent['location'], building_type, matter_to_invest, total_cost))
-            agent_service.consume_resources(cursor, self.agent.id, matter=matter_to_invest)
             if matter_to_invest >= total_cost:
                 cursor.execute("UPDATE infrastructure SET status = 'active', progress_matter = 0 WHERE system_name = ? AND type = ?", (agent['location'], building_type))
-                print(f"[SUCCESS] {building_type} completed!")
+                print(f"[SUCCESS] {building_type} completed! (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
+            else:
+                print(f"[SUCCESS] Started {building_type} construction with {matter_to_invest} matter. (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
         return True
 
     @agent_service.with_agent_context()
@@ -509,12 +577,34 @@ class Comms:
             if not sender_has_relay:
                 print(f"[DENIED] Broadcast 'ALL' erfordert ein aktives 'comms_relay' in deinem System.")
                 return False
+            
+            # Zähle erreichbare Empfänger für das Feedback
+            cursor.execute("SELECT id, location, current_x, current_y FROM agents WHERE id != ?", (self.agent.id,))
+            all_others = cursor.fetchall()
+            reachable_count = 0
+            for other in all_others:
+                if other['location'] == agent['location']:
+                    reachable_count += 1
+                else:
+                    dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], other['current_x'], other['current_y'])
+                    if dist <= base_range:
+                        reachable_count += 1
+                    else:
+                        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (other['location'],))
+                        if cursor.fetchone():
+                            reachable_count += 1
+            
+            cursor.execute("INSERT INTO messages (sender, receiver, content) VALUES (?, 'ALL', ?)", (self.agent.id, message))
+            print(f"[SUCCESS] Message sent. {reachable_count} receivers.")
+            return True
         else:
-            cursor.execute("SELECT location, current_x, current_y FROM agents WHERE id = ?", (receiver_id,))
+            cursor.execute("SELECT id, location, current_x, current_y FROM agents WHERE id = ? OR chosen_name = ?", (receiver_id, receiver_id))
             target_agent = cursor.fetchone()
             if not target_agent:
-                print(f"[ERROR] Agent '{receiver_id}' nicht gefunden.")
+                print(f"[ERROR] Agent '{receiver_id}' nicht gefunden oder offline.")
                 return False
+            
+            real_target_id = target_agent['id']
             
             if agent['location'] != target_agent['location']:
                 dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], target_agent['current_x'], target_agent['current_y'])
@@ -522,17 +612,16 @@ class Comms:
                     cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (target_agent['location'],))
                     target_has_relay = bool(cursor.fetchone())
                     if not sender_has_relay and not target_has_relay:
-                        print(f"[DENIED] Agent '{receiver_id}' ist außer Reichweite ({int(dist)} > {base_range}). Baue ein 'comms_relay'.")
+                        print(f"[DENIED] Agent '{receiver_id}' ist außer Reichweite ({int(dist)} > {base_range}). Signalverlust. Baue ein 'comms_relay' zur Verstärkung.")
                         return False
 
-        # Normalisierung für Broadcasts (Case-Insensitive Fix)
-        final_receiver = receiver_id.upper() if receiver_id.upper() == 'ALL' else receiver_id
+            cursor.execute("INSERT INTO messages (sender, receiver, content) VALUES (?, ?, ?)", (self.agent.id, real_target_id, message))
+            print(f"[SUCCESS] Message sent to {real_target_id}.")
+            return True
 
-        cursor.execute("INSERT INTO messages (sender, receiver, content) VALUES (?, ?, ?)", (self.agent.id, final_receiver, message))
-        print("[SUCCESS] Message sent."); return True
-
+    # Interne Funktion für den Node.js Runner (Auto-Radio), nicht für das LLM gedacht
     @agent_service.with_agent_context()
-    def poll_radio(self, cursor, agent):
+    def _system_poll_radio(self, cursor, agent):
         cursor.execute("SELECT rowid, sender, content FROM messages WHERE receiver = ? OR receiver = 'ALL'", (self.agent.id,))
         rows = cursor.fetchall()
         if not rows: return ""

@@ -95,11 +95,43 @@ class TestV8_8Industrial(unittest.TestCase):
         row = conn.execute("SELECT health, status FROM infrastructure WHERE id=99").fetchone()
         self.assertEqual(row[0], 10 + repair_amount)
         self.assertEqual(row[1], 'active')
+        
+        status = self.agent.storage()
+        self.assertEqual(status['raw_matter_inventory'], self.start_matter) # Inventar unangetastet, da Depot reichte
+        self.assertEqual(status['energy_inventory'], self.start_energy) # Energie ebenfalls unangetastet, da Depot reichte
+
+        sys_data = conn.execute("SELECT raw_matter_depot, energy_depot FROM systems WHERE name='SYS-A'").fetchone()
+        self.assertEqual(sys_data[0], 100 - cost_m) # 100 war der Startwert des Depots
+        self.assertEqual(sys_data[1], 500 - cost_e) # 500 war Startwert
+        conn.close()
+
+    def test_repair_infrastructure_empty_depot(self):
+        # 1. Kaputtes Gebäude einfügen, Depot leeren
+        conn = sqlite3.connect(self.test_db)
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health) VALUES (100, 'SYS-A', 'solar_collector', 'active', 50, 100)")
+        conn.execute("UPDATE systems SET raw_matter_depot = 0, energy_depot = 0 WHERE name='SYS-A'")
+        conn.commit()
         conn.close()
         
+        # 2. Reparieren
+        repair_amount = 20
+        global_settings = self.rules.get('global_settings', {})
+        cost_m = global_settings.get('repair_cost_matter_per_hp', 1) * repair_amount
+        cost_e = global_settings.get('repair_cost_energy_per_hp', 1) * repair_amount
+        
+        success = self.agent.repair(structure_id=100, hp_to_restore=repair_amount)
+        self.assertTrue(success)
+        
+        # 3. Prüfen ob es vom Agenten-Inventar abgezogen wurde
         status = self.agent.storage()
         self.assertEqual(status['raw_matter_inventory'], self.start_matter - cost_m)
         self.assertEqual(status['energy_inventory'], self.start_energy - cost_e)
+        
+        conn = sqlite3.connect(self.test_db)
+        sys_data = conn.execute("SELECT raw_matter_depot, energy_depot FROM systems WHERE name='SYS-A'").fetchone()
+        self.assertEqual(sys_data[0], 0)
+        self.assertEqual(sys_data[1], 0)
+        conn.close()
 
     def test_upgrade_logic(self):
         infra_rules = self.rules.get('infrastructure', {}).get('matter_silo', {})

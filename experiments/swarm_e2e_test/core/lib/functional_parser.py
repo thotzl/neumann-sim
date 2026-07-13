@@ -17,7 +17,7 @@ METHOD_META = {
     "withdraw": {"params": ["resource_type", "quantity"], "greedy": None},
     "transfer": {"params": ["receiver_id", "resource_type", "quantity"], "greedy": None},
     "scut": {"params": ["receiver_id", "message"], "greedy": "message"},
-    "poll": {"params": [], "greedy": None},
+    "wait": {"params": [], "greedy": None},
     "storage": {"params": [], "greedy": None},
     "dashboard": {"params": [], "greedy": None},
     "entities": {"params": [], "greedy": None},

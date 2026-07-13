@@ -37,7 +37,7 @@
   {
     "tick": 4,
     "agentId": "System",
-    "text": "[ERFOLG: 'scripts/active/auto.py' manifestiert]\n[RESONANZ: 'bob scut(receiver_id=Bob-2, message=Der Schlüssel ist secret)' ::\n[SUCCESS] Message sent.]\n"
+    "text": "[ERFOLG: 'scripts/active/auto.py' manifestiert]\n[RESONANZ: 'bob scut(receiver_id=Bob-2, message=Der Schlüssel ist secret)' ::\n[SUCCESS] Message sent to Bob-2.]\n"
   },
   {
     "tick": 4,
@@ -47,7 +47,7 @@
   {
     "tick": 4,
     "agentId": "System",
-    "text": "[RESONANZ: 'bob poll()' ::\nOK]\n"
+    "text": "[RESONANZ: 'bob poll()' ::\n[CLI ERROR] Methode 'poll' nicht implementiert.]\n"
   },
   {
     "tick": 4,

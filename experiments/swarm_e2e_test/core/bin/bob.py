@@ -20,7 +20,7 @@ DESCRIPTIONS = {
     "withdraw": "Entnimmt Energie oder Materie aus dem lokalen System-Depot.",
     "transfer": "Überweist Ressourcen direkt an einen anderen Agenten am selben Standort.",
     "scut": "Sendet eine Funk-Nachricht. Reichweite > 1000 oder System-Broadcasts an 'ALL' erfordern zwingend ein aktives 'comms_relay' im System.",
-    "poll": "Ruft ungelesene SCUT-Nachrichten ab.",
+    "wait": "Pausiert eine Runde, um z.B. Energie zu regenerieren oder auf Nachrichten zu warten.",
     "storage": "Zeigt den Füllstand des eigenen Inventars an.",
     "dashboard": "Vollständiger Sensor-Scan der Umgebung (System, Infra, Andere).",
     "entities": "Scannt nach anderen Agenten am Standort.",
@@ -105,8 +105,10 @@ def main():
             agent.transfer(receiver_id=params.get('receiver_id'), resource_type=params.get('resource_type'), quantity=int(params.get('quantity')))
         elif method == "scut": 
             agent.scut(receiver_id=params.get('receiver_id'), message=params.get('message'))
-        elif method == "poll":
-            res = agent.poll()
+        elif method == "wait":
+            agent.wait()
+        elif method == "_poll":
+            res = agent._internal_poll()
             if res: print(res)
         elif method == "storage": 
             print(yaml.dump(clean_dict(agent.storage()), sort_keys=False, default_flow_style=False).strip())

@@ -139,7 +139,7 @@ async function run() {
         // Auto-Radio Poll (Erzwungenes Einlesen neuer SCUT-Nachrichten)
         let radioOutput = "";
         try {
-            const out = runPython(vDir, `core/bin/bob.py`, ['poll()'], { bobId: agent.id });
+            const out = runPython(vDir, `core/bin/bob.py`, ['_poll()'], { bobId: agent.id });
             if (out && out.trim()) {
                 radioOutput = `[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${out.trim()}`;
             }

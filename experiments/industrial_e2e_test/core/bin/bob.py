@@ -1,34 +1,49 @@
 import sys
 import os
-import json
+import yaml
 from core.lib import bob_sdk
 from core.lib.functional_parser import parse_functional_string, METHOD_META
 
 # Beschreibungen für die Hardware-Funktionen
 DESCRIPTIONS = {
     "mine": "Baut Materie am aktuellen Standort ab.",
-    "build": "Investiert Materie in Gebäude oder Upgrades (Typen: matter_silo, solar_collector, shipyard, battery_bank, sat_link, matter_refinery).",
+    "build": "Investiert Materie in Gebäude oder Upgrades (Typen: matter_silo, solar_collector, shipyard, battery_bank, sat_link, matter_refinery, comms_relay).",
     "refine": "Wandelt Roh-Materie in veredelte Materie um (Benötigt matter_refinery).",
-    "repair": "Repariert beschädigte Infrastruktur (Nutzt Materie und Energie).",
+    "repair": "Repariert beschädigte Infrastruktur (Struktur-ID aus Dashboard nötig).",
     "deconstruct": "Baut Infrastruktur ab und erstattet Teil der Materie.",
     "move": "Startet eine Reise zu einem anderen (entdeckten) System.",
     "replicate": "Erzeugt einen autonomen Klon in einer Werft.",
     "set_name": "Legt eine individuelle Identität (Namen) fest.",
     "rename_system": "Gibt dem aktuellen System einen neuen Anzeigenamen.",
     "scan": "Scannt die Umgebung nach neuen Systemen (Deep Space Scan).",
-    "deposit": "Zahlt Materie/Energie in das System-Depot ein.",
-    "withdraw": "Entnimmt Energie oder Materie aus dem System-Depot.",
-    "transfer": "Überweist Ressourcen direkt an einen anderen Agenten.",
-    "scut": "Sendet eine Funk-Nachricht (Nutze to=all für Broadcast).",
-    "poll": "Ruft ungelesene SCUT-Nachrichten ab.",
+    "deposit": "Zahlt Materie/Energie in das lokale System-Depot ein.",
+    "withdraw": "Entnimmt Energie oder Materie aus dem lokalen System-Depot.",
+    "transfer": "Überweist Ressourcen direkt an einen anderen Agenten am selben Standort.",
+    "scut": "Sendet eine Funk-Nachricht. Reichweite > 1000 oder System-Broadcasts an 'ALL' erfordern zwingend ein aktives 'comms_relay' im System.",
+    "wait": "Pausiert eine Runde, um z.B. Energie zu regenerieren oder auf Nachrichten zu warten.",
     "storage": "Zeigt den Füllstand des eigenen Inventars an.",
     "dashboard": "Vollständiger Sensor-Scan der Umgebung (System, Infra, Andere).",
     "entities": "Scannt nach anderen Agenten am Standort.",
     "fs": "Listet die Dateien (Skripte) im eigenen Dateisystem auf."
 }
 
+def clean_dict(d):
+    """Mappt leere Werte (None, [], {}) auf '', um Tokens zu sparen, bewahrt aber das Schema."""
+    if not isinstance(d, dict): return d
+    clean = {}
+    for k, v in d.items():
+        if v is None or v == [] or v == {}:
+            clean[k] = ""
+        elif isinstance(v, dict):
+            clean[k] = clean_dict(v)
+        elif isinstance(v, list):
+            clean[k] = [clean_dict(i) if isinstance(i, dict) else i for i in v]
+        else:
+            clean[k] = v
+    return clean
+
 def print_help():
-    print("Unified Bob Command Line (UBCL) - V8.8 Industrial Evolution")
+    print("Unified Bob Command Line (UBCL) - V9.0 Semantic Evolution")
     print("Alle Befehle müssen im Format method(key=val) aufgerufen werden.")
     print("-" * 50)
     for method, meta in METHOD_META.items():
@@ -65,42 +80,44 @@ def main():
         
         if method == "mine": agent.mine()
         elif method == "refine": 
-            agent.refine(amount=int(params.get('amount', 100)))
+            agent.refine(raw_matter_to_refine=int(params.get('raw_matter_to_refine', 100)))
         elif method == "repair":
-            agent.repair(infra_id=int(params.get('infra_id')), amount=int(params.get('amount', 50)))
+            agent.repair(structure_id=int(params.get('structure_id')), hp_to_restore=int(params.get('hp_to_restore', 50)))
         elif method == "build": 
-            agent.build(type=params.get('type'), amount=int(params.get('amount', 100)))
+            agent.build(building_type=params.get('building_type'), matter_to_invest=int(params.get('matter_to_invest', 100)))
         elif method == "deconstruct": 
-            agent.deconstruct(infra_id=int(params.get('infra_id')))
+            agent.deconstruct(structure_id=int(params.get('structure_id')))
         elif method == "move": 
-            agent.move(target_sys=params.get('target_sys'))
+            agent.move(target_system=params.get('target_system'))
         elif method == "replicate": 
-            agent.replicate(new_id=params.get('new_id'))
+            agent.replicate(new_agent_id=params.get('new_agent_id'))
         elif method == "set_name": 
             agent.set_name(name=params.get('name'))
         elif method == "rename_system": 
-            agent.rename_system(new_display_name=params.get('new_name'))
+            agent.rename_system(new_name=params.get('new_name'))
         elif method == "scan":
             agent.scan()
         elif method == "deposit": 
-            agent.deposit(amount=int(params.get('amount', 100)), resource=params.get('resource', 'matter'))
+            agent.deposit(quantity=int(params.get('quantity', 100)), resource_type=params.get('resource_type', 'matter'))
         elif method == "withdraw": 
-            agent.withdraw(resource=params.get('resource', 'energy'), amount=int(params.get('amount', 50)))
+            agent.withdraw(resource_type=params.get('resource_type', 'energy'), quantity=int(params.get('quantity', 50)))
         elif method == "transfer": 
-            agent.transfer(target_id=params.get('to'), resource=params.get('resource'), amount=int(params.get('amount')))
+            agent.transfer(receiver_id=params.get('receiver_id'), resource_type=params.get('resource_type'), quantity=int(params.get('quantity')))
         elif method == "scut": 
-            agent.scut(receiver=params.get('to'), message=params.get('msg'))
-        elif method == "poll":
-            res = agent.poll()
+            agent.scut(receiver_id=params.get('receiver_id'), message=params.get('message'))
+        elif method == "wait":
+            agent.wait()
+        elif method == "_poll":
+            res = agent._internal_poll()
             if res: print(res)
         elif method == "storage": 
-            print(json.dumps(agent.storage(), indent=2))
+            print(yaml.dump(clean_dict(agent.storage()), sort_keys=False, default_flow_style=False).strip())
         elif method == "dashboard": 
-            print(json.dumps(agent.dashboard(), indent=2))
+            print(yaml.dump(clean_dict(agent.dashboard()), sort_keys=False, default_flow_style=False).strip())
         elif method == "entities": 
-            print(json.dumps(agent.entities(), indent=2))
+            print(yaml.dump(clean_dict(agent.entities()), sort_keys=False, default_flow_style=False).strip())
         elif method == "fs": 
-            print(json.dumps(agent.fs(), indent=2))
+            print(yaml.dump(clean_dict(agent.fs()), sort_keys=False, default_flow_style=False).strip())
         else:
             print(f"[CLI ERROR] Methode '{method}' nicht implementiert.")
             

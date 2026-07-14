@@ -4,7 +4,7 @@
 
 ## 1. Refined Matter Integration (Der Tech-Tree)
 *   **Logik-Update:** Die SDK-Methoden `build()` und `repair()` müssen modifiziert werden, um zwischen `raw_matter` und `refined_matter` zu unterscheiden.
-*   **Der "Veredelungs-Booster":** Wenn ein Gebäude mit `refined_matter` repariert oder gebaut wird, wird ein Multiplikator angewendet (z.B. 1 Einheit `refined_matter` entspricht 2 oder 3 Einheiten Baufortschritt/HP). Das macht den Betrieb einer Raffinerie extrem lukrativ für die Skalierung.
+*   **Die Reparatur-Logik:** Die Reparatur erfordert zwingend das Material, aus dem das Gebäude besteht. Ein Tier-1 Gebäude (`raw_matter`) wird mit `raw_matter` repariert. Ein Tier-2 Gebäude (`refined_matter`) muss zwingend mit `refined_matter` repariert werden (1 HP = 1 Materialeinheit des jeweiligen Typs).
 
 ## 2. Tier-2 Infrastruktur (Advanced Hardware)
 *   Einführung neuer Gebäude-Typen in `ECONOMY_RULES.json`, die für den Bau **zwingend** einen Mix aus `raw` und `refined` Matter erfordern.

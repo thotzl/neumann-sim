@@ -27,7 +27,8 @@ async function start() {
         { name: "JS Parser Isolation", cmd: "node bob_os/test_suite/test_environment_replace.js" },
         { name: "Meta-Pipeline (Build/Inject)", cmd: "node bob_os/test_suite/test_pipeline.js" },
         { name: "Runner Hard-Boot & Inheritance", cmd: "node bob_os/test_suite/test_runner_boot.js" },
-        { name: "E2E Mock Simulation Loop", cmd: "node sim_engine/test_e2e.js" }
+        { name: "E2E Mock Simulation Loop", cmd: "node sim_engine/test_e2e.js" },
+        { name: "Swarm Integration Test (ACL/Transit/Automation)", cmd: "node sim_engine/test_swarm_e2e.js" }
     ];
 
     let allPassed = true;

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const yaml = require('js-yaml');
 
 // Manueller .env Parser (sucht iterativ nach oben)
 let envPath = path.join(__dirname, '.env');
@@ -98,7 +99,7 @@ async function run() {
     const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + (config.config_override?.model || config.model) + ':generateContent?key=' + apiKey;
 
     async function turn() {
-        if (state.round >= config.rounds) return false;
+        if (state.round >= config.rounds && state.currentTurnIndex === 0) return false;
 
         if (state.currentTurnIndex === 0) {
             state.round++;
@@ -138,7 +139,7 @@ async function run() {
         // Auto-Radio Poll (Erzwungenes Einlesen neuer SCUT-Nachrichten)
         let radioOutput = "";
         try {
-            const out = runPython(vDir, `core/bin/bob.py`, ['poll()'], { bobId: agent.id });
+            const out = runPython(vDir, `core/bin/bob.py`, ['_poll()'], { bobId: agent.id });
             if (out && out.trim()) {
                 radioOutput = `[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${out.trim()}`;
             }
@@ -162,8 +163,8 @@ async function run() {
         // Dashboard
         try {
             const obsOut = runPython(vDir, `core/bin/bob.py`, ['dashboard()'], { bobId: agent.id, aclState: state.security?.acl || {} });
-            const obs = JSON.parse(obsOut);
-            if (obs.visual_observations && obs.visual_observations.length > 0) {
+            const obs = yaml.load(obsOut);
+            if (obs && obs.visual_observations && obs.visual_observations.length > 0) {
                 promptText += `\n[VISUELLE BEOBACHTUNGEN (SYSTEM)]:\n`;
                 obs.visual_observations.forEach(o => {
                     promptText += `- ${o.description}\n`;
@@ -204,6 +205,7 @@ async function run() {
             config.anonymity
         );
 
+        process.env.CURRENT_MOCK_AGENT = agent.id;
         let responseText = await apiClient.callGemini(apiUrl, payload);
 
         let preTurnEvents = "";
@@ -266,16 +268,19 @@ conn.close()
 `;
                 const observerOut = require('child_process').execFileSync('python3', ['-c', dbScript], { env: { ...process.env, TEST_DB_PATH: path.join(universeDir, 'universe.db') }, encoding: 'utf8' });
                 
-                if (observerOut && observerOut.trim()) {
-                    logger.appendTurnLog(logFile, state.round, "System", 0, 0, "[GLOBAL EVENTS]", observerOut.trim(), true, "");
+                if (observerOut.trim()) {
+                    logger.appendTurnLog(logFile, state.round, "System", 0, 0, "[OBSERVER LOG]", observerOut.trim(), true, "");
                 }
 
-            } catch (e) {
+                } catch (e) {
                 console.error("[PHYSICS-ERROR] Update fehlgeschlagen:", e.message);
-            }
-        }
-        return true;
-    }
+                }
+
+                // Finaler State Save nach Physik
+                stateManager.saveState(stateFile, state);
+                }
+                return true;
+                }
 
     while (await turn()) {}
     console.log("Simulation beendet.");

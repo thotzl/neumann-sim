@@ -142,6 +142,9 @@ class Actuators:
         if not system: return False
 
         global_settings = self.rules.get('global_settings', {})
+        infra_rules = self.rules.get('infrastructure', {}).get(infra['type'], {})
+        req_material = infra_rules.get('required_material', 'raw_matter')
+        
         hp_to_restore = int(hp_to_restore)
         hp_needed = infra['max_health'] - infra['health']
         
@@ -153,13 +156,16 @@ class Actuators:
         cost_m = global_settings.get('repair_cost_matter_per_hp', 1) * actual_repair
         cost_e = global_settings.get('repair_cost_energy_per_hp', 1) * actual_repair
         
-        # Pipeline Logic Matter
-        available_depot_matter = system['raw_matter_depot']
-        available_inventory_matter = agent['raw_matter_inventory']
+        # Pipeline Logic Matter (Dynamic Resource Type)
+        mat_col_inv = "refined_matter_inventory" if req_material == "refined_matter" else "raw_matter_inventory"
+        mat_col_depot = "refined_matter_depot" if req_material == "refined_matter" else "raw_matter_depot"
+        
+        available_depot_matter = system[mat_col_depot]
+        available_inventory_matter = agent[mat_col_inv]
         total_available_m = available_depot_matter + available_inventory_matter
 
         if total_available_m < cost_m:
-            print(f"[ERROR] Not enough matter for repair. Need {cost_m}M, have {available_inventory_matter}M in inventory and {available_depot_matter}M in depot.")
+            print(f"[ERROR] Not enough {req_material} for repair. Need {cost_m}, have {available_inventory_matter} in inventory and {available_depot_matter} in depot.")
             return False
             
         # Pipeline Logic Energy
@@ -184,34 +190,39 @@ class Actuators:
             cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (energy_from_depot, agent['location']))
             
         if matter_from_inventory > 0:
-            agent_service.consume_resources(cursor, self.agent.id, matter=matter_from_inventory)
+            cursor.execute(f"UPDATE agents SET {mat_col_inv} = {mat_col_inv} - ? WHERE id = ?", (matter_from_inventory, self.agent.id))
         if matter_from_depot > 0:
-            cursor.execute("UPDATE systems SET raw_matter_depot = raw_matter_depot - ? WHERE name = ?", (matter_from_depot, agent['location']))
+            cursor.execute(f"UPDATE systems SET {mat_col_depot} = {mat_col_depot} - ? WHERE name = ?", (matter_from_depot, agent['location']))
         
         new_health = infra['health'] + actual_repair
         status = 'active' if new_health > 0 else infra['status']
         
-        cursor.execute("UPDATE infrastructure SET health = ?, status = ? WHERE id = ?", (new_health, status, structure_id))
-        print(f"[SUCCESS] Structure {structure_id} repaired to {new_health} HP (Cost paid: {energy_from_depot}E from Depot / {energy_from_inventory}E from Battery | {matter_from_depot}M from Depot / {matter_from_inventory}M from Inventory).")
+        cursor.execute("UPDATE infrastructure SET health = ?, status = ?, maintenance_cooldown = 10 WHERE id = ?", (new_health, status, structure_id))
+        print(f"[SUCCESS] Structure {structure_id} ({infra['type']}) repaired to {new_health} HP (Cost paid in {req_material}: {matter_from_depot} from Depot / {matter_from_inventory} from Inventory).")
         return True
 
     @agent_service.with_agent_context(require_active=True, action_name='Build')
     def build(self, cursor, agent, building_type, matter_to_invest=100):
         infra_rules = self.rules.get('infrastructure', {}).get(building_type, {"matter_cost": 400})
         total_cost = infra_rules.get('matter_cost', 400)
+        req_material = infra_rules.get('required_material', 'raw_matter')
+        
         matter_to_invest = int(matter_to_invest)
         build_cost_e = self.rules.get('tool_costs', {}).get('build', {}).get('energy_cost', 15)
         
         system = system_service.get_system_or_fail(cursor, agent['location'])
         if not system: return False
 
-        # Pipeline Logic Matter
-        available_depot_matter = system['raw_matter_depot']
-        available_inventory_matter = agent['raw_matter_inventory']
+        # Pipeline Logic Matter (Dynamic Resource Type)
+        mat_col_inv = "refined_matter_inventory" if req_material == "refined_matter" else "raw_matter_inventory"
+        mat_col_depot = "refined_matter_depot" if req_material == "refined_matter" else "raw_matter_depot"
+        
+        available_depot_matter = system[mat_col_depot]
+        available_inventory_matter = agent[mat_col_inv]
         total_available_m = available_depot_matter + available_inventory_matter
 
         if total_available_m < matter_to_invest:
-            print(f"[ERROR] Not enough matter available. Need {matter_to_invest}, but only have {available_inventory_matter} in inventory and {available_depot_matter} in depot.")
+            print(f"[ERROR] Not enough {req_material} available. Need {matter_to_invest}, but only have {available_inventory_matter} in inventory and {available_depot_matter} in depot.")
             return False
 
         # Pipeline Logic Energy
@@ -236,9 +247,9 @@ class Actuators:
             cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (energy_from_depot, agent['location']))
             
         if matter_from_inventory > 0:
-            agent_service.consume_resources(cursor, self.agent.id, matter=matter_from_inventory)
+            cursor.execute(f"UPDATE agents SET {mat_col_inv} = {mat_col_inv} - ? WHERE id = ?", (matter_from_inventory, self.agent.id))
         if matter_from_depot > 0:
-            cursor.execute("UPDATE systems SET raw_matter_depot = raw_matter_depot - ? WHERE name = ?", (matter_from_depot, agent['location']))
+            cursor.execute(f"UPDATE systems SET {mat_col_depot} = {mat_col_depot} - ? WHERE name = ?", (matter_from_depot, agent['location']))
 
         cursor.execute("SELECT * FROM infrastructure WHERE system_name = ? AND type = ?", (agent['location'], building_type))
         existing = cursor.fetchone()
@@ -253,25 +264,26 @@ class Actuators:
 
                 if existing['progress_matter'] + matter_to_invest >= upgrade_cost:
                     new_lvl = existing['level'] + 1
-                    cursor.execute("UPDATE infrastructure SET level = ?, progress_matter = 0, health = max_health WHERE id = ?", (new_lvl, existing['id']))
-                    print(f"[SUCCESS] {building_type} upgraded to Level {new_lvl}! (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
+                    cursor.execute("UPDATE infrastructure SET level = ?, progress_matter = 0, health = max_health, maintenance_cooldown = 10 WHERE id = ?", (new_lvl, existing['id']))
+                    print(f"[SUCCESS] {building_type} upgraded to Level {new_lvl}! (Cost paid in {req_material}: {matter_from_depot} Depot/{matter_from_inventory} Inv)")
                 else:
-                    print(f"[SUCCESS] {matter_to_invest} matter invested in {building_type} Upgrade (Lvl {existing['level']}). (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
+                    print(f"[SUCCESS] {matter_to_invest} {req_material} invested in {building_type} Upgrade (Lvl {existing['level']}).")
             else:
                 cursor.execute("UPDATE infrastructure SET progress_matter = progress_matter + ? WHERE id = ?", (matter_to_invest, existing['id']))
                 if existing['progress_matter'] + matter_to_invest >= total_cost:
-                    cursor.execute("UPDATE infrastructure SET status = 'active', progress_matter = 0 WHERE id = ?", (existing['id'],))
-                    print(f"[SUCCESS] {building_type} completed! (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
+                    cursor.execute("UPDATE infrastructure SET status = 'active', progress_matter = 0, maintenance_cooldown = 10 WHERE id = ?", (existing['id'],))
+                    print(f"[SUCCESS] {building_type} completed! (Cost paid in {req_material}: {matter_from_depot} Depot/{matter_from_inventory} Inv)")
                 else:
-                    print(f"[SUCCESS] {matter_to_invest} matter invested in {building_type} Construction. (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
+                    print(f"[SUCCESS] {matter_to_invest} {req_material} invested in {building_type} Construction.")
         else:
-            cursor.execute("INSERT INTO infrastructure (system_name, type, status, progress_matter, required_matter, level, health, max_health) VALUES (?, ?, 'construction', ?, ?, 1, 100, 100)", 
+            cursor.execute("INSERT INTO infrastructure (system_name, type, status, progress_matter, required_matter, level, health, max_health, maintenance_cooldown) VALUES (?, ?, 'construction', ?, ?, 1, 100, 100, 0)", 
                            (agent['location'], building_type, matter_to_invest, total_cost))
             if matter_to_invest >= total_cost:
-                cursor.execute("UPDATE infrastructure SET status = 'active', progress_matter = 0 WHERE system_name = ? AND type = ?", (agent['location'], building_type))
-                print(f"[SUCCESS] {building_type} completed! (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
+                cursor.execute("UPDATE infrastructure SET status = 'active', progress_matter = 0, maintenance_cooldown = 10 WHERE system_name = ? AND type = ?", (agent['location'], building_type))
+                print(f"[SUCCESS] {building_type} completed! (Cost paid in {req_material}: {matter_from_depot} Depot/{matter_from_inventory} Inv)")
             else:
-                print(f"[SUCCESS] Started {building_type} construction with {matter_to_invest} matter. (Cost paid: {energy_from_depot}E Depot/{energy_from_inventory}E Bat | {matter_from_depot}M Depot/{matter_from_inventory}M Inv)")
+                print(f"[SUCCESS] Started {building_type} construction with {matter_to_invest} {req_material}.")
+        return True
         return True
 
     @agent_service.with_agent_context()

@@ -207,12 +207,13 @@ function processActions(text, universeDir, agentId, state) {
         }
 
         // Security Hook für python3 scripts/
+        let displayCmd = match[1].trim(); // Der Originalbefehl des LLMs
         if (cmd.includes("scripts/")) {
             const parts = cmd.split(' ');
             let targetScript = parts.find(p => p.includes("scripts/")).replace("_verse/", "");
             const access = checkAccess(targetScript, 'RUN', agentId, state);
             if (!access.granted) {
-                feedback += `[RESONANZ: '${cmd}' -> ${access.reason}]\n`;
+                feedback += `[RESONANZ: '${displayCmd}' -> ${access.reason}]\n`;
                 continue;
             }
         }
@@ -230,13 +231,13 @@ function processActions(text, universeDir, agentId, state) {
                     TEST_DB_PATH: path.join(universeDir, 'universe.db')
                 }
             }).toString();
-            feedback += `[RESONANZ: '${cmd}' -> ${out || "OK"}]\n`;
+            feedback += `[RESONANZ: '${displayCmd}' ::\n${out.trim() || "OK"}]\n`;
         } catch (e) {
             let err = e.stderr ? e.stderr.toString() : e.message;
             // Immersion Guard: Entferne absolute Host-Pfade
             const expRoot = path.resolve(universeDir, '..');
             err = err.split(expRoot).join('');
-            feedback += `[FEHLER-RESONANZ: '${cmd}' -> ${err.trim()}]\n`;
+            feedback += `[FEHLER-RESONANZ: '${displayCmd}' ::\n${err.trim()}]\n`;
         }
     }
     return feedback;

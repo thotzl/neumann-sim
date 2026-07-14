@@ -2,7 +2,7 @@
   "log": "log.md",
   "report": "report.md",
   "state": "state.json",
-  "rounds": 5,
+  "rounds": 2,
   "reproduction": true,
   "config_override": {
     "model": "gemini-2.5-flash",

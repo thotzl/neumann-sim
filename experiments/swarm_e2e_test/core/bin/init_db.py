@@ -16,6 +16,7 @@ def init():
         x INTEGER DEFAULT 0,
         y INTEGER DEFAULT 0,
         extractable_matter_in_core INTEGER, 
+        max_extractable_matter INTEGER DEFAULT 10000,
         raw_matter_depot INTEGER DEFAULT 0,
         depot_matter_capacity INTEGER DEFAULT 0,
         energy_depot INTEGER DEFAULT 0,
@@ -57,7 +58,8 @@ def init():
         required_matter INTEGER DEFAULT 0,
         health INTEGER DEFAULT 100,
         max_health INTEGER DEFAULT 100,
-        level INTEGER DEFAULT 1
+        level INTEGER DEFAULT 1,
+        maintenance_cooldown INTEGER DEFAULT 0
     )''')
     
     cursor.execute("CREATE TABLE IF NOT EXISTS messages (sender TEXT, receiver TEXT, content TEXT)")

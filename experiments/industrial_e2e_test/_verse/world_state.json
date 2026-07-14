@@ -1,0 +1,90 @@
+{
+  "tick": 2,
+  "total_turns": 2,
+  "last_agent": "Bob-1",
+  "timestamp": 1784020543083,
+  "systems": [
+    {
+      "name": "SYS-X0-Y0",
+      "display_name": null,
+      "x": 0,
+      "y": 0,
+      "extractable_matter_in_core": 10,
+      "max_extractable_matter": 10000,
+      "raw_matter_depot": 0,
+      "depot_matter_capacity": 0,
+      "energy_depot": 0,
+      "depot_energy_capacity": 0,
+      "matter_generation_per_cycle": 0,
+      "energy_generation_per_cycle": 0,
+      "refined_matter_depot": 0,
+      "infra": [
+        {
+          "id": 99,
+          "type": "advanced_shipyard",
+          "status": "active",
+          "health": 100,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 1000
+        },
+        {
+          "id": 100,
+          "type": "comms_relay",
+          "status": "active",
+          "health": 100,
+          "max_health": 100,
+          "level": 1,
+          "progress_matter": 0,
+          "required_matter": 300
+        }
+      ]
+    }
+  ],
+  "agents": [
+    {
+      "id": "Bob-1",
+      "chosen_name": "Original-Bob",
+      "location": "SYS-X0-Y0",
+      "raw_matter_inventory": 0,
+      "energy_inventory": 495,
+      "matter_storage_capacity": 500,
+      "status": "active",
+      "birth_cycle": 0,
+      "target_system": null,
+      "origin_x": 0,
+      "origin_y": 0,
+      "target_x": 0,
+      "target_y": 0,
+      "transit_ticks_total": 0,
+      "transit_ticks_passed": 0,
+      "current_x": 0,
+      "current_y": 0,
+      "refined_matter_inventory": 190,
+      "last_manifestation": "\nANALYSE: Warten.\nAKTION:\n[RUN: bob wait()]",
+      "sensors": {
+        "id": "Bob-1",
+        "parent_id": null,
+        "chosen_name": "Original-Bob",
+        "status": "active",
+        "location": "SYS-X0-Y0",
+        "birth_cycle": 0,
+        "pos": {
+          "x": 0,
+          "y": 0
+        },
+        "inventory": {
+          "raw_matter_inventory": 0,
+          "matter_limit": 500,
+          "energy_inventory": 495,
+          "energy_limit": 200,
+          "refined_matter_inventory": 190
+        },
+        "transit": null,
+        "travel_previews": []
+      }
+    }
+  ],
+  "events": []
+}

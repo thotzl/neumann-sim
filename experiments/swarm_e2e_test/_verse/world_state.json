@@ -1,8 +1,8 @@
 {
   "tick": 4,
   "total_turns": 6,
-  "last_agent": "Bob-2",
-  "timestamp": 1783939307942,
+  "last_agent": "Bob-1",
+  "timestamp": 1784020556382,
   "systems": [
     {
       "name": "SYS-X0-Y0",
@@ -10,6 +10,7 @@
       "x": 0,
       "y": 0,
       "extractable_matter_in_core": 10000,
+      "max_extractable_matter": 10000,
       "raw_matter_depot": 0,
       "depot_matter_capacity": 0,
       "energy_depot": 0,
@@ -24,7 +25,8 @@
       "display_name": null,
       "x": 0,
       "y": 0,
-      "extractable_matter_in_core": 4700,
+      "extractable_matter_in_core": 4715,
+      "max_extractable_matter": 10000,
       "raw_matter_depot": 0,
       "depot_matter_capacity": 0,
       "energy_depot": 0,
@@ -39,7 +41,8 @@
       "display_name": null,
       "x": 600,
       "y": 0,
-      "extractable_matter_in_core": 5000,
+      "extractable_matter_in_core": 5015,
+      "max_extractable_matter": 10000,
       "raw_matter_depot": 0,
       "depot_matter_capacity": 0,
       "energy_depot": 0,

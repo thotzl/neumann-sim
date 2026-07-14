@@ -16,42 +16,62 @@
   "infrastructure": {
     "matter_silo": { 
       "matter_cost": 400, 
+      "required_material": "raw_matter",
       "matter_capacity_bonus": 1000, 
       "maintenance_energy_cost": 0 
     },
     "solar_collector": { 
       "matter_cost": 400, 
+      "required_material": "raw_matter",
       "energy_capacity_bonus": 1000, 
       "energy_regen_bonus": 100, 
       "maintenance_energy_cost": 0 
     },
     "shipyard": { 
       "matter_cost": 1000, 
+      "required_material": "raw_matter",
       "allows_replicate": true, 
       "maintenance_energy_cost": 0 
     },
     "battery_bank": { 
       "matter_cost": 600, 
+      "required_material": "raw_matter",
       "energy_capacity_bonus": 5000, 
       "maintenance_energy_cost": 0 
     },
     "matter_refinery": { 
       "matter_cost": 800, 
+      "required_material": "raw_matter",
       "allows_refine": true, 
       "maintenance_energy_cost": 0 
     },
     "sat_link": { 
       "matter_cost": 500, 
+      "required_material": "raw_matter",
       "scan_cost_multiplier": 0.5, 
       "maintenance_energy_cost": 2 
     },
     "comms_relay": { 
       "matter_cost": 300, 
+      "required_material": "raw_matter",
       "maintenance_energy_cost": 3 
+    },
+    "advanced_shipyard": { 
+      "matter_cost": 1000, 
+      "required_material": "refined_matter",
+      "allows_replicate": true, 
+      "maintenance_energy_cost": 5 
+    },
+    "deep_space_scanner": { 
+      "matter_cost": 800, 
+      "required_material": "refined_matter",
+      "scan_range_bonus": 2000,
+      "maintenance_energy_cost": 10 
     }
   },
   "global_settings": {
     "decay_per_tick": 1,
+    "core_regen_per_tick": 5,
     "operating_costs_enabled": true,
     "base_comms_range": 1000,
     "repair_cost_matter_per_hp": 1,

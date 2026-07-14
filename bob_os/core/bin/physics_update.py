@@ -16,14 +16,16 @@ def update():
     agent_limits = rules.get('agent_limits', {"matter": 300, "energy": 500})
     regen_base = agent_limits.get('energy_regen_base', 10)
     drain_idle = agent_limits.get('energy_drain_idle', 5)
-    decay_rate = rules.get('global_settings', {}).get('decay_per_tick', 1)
+    global_settings = rules.get('global_settings', {})
+    decay_rate = global_settings.get('decay_per_tick', 1)
+    core_regen = global_settings.get('core_regen_per_tick', 5)
 
     # 1. Bauprojekte abschließen
     cursor.execute("SELECT * FROM infrastructure WHERE status = 'construction'")
     construction_sites = cursor.fetchall()
     for site in construction_sites:
         if site['progress_matter'] >= site['required_matter']:
-            cursor.execute("UPDATE infrastructure SET status = 'active', progress_matter = 0, health = 100, max_health = 100, level = 1 WHERE id = ?", (site['id'],))
+            cursor.execute("UPDATE infrastructure SET status = 'active', progress_matter = 0, health = 100, max_health = 100, level = 1, maintenance_cooldown = 10 WHERE id = ?", (site['id'],))
             print(f"[PHYSICS] Projekt {site['type']} in {site['system_name']} fertiggestellt!")
 
     # 2. Logistik & Transit
@@ -51,15 +53,21 @@ def update():
     cursor.execute("UPDATE agents SET energy_inventory = MIN(?, MAX(0, energy_inventory + ? - ?)) WHERE status = 'active'", 
                    (agent_limits['energy'], regen_base, drain_idle))
     
-    # 4. Globales System-Update (Wartung, Kosten, Kapazitäten)
+    # 4. Globales System-Update (Wartung, Kosten, Kapazitäten, Geologie)
+    # A. Geologische Regeneration der Planetenkerne
+    cursor.execute("UPDATE systems SET extractable_matter_in_core = MIN(extractable_matter_in_core + ?, max_extractable_matter)", (core_regen,))
+    
     cursor.execute("SELECT name, raw_matter_depot, energy_depot FROM systems")
     systems = cursor.fetchall()
     
     for sys in systems:
         sys_name = sys['name']
         
-        # A. Infrastruktur-Verfall
-        cursor.execute("UPDATE infrastructure SET health = MAX(0, health - ?) WHERE system_name = ? AND status != 'construction'", (decay_rate, sys_name))
+        # B. Infrastruktur-Verfall & Cooldown
+        # Dann HP abziehen, ABER NUR wenn der Cooldown auf 0 ist (wir prüfen den cooldown BEVOR er dekrementiert wird)
+        cursor.execute("UPDATE infrastructure SET health = MAX(0, health - ?) WHERE system_name = ? AND status != 'construction' AND maintenance_cooldown = 0", (decay_rate, sys_name))
+        # Zuerst Cooldown dekrementieren
+        cursor.execute("UPDATE infrastructure SET maintenance_cooldown = MAX(0, maintenance_cooldown - 1) WHERE system_name = ? AND status != 'construction'", (sys_name,))
         
         # B. Sammle alle funktionsfähigen Gebäude
         cursor.execute("SELECT * FROM infrastructure WHERE system_name = ? AND status = 'active' AND health > 0", (sys_name,))

@@ -22,7 +22,7 @@ class TestStateExporter(unittest.TestCase):
             display_name TEXT,
             x INTEGER,
             y INTEGER,
-            extractable_matter_in_core INTEGER, 
+            extractable_matter_in_core INTEGER, max_extractable_matter INTEGER DEFAULT 10000, 
             raw_matter_depot INTEGER, 
             depot_matter_capacity INTEGER, 
             energy_depot INTEGER, 

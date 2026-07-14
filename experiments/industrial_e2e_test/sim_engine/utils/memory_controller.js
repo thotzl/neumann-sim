@@ -1,8 +1,10 @@
 const stateManager = require('./state_manager');
 
 async function handleDistillation(agentId, state, config, apiUrl) {
-    // 1. Hole das Limit aus der Config (Fallback 15000 Tokens)
-    let limit = 15000;
+    // 1. Hole Limits aus der Config
+    let limit = config.memory?.soft_token_limit || 15000;
+    let hardLimit = config.memory?.hard_token_limit || 30000;
+    
     if (config.config_override && config.config_override.token_limit) {
         limit = config.config_override.token_limit;
     } else if (config.token_limit) {
@@ -18,9 +20,9 @@ async function handleDistillation(agentId, state, config, apiUrl) {
 
     // 3. Triggere Distillation
     // Entweder: Genug neue Infos gesammelt (limit)
-    // ODER: Gesamthistorie inkl. Extrakt wird zu groß (Hard Limit 30k)
-    if (estimatedFreshTokens >= limit || totalTokens >= 30000) {
-        const reason = totalTokens >= 30000 ? "HARD-LIMIT" : "Intervall";
+    // ODER: Gesamthistorie inkl. Extrakt wird zu groß (Hard Limit)
+    if (estimatedFreshTokens >= limit || totalTokens >= hardLimit) {
+        const reason = totalTokens >= hardLimit ? "HARD-LIMIT" : "Intervall";
         console.log(`[MEMORY] Agent ${agentId} destilliert (${reason}). Gesamt: ~${totalTokens} Tokens, Neu: ~${estimatedFreshTokens} Tokens.`);
         
         const compressed = await stateManager.runIndividualDistillation(apiUrl, state.histories[agentId], agentId);

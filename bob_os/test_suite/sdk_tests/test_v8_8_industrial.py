@@ -12,7 +12,7 @@ class TestV8_8Industrial(unittest.TestCase):
     def setUp(self):
         self.test_db = "v8_8_test.db"
         os.environ['TEST_DB_PATH'] = self.test_db
-        os.environ['BOB_ID'] = 'Bob-1'
+        os.environ['BOB_ID'] = 'Instance-1'
         if os.path.exists(self.test_db): os.remove(self.test_db)
         
         from core.lib import config_service
@@ -23,10 +23,7 @@ class TestV8_8Industrial(unittest.TestCase):
         conn = sqlite3.connect(self.test_db)
         c = conn.cursor()
         # V9.0 Semantic Schema
-        c.execute("""CREATE TABLE agents (
-            id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, 
-            energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0,
-            matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL)""")
+        c.execute("""CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL, active_ship_id INTEGER DEFAULT 1)""")
         c.execute("""CREATE TABLE systems (
             name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, 
             extractable_matter_in_core INTEGER, max_extractable_matter INTEGER DEFAULT 10000, raw_matter_depot INTEGER DEFAULT 0, depot_matter_capacity INTEGER DEFAULT 0, 
@@ -40,7 +37,7 @@ class TestV8_8Industrial(unittest.TestCase):
         c.execute("CREATE TABLE messages (sender TEXT, receiver TEXT, content TEXT)")
         c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
         
-        c.execute("INSERT INTO agents VALUES ('Bob-1', 'Industrialist', 'SYS-A', ?, ?, 0, 2000, 'active', 0, 0)", (self.start_energy, self.start_matter))
+        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-1', 'Industrialist', 'SYS-A', ?, ?, 0, 2000, 'active', 0, 0)", (self.start_energy, self.start_matter))
         c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, x, y) VALUES ('SYS-A', 1000, 100, 1000, 500, 2500, 0, 0)")
         conn.commit()
         conn.close()
@@ -151,7 +148,7 @@ class TestV8_8Industrial(unittest.TestCase):
         upgrade_cost = int(total_cost * upgrade_multiplier)
         
         # Geben wir genug Materie für das Upgrade
-        conn.execute("UPDATE agents SET raw_matter_inventory = ? WHERE id='Bob-1'", (upgrade_cost,))
+        conn.execute("UPDATE agents SET raw_matter_inventory = ? WHERE id='Instance-1'", (upgrade_cost,))
         conn.commit()
         conn.close()
         

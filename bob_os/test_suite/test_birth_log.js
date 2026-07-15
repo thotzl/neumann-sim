@@ -12,7 +12,7 @@ const fakeContext = "Das ist ein extrem langer Text, der das Gedächtnis des Vat
 // Mach den Text künstlich über 600 Zeichen lang
 const paddedContext = fakeContext + " X".repeat(200);
 
-logger.appendBirthLog(logFile=logPath, round=5, agentId="Bob-X", parentId="Bob-1", fullContextBlock=paddedContext);
+logger.appendBirthLog(logFile=logPath, round=5, agentId="Bob-X", parentId="Instance-1", fullContextBlock=paddedContext);
 
 console.log(fs.readFileSync(logPath, 'utf8'));
 fs.unlinkSync(logPath);

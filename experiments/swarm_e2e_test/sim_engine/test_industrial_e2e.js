@@ -40,17 +40,17 @@ async function runIndustrialE2E() {
 
         // Setup DB: Empty core, some refined matter, and a slightly damaged Tier-2 structure
         await runSql(dbPath, "UPDATE systems SET extractable_matter_in_core = 0 WHERE name = 'SYS-X0-Y0'");
-        await runSql(dbPath, "UPDATE agents SET refined_matter_inventory = 200, raw_matter_inventory = 300, matter_storage_capacity=500 WHERE id = 'Bob-1'");
+        await runSql(dbPath, "INSERT OR REPLACE INTO agents (id, chosen_name, location, refined_matter_inventory, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, active_ship_id) VALUES ('Instance-1', 'Instance-1', 'SYS-X0-Y0', 200, 300, 500, 500, 'active', 1)");
         await runSql(dbPath, "INSERT INTO infrastructure (id, system_name, type, status, progress_matter, required_matter, health, max_health, level, maintenance_cooldown) VALUES (99, 'SYS-X0-Y0', 'advanced_shipyard', 'active', 0, 1000, 90, 100, 1, 0)");
 
-        // Tick 1: Bob-1 repairs the advanced shipyard (needs refined matter) and builds a comms_relay
-        console.log("- Tick 1: Bob-1 repariert Tier-2 und baut Tier-1...");
+        // Tick 1: Instance-1 repairs the advanced shipyard (needs refined matter) and builds a comms_relay
+        console.log("- Tick 1: Instance-1 repariert Tier-2 und baut Tier-1...");
         process.env.E2E_MOCK = 'true';
-        process.env.E2E_MOCK_RESPONSE_BOB1 = `
+        process.env.E2E_MOCK_RESPONSE_INSTANCE1 = `
 ANALYSE: Repariere Tier-2 Gebäude und starte Tier-1 Bau.
 AKTION:
-[RUN: bob repair(structure_id=99, hp_to_restore=10)]
-[RUN: bob build(building_type=comms_relay, matter_to_invest=300)]`;
+[RUN: me repair(structure_id=99, hp_to_restore=10)]
+[RUN: me build(building_type=comms_relay, matter_to_invest=300)]`;
 
         const configPath = path.join(expDir, 'config.json');
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -64,10 +64,10 @@ AKTION:
         config.rounds = 2;
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
         
-        process.env.E2E_MOCK_RESPONSE_BOB1 = `
+        process.env.E2E_MOCK_RESPONSE_INSTANCE1 = `
 ANALYSE: Warten.
 AKTION:
-[RUN: bob wait()]`;
+[RUN: me wait()]`;
 
         execSync(`node sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 
@@ -100,7 +100,7 @@ AKTION:
         }
         
         // 4. Verify Correct Inventories (Refined vs Raw used)
-        const agent = await getSql(dbPath, "SELECT refined_matter_inventory, raw_matter_inventory FROM agents WHERE id = 'Bob-1'");
+        const agent = await getSql(dbPath, "SELECT refined_matter_inventory, raw_matter_inventory FROM agents WHERE id = 'Instance-1'");
         // 200 refined start - 10 for repair = 190
         if (agent.refined_matter_inventory !== 190) {
              throw new Error(`Falscher refined_matter Abzug. Erwartet 190, ist ${agent.refined_matter_inventory}`);

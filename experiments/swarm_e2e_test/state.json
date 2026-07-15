@@ -1,101 +1,142 @@
 {
-  "round": 4,
-  "currentTurnIndex": 0,
-  "totalTurns": 6,
+  "round": 5,
   "agents": [
     {
-      "id": "Bob-1",
-      "location": "SYS-A",
+      "id": "Instance-1",
+      "system_prompt": "Swarm Test",
+      "location": "Alpha_Centauri",
       "alive": true,
       "needsResumeNotify": false
     },
     {
-      "id": "Bob-2",
-      "location": "SYS-A",
+      "id": "Instance-2",
+      "system_prompt": "Receiver",
+      "location": "Alpha_Centauri",
       "alive": true,
-      "needsResumeNotify": false,
-      "system_prompt": "Test Klon"
+      "needsResumeNotify": false
     }
   ],
-  "turnSequence": [
-    "Bob-1",
-    "Bob-2"
-  ],
   "histories": {
-    "Bob-1": [
+    "Instance-1": [
       {
         "agent": "System",
-        "text": "Boot"
+        "text": "[SYSTEM BOOT SEQUENZ ABGESCHLOSSEN]\nIdentität: Instance-1\nAktueller Standort: Alpha_Centauri\n\n[INITIALER SENSOR-SCAN (DASHBOARD)]:\nyou:\n  id: Instance-1\n  name: Instance-1\n  energy: 500\n  matter: 0\n  refined: 0\n  storage_capacity: 300\n  status: active\nsystem:\n  name: Alpha_Centauri\n  display_name: ''\n  x: 0\n  y: 0\n  extractable_matter_in_core: 10000\n  max_extractable_matter: 10000\n  raw_matter_depot: 0\n  depot_matter_capacity: 0\n  energy_depot: 0\n  depot_energy_capacity: 0\n  matter_generation_per_cycle: 0\n  energy_generation_per_cycle: 0\n  refined_matter_depot: 0\n  infra: ''\nvisible_entities:\n- id: Instance-2\n  chosen_name: Bob-2\n  status: active\nvisual_observations: ''"
       },
       {
-        "agent": "Bob-1",
-        "text": "\nANALYSE: Ich erstelle ein Skript und lade Bob-2 ein.\nAKTION:\n[WRITE: scripts/active/auto.py (READ_KEY: secret)]\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n[END]\n[RUN: bob scut(receiver_id=Bob-2, message=Der Schlüssel ist secret)]"
-      },
-      {
-        "agent": "System",
-        "text": "[ERFOLG: 'scripts/active/auto.py' manifestiert]\n[RESONANZ: 'bob scut(receiver_id=Bob-2, message=Der Schlüssel ist secret)' ::\n[SUCCESS] Message sent to Bob-2.]\n"
-      },
-      {
-        "agent": "Bob-1",
-        "text": "ANALYSE: Nichts.\nAKTION:\n"
+        "agent": "Instance-1",
+        "text": "ANALYSE: Skript.\nAKTION:\n[WRITE: scripts/active/auto.py (READ_KEY: secret)]\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n[END]\n[RUN: me scut(receiver_id=Instance-2, message=secret)]"
       },
       {
         "agent": "System",
-        "text": ""
+        "text": "[ERFOLG: 'scripts/active/auto.py' manifestiert]\n[RESONANZ: 'me scut(receiver_id=Instance-2, message=secret)' ::\n[SUCCESS] Message buffered for transmission to Instance-2.]\n"
       },
       {
-        "agent": "Bob-1",
-        "text": "ANALYSE: Nichts.\nAKTION:\n"
+        "agent": "Instance-1",
+        "text": "[ANALYSE] Default Mock. [AKTION:] [RUN: me mine]"
       },
       {
         "agent": "System",
-        "text": ""
+        "text": "[RESONANZ: 'me mine' ::\n[SUCCESS] 100 matter mined. Energy -30.]\n"
+      },
+      {
+        "agent": "Instance-1",
+        "text": "[ANALYSE] Default Mock. [AKTION:] [RUN: me mine]"
+      },
+      {
+        "agent": "System",
+        "text": "[RESONANZ: 'me mine' ::\n[FEHLER] Speicher voll (300/300).]\n"
+      },
+      {
+        "agent": "Instance-1",
+        "text": "[ANALYSE] Default Mock. [AKTION:] [RUN: me mine]"
+      },
+      {
+        "agent": "System",
+        "text": "[RESONANZ: 'me mine' ::\n[FEHLER] Speicher voll (300/300).]\n"
+      },
+      {
+        "agent": "Instance-1",
+        "text": "[ANALYSE] Default Mock. [AKTION:] [RUN: me mine]"
+      },
+      {
+        "agent": "System",
+        "text": "[RESONANZ: 'me mine' ::\n[FEHLER] Speicher voll (300/300).]\n"
       }
     ],
-    "Bob-2": [
+    "Instance-2": [
       {
         "agent": "System",
-        "text": "Boot"
+        "text": "[SYSTEM BOOT SEQUENZ ABGESCHLOSSEN]\nIdentität: Instance-2\nAktueller Standort: Alpha_Centauri\n\n[INITIALER SENSOR-SCAN (DASHBOARD)]:\nyou:\n  id: Instance-2\n  name: Bob-2\n  energy: 500\n  matter: 0\n  refined: 0\n  storage_capacity: 300\n  status: active\nsystem:\n  name: Alpha_Centauri\n  display_name: ''\n  x: 0\n  y: 0\n  extractable_matter_in_core: 10000\n  max_extractable_matter: 10000\n  raw_matter_depot: 0\n  depot_matter_capacity: 0\n  energy_depot: 0\n  depot_energy_capacity: 0\n  matter_generation_per_cycle: 0\n  energy_generation_per_cycle: 0\n  refined_matter_depot: 0\n  infra: ''\nvisible_entities:\n- id: Instance-1\n  chosen_name: Instance-1\n  status: active\nvisual_observations: ''"
       },
       {
-        "agent": "Bob-2",
-        "text": "\nANALYSE: Ich warte.\nAKTION:\n[RUN: bob poll()]"
-      },
-      {
-        "agent": "System",
-        "text": "[RESONANZ: 'bob poll()' ::\n[CLI ERROR] Methode 'poll' nicht implementiert.]\n"
-      },
-      {
-        "agent": "Bob-2",
-        "text": "\nANALYSE: Ich nutze den Key, lese das Skript und fliege nach SYS-B.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: bob move(target_system=SYS-B)]"
+        "agent": "Instance-2",
+        "text": "[ANALYSE] Default Mock. [AKTION:] [RUN: me mine]"
       },
       {
         "agent": "System",
-        "text": "[ERFOLG: Key 'auth' zu Schlüsselbund hinzugefügt.]\n[INHALT VON 'scripts/active/auto.py':\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n]\n[RESONANZ: 'bob move(target_system=SYS-B)' ::\n[SUCCESS] Journey initiated to SYS-B. ETA: 2 Ticks.]\n"
+        "text": "[RESONANZ: 'me mine' ::\n[SUCCESS] 100 matter mined. Energy -30.]\n"
       },
       {
-        "agent": "Bob-2",
-        "text": "\nANALYSE: Ich nutze den Key, lese das Skript und fliege nach SYS-B.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: bob move(target_system=SYS-B)]"
+        "agent": "Instance-2",
+        "text": "ANALYSE: Move.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: me move(target_system=SYS-B)]"
       },
       {
         "agent": "System",
-        "text": "[ERFOLG: Key 'auth' zu Schlüsselbund hinzugefügt.]\n[INHALT VON 'scripts/active/auto.py':\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n]\n[RESONANZ: 'bob move(target_system=SYS-B)' ::\n[VERWEIGERT] Engines active. Move impossible in interstellar space.]\n"
+        "text": "[ERFOLG: Key 'auth' zu Schlüsselbund hinzugefügt.]\n[INHALT VON 'scripts/active/auto.py':\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n]\n[RESONANZ: 'me move(target_system=SYS-B)' ::\n[SUCCESS] Journey initiated to SYS-B. ETA: 2 Ticks.]\n"
+      },
+      {
+        "agent": "Instance-2",
+        "text": "[ANALYSE] Default Mock. [AKTION:] [RUN: me mine]"
+      },
+      {
+        "agent": "System",
+        "text": "[RESONANZ: 'me mine' ::\n[VERWEIGERT] Engines active. Mining impossible in interstellar space.]\n"
+      },
+      {
+        "agent": "Instance-2",
+        "text": "[ANALYSE] Default Mock. [AKTION:] [RUN: me mine]"
+      },
+      {
+        "agent": "System",
+        "text": "[RESONANZ: 'me mine' ::\n[SUCCESS] 100 matter mined. Energy -30.]\n"
+      },
+      {
+        "agent": "Instance-2",
+        "text": "[ANALYSE] Default Mock. [AKTION:] [RUN: me mine]"
+      },
+      {
+        "agent": "System",
+        "text": "[RESONANZ: 'me mine' ::\n[SUCCESS] 100 matter mined. Energy -30.]\n"
       }
     ]
   },
+  "turnSequence": [
+    "Instance-1",
+    "Instance-2"
+  ],
+  "currentTurnIndex": 0,
+  "totalTurns": 10,
+  "isResumed": false,
   "security": {
     "acl": {
       "scripts/active/auto.py": {
-        "owner": "Bob-1",
+        "owner": "Instance-1",
         "read_key": "secret"
       }
     },
     "wallets": {
-      "Bob-1": {},
-      "Bob-2": {
+      "Instance-1": {},
+      "Instance-2": {
         "auth": "secret"
       }
     }
   },
-  "isResumed": true
+  "global_inbox": {
+    "Instance-1": [],
+    "Instance-2": []
+  },
+  "events": [
+    "[Zyklus 1]: 🌍 Instance-1 (Genesis) ist online.",
+    "[Zyklus 1]: 🌍 Instance-2 (Genesis) ist online."
+  ]
 }

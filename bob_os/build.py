@@ -71,17 +71,7 @@ def build_experiment(args):
     shutil.copytree(source_core, target_core, dirs_exist_ok=True)
     shutil.copytree(source_engine, target_engine, dirs_exist_ok=True)
 
-    # 2. Initialisiere DB
-    print(f"Initialisiere Datenbank für {args.version}...")
-    env = os.environ.copy()
-    env["PYTHONPATH"] = os.path.abspath(exp_dir)
-    subprocess.run(['python3', 'core/bin/init_db.py'], cwd=exp_dir, env=env, check=True)
-
-    # 3. Generiere Tool-Dokumentation für den Prompt
-    print("Generiere Tool-Dokumentation...")
-    tool_docs = get_tool_documentation(exp_dir)
-
-    # 4. Erstelle Config aus Template
+    # 2. Erstelle Config aus Template
     config_file = os.path.join(exp_dir, 'config.json')
     if not os.path.exists(config_file) or args.force:
         with open(template_path, 'r') as f:
@@ -94,14 +84,25 @@ def build_experiment(args):
         # und dem global_system_instruction (core-config.json) hinzugefügt.
         template["agents"][0]["system_prompt"] = args.mission
         
-        if args.agent != "Bob-1":
+        if args.agent != "Instance-1":
             template["agents"][0]["id"] = args.agent
+            template["agents"][0]["chosen_name"] = args.agent
         if args.location != "SYS-X0-Y0":
             template["agents"][0]["location"] = args.location
             
         with open(config_file, 'w') as f:
             json.dump(template, f, indent=2)
         print(f"Config generiert in {config_file}")
+
+    # 3. Initialisiere DB (Jetzt, da config.json existiert, kann init_db.py die Agent ID lesen)
+    print(f"Initialisiere Datenbank für {args.version}...")
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.path.abspath(exp_dir)
+    subprocess.run(['python3', 'core/bin/init_db.py'], cwd=exp_dir, env=env, check=True)
+
+    # 4. Generiere Tool-Dokumentation für den Prompt
+    print("Generiere Tool-Dokumentation...")
+    tool_docs = get_tool_documentation(exp_dir)
 
     # 5. Post-Build Sanity Check
     required_paths = [
@@ -122,7 +123,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Bob-OS Experiment Builder")
     parser.add_argument("version", help="Versionsname (z.B. v50)")
     parser.add_argument("--rounds", type=int, default=50, help="Anzahl der Runden")
-    parser.add_argument("--agent", default="Bob-1", help="ID des ersten Agenten")
+    parser.add_argument("--agent", default="Instance-1", help="ID des ersten Agenten")
     parser.add_argument("--location", default="Alpha_Centauri", help="Start-System")
     parser.add_argument("--mission", required=True, help="Missions-Prompt (Zwingend erforderlich)")
     parser.add_argument("--force", action="store_true", help="Überschreibe existierende Config")

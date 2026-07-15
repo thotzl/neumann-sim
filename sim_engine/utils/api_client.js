@@ -1,14 +1,28 @@
 const fs = require('fs');
 
 async function callGemini(apiUrl, payload, retries = 3) {
-    // E2E Mock Bypass
     if (process.env.E2E_MOCK === 'true') {
-        const agentId = process.env.CURRENT_MOCK_AGENT;
-        const envVarName = `E2E_MOCK_RESPONSE_${agentId ? agentId.toUpperCase().replace('-', '') : ''}`;
-        if (process.env[envVarName]) {
-            return process.env[envVarName];
-        }
-        return "[ANALYSE] Test-Lauf. [AKTION:] [RUN: bob mine()]";
+        const agentId = process.env.CURRENT_MOCK_AGENT || "Instance-1";
+        const stateFile = process.env.TEST_STATE_PATH || 'state.json';
+        let round = 1;
+        
+        try {
+            if (fs.existsSync(stateFile)) {
+                const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+                round = state.round || 1;
+            }
+        } catch (e) {}
+
+        const stepVar = `E2E_MOCK_STEP_${round}_${agentId.toUpperCase().replace(/-/g, '')}`;
+        const respVar = `E2E_MOCK_RESPONSE_${agentId.toUpperCase().replace(/-/g, '')}`;
+        
+        if (process.env[stepVar]) return process.env[stepVar];
+        if (process.env[respVar]) return process.env[respVar];
+        
+        // Legacy fallbacks
+        if (agentId === "Instance-1" && process.env.E2E_MOCK_RESPONSE_BOB1) return process.env.E2E_MOCK_RESPONSE_BOB1;
+        
+        return "[ANALYSE] Default Mock. [AKTION:] [RUN: me mine]";
     }
 
     for (let i = 0; i < retries; i++) {
@@ -18,67 +32,38 @@ async function callGemini(apiUrl, payload, retries = 3) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
+
             const data = await response.json();
             if (data.error) throw new Error(data.error.message);
             if (!data.candidates || data.candidates.length === 0) return "[ERROR: API_EMPTY_RESPONSE]";
-            return data.candidates[0].content.parts[0].text;
+            
+            const candidate = data.candidates[0];
+            if (!candidate.content || !candidate.content.parts || !candidate.content.parts[0]) {
+                return "[ERROR: API_MALFORMED_RESPONSE]";
+            }
+            return candidate.content.parts[0].text;
         } catch (err) {
             console.error(`API-Call fehlgeschlagen (Versuch ${i + 1}/${retries}): ${err.message}`);
             if (i === retries - 1) throw err;
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+            await new Promise(r => setTimeout(r, 2000));
         }
     }
 }
 
-function buildAgentContext(agentId, history, memory, envState, globalInstruction, individualPrompt, anonymity) {
-    let contents = [];
-    const memoryHeader = memory ? `[GEDÄCHTNIS-EXTRAKT]:\n${memory}\n\n---\n\n` : "";
-    let currentBlock = { role: 'user', parts: [{ text: "[BEGINN DER EXISTENZ]" }] };
+function buildAgentContext(agentId, histories, memory, envState, globalInstr, systemPrompt, anonymity) {
+    let context = [];
+    if (globalInstr) context.push({ role: "user", parts: [{ text: globalInstr }] });
+    if (systemPrompt) context.push({ role: "user", parts: [{ text: `DEIN BRIEFING:\n${systemPrompt}` }] });
+    if (memory) context.push({ role: "user", parts: [{ text: `DEIN GEDÄCHTNIS:\n${memory}` }] });
 
-    history.forEach(entry => {
-        const isSelf = (entry.agent === agentId);
-        if (isSelf) {
-            if (currentBlock) contents.push(currentBlock);
-            
-            // Verhindere Marker-Duplikation
-            const modelText = entry.text.trim().startsWith('[EIGENIMPULS]:') 
-                ? entry.text 
-                : `[EIGENIMPULS]:\n${entry.text}`;
-            
-            contents.push({ role: 'model', parts: [{ text: modelText }] });
-            
-            const feedbackPrefix = "[AUSWIRKUNG]:\n";
-            const feedbackText = entry.feedback 
-                ? (entry.feedback.trim().startsWith('[AUSWIRKUNG]:') ? entry.feedback : `${feedbackPrefix}${entry.feedback}`)
-                : "[SYSTEM-RESONANZ]: Aktion registriert.";
-            
-            currentBlock = { role: 'user', parts: [{ text: feedbackText }] };
-        } else {
-            const label = anonymity && entry.agent !== 'System' ? "FREMDRESONANZ" : entry.agent;
-            const text = `[${label}]:\n${entry.text}`;
-            if (currentBlock.parts[0].text === "[BEGINN DER EXISTENZ]") {
-                currentBlock.parts[0].text = text;
-            } else {
-                currentBlock.parts[0].text += `\n\n---\n\n${text}`;
-            }
-        }
+    histories.forEach(h => {
+        context.push({
+            role: h.agent === agentId ? "model" : "user",
+            parts: [{ text: h.text }]
+        });
     });
 
-    if (currentBlock) contents.push(currentBlock);
-
-    // Memory Header an den Anfang des letzten User-Blocks
-    const lastIdx = contents.length - 1;
-    contents[lastIdx].parts[0].text = memoryHeader + contents[lastIdx].parts[0].text;
-
-    // SYSTEM PROMPT KONSTRUKTION
-    const scriptGesetz = "[SKRIPT-GESETZ]: Wenn du ein Automatisierungs-Skript in Python schreibst, nutze die 'bob_sdk'. Beispiel: import bob_sdk; me = bob_sdk.Agent(); me.mine().";
-    
-    const fullSystemPrompt = `${globalInstruction}\n\n${envState}\n\n${scriptGesetz}\n\n${individualPrompt}`;
-
-    return {
-        system_instruction: { parts: [{ text: fullSystemPrompt }] },
-        contents: contents
-    };
+    return { contents: context };
 }
 
 module.exports = { callGemini, buildAgentContext };

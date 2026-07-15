@@ -11,21 +11,21 @@ class TestFullSDK(unittest.TestCase):
     def setUp(self):
         self.test_db = "full_sdk_test.db"
         os.environ['TEST_DB_PATH'] = self.test_db
-        os.environ['BOB_ID'] = 'Bob-1'
+        os.environ['BOB_ID'] = 'Instance-1'
         if os.path.exists(self.test_db): os.remove(self.test_db)
         
         conn = sqlite3.connect(self.test_db)
         c = conn.cursor()
         
         # Tabellen erstellen (V9.0 Semantic)
-        c.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL)")
+        c.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL, active_ship_id INTEGER DEFAULT 1)")
         c.execute("CREATE TABLE systems (name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, extractable_matter_in_core INTEGER, max_extractable_matter INTEGER DEFAULT 10000, raw_matter_depot INTEGER DEFAULT 0, depot_matter_capacity INTEGER DEFAULT 0, energy_depot INTEGER DEFAULT 0, depot_energy_capacity INTEGER DEFAULT 0, matter_generation_per_cycle INTEGER DEFAULT 0, energy_generation_per_cycle INTEGER DEFAULT 0, refined_matter_depot INTEGER DEFAULT 0)")
         c.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1, maintenance_cooldown INTEGER DEFAULT 0)")
         c.execute("CREATE TABLE messages (sender TEXT, receiver TEXT, content TEXT)")
         c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
         
-        c.execute("INSERT INTO agents VALUES ('Bob-1', 'Original', 'SYS-A', 100, 50, 0, 300, 'active', 0, 0)")
-        c.execute("INSERT INTO agents VALUES ('Bob-2', 'Klon', 'SYS-A', 50, 0, 0, 100, 'active', 0, 0)")
+        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-1', 'Pioneer', 'SYS-A', 100, 50, 0, 300, 'active', 0, 0)")
+        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-2', 'Klon', 'SYS-A', 50, 0, 0, 100, 'active', 0, 0)")
         c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, x, y) VALUES ('SYS-A', 1000, 100, 2000, 500, 2500, 0, 0)")
         conn.commit()
         conn.close()
@@ -66,7 +66,7 @@ class TestFullSDK(unittest.TestCase):
     def test_deposit_refined_matter(self):
         # Gib dem Agenten etwas refined matter zum Einzahlen
         conn = db_config.get_connection()
-        conn.execute("UPDATE agents SET refined_matter_inventory = 50 WHERE id = 'Bob-1'")
+        conn.execute("UPDATE agents SET refined_matter_inventory = 50 WHERE id = 'Instance-1'")
         conn.commit()
         conn.close()
         
@@ -95,13 +95,13 @@ class TestFullSDK(unittest.TestCase):
         self.assertEqual(status['refined_matter_inventory'], 50)
 
     def test_scut_transmission(self):
-        success = self.agent.comms.scut(receiver_id="Bob-2", message="Test")
+        success = self.agent.comms.scut(receiver_id="Instance-2", message="Test")
         self.assertTrue(success)
 
     def test_privacy_sensors(self):
         entities = self.agent.sensors.entities()
         self.assertEqual(len(entities), 1)
-        self.assertEqual(entities[0]['id'], 'Bob-2')
+        self.assertEqual(entities[0]['id'], 'Instance-2')
 
 if __name__ == '__main__':
     unittest.main()

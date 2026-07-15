@@ -2,11 +2,16 @@
   "version": 1,
   "agents": [
     {
-      "id": "Bob-2",
-      "parent_id": "Bob-1",
-      "location": "SYS-A",
+      "id": "Instance-1",
+      "location": "Alpha_Centauri",
       "status": "active",
-      "system_prompt": "Test Klon"
+      "system_prompt": "Swarm Test"
+    },
+    {
+      "id": "Instance-2",
+      "location": "Alpha_Centauri",
+      "status": "active",
+      "system_prompt": "Receiver"
     }
   ]
 }

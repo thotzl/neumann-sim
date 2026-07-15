@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 
-// Manueller .env Parser (sucht iterativ nach oben)
+// Manueller .env Parser
 let envPath = path.join(__dirname, '.env');
 let currentDir = __dirname;
 while (!fs.existsSync(envPath) && currentDir !== path.parse(currentDir).root) {
@@ -19,6 +19,7 @@ if (fs.existsSync(envPath)) {
         }
     });
 }
+
 const configLoader = require('./utils/config_loader');
 const envManager = require('./utils/environment');
 const apiClient = require('./utils/api_client');
@@ -26,13 +27,12 @@ const stateManager = require('./utils/state_manager');
 const logger = require('./utils/logger');
 const stateExporter = require('./utils/state_exporter');
 
-// --- Neu ausgelagerte Services ---
+// Services
 const bootstrapper = require('./utils/bootstrapper');
 const automation = require('./utils/automation');
 const vogService = require('./utils/vog');
 const memoryCtrl = require('./utils/memory_controller');
 const { runPython } = require('./utils/python_executor');
-// ---------------------------------
 
 async function run() {
     const version = process.argv[2];
@@ -61,11 +61,23 @@ async function run() {
     const populationFile = path.join(universeDir, 'population.json');
     const logFile = path.join(vDir, config.log || 'log.md');
 
-    // Stelle sicher, dass Tools die richtige Datenbank finden (SDK Support)
     process.env.TEST_DB_PATH = path.join(universeDir, 'universe.db');
+    process.env.TEST_STATE_PATH = stateFile;
 
     let state = stateManager.loadState(stateFile);
     if (!state) {
+        // [PRERUN] Seeding: DB aus Config befüllen bevor State gebaut wird
+        console.log(`\n[PRERUN] Initialisiere Welt aus config.json...`);
+        try {
+            require('child_process').execSync(`python3 ${path.join(vDir, 'core', 'bin', 'init_db.py')} --seed`, { 
+                cwd: vDir, 
+                env: { ...process.env, PYTHONPATH: vDir },
+                stdio: 'inherit'
+            });
+        } catch (e) {
+            console.error("[PRERUN ERROR] Seeding fehlgeschlagen:", e.message);
+        }
+
         state = {
             round: 0,
             agents: config.agents.map(a => ({
@@ -80,13 +92,21 @@ async function run() {
             currentTurnIndex: 0,
             totalTurns: 0,
             isResumed: false,
-            security: { acl: {}, wallets: {} }
+            security: { acl: {}, wallets: {} },
+            global_inbox: {}
         };
-        state.agents.forEach(a => { state.histories[a.id] = []; });
+        state.agents.forEach(a => { 
+            state.histories[a.id] = []; 
+            state.global_inbox[a.id] = [];
+        });
     } else {
         state.isResumed = true;
         state.agents.forEach(a => a.needsResumeNotify = true);
         if (!state.security) state.security = { acl: {}, wallets: {} };
+        if (!state.global_inbox) {
+            state.global_inbox = {};
+            state.agents.forEach(a => state.global_inbox[a.id] = []);
+        }
     }
 
     logger.writeLogHeader(logFile, config, state.isResumed);
@@ -105,15 +125,58 @@ async function run() {
             state.round++;
             console.log(`\nZyklus ${state.round}/${config.rounds}...`);
             
-            // Lade neue Klone aus der JSON (Live-Spawning)
             bootstrapper.syncPopulation(populationFile, universeDir, vDir, state, logger, logFile, state.round);
             stateManager.saveState(stateFile, state);
+
+            // --- PHASE BATCHING (Turn 0: Soft Physics Collection) ---
+            state.agents.forEach(a => { if(!state.global_inbox[a.id]) state.global_inbox[a.id] = []; });
             
-            const activeAgents = state.agents.filter(a => a.alive);
-            if (activeAgents.length === 0) {
-                console.log("Alle Agenten offline.");
-                return false;
+            const vogMessage = vogService.processVoG(vDir);
+            if (vogMessage) {
+                state.agents.filter(a => a.alive).forEach(a => {
+                    state.global_inbox[a.id].push({ type: 'vog', text: vogMessage });
+                });
             }
+
+            try {
+                const dbScript = `
+import sqlite3, json, os
+conn = sqlite3.connect(os.environ['TEST_DB_PATH'])
+conn.row_factory = sqlite3.Row
+c = conn.cursor()
+c.execute("SELECT sender, receiver, content FROM messages")
+msgs = [dict(r) for r in c.fetchall()]
+c.execute("DELETE FROM messages")
+c.execute("SELECT location, actor_id, description FROM visual_events")
+vis = [dict(r) for r in c.fetchall()]
+c.execute("DELETE FROM visual_events")
+conn.commit()
+conn.close()
+print(json.dumps({"messages": msgs, "visual_events": vis}))`;
+                const batchOut = require('child_process').execFileSync('python3', ['-c', dbScript], { env: { ...process.env, TEST_DB_PATH: path.join(universeDir, 'universe.db') }, encoding: 'utf8' });
+                const batchData = JSON.parse(batchOut);
+                
+                batchData.messages.forEach(m => {
+                    if (m.receiver === 'ALL') {
+                        state.agents.filter(a => a.alive && a.id !== m.sender).forEach(a => {
+                            state.global_inbox[a.id].push({ type: 'scut', sender: m.sender, content: m.content });
+                        });
+                    } else {
+                        if (state.global_inbox[m.receiver]) {
+                            state.global_inbox[m.receiver].push({ type: 'scut', sender: m.sender, content: m.content });
+                        }
+                    }
+                });
+                
+                batchData.visual_events.forEach(v => {
+                    state.agents.filter(a => a.alive && a.location === v.location && a.id !== v.actor_id).forEach(a => {
+                        state.global_inbox[a.id].push({ type: 'visual', description: v.description });
+                    });
+                });
+            } catch(e) { console.error("[BATCH-ERROR]", e.message); }
+
+            const activeAgents = state.agents.filter(a => a.alive);
+            if (activeAgents.length === 0) return false;
             state.turnSequence = activeAgents.map(a => a.id);
         }
 
@@ -130,34 +193,28 @@ async function run() {
         const envState = envManager.getEnvState(universeDir);
         const globalInstr = config.global_system_instruction || "";
 
-        // Voice of God Message abfragen (Temporär, um Destillations-Löschung zu verhindern)
-        const vogMessage = vogService.processVoG(vDir);
-
-        // Memory Kompression (Destillation)
         await memoryCtrl.handleDistillation(agent.id, state, config, apiUrl);
 
-        // Auto-Radio Poll (Erzwungenes Einlesen neuer SCUT-Nachrichten)
-        let radioOutput = "";
-        try {
-            const out = runPython(vDir, `core/bin/bob.py`, ['_poll()'], { bobId: agent.id });
-            if (out && out.trim()) {
-                radioOutput = `[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${out.trim()}`;
-            }
-        } catch (e) {
-            console.error(`[RADIO-ERROR] bei Agent ${agent.id}:`, e.message);
-        }
-
-        // Vorbereiten der Payload
+        // Vorbereiten der Payload (Inbox Extraction)
         let promptText = "";
+        const myInbox = state.global_inbox[agent.id] || [];
+        let inboxText = "";
+        if (myInbox.length > 0) {
+            inboxText += "\n[POSTEINGANG (Ereignisse des letzten Zyklus)]:\n";
+            myInbox.forEach(item => {
+                if (item.type === 'vog') inboxText += `[VOICE OF GOD]: ${item.text}\n`;
+                if (item.type === 'scut') inboxText += `[SCUT] Von ${item.sender}: ${item.content}\n`;
+                if (item.type === 'visual') inboxText += `[OBSERVER] ${item.description}\n`;
+            });
+            state.global_inbox[agent.id] = [];
+        }
+        if (inboxText) promptText += inboxText;
+
         let contextArray = [...state.histories[agent.id]];
 
         if (agent.needsResumeNotify) {
-            promptText += `\n[SYSTEM NOTIFICATION]: Die Simulation wurde manuell pausiert und nun fortgesetzt. Deine letzten Gedanken und System-Zustände wurden erfolgreich rekonstruiert.\n`;
+            promptText += `\n[SYSTEM NOTIFICATION]: Die Simulation wurde manuell pausiert und nun fortgesetzt.\n`;
             agent.needsResumeNotify = false;
-        }
-
-        if (radioOutput) {
-            promptText += `\n${radioOutput}\n`;
         }
 
         // Dashboard
@@ -166,51 +223,22 @@ async function run() {
             const obs = yaml.load(obsOut);
             if (obs && obs.visual_observations && obs.visual_observations.length > 0) {
                 promptText += `\n[VISUELLE BEOBACHTUNGEN (SYSTEM)]:\n`;
-                obs.visual_observations.forEach(o => {
-                    promptText += `- ${o.description}\n`;
-                });
+                obs.visual_observations.forEach(o => { promptText += `- ${o.description}\n`; });
             }
-        } catch (e) {
-            console.error(`[SENSOR-ERROR] bei Agent ${agent.id}:`, e.message);
-        }
+        } catch (e) { console.error(`[SENSOR-ERROR] bei Agent ${agent.id}:`, e.message); }
 
-        // Wallet Injection
         const myWallet = state.security.wallets[agent.id] || {};
-        if (Object.keys(myWallet).length > 0) {
-            promptText += `\n[DEIN SCHLÜSSELBUND]: ${JSON.stringify(myWallet)}\n`;
-        } else {
-            promptText += `\n[DEIN SCHLÜSSELBUND]: Leer.\n`;
-        }
-
+        promptText += `\n[DEIN SCHLÜSSELBUND]: ${Object.keys(myWallet).length > 0 ? JSON.stringify(myWallet) : "Leer."}\n`;
         promptText += `\nAktuelle Umgebung:\n${envState}\n`;
-        
-        if (vogMessage) {
-            promptText += `\n==================================================\n`;
-            promptText += `🛑 PRIORITÄTS-OVERRIDE (VOICE OF GOD) 🛑\n`;
-            promptText += `${vogMessage}\n`;
-            promptText += `(Du MUSST diese Nachricht in deiner kommenden ANALYSE verarbeiten!)\n`;
-            promptText += `==================================================\n`;
-        }
-
         promptText += `\nAntworte strikt im Protokoll-Format (ANALYSE, gefolgt von AKTION).`;
+        
         contextArray.push({ agent: "System", text: promptText });
 
-        const payload = apiClient.buildAgentContext(
-            agent.id,
-            contextArray,
-            null, // memory
-            envState,
-            globalInstr,
-            agent.system_prompt,
-            config.anonymity
-        );
-
+        const payload = apiClient.buildAgentContext(agent.id, contextArray, null, envState, globalInstr, agent.system_prompt, config.anonymity);
         process.env.CURRENT_MOCK_AGENT = agent.id;
         let responseText = await apiClient.callGemini(apiUrl, payload);
 
-        let preTurnEvents = "";
-        if (vogMessage) preTurnEvents += `${vogMessage}\n`;
-        if (radioOutput) preTurnEvents += `[SCUT EMPFANGEN]:\n${radioOutput.replace('[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n', '')}\n`;
+        let preTurnEvents = inboxText ? inboxText.trim() : "";
 
         if (responseText) {
             let feedback = envManager.processActions(responseText, universeDir, agent.id, state);
@@ -222,65 +250,25 @@ async function run() {
             stateManager.saveState(stateFile, state);
             state.totalTurns++;
         } else {
-            console.log(`Fehler bei Agent ${agent.id}: Leere oder fehlerhafte Antwort.`);
+            console.log(`Fehler bei Agent ${agent.id}: Leere Antwort.`);
             return false;
         }
 
         state.currentTurnIndex++;
         if (state.currentTurnIndex >= state.turnSequence.length) {
             state.currentTurnIndex = 0;
-            
             console.log(`  System-Runde (Automatisierung & Physik)...`);
-            
-            // 1. System-Automatisierung (Fix: O(N²) Vampir-Bug)
             const systemAutoOutput = automation.runSystemAutomations(vDir, universeDir, state);
             if (systemAutoOutput) {
                 logger.appendTurnLog(logFile, state.round, "System", 0, 0, "[SYSTEM AUTOMATION RUN]", systemAutoOutput, true, "");
             }
-
-            // 2. Physics Update am Ende der Runde (Via Executor)
             try { 
-                runPython(vDir, `core/bin/physics_update.py`);
-                
-                // 3. Observer Log & Bereinigung visueller Ereignisse (Phase 2)
-                const dbScript = `
-import sqlite3
-import os
-import sys
-
-conn = sqlite3.connect(os.environ['TEST_DB_PATH'])
-conn.row_factory = sqlite3.Row
-cursor = conn.cursor()
-
-# Sammle alle Events
-cursor.execute("SELECT location, description FROM visual_events ORDER BY rowid ASC")
-events = cursor.fetchall()
-
-if events:
-    print("--- [OBSERVER LOG] ---")
-    for e in events:
-        print(f"[{e['location']}]: {e['description']}")
-    print("----------------------")
-
-cursor.execute("DELETE FROM visual_events")
-conn.commit()
-conn.close()
-`;
-                const observerOut = require('child_process').execFileSync('python3', ['-c', dbScript], { env: { ...process.env, TEST_DB_PATH: path.join(universeDir, 'universe.db') }, encoding: 'utf8' });
-                
-                if (observerOut.trim()) {
-                    logger.appendTurnLog(logFile, state.round, "System", 0, 0, "[OBSERVER LOG]", observerOut.trim(), true, "");
-                }
-
-                } catch (e) {
-                console.error("[PHYSICS-ERROR] Update fehlgeschlagen:", e.message);
-                }
-
-                // Finaler State Save nach Physik
-                stateManager.saveState(stateFile, state);
-                }
-                return true;
-                }
+                runPython(vDir, `core/bin/physics_update.py`, [state.round.toString()]);
+            } catch (e) { console.error("[PHYSICS-ERROR] Update fehlgeschlagen:", e.message); }
+            stateManager.saveState(stateFile, state);
+        }
+        return true;
+    }
 
     while (await turn()) {}
     console.log("Simulation beendet.");

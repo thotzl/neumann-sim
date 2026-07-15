@@ -39,6 +39,7 @@ class Agent:
     # --- FLAT API (V9.0 Semantic API) ---
     def mine(self): return self.actuators.mine()
     def build(self, building_type, matter_to_invest=100): return self.actuators.build(building_type, matter_to_invest)
+    def build_ship(self, chassis="Scout"): return self.actuators.build_ship(chassis)
     def refine(self, raw_matter_to_refine=100): return self.actuators.refine(raw_matter_to_refine)
     def repair(self, structure_id, hp_to_restore=50): return self.actuators.repair(structure_id, hp_to_restore)
     def deconstruct(self, structure_id): return self.actuators.deconstruct(structure_id)
@@ -46,6 +47,8 @@ class Agent:
     def replicate(self, new_agent_id): return self.actuators.replicate(new_agent_id)
     def set_name(self, name): return self.actuators.set_name(name)
     def rename_system(self, new_name): return self.actuators.rename_system(new_name)
+    def board(self, ship_id): return self.actuators.board(ship_id)
+    def exit_ship(self): return self.actuators.exit_ship()
     
     def deposit(self, quantity=100, resource_type="matter"): return self.logistics.deposit(quantity, resource_type)
     def withdraw(self, resource_type="energy", quantity=50): return self.logistics.withdraw(resource_type, quantity)
@@ -56,7 +59,6 @@ class Agent:
         print("[SUCCESS] Waiting...")
         return True
     
-    def _internal_poll(self): return self.comms._system_poll_radio()
     
     def scan(self): return self.sensors.scan()
     def storage(self): return self.sensors.storage()
@@ -120,7 +122,10 @@ class Actuators:
         total_raw = int(raw_cost * multiplier)
         total_yield = int(yield_refined * multiplier)
 
-        if agent['energy_inventory'] < total_energy: return False
+        if agent['energy_inventory'] < total_energy:
+            print(f"[ERROR] Not enough energy. Need {total_energy}, but only have {agent['energy_inventory']}.")
+            return False
+            
         if agent['raw_matter_inventory'] < total_raw:
             print(f"[ERROR] Not enough raw matter (have {agent['raw_matter_inventory']}, need {total_raw}).")
             return False
@@ -286,7 +291,40 @@ class Actuators:
         return True
         return True
 
-    @agent_service.with_agent_context()
+    @agent_service.with_agent_context(allow_disembodied=True, action_name='Build Ship')
+    def build_ship(self, cursor, agent, chassis='Scout'):
+        sys_name = agent['location']
+        system = system_service.get_system_or_fail(cursor, sys_name)
+        
+        # Check if shipyard or advanced_shipyard is active
+        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type IN ('shipyard', 'advanced_shipyard') AND status = 'active'", (sys_name,))
+        if not cursor.fetchone():
+            print(f"[DENIED] No active 'shipyard' or 'advanced_shipyard' in {sys_name} found.")
+            return False
+            
+        cost = 1000 # Standard cost for now
+        if agent['raw_matter_inventory'] + system['raw_matter_depot'] < cost:
+            print(f"[ERROR] Not enough raw_matter available. Need {cost}, but only have {agent['raw_matter_inventory']} in inventory and {system['raw_matter_depot']} in depot.")
+            return False
+            
+        matter_from_depot = min(cost, system['raw_matter_depot'])
+        matter_from_inventory = cost - matter_from_depot
+        
+        if matter_from_inventory > 0:
+            cursor.execute("UPDATE agents SET raw_matter_inventory = raw_matter_inventory - ? WHERE id = ?", (matter_from_inventory, self.agent.id))
+        if matter_from_depot > 0:
+            cursor.execute("UPDATE systems SET raw_matter_depot = raw_matter_depot - ? WHERE name = ?", (matter_from_depot, sys_name))
+
+        cursor.execute("SELECT MAX(id) FROM ships")
+        max_id_row = cursor.fetchone()
+        new_id = (max_id_row[0] or 0) + 1
+        name = f"Ship-{new_id}"
+        
+        cursor.execute("INSERT INTO ships (id, name, chassis, system_name) VALUES (?, ?, ?, ?)", (new_id, name, chassis, sys_name))
+        print(f"[SUCCESS] {chassis} vessel '{name}' (ID: {new_id}) built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
+        return True
+
+    @agent_service.with_agent_context(allow_disembodied=True)
     def deconstruct(self, cursor, agent, structure_id):
         cursor.execute("SELECT system_name, type, level FROM infrastructure WHERE id = ?", (structure_id,))
         row = cursor.fetchone()
@@ -327,19 +365,30 @@ class Actuators:
         sys_name = agent['location']
         system = system_service.get_system_or_fail(cursor, sys_name)
         
-        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'shipyard' AND status = 'active'", (sys_name,))
+        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'mind_forge' AND status = 'active'", (sys_name,))
         if not cursor.fetchone():
-            print(f"[DENIED] No active 'shipyard' in {sys_name} found.")
+            print(f"[DENIED] No active 'mind_forge' in {sys_name} found.")
             return False
 
         rule = self.rules.get('tool_costs', {}).get('replicate', {})
         energy_cost = rule.get('energy_cost', 180)
         matter_cost = rule.get('matter_cost', 1000)
 
-        if system['raw_matter_depot'] < matter_cost:
-            print(f"[ERROR] System depot low on matter ({system['raw_matter_depot']}/{matter_cost}).")
+        if system['refined_matter_depot'] < matter_cost:
+            print(f"[ERROR] System depot low on refined matter ({system['refined_matter_depot']}/{matter_cost}).")
             return False
         
+        # Check for host (sem_matrix or unpiloted ship)
+        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'sem_matrix' AND status = 'active'", (sys_name,))
+        has_matrix = cursor.fetchone() is not None
+        
+        cursor.execute("SELECT id FROM ships WHERE system_name = ? AND pilot_id IS NULL", (sys_name,))
+        has_free_ship = cursor.fetchone() is not None
+        
+        if not has_matrix and not has_free_ship:
+            print(f"[DENIED] Replication requires a host in {sys_name}. Build an 'sem_matrix' or provide an unpiloted ship.")
+            return False
+
         energy_from_sys = min(system['energy_depot'], energy_cost)
         energy_from_agent = energy_cost - energy_from_sys
 
@@ -350,7 +399,8 @@ class Actuators:
         if energy_from_agent > 0:
             cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ? WHERE id = ?", (energy_from_agent, self.agent.id))
         
-        system_service.update_system_resources(cursor, sys_name, matter_change=-matter_cost, energy_change=-energy_from_sys)
+        system_service.update_system_resources(cursor, sys_name, energy_change=-energy_from_sys)
+        cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot - ? WHERE name = ?", (matter_cost, sys_name))
         
         klon_prompt = f"""STATUS: Boot-Sequenz abgeschlossen. ID: {new_agent_id}. Ursprung: {self.agent.id}.
 Du verfügst über die Erinnerungen deines Ursprungs bis zum Start deiner Replikation. Um dich in die aktuelle Situation des Schwarms zu integrieren:
@@ -359,7 +409,7 @@ Du verfügst über die Erinnerungen deines Ursprungs bis zum Start deiner Replik
 3. Stelle dich anderen Agenten im System vor, um die Koordination zu optimieren. 
 Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
 
-        cursor.execute("INSERT OR IGNORE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y) VALUES (?, 'Unnamed', ?, 0, 100, 100, 'active', ?, ?)", 
+        cursor.execute("INSERT OR IGNORE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES (?, 'Unnamed', ?, 0, 100, 100, 'active', ?, ?, NULL)", 
                        (new_agent_id, sys_name, system['x'], system['y']))
         
         pop_file = os.environ.get('TEST_POP_PATH', os.path.abspath(os.path.join(os.environ.get('VERSE_DIR', ''), 'population.json')))
@@ -374,20 +424,59 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
         print(f"[SUCCESS] Clone '{new_agent_id}' started.")
         return True
 
-    @agent_service.with_agent_context()
+    @agent_service.with_agent_context(allow_disembodied=True)
     def set_name(self, cursor, agent, name):
         cursor.execute("UPDATE agents SET chosen_name = ? WHERE id = ?", (name, self.agent.id))
         return True
 
-    @agent_service.with_agent_context()
+    @agent_service.with_agent_context(allow_disembodied=True)
     def rename_system(self, cursor, agent, new_name):
         cursor.execute("UPDATE systems SET display_name = ? WHERE name = ?", (new_name, agent['location']))
+        return True
+
+    @agent_service.with_agent_context(require_active=True, allow_disembodied=True, action_name='Board')
+    def board(self, cursor, agent, ship_id):
+        if dict(agent).get('active_ship_id') is not None:
+            print(f"[DENIED] You are already in ship {dict(agent)['active_ship_id']}. Exit it first.")
+            return False
+            
+        cursor.execute("SELECT system_name, pilot_id FROM ships WHERE id = ?", (ship_id,))
+        ship = cursor.fetchone()
+        
+        if not ship:
+            print(f"[ERROR] Ship {ship_id} not found.")
+            return False
+            
+        if ship['system_name'] != agent['location']:
+            print(f"[DENIED] Ship {ship_id} is in {ship['system_name']}, but you are in {agent['location']}.")
+            return False
+            
+        if ship['pilot_id'] is not None and ship['pilot_id'] != self.agent.id:
+            print(f"[DENIED] Ship {ship_id} is currently piloted by {ship['pilot_id']}.")
+            return False
+            
+        cursor.execute("UPDATE agents SET active_ship_id = ? WHERE id = ?", (ship_id, self.agent.id))
+        cursor.execute("UPDATE ships SET pilot_id = ? WHERE id = ?", (self.agent.id, ship_id))
+        print(f"[SUCCESS] Boarded ship {ship_id}.")
+        return True
+
+    @agent_service.with_agent_context(require_active=True, allow_disembodied=False, action_name='ExitShip')
+    def exit_ship(self, cursor, agent):
+        ship_id = dict(agent).get('active_ship_id')
+        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'sem_matrix' AND status = 'active'", (agent['location'],))
+        if not cursor.fetchone():
+            print(f"[DENIED] Cannot exit ship here. System {agent['location']} lacks an active 'sem_matrix' to host your disembodied mind.")
+            return False
+            
+        cursor.execute("UPDATE agents SET active_ship_id = NULL WHERE id = ?", (self.agent.id,))
+        cursor.execute("UPDATE ships SET pilot_id = NULL WHERE id = ?", (ship_id,))
+        print(f"[SUCCESS] Exited ship {ship_id} and transferred to local SEM-Matrix.")
         return True
 
 class Sensors:
     def __init__(self, agent): self.agent = agent
     
-    @agent_service.with_agent_context()
+    @agent_service.with_agent_context(allow_disembodied=True)
     def scan(self, cursor, agent):
         system = system_service.get_system_or_fail(cursor, agent['location'])
         rules = config_service.get_economy_rules()
@@ -419,13 +508,13 @@ class Sensors:
             print(f"[INFO] Sector {sys_id} already mapped.")
             return False
 
-    @agent_service.with_agent_context()
+    @agent_service.with_agent_context(allow_disembodied=True)
     def storage(self, cursor, agent):
         cursor.execute("SELECT energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity FROM agents WHERE id = ?", (self.agent.id,))
         row = cursor.fetchone()
         return dict(row) if row else {}
         
-    @agent_service.with_agent_context()
+    @agent_service.with_agent_context(allow_disembodied=True)
     def local_system(self, cursor, agent):
         system = system_service.get_system_or_fail(cursor, agent['location'])
         infra_list = [dict(r) for r in system_service.get_infrastructure_at_location(cursor, agent['location'])]
@@ -454,7 +543,7 @@ class Sensors:
             "visual_observations": events
         }
         
-    @agent_service.with_agent_context()
+    @agent_service.with_agent_context(allow_disembodied=True)
     def entities(self, cursor, agent):
         cursor.execute("SELECT id, chosen_name, status FROM agents WHERE location = ? AND id != ?", (agent['location'], self.agent.id))
         return [dict(r) for r in cursor.fetchall()]
@@ -558,7 +647,7 @@ class Logistics:
             print(f"[SUCCESS] {amount_to_withdraw} refined_matter withdrawn.")
             return True
 
-    @agent_service.with_agent_context()
+    @agent_service.with_agent_context(allow_disembodied=True)
     def transfer(self, cursor, agent, receiver_id, resource_type, quantity):
         target = agent_service.get_agent_or_fail(cursor, receiver_id)
         if not target or agent['location'] != target['location']: return False
@@ -577,7 +666,7 @@ class Logistics:
 class Comms:
     def __init__(self, agent): self.agent = agent
     
-    @agent_service.with_agent_context()
+    @agent_service.with_agent_context(allow_disembodied=True)
     def scut(self, cursor, agent, receiver_id, message):
         rules = config_service.get_economy_rules()
         base_range = rules.get('global_settings', {}).get('base_comms_range', 1000)
@@ -607,7 +696,7 @@ class Comms:
                             reachable_count += 1
             
             cursor.execute("INSERT INTO messages (sender, receiver, content) VALUES (?, 'ALL', ?)", (self.agent.id, message))
-            print(f"[SUCCESS] Message sent. {reachable_count} receivers.")
+            print(f"[SUCCESS] Message buffered for transmission. {reachable_count} receivers.")
             return True
         else:
             cursor.execute("SELECT id, location, current_x, current_y FROM agents WHERE id = ? OR chosen_name = ?", (receiver_id, receiver_id))
@@ -628,28 +717,22 @@ class Comms:
                         return False
 
             cursor.execute("INSERT INTO messages (sender, receiver, content) VALUES (?, ?, ?)", (self.agent.id, real_target_id, message))
-            print(f"[SUCCESS] Message sent to {real_target_id}.")
+            print(f"[SUCCESS] Message buffered for transmission to {real_target_id}.")
             return True
 
-    # Interne Funktion für den Node.js Runner (Auto-Radio), nicht für das LLM gedacht
-    @agent_service.with_agent_context()
-    def _system_poll_radio(self, cursor, agent):
-        cursor.execute("SELECT rowid, sender, content FROM messages WHERE receiver = ? OR receiver = 'ALL'", (self.agent.id,))
-        rows = cursor.fetchall()
-        if not rows: return ""
-        output = ""; delete_ids = []
-        for r in rows:
-            output += f"Von {r['sender']}: {r['content']}\n"; delete_ids.append(r['rowid'])
-        placeholders = ','.join('?' * len(delete_ids))
-        cursor.execute(f"DELETE FROM messages WHERE rowid IN ({placeholders})", tuple(delete_ids))
-        return output.strip()
+
 
 class Diagnostics:
     def __init__(self, agent):
         self.agent = agent
-        self.base_dir = os.environ.get("VERSE_DIR", os.path.join(os.getcwd(), '_verse'))
+        # Fix: Check if already in _verse
+        cwd = os.getcwd()
+        if os.path.basename(cwd) == '_verse':
+            self.base_dir = cwd
+        else:
+            self.base_dir = os.environ.get("VERSE_DIR", os.path.join(cwd, '_verse'))
     
-    @agent_service.with_agent_context()
+    @agent_service.with_agent_context(allow_disembodied=True)
     def list_files(self, cursor, agent):
         acl_data = json.loads(os.environ.get('BOB_ACL', '{}'))
         scripts_dir = os.path.join(self.base_dir, 'scripts')

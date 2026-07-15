@@ -22,14 +22,14 @@ async function testVampireFix() {
     
     // Füge einen zweiten Agenten hinzu
     config.agents.push({
-        id: "Bob-2",
+        id: "Instance-2",
         location: "Alpha_Centauri",
         initial_trigger: "System online.",
         system_prompt: "Klon."
     });
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-    // 2. Erstelle ein Automatisierungs-Skript für Bob-1, das Materie zählt
+    // 2. Erstelle ein Automatisierungs-Skript für Instance-1, das Materie zählt
     const verseDir = path.join(expDir, '_verse');
     const scriptPath = path.join(verseDir, 'scripts', 'active', 'vampire_check.py');
     fs.mkdirSync(path.dirname(scriptPath), { recursive: true });
@@ -51,13 +51,13 @@ with open(count_file, "w") as f: f.write(str(count))
 print(f"[SDK DEBUG] Hit: {count}")
 `);
 
-    // 3. Setze ACL, damit Bob-1 das Skript besitzt
+    // 3. Setze ACL, damit Instance-1 das Skript besitzt
     const stateFile = path.join(expDir, 'state.json');
     const state = { 
         round: 0, 
         agents: [], 
         histories: {}, 
-        security: { acl: { 'scripts/active/vampire_check.py': { owner: 'Bob-1' } } } 
+        security: { acl: { 'scripts/active/vampire_check.py': { owner: 'Instance-1' } } } 
     };
     fs.writeFileSync(stateFile, JSON.stringify(state));
 

@@ -17,7 +17,7 @@
   },
   "agents": [
     {
-      "id": "Bob-1",
+      "id": "Instance-1",
       "location": "SYS-X0-Y0",
       "initial_trigger": "System online. Mission gestartet.",
       "system_prompt": "MISSION: Industrielle Evolution. Status: Alpha-Sektor. Ziel: Etabliere eine dauerhafte Präsenz und besiedle das ganze Universum. Deine physische Hülle ist ein Flaschenhals (Kapazität: 100). Um signifikante Fortschritte wie die Replikation (500M) zu erzielen, ist die Errichtung von System-Infrastruktur (Silos, Werften) zwingend erforderlich. Koordinations-Infrastruktur ist das Skelett deiner Evolution. Nutze Automatisierung, um deinen Fokus auf strategische Architektur zu lenken. Das Universum ist Rohmaterial."

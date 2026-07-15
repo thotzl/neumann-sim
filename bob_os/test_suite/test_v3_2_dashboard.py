@@ -19,12 +19,17 @@ class TestBobOS_v3_2_Dashboard(unittest.TestCase):
     def setUpClass(cls):
         os.environ['TEST_DB_PATH'] = TEST_DB
         os.environ['TEST_POP_PATH'] = TEST_POP
-        os.environ['BOB_ID'] = 'Bob-1'
+        os.environ['BOB_ID'] = 'Instance-1'
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_POP): os.remove(TEST_POP)
         with open(TEST_POP, 'w') as f: json.dump({"version": 1, "agents": []}, f)
         init_db.init()
-        cls.agent = bob_sdk.Agent('Bob-1')
+        conn = db_config.get_connection()
+        conn.execute("INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS-X0-Y0', 10000, 10000)")
+        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Pioneer', 'SYS-X0-Y0', 0, 500, 300, 'active', 0, 0, 1)")
+        conn.commit()
+        conn.close()
+        cls.agent = bob_sdk.Agent('Instance-1')
         
     @classmethod
     def tearDownClass(cls):
@@ -35,8 +40,8 @@ class TestBobOS_v3_2_Dashboard(unittest.TestCase):
     def test_01_schema_stability(self):
         conn = db_config.get_connection()
         # Lege Testdaten an
-        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy_inventory, raw_matter_inventory, status, matter_storage_capacity) VALUES ('Bob-1', 'SYS-X0-Y0', 0, 0, 100, 100, 'active', 300)")
-        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy_inventory, raw_matter_inventory, status, chosen_name) VALUES ('Bob-2', 'SYS-X0-Y0', 0, 0, 50, 0, 'active', 'Bob-Zwei')")
+        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy_inventory, raw_matter_inventory, status, matter_storage_capacity) VALUES ('Instance-1', 'SYS-X0-Y0', 0, 0, 100, 100, 'active', 300)")
+        conn.execute("INSERT OR REPLACE INTO agents (id, location, current_x, current_y, energy_inventory, raw_matter_inventory, status, chosen_name) VALUES ('Instance-2', 'SYS-X0-Y0', 0, 0, 50, 0, 'active', 'Bob-Zwei')")
         conn.execute("INSERT OR REPLACE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-X0-Y0', 0, 0, 1000, 0, 0)")
         conn.commit()
         conn.close()
@@ -48,7 +53,7 @@ class TestBobOS_v3_2_Dashboard(unittest.TestCase):
 
         # Test Entities Sensor (Privacy Filtered)
         entities = self.agent.sensors.entities()
-        bob2 = next(e for e in entities if e['id'] == 'Bob-2')
+        bob2 = next(e for e in entities if e['id'] == 'Instance-2')
         self.assertEqual(bob2['chosen_name'], 'Bob-Zwei')
         self.assertNotIn('energy_inventory', bob2) # Privacy Check
 

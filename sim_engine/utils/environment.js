@@ -16,7 +16,7 @@ function getEnvState(universeDir) {
         }
         return out;
     } catch (e) {
-        return "HARDWARE (Unified Bob CLI):\nNutze das 'bob' Kommando für alle Hardware-Aktionen.\nSyntax: [RUN: bob method(key=val)].";
+        return "HARDWARE (Unified Command Line):\nNutze das 'me' Kommando für alle Hardware-Aktionen.\nSyntax: [RUN: me method(key=val)].";
     }
 }
 
@@ -193,21 +193,25 @@ function processActions(text, universeDir, agentId, state) {
 
         if (cmd === "..." || cmd === "" || cmd.startsWith("<")) continue;
 
-        // Path Mapping für Unified CLI (V8.0 Functional)
-        if (cmd.startsWith("bob ")) {
-            const funcPart = cmd.replace(/^bob\s+/, "").trim();
+        // Path Mapping für Unified CLI (V10.0 Functional)
+        if (cmd.startsWith("me ")) {
+            const funcPart = cmd.replace(/^me\s+/, "").trim();
             // Wir escapen eventuelle Single-Quotes im Funktions-String
             const safeFuncPart = funcPart.replace(/'/g, "'\\''");
             const aclState = state.security?.acl || {};
             cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py '${safeFuncPart}'`;
-        } else if (cmd.startsWith("bob(")) {
-            const safeFuncPart = cmd.substring(3).replace(/'/g, "'\\''");
+        } else if (cmd.startsWith("me(")) {
+            const safeFuncPart = cmd.substring(2).replace(/'/g, "'\\''");
             const aclState = state.security?.acl || {};
-            cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py 'bob${safeFuncPart}'`;
+            cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py 'me${safeFuncPart}'`;
+        } else if (cmd.startsWith("bob ") || cmd.startsWith("bob(")) {
+            // Harte Ablehnung alter Syntax
+            feedback += `[CLI ERROR] Syntax 'bob ...' ist veraltet. Nutze 'me ...' (Beispiel: [RUN: me mine()]).\n`;
+            continue;
         }
 
         // Security Hook für python3 scripts/
-        let displayCmd = match[1].trim(); // Der Originalbefehl des LLMs
+        let displayCmd = match[1].trim(); // Der Pioneerbefehl des LLMs
         if (cmd.includes("scripts/")) {
             const parts = cmd.split(' ');
             let targetScript = parts.find(p => p.includes("scripts/")).replace("_verse/", "");

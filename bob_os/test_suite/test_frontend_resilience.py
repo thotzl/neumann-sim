@@ -14,13 +14,13 @@ def write_state(data, path='experiments/v48/_verse/world_state.json'):
 base_state = {
     "tick": 42,
     "total_turns": 100,
-    "last_agent": "Bob-1",
+    "last_agent": "Instance-1",
     "timestamp": int(time.time()),
     "systems": [
         {"name": "SYS-X0-Y0", "display_name": "Home", "x": 0, "y": 0, "extractable_matter_in_core": 5000, "energy_rate": 10, "infra": []}
     ],
     "agents": [
-        {"id": "Bob-1", "chosen_name": "Original", "location": "SYS-X0-Y0", "raw_matter_inventory": 50, "energy_inventory": 120, "matter_storage_capacity": 100, "status": "active", "last_manifestation": "Stable state."}
+        {"id": "Instance-1", "chosen_name": "Pioneer", "location": "SYS-X0-Y0", "raw_matter_inventory": 50, "energy_inventory": 120, "matter_storage_capacity": 100, "status": "active", "last_manifestation": "Stable state."}
     ],
     "events": []
 }

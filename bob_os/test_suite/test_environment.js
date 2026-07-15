@@ -21,8 +21,8 @@ function testEnvState() {
     const state = envManager.getEnvState(mockDir);
     console.log("Resulting State:\n", state);
     
-    assert.ok(state.includes('HARDWARE (Unified Bob CLI):') || state.includes('VERFÜGBARE HARDWARE'), "Header fehlt");
-    assert.ok(state.includes('bob method(key=val)'), "Befehls-Hinweis fehlt");
+    assert.ok(state.includes('HARDWARE (Unified Command Line):') || state.includes('VERFÜGBARE HARDWARE'), "Header fehlt");
+    assert.ok(state.includes('me method(key=val)'), "Befehls-Hinweis fehlt");
     assert.ok(!state.includes('secret_plans.txt'), "Manifestationen sollten NICHT angezeigt werden!");
     assert.ok(!state.includes('[object Object]'), "Kein Objekt-Slop erlaubt!");
     
@@ -48,7 +48,7 @@ AKTION:
     fs.mkdirSync(mockDir, { recursive: true });
 
     let mockState = { security: { acl: {}, wallets: {} } };
-    const feedback = envManager.processActions(llmOutput, mockDir, "Bob-1", mockState);    
+    const feedback = envManager.processActions(llmOutput, mockDir, "Instance-1", mockState);    
     if (feedback.includes("phantom")) {
         console.error("❌ Phantom Action Test FAILED. Befehl im Analyse-Block wurde ausgeführt!\nFeedback war:\n", feedback);
         process.exit(1);

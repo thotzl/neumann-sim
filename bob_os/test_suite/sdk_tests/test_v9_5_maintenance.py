@@ -11,7 +11,7 @@ class TestMaintenanceCooldown(unittest.TestCase):
     def setUp(self):
         self.test_db = "v9_5_test.db"
         os.environ['TEST_DB_PATH'] = self.test_db
-        os.environ['BOB_ID'] = 'Bob-1'
+        os.environ['BOB_ID'] = 'Instance-1'
         if os.path.exists(self.test_db): os.remove(self.test_db)
         
         from core.lib import config_service
@@ -20,14 +20,7 @@ class TestMaintenanceCooldown(unittest.TestCase):
         conn = sqlite3.connect(self.test_db)
         c = conn.cursor()
         
-        c.execute("""CREATE TABLE agents (
-            id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, 
-            energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0,
-            matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL,
-            origin_x INTEGER DEFAULT 0, origin_y INTEGER DEFAULT 0,
-            target_x INTEGER DEFAULT 0, target_y INTEGER DEFAULT 0,
-            transit_ticks_total INTEGER DEFAULT 0, transit_ticks_passed INTEGER DEFAULT 0,
-            target_system TEXT)""")
+        c.execute("""CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL, origin_x INTEGER DEFAULT 0, origin_y INTEGER DEFAULT 0, target_x INTEGER DEFAULT 0, target_y INTEGER DEFAULT 0, transit_ticks_total INTEGER DEFAULT 0, transit_ticks_passed INTEGER DEFAULT 0, target_system TEXT, active_ship_id INTEGER DEFAULT 1)""")
             
         c.execute("""CREATE TABLE systems (
             name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, 
@@ -43,7 +36,7 @@ class TestMaintenanceCooldown(unittest.TestCase):
             maintenance_cooldown INTEGER DEFAULT 0)""")
             
         c.execute("INSERT INTO systems (name, extractable_matter_in_core) VALUES ('SYS-A', 1000)")
-        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, status) VALUES ('Bob-1', 'SYS-A', 1000, 1000, 'active')")
+        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, status) VALUES ('Instance-1', 'SYS-A', 1000, 1000, 'active')")
         conn.commit()
         
         self.agent = bob_sdk.Agent()
@@ -85,7 +78,7 @@ class TestMaintenanceCooldown(unittest.TestCase):
         self.assertEqual(infra[1], 0)   # Cooldown is now 0
         
         # Run physics update 3 (now health should drop)
-        physics_update.update()
+        physics_update.update(10)
         infra = conn.execute("SELECT health, maintenance_cooldown FROM infrastructure WHERE id=1").fetchone()
         self.assertEqual(infra[0], 99) # Health dropped
         self.assertEqual(infra[1], 0)  # Cooldown stays 0

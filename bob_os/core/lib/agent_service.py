@@ -32,7 +32,7 @@ def consume_resources(cursor, agent_id, energy=0, matter=0):
         params.append(agent_id)
         cursor.execute(f"UPDATE agents SET {', '.join(updates)} WHERE id = ?", tuple(params))
 
-def with_agent_context(required_columns="*", require_active=False, action_name="Action"):
+def with_agent_context(required_columns="*", require_active=False, action_name="Action", allow_disembodied=False):
     """
     Decorator: Öffnet DB, lädt Agent, übergibt (self, cursor, agent, *args).
     Schließt und committet automatisch, sofern nicht False zurückgegeben wird.
@@ -48,16 +48,19 @@ def with_agent_context(required_columns="*", require_active=False, action_name="
                 if not agent_id:
                     print("[ERROR] Agent ID not found in context.")
                     return False
-                
+
                 agent = get_agent_or_fail(cursor, agent_id, required_columns=required_columns)
                 if not agent: return False
-                
+
                 if require_active and not require_active_status(agent, action_name):
                     return False
-                
+
+                if not allow_disembodied and dict(agent).get('active_ship_id') is None:
+                    print(f"[DENIED] {action_name} requires a physical vessel. You are currently disembodied in a SEM-Matrix.")
+                    return False
+
                 result = func(self, cursor, agent, *args, **kwargs)
-                if result is not False:
-                    conn.commit()
+                if result is not False: conn.commit()
                 return result
             finally:
                 conn.close()

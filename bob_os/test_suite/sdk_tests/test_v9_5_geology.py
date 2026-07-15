@@ -19,14 +19,7 @@ class TestGeologicalRegen(unittest.TestCase):
         conn = sqlite3.connect(self.test_db)
         c = conn.cursor()
         
-        c.execute("""CREATE TABLE agents (
-            id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, 
-            energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0,
-            matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL,
-            origin_x INTEGER DEFAULT 0, origin_y INTEGER DEFAULT 0,
-            target_x INTEGER DEFAULT 0, target_y INTEGER DEFAULT 0,
-            transit_ticks_total INTEGER DEFAULT 0, transit_ticks_passed INTEGER DEFAULT 0,
-            target_system TEXT)""")
+        c.execute("""CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL, origin_x INTEGER DEFAULT 0, origin_y INTEGER DEFAULT 0, target_x INTEGER DEFAULT 0, target_y INTEGER DEFAULT 0, transit_ticks_total INTEGER DEFAULT 0, transit_ticks_passed INTEGER DEFAULT 0, target_system TEXT, active_ship_id INTEGER DEFAULT 1)""")
             
         c.execute("""CREATE TABLE systems (
             name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, 

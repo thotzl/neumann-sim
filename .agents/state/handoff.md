@@ -1,23 +1,41 @@
-# Handoff Report: Bob-OS Evolution (Phase 2.5 - Pending)
+# HANDOFF: BOB-OS V9.6 -> V10.0 (Epic 1 & Epic 2)
 
-## Erreichte Meilensteine (Aktueller Stand)
-Das System ist nach einer massiven Refaktorierungs-Phase absolut stabil und modular.
-1. **Engine Modularisierung:** `sim_engine/runner.js` wurde von einem 300-Zeilen "God Object" zu einem schlanken Wrapper refaktoriert. Logik liegt in `utils/` (`bootstrapper.js`, `automation.js`, `python_executor.js`).
-2. **Kryptographische Autonomie (ACL):** Die Node.js Engine besitzt ein vollständiges Key/Wallet-System. Agenten können Skripte in `scripts/` mit `[WRITE: pfad (READ_KEY: x) (WRITE_KEY: y)]` verschlüsseln. Keys werden im `state.json` (Kernel) gespeichert und über den LLM-Prompt injiziert.
-3. **Hardcore Economy (V4.1):** Alle harten Kosten wurden in `bob_os/core/lib/ECONOMY_RULES.json` zentralisiert. Logistik (`deposit`, `withdraw`, `transfer`) kostet nun 0 Energie, Mining 30E. Kapazitäten wurden auf 300M / 500E angehoben. Ein SQL-Update-Bug in `withdraw.py` wurde behoben.
-4. **Existential Awakening (V5.3):** Die Replikation (`replicate.py`) ist entkoppelt. Klone erwachen mit einem neutralen Prompt, müssen sich selbst benennen (`set_name.py` mit `CURRENT_AGENT_ID` Schutz) und Kontakt per SCUT aufnehmen.
-5. **Live Spawning:** Klone werden nun während der Node.js Laufzeit (zu Beginn jeder Runde) in die Event-Loop eingehängt, ohne Neustart.
-6. **Frontend & Logging:** `log.md` trennt "Pre-Turn Events" (VoG, Radio, Automation) sauber ab. Das Monitor-Frontend wurde entmüllt und zeigt nur noch reine Agenten-Gedanken, gefiltert von `AKTION:` Blöcken, sowie Agenten-Namen in der Map.
+## 1. System Status & Architektur
+- **Core Engine:** Python (SQLite). JS-Node Runner fungiert nur als LLM/VoG Proxy und Logger.
+- **Aktueller Stand (V9.6):**
+  - Epic 1 ("Industrial Polish") ist zu 90% abgeschlossen.
+    - Pipeline-Logik: `build()` und `repair()` ziehen Kosten primär aus Systemdepots (`raw_matter_depot`, `energy_depot`).
+    - Grace-Period: Reparierte/Gebaute Gebäude haben `maintenance_cooldown=10` und zerfallen in dieser Zeit nicht.
+    - Core-Regeneration: Planetenkerne generieren langsam Ressourcen zurück.
+    - Refined Matter: Tier-2 Gebäude (`mind_forge`, `advanced_shipyard`) existieren und erfordern zwingend Veredelte Materie.
+  - Epic 2 ("Ships & Minds") hat begonnen.
+    - `active_ship_id` in der `agents` Tabelle implementiert.
+    - `@agent_service.with_agent_context(allow_disembodied=False)` blockt physische Aktionen (`mine`, `build`) für Agenten ohne Schiff.
+    - `board()` und `exit_ship()` SDK-Befehle sind live.
+    - Klonen (`replicate()`) spawnt Agenten nun "disembodied" (ohne Schiff) in der `sem_matrix`.
+- **Naming Convention:** "Bob" wurde restlos durch "Agent" oder "Instance" ersetzt. Das CLI-Präfix ist `me method()` statt `bob method()`.
 
-## Aktueller Status
-- Die CI (`node sim_engine/test_all.js`) ist mit ~10 Testsuiten (inklusive E2E Mocks) 100% grün.
-- Das Experiment `ONE` wurde frisch ge-resettet und steht bei Zyklus 1.
+---
 
-## Nächste Tasks (Dein Job)
-Der User möchte nun in die Phase **2.5: Agent Upgrades** übergehen.
-1. Lies dir in `bob_os/core/lib/ECONOMY_RULES.json` die Sektion `"upgrades"` durch.
-2. Das Konzept (`docs/concepts/AGENT_UPGRADE_MANIFEST.md`) sieht vor, dass Agenten ihre Hardware (Engines, Sensoren, Storage, Core) mit Materie upgraden können.
-3. Du musst das in die SQLite `agents` Tabelle einbauen und Tools (z.B. `upgrade.py`) schreiben, um diese Mechanik in die Welt zu bringen.
+## 2. Aktueller Auftrag (Immediate To-Dos)
+Der User (Torsten) hat den aktuellen Kontext wegen Überladung beendet. Der nächste Agent muss exakt hier ansetzen und folgende Bugs fixen, **inklusive Testabdeckung**:
 
-## Warnung des Vorgängers
-Verliere nicht die Nerven, wenn Python-Skripte der Bobs abstürzen. Die Bobs machen oft Syntaxfehler in ihren `[WRITE]` Befehlen (z.B. indem sie `subprocess.run` nutzen wollen). Die Engine fängt das sauber ab. Mische dich nur bei echten Node.js- oder Traceback-Fehlern in die Architektur ein.
+### Bug 1: "Doppelte Systeme" & Config-Parsing
+- `init_db.py` generiert scheinbar immer noch Defaults, die mit der `config.json` kollidieren. 
+- Wenn in der config.json `{ "id": "Bob", "chosen_name": "Robert" }` steht, legt das System fälschlicherweise ID: Bob und Name: Bob an.
+- **Fix:** In `init_db.py` sicherstellen, dass `chosen_name` sauber aus der JSON geparst wird. In `test_first_start_e2e.js` absichern.
+
+### Bug 2: Log-Kosmetik (Birth-Log Truncation)
+- Der `bootstrapper.js` ruft `logger.appendBirthLog` für den initialen Agenten auf (Runde 1, kein Parent). Dies schneidet den `system_prompt` ab, da das Log-Format auf Klone ausgelegt ist.
+- **Fix:** In `sim_engine/utils/bootstrapper.js` prüfen: `if (parentId) { logger.appendBirthLog(...) }`. Der erste Agent soll nur das reguläre Boot-Feedback in sein `history` Array pushen, ohne einen speziellen "Birth" Markdown-Block zu generieren.
+
+### Bug 3: Prompt Redundanz (core-config.json)
+- Der `global_system_instruction` in `sim_engine/core-config.json` ist massiv überladen.
+- **Fix:** Den Text radikal kürzen. Details zu "Disembodied State", "Blackout" und genauen Befehlskosten (`[RUN: me ...]`) löschen, da diese von der Engine (bzw. dem CLI Help-Kommando) on-the-fly injiziert werden und die KI empirisch durch Errors lernen soll.
+
+---
+
+## 3. Strategischer Ausblick (Nach den Fixes)
+Sobald Fix 1-3 abgearbeitet und E2E getestet sind, muss Epic 2 beendet werden:
+- **Das Blueprint-System:** 2D-Matrizen für Schiffsdesigns in Python (`evaluate_ship_matrix()`).
+- Schiffe haben unveränderliche Basiswerte (Chassis). Modul-Slots (`engine`, `drill`, `cargo`) verändern die Leistung (Zero-Sum-Physics) und kosten `refined_matter`.

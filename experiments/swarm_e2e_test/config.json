@@ -2,7 +2,7 @@
   "log": "log.md",
   "report": "report.md",
   "state": "state.json",
-  "rounds": 4,
+  "rounds": 5,
   "reproduction": true,
   "config_override": {
     "model": "gemini-2.5-flash",
@@ -17,10 +17,16 @@
   },
   "agents": [
     {
-      "id": "Bob-1",
+      "id": "Instance-1",
       "location": "Alpha_Centauri",
       "initial_trigger": "System online. Mission gestartet.",
       "system_prompt": "Swarm Test"
+    },
+    {
+      "id": "Instance-2",
+      "location": "Alpha_Centauri",
+      "chosen_name": "Bob-2",
+      "system_prompt": "Receiver"
     }
   ]
 }

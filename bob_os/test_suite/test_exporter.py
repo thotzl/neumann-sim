@@ -13,38 +13,19 @@ class TestStateExporter(unittest.TestCase):
         self.verse_dir = os.path.join(self.test_dir, '_verse')
         os.makedirs(os.path.join(self.verse_dir, 'tools'), exist_ok=True)
         self.db_path = os.path.join(self.verse_dir, 'universe.db')
+        os.environ['TEST_DB_PATH'] = self.db_path
         
-        # Erstelle Mock DB (Schema v3.0)
+        # Erstelle Mock DB (Nutze reales Schema via init_db)
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+        from core.bin import init_db
+        init_db.init()
+        
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute('''CREATE TABLE systems (
-            name TEXT PRIMARY KEY, 
-            display_name TEXT,
-            x INTEGER,
-            y INTEGER,
-            extractable_matter_in_core INTEGER, max_extractable_matter INTEGER DEFAULT 10000, 
-            raw_matter_depot INTEGER, 
-            depot_matter_capacity INTEGER, 
-            energy_depot INTEGER, 
-            depot_energy_capacity INTEGER, 
-            passive_matter_rate INTEGER, 
-            passive_energy_rate INTEGER, 
-            energy_rate INTEGER
-        )''')
-        cursor.execute('''CREATE TABLE agents (
-            id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, 
-            raw_matter_inventory INTEGER DEFAULT 0, energy_inventory INTEGER DEFAULT 100, 
-            matter_storage_capacity INTEGER DEFAULT 100, status TEXT, birth_cycle INTEGER DEFAULT 0,
-            target_system TEXT DEFAULT NULL, origin_x INTEGER DEFAULT 0, origin_y INTEGER DEFAULT 0,
-            target_x INTEGER DEFAULT 0, target_y INTEGER DEFAULT 0,
-            transit_ticks_total INTEGER DEFAULT 0, transit_ticks_passed INTEGER DEFAULT 0,
-            current_x REAL DEFAULT 0, current_y REAL DEFAULT 0
-        )''')
-        cursor.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER)")
         
         cursor.execute("INSERT INTO systems (name, display_name, x, y, extractable_matter_in_core, depot_matter_capacity) VALUES ('SYS-X0-Y0', 'Home', 0, 0, 1000, 2000)")
-        cursor.execute("INSERT INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status) VALUES ('Bob-1', 'Original', 'SYS-X0-Y0', 50, 100, 100, 'active')")
-        cursor.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS-X0-Y0', 'matter_silo', 'active')")
+        cursor.execute("INSERT INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status) VALUES ('Instance-1', 'Pioneer', 'SYS-X0-Y0', 50, 100, 100, 'active')")
+        cursor.execute("INSERT INTO infrastructure (system_name, type, status, health, max_health) VALUES ('SYS-X0-Y0', 'matter_silo', 'active', 100, 100)")
         conn.commit()
         conn.close()
         
@@ -53,7 +34,7 @@ class TestStateExporter(unittest.TestCase):
             "round": 1,
             "totalTurns": 1,
             "histories": {
-                "Bob-1": [{"agent": "Bob-1", "text": "Ich denke nach.", "tick": 1}]
+                "Instance-1": [{"agent": "Instance-1", "text": "Ich denke nach.", "tick": 1}]
             }
         }
         with open(os.path.join(self.test_dir, 'state.json'), 'w') as f:
@@ -68,7 +49,7 @@ class TestStateExporter(unittest.TestCase):
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         exporter_path = os.path.join(base_dir, 'sim_engine', 'utils', 'state_exporter.js')
         
-        cmd = f"node -e \"const exporter = require('{exporter_path}'); const state = JSON.parse(require('fs').readFileSync('{self.test_dir}/state.json', 'utf8')); exporter.exportWorldState('{self.verse_dir}', state, 'Bob-1');\""
+        cmd = f"node -e \"const exporter = require('{exporter_path}'); const state = JSON.parse(require('fs').readFileSync('{self.test_dir}/state.json', 'utf8')); exporter.exportWorldState('{self.verse_dir}', state, 'Instance-1');\""
         os.system(cmd)
         
         output_file = os.path.join(self.verse_dir, 'world_state.json')
@@ -77,7 +58,7 @@ class TestStateExporter(unittest.TestCase):
         with open(output_file, 'r') as f:
             data = json.load(f)
             self.assertEqual(data['tick'], 1)
-            self.assertEqual(data['agents'][0]['id'], 'Bob-1')
+            self.assertEqual(data['agents'][0]['id'], 'Instance-1')
             self.assertEqual(data['agents'][0]['last_manifestation'], "Ich denke nach.")
             self.assertEqual(data['systems'][0]['name'], 'SYS-X0-Y0')
             self.assertEqual(data['systems'][0]['x'], 0)

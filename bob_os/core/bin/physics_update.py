@@ -4,7 +4,7 @@ import sqlite3
 from core.lib.db_config import get_connection
 from core.lib import physics_service, config_service
 
-def update():
+def update(current_tick=1):
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -18,6 +18,7 @@ def update():
     drain_idle = agent_limits.get('energy_drain_idle', 5)
     global_settings = rules.get('global_settings', {})
     decay_rate = global_settings.get('decay_per_tick', 1)
+    decay_interval = global_settings.get('decay_interval', 1)
     core_regen = global_settings.get('core_regen_per_tick', 5)
 
     # 1. Bauprojekte abschließen
@@ -65,7 +66,9 @@ def update():
         
         # B. Infrastruktur-Verfall & Cooldown
         # Dann HP abziehen, ABER NUR wenn der Cooldown auf 0 ist (wir prüfen den cooldown BEVOR er dekrementiert wird)
-        cursor.execute("UPDATE infrastructure SET health = MAX(0, health - ?) WHERE system_name = ? AND status != 'construction' AND maintenance_cooldown = 0", (decay_rate, sys_name))
+        if current_tick % decay_interval == 0:
+            cursor.execute("UPDATE infrastructure SET health = MAX(0, health - ?) WHERE system_name = ? AND status != 'construction' AND maintenance_cooldown = 0", (decay_rate, sys_name))
+        
         # Zuerst Cooldown dekrementieren
         cursor.execute("UPDATE infrastructure SET maintenance_cooldown = MAX(0, maintenance_cooldown - 1) WHERE system_name = ? AND status != 'construction'", (sys_name,))
         
@@ -93,8 +96,8 @@ def update():
         # C. Energie-Budget prüfen
         if sys['energy_depot'] < total_maintenance_cost:
             # Blackout!
-            new_matter_cap = 0
-            new_energy_cap = 0 
+            # Kapazitäten bleiben erhalten (passive Strukturen),
+            # aktive Boni (Produktion) werden deaktiviert.
             new_energy_rate = 0
             new_matter_rate = 0
             final_energy = 0
@@ -122,4 +125,7 @@ def update():
     conn.commit()
     conn.close()
 
-if __name__ == "__main__": update()
+if __name__ == "__main__":
+    import sys
+    tick = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+    update(tick)

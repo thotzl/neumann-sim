@@ -61,6 +61,8 @@ if (sourcePath === 'engine') {
     let targetRelPath = relPath;
     if (relPath.startsWith(path.join('bob_os', '_verse'))) {
         targetRelPath = relPath.replace(path.join('bob_os', '_verse'), '_verse');
+    } else if (relPath.startsWith(path.join('bob_os', 'core'))) {
+        targetRelPath = relPath.replace(path.join('bob_os', 'core'), 'core');
     }
 
     const targetPath = path.join(expDir, targetRelPath);

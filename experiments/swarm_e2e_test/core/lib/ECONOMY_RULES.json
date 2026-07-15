@@ -30,7 +30,7 @@
     "shipyard": { 
       "matter_cost": 1000, 
       "required_material": "raw_matter",
-      "allows_replicate": true, 
+      "allows_ship_building": true, 
       "maintenance_energy_cost": 0 
     },
     "battery_bank": { 
@@ -56,10 +56,22 @@
       "required_material": "raw_matter",
       "maintenance_energy_cost": 3 
     },
+    "sem_matrix": { 
+      "matter_cost": 500, 
+      "required_material": "refined_matter",
+      "allows_disembodied_hosting": true, 
+      "maintenance_energy_cost": 5 
+    },
+    "mind_forge": { 
+      "matter_cost": 2000, 
+      "required_material": "refined_matter",
+      "allows_replicate": true, 
+      "maintenance_energy_cost": 10 
+    },
     "advanced_shipyard": { 
       "matter_cost": 1000, 
       "required_material": "refined_matter",
-      "allows_replicate": true, 
+      "allows_ship_building": true, 
       "maintenance_energy_cost": 5 
     },
     "deep_space_scanner": { 
@@ -71,6 +83,7 @@
   },
   "global_settings": {
     "decay_per_tick": 1,
+    "decay_interval": 10,
     "core_regen_per_tick": 5,
     "operating_costs_enabled": true,
     "base_comms_range": 1000,
@@ -81,6 +94,25 @@
     "travel_speed_per_tick": 300,
     "scan_range_min": 500,
     "scan_range_max": 1500,
-    "grid_snap_size": 100
+    "grid_snap_size": 100,
+    "ship_constants": {
+      "base_mass": 100,
+      "base_speed": 300,
+      "base_energy_cap": 500,
+      "base_travel_cost": 0.1,
+      "mass_efficiency_divisor": 1000,
+      "shipyard_build_rate_per_tick": 100
+    }
+  },
+  "ship_modules": {
+    "chassis_tile": { "mass": 20, "cost": 50, "hp": 100 },
+    "engine": { "mass": 150, "cost": 500, "thrust": 400, "move_energy_drain": 20 },
+    "cargo": { "mass": 100, "cost": 250, "matter_capacity": 1000 },
+    "battery": { "mass": 120, "cost": 300, "energy_capacity": 2000 },
+    "solar": { "mass": 50, "cost": 400, "energy_regen": 15 },
+    "logic_core": { "mass": 80, "cost": 1500, "allows_autonomy": true, "idle_energy_drain": 5 },
+    "drill": { "mass": 200, "cost": 800, "allows_mine": true, "action_energy_drain": 50 },
+    "fabricator": { "mass": 250, "cost": 1200, "allows_build": true, "action_energy_drain": 100 },
+    "comm_dish": { "mass": 50, "cost": 600, "range_bonus": 5000 }
   }
 }

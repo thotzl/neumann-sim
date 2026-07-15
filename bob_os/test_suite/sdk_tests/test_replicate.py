@@ -16,14 +16,14 @@ class TestReplicate(unittest.TestCase):
         os.environ['TEST_DB_PATH'] = TEST_DB
         os.environ['TEST_POP_PATH'] = TEST_POP
         os.environ['VERSE_DIR'] = os.getcwd()
-        os.environ['BOB_ID'] = 'Bob-1'
+        os.environ['BOB_ID'] = 'Instance-1'
         
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_POP): os.remove(TEST_POP)
         with open(TEST_POP, 'w') as f: json.dump({"version": 1, "agents": []}, f)
         
         init_db.init()
-        self.agent = bob_sdk.Agent('Bob-1')
+        self.agent = bob_sdk.Agent('Instance-1')
 
     def tearDown(self):
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
@@ -33,20 +33,28 @@ class TestReplicate(unittest.TestCase):
     def test_replicate_success(self):
         # Setup: Werft und genug Materie im Depot
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, required_matter) VALUES ('SYS-X0-Y0', 'shipyard', 'active', 1000)")
-        conn.execute("UPDATE systems SET raw_matter_depot = 1000, energy_depot = 180 WHERE name = 'SYS-X0-Y0'")
-        conn.execute("UPDATE agents SET energy_inventory = 100 WHERE id = 'Bob-1'")
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, depot_energy_capacity) VALUES ('SYS-X0-Y0', 0, 0, 10000, 500)")
+        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, active_ship_id) VALUES ('Instance-1', 'Pioneer', 'SYS-X0-Y0', 0, 100, 100, 'active', 1)")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, required_matter) VALUES ('SYS-X0-Y0', 'mind_forge', 'active', 1000)")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, required_matter) VALUES ('SYS-X0-Y0', 'sem_matrix', 'active', 500)")
+        conn.execute("UPDATE systems SET refined_matter_depot = 2000, energy_depot = 180 WHERE name = 'SYS-X0-Y0'")
         conn.commit()
         conn.close()
 
-        success = self.agent.replicate(new_agent_id='Bob-2')
+        success = self.agent.replicate(new_agent_id='Instance-2')
         self.assertTrue(success)
+        
+        # Test if the new agent is disembodied
+        conn = db_config.get_connection()
+        clone = conn.execute("SELECT active_ship_id FROM agents WHERE id = 'Instance-2'").fetchone()
+        self.assertIsNone(clone['active_ship_id'])
+        conn.close()
 
         # Überprüfe Population JSON
         with open(TEST_POP, 'r') as f:
             pop = json.load(f)
         self.assertEqual(len(pop['agents']), 1)
-        self.assertEqual(pop['agents'][0]['id'], 'Bob-2')
+        self.assertEqual(pop['agents'][0]['id'], 'Instance-2')
         self.assertIn("Lege mit 'set_name' deine individuelle Identität fest", pop['agents'][0]['system_prompt'])
 
         # Überprüfe DB
@@ -55,8 +63,8 @@ class TestReplicate(unittest.TestCase):
         self.assertEqual(sys_data['raw_matter_depot'], 0) # 1000 - 1000
         self.assertEqual(sys_data['energy_depot'], 0) # 180 - 180
         
-        bob1 = conn.execute("SELECT energy_inventory FROM agents WHERE id = 'Bob-1'").fetchone()
-        self.assertEqual(bob1['energy_inventory'], 100) # Keine Kosten für Bob-1, da Netz genug hatte
+        bob1 = conn.execute("SELECT energy_inventory FROM agents WHERE id = 'Instance-1'").fetchone()
+        self.assertEqual(bob1['energy_inventory'], 100) # Keine Kosten für Instance-1, da Netz genug hatte
         conn.close()
 
 if __name__ == '__main__':

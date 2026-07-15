@@ -20,7 +20,7 @@ try {
     // 2. Erzeuge Dummy config
     fs.writeFileSync(path.join(expDir, 'config.json'), JSON.stringify({
         rounds: 2, config_override: { max_turns: 10, model: "gemini-2.5-flash" },
-        agents: [{ id: "Bob-1", location: "SYS-X0-Y0", system_prompt: "Vater" }]
+        agents: [{ id: "Instance-1", location: "SYS-X0-Y0", system_prompt: "Vater" }]
     }));
 
     // 3. Kopiere Blueprints (Nur core, da tools weg sind)
@@ -33,20 +33,20 @@ try {
         env: { ...process.env, PYTHONPATH: expDir } 
     });
 
-    // 5. Erzeuge Population mit Ur-Bob (Bob-1) und Klon (Bob-2)
+    // 5. Erzeuge Population mit Ur-Bob (Instance-1) und Klon (Instance-2)
     fs.writeFileSync(path.join(verseDir, 'population.json'), JSON.stringify({
         version: 1,
         agents: [
-            { id: "Bob-1", location: "SYS-X0-Y0", status: "active", system_prompt: "Vater" },
-            { id: "Bob-2", parent_id: "Bob-1", location: "SYS-X0-Y0", status: "active", system_prompt: "Kind" }
+            { id: "Instance-1", location: "SYS-X0-Y0", status: "active", system_prompt: "Vater" },
+            { id: "Instance-2", parent_id: "Instance-1", location: "SYS-X0-Y0", status: "active", system_prompt: "Kind" }
         ]
     }));
 
-    // 6. Fake eine existierende state.json für Bob-1
+    // 6. Fake eine existierende state.json für Instance-1
     fs.writeFileSync(path.join(expDir, 'state.json'), JSON.stringify({
         round: 1, currentTurnIndex: 0, totalTurns: 0,
-        agents: [{ id: "Bob-1", alive: true }],
-        histories: { "Bob-1": [{ agent: "Bob-1", text: "Ich bin der Vater." }] }
+        agents: [{ id: "Instance-1", alive: true }],
+        histories: { "Instance-1": [{ agent: "Instance-1", text: "Ich bin der Vater." }] }
     }));
 
     // 7. Führe Runner aus (API-Mock)
@@ -64,7 +64,7 @@ try {
     fs.mkdirSync(path.join(expDir, 'scripts', 'active'), { recursive: true });
     fs.writeFileSync(path.join(expDir, 'config.json'), JSON.stringify({
         rounds: 1, config_override: { max_turns: 10, model: "gemini-2.5-flash" },
-        agents: [{ id: "Bob-1", location: "SYS-X0-Y0", system_prompt: "Vater" }]
+        agents: [{ id: "Instance-1", location: "SYS-X0-Y0", system_prompt: "Vater" }]
     }));
     execSync(`cp -r bob_os/core/* ${coreDir}/`);
     
@@ -75,7 +75,7 @@ try {
     
     fs.writeFileSync(path.join(verseDir, 'population.json'), JSON.stringify({
         version: 1,
-        agents: [ { id: "Bob-1", location: "SYS-X0-Y0", status: "active", system_prompt: "Vater" } ]
+        agents: [ { id: "Instance-1", location: "SYS-X0-Y0", status: "active", system_prompt: "Vater" } ]
     }));
 
     execSync(`node sim_engine/runner.js ${expName}`, { stdio: 'inherit' });

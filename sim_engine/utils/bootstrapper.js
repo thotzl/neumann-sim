@@ -15,6 +15,12 @@ function syncPopulation(populationFile, universeDir, vDir, state, logger, logFil
     } else {
         try {
             popData = JSON.parse(fs.readFileSync(populationFile, 'utf8'));
+            if (!popData.agents || popData.agents.length === 0) {
+                 popData.agents = state.agents.filter(a => a.alive).map(a => ({
+                    id: a.id, location: a.location || ".", system_prompt: a.system_prompt, status: "active" 
+                }));
+                fs.writeFileSync(populationFile, JSON.stringify(popData, null, 2));
+            }
         } catch (e) { return; }
     }
 
@@ -49,18 +55,8 @@ function syncPopulation(populationFile, universeDir, vDir, state, logger, logFil
             }
 
             try {
-                // 1. Physische Manifestation in SQLite (Via Executor)
-                const dbScript = `
-import sqlite3
-import sys
-conn = sqlite3.connect(sys.argv[1])
-conn.execute("INSERT OR IGNORE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y) VALUES (?, 'Unnamed', ?, 0, 100, 100, 'active', 0, 0)", (sys.argv[2], sys.argv[3]))
-conn.commit()
-conn.close()
-`;
-                require('child_process').execFileSync('python3', ['-c', dbScript, path.join(universeDir, 'universe.db'), agentObj.id, agentObj.location || 'SYS-X0-Y0']);
-
-                // 2. Dashboard abfragen (Via CLI)
+                // 1. Dashboard abfragen (Via CLI)
+                // Die physische DB-Erstellung übernimmt init_db.py oder bob_sdk.py (beim Klonen)
                 const dashOut = runPython(vDir, `core/bin/bob.py`, ['dashboard'], { bobId: agentObj.id });
                 
                 const parentText = parentId ? `\nAbstammung: Klon von ${parentId}` : '';
@@ -70,15 +66,22 @@ conn.close()
                 console.log(`  [BOOT] Hard-Boot für ${agentObj.id} prozessual abgeschlossen.`);
 
                 // 3. Birth-Log & Frontend Event
-                let lastParentMemory = "";
-                if (state.histories[agentObj.id].length > 1) {
-                    const prevTurn = state.histories[agentObj.id][state.histories[agentObj.id].length - 2];
-                    if (prevTurn && prevTurn.text) lastParentMemory = prevTurn.text;
+                if (parentId) {
+                    let lastParentMemory = "";
+                    if (state.histories[agentObj.id].length > 1) {
+                        const prevTurn = state.histories[agentObj.id][state.histories[agentObj.id].length - 2];
+                        if (prevTurn && prevTurn.text) lastParentMemory = prevTurn.text;
+                    }
+                    logger.appendBirthLog(logFile, currentRound, agentObj.id, parentId, `${lastParentMemory}\n${bootMsg}\n${agentObj.system_prompt}`);
+                    
+                    if (!state.events) state.events = [];
+                    state.events.push(`[Zyklus ${currentRound}]: 🧬 ${agentObj.id} wurde repliziert.`);
+                } else {
+                    const genesisLog = `### INITIALER BOOT: ${agentObj.id}\n**Standort:** ${agentObj.location}\n\n**Mission:**\n> ${agentObj.system_prompt.replace(/\\n/g, '\n> ')}\n\n**Sensoren:**\n\`\`\`json\n${dashOut.trim()}\n\`\`\`\n\n`;
+                    fs.appendFileSync(logFile, genesisLog);
+                    if (!state.events) state.events = [];
+                    state.events.push(`[Zyklus ${currentRound}]: 🌍 ${agentObj.id} (Genesis) ist online.`);
                 }
-                logger.appendBirthLog(logFile, currentRound, agentObj.id, parentId, `${lastParentMemory}\n${bootMsg}\n${agentObj.system_prompt}`);
-                
-                if (!state.events) state.events = [];
-                state.events.push(`[Zyklus ${currentRound}]: 🧬 ${agentObj.id} wurde initialisiert.`);
 
             } catch (e) {
                 console.error(`  [BOOT-FEHLER] Initialisierung von ${agentObj.id} gescheitert:`, e.message);

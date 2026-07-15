@@ -7,12 +7,12 @@ from core.lib.functional_parser import parse_functional_string, METHOD_META
 # Beschreibungen für die Hardware-Funktionen
 DESCRIPTIONS = {
     "mine": "Baut Materie am aktuellen Standort ab.",
-    "build": "Investiert Materie in Gebäude oder Upgrades (Typen: matter_silo, solar_collector, shipyard, battery_bank, sat_link, matter_refinery, comms_relay).",
+    "build": "Investiert Materie in Gebäude oder Upgrades (Typen: matter_silo, solar_collector, shipyard, battery_bank, sat_link, matter_refinery, comms_relay, mind_forge, advanced_shipyard, sem_matrix, deep_space_scanner).",
     "refine": "Wandelt Roh-Materie in veredelte Materie um (Benötigt matter_refinery).",
     "repair": "Repariert beschädigte Infrastruktur (Struktur-ID aus Dashboard nötig).",
     "deconstruct": "Baut Infrastruktur ab und erstattet Teil der Materie.",
     "move": "Startet eine Reise zu einem anderen (entdeckten) System.",
-    "replicate": "Erzeugt einen autonomen Klon in einer Werft.",
+    "replicate": "Erzeugt einen autonomen Klon in einer mind_forge.",
     "set_name": "Legt eine individuelle Identität (Namen) fest.",
     "rename_system": "Gibt dem aktuellen System einen neuen Anzeigenamen.",
     "scan": "Scannt die Umgebung nach neuen Systemen (Deep Space Scan).",
@@ -24,7 +24,10 @@ DESCRIPTIONS = {
     "storage": "Zeigt den Füllstand des eigenen Inventars an.",
     "dashboard": "Vollständiger Sensor-Scan der Umgebung (System, Infra, Andere).",
     "entities": "Scannt nach anderen Agenten am Standort.",
-    "fs": "Listet die Dateien (Skripte) im eigenen Dateisystem auf."
+    "fs": "Listet die Dateien (Skripte) im eigenen Dateisystem auf.",
+    "board": "Betritt ein Schiff am aktuellen Standort (ID nötig). Erlaubt physische Aktionen (mine, build, move).",
+    "exit_ship": "Verlässt das aktuelle Schiff und kehrt in die SEM-Matrix zurück (Erfordert aktive sem_matrix im System).",
+    "build_ship": "Baut ein neues Schiff in einer aktiven shipyard. (Standard-Chassis: Scout, Kosten: 1000 Raw Matter). Erforderlich für Klone."
 }
 
 def clean_dict(d):
@@ -43,21 +46,32 @@ def clean_dict(d):
     return clean
 
 def print_help():
-    print("Unified Bob Command Line (UBCL) - V9.0 Semantic Evolution")
+    print("Unified Command Line (UCL) - V10.0 Functional Evolution")
     print("Alle Befehle müssen im Format method(key=val) aufgerufen werden.")
+    print("HINWEIS: 'run_script' existiert nicht. Skripte in scripts/active/ laufen automatisch pro Runde.")
     print("-" * 50)
+    
+    # Beispiele für häufige Befehle zur Verdeutlichung
+    EXAMPLES = {
+        "set_name": "me.set_name(name=\"Pioneer\")",
+        "scut": "me.scut(receiver_id=\"Agent-1\", message=\"Hallo\")",
+        "board": "me.board(ship_id=1)",
+        "build": "me.build(building_type=\"matter_silo\", matter_to_invest=100)",
+        "build_ship": "me.build_ship(chassis=\"Scout\")"
+    }
+
     for method, meta in METHOD_META.items():
         desc = DESCRIPTIONS.get(method, "Keine Beschreibung verfügbar.")
         if meta["params"]:
-            params = ", ".join([f"{p}=<{p}>" for p in meta["params"]])
-            sdk_params = ", ".join([f"{p}=\"<{p}>\"" for p in meta["params"]])
+            params = ", ".join([f"{p}=val" for p in meta["params"]])
+            example = EXAMPLES.get(method)
             print(f"- {method}: {desc}")
-            print(f"  CLI: [RUN: bob {method}({params})]")
-            print(f"  SDK: me.{method}({sdk_params})")
+            print(f"  CLI: [RUN: me {method}({params})]")
+            if example:
+                print(f"  Bsp: [RUN: me {example.replace('me.', '')}]")
         else:
             print(f"- {method}: {desc}")
-            print(f"  CLI: [RUN: bob {method}] (oder bob {method}())")
-            print(f"  SDK: me.{method}()")
+            print(f"  CLI: [RUN: me {method}] (oder me {method}())")
     print("-" * 50)
 
 def main():
@@ -118,6 +132,12 @@ def main():
             print(yaml.dump(clean_dict(agent.entities()), sort_keys=False, default_flow_style=False).strip())
         elif method == "fs": 
             print(yaml.dump(clean_dict(agent.fs()), sort_keys=False, default_flow_style=False).strip())
+        elif method == "board":
+            agent.board(ship_id=int(params.get('ship_id')))
+        elif method == "exit_ship":
+            agent.exit_ship()
+        elif method == "build_ship":
+            agent.build_ship(chassis=params.get('chassis', 'Scout'))
         else:
             print(f"[CLI ERROR] Methode '{method}' nicht implementiert.")
             

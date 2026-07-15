@@ -21,7 +21,10 @@ METHOD_META = {
     "storage": {"params": [], "greedy": None},
     "dashboard": {"params": [], "greedy": None},
     "entities": {"params": [], "greedy": None},
-    "fs": {"params": [], "greedy": None}
+    "fs": {"params": [], "greedy": None},
+    "board": {"params": ["ship_id"], "greedy": None},
+    "exit_ship": {"params": [], "greedy": None},
+    "build_ship": {"params": ["chassis"], "greedy": None}
 }
 
 def parse_functional_string(s):

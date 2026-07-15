@@ -19,12 +19,17 @@ class TestBobOS_v3_Naming(unittest.TestCase):
     def setUpClass(cls):
         os.environ['TEST_DB_PATH'] = TEST_DB
         os.environ['TEST_POP_PATH'] = TEST_POP
-        os.environ['BOB_ID'] = 'Bob-1'
+        os.environ['BOB_ID'] = 'Instance-1'
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_POP): os.remove(TEST_POP)
         with open(TEST_POP, 'w') as f: json.dump({"version": 1, "agents": []}, f)
         init_db.init()
-        cls.agent = bob_sdk.Agent('Bob-1')
+        conn = db_config.get_connection()
+        conn.execute("INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS-X0-Y0', 10000, 10000)")
+        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Pioneer', 'SYS-X0-Y0', 0, 500, 300, 'active', 0, 0, 1)")
+        conn.commit()
+        conn.close()
+        cls.agent = bob_sdk.Agent('Instance-1')
         
     @classmethod
     def tearDownClass(cls):
@@ -42,7 +47,7 @@ class TestBobOS_v3_Naming(unittest.TestCase):
     def test_02_set_agent_name(self):
         self.agent.set_name('Commander-Bob')
         conn = db_config.get_connection()
-        name = conn.execute("SELECT chosen_name FROM agents WHERE id='Bob-1'").fetchone()[0]
+        name = conn.execute("SELECT chosen_name FROM agents WHERE id='Instance-1'").fetchone()[0]
         self.assertEqual(name, 'Commander-Bob')
         conn.close()
 

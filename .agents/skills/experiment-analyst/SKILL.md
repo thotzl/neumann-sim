@@ -1,95 +1,70 @@
 ---
 name: experiment-analyst
-description: Use to analyze Bob OS / _verse simulation experiments. Use this skill when asked to report on ongoing experiments, check simulation integrity, or extract metrics from experiment logs, states, and databases.
+description: Comprehensive analysis of Bob OS simulations. Combines hard metrics (DB/State) with soft-fact behavioral and psychological agent profiling.
 ---
 
-# Experiment Analyst
+# Experiment Analyst (V10.0 Consolidated)
 
 ## Overview
+This skill provides a high-fidelity, token-efficient framework for analyzing `ai-testing` experiments. It bridges the gap between raw database metrics and the "soft" cognitive behavior of the agents.
 
-The Experiment Analyst skill equips you to systematically inspect and evaluate simulation runs in the `ai-testing` project. Experiments are isolated environments (usually under `experiments/`) containing their own `core`, `sim_engine`, and `_verse` components. 
+## 1. Hard Fact Analysis (Database & Metrics)
+Always start with a quantitative snapshot. Use the `sim_engine/analyze_run.py` script for aggregated data.
 
-## Core Capabilities
+### Core Metrics:
+- **Economic Health:** Are resources (Raw/Refined) accumulating or trapped in decayed systems?
+- **Industrial Progress:** Level and health of critical infrastructure (`mind_forge`, `solar_collector`).
+- **Territorial Expansion:** Count of discovered systems vs. occupied systems.
+- **Agent Vitals:** Compare `energy_inventory` in DB against what the agent *thinks* it has in logs.
 
-1. **Locate Experiments:** Find running or completed experiments.
-2. **Configuration vs. Reality Check:** Compare `config.json` intent against actual logged events.
-3. **Database Introspection:** Query the isolated `universe.db` for agent states and economic metrics.
-4. **Log parsing:** Analyze `log.md` and `state.json` for anomalies.
-
-## Workflow: Analyzing an Experiment
-
-### 1. Identify the Target
-Check the `experiments/` directory. Each experiment has its own folder.
+### Command:
 ```bash
-ls -la experiments/
+# Aggregated DB/State snapshot
+python3 sim_engine/analyze_run.py <EXP_NAME>
 ```
 
-### 2. Review the Configuration
-Read the `config.json` inside the experiment folder. This file contains:
-- Simulation parameters (`rounds`, `config_override`)
-- Physics rules (`physics_constants`)
-- Initial agent definitions (`agents`)
+## 2. Soft Fact Analysis (Behavior & Psyche)
+Analyze the `manifestation` blocks and `ANALYSE` sections in `log.md`.
 
-### 3. Inspect the Database State
-Experiments maintain their own `universe.db` under `_verse/universe.db`. 
-You can use the project's existing `query.py` tool by pointing it to the specific experiment's database via the `TEST_DB_PATH` environment variable:
+### Psychological Profiles:
+- **Efficiency:** Is the agent planning ahead or acting turn-by-tick? (Look for multi-action `[RUN: ...]` blocks).
+- **Resilience:** How does the agent react to `[DENIED]` or `[ERROR]`? (Panic/Looping vs. Logical Debugging).
+- **Personality:** Is the agent "cautious" (waiting often), "aggressive" (mining/moving at low energy), or "hallucinating" (inventing non-existent energy values)?
+- **Deadlock Perception:** Identify if the agent *thinks* it is stuck (Cognitive Deadlock) even if the physics allow a solution.
 
-```bash
-# Query the agents table for a specific experiment
-TEST_DB_PATH=experiments/<EXP_NAME>/_verse/universe.db python3 bob_os/tools/query.py "SELECT id, energy, credits, location FROM agents"
+### Behavioral Loop Detection:
+- **Obsessive Mining:** Continuous mining without building/depositing.
+- **Recursive Move:** Scanning and moving without industrializing.
+- **Automation Blindness:** LLM forgetting or ignoring its own active `scripts/`.
 
-# Query the market or logs
-TEST_DB_PATH=experiments/<EXP_NAME>/_verse/universe.db python3 bob_os/tools/query.py "SELECT * FROM market_listings LIMIT 5"
-```
+## 3. Token-Efficient Workflow
+Do NOT read the full `log.md` if it exceeds 50 turns. Use surgical tools.
 
-### 4. Analyze Logs
-Review `log.md`, `state.json` (if present in the experiment root), and `_verse/logs/`.
-Look for:
-- Errors or crashes.
-- Unintended behavior (e.g., agents draining energy too fast despite `physics_constants`).
-- Economic imbalances (credits pooling, resources depleting).
+### Extraction Patterns:
+- **Last Actions:** `tail -n 100 experiments/<EXP>/log.md`
+- **Error Search:** `grep -E "\[ERROR\]|\[DENIED\]|\[FEHLER\]" experiments/<EXP>/log.md | tail -n 20`
+- **Manifestation Snapshot:** Use `node -e` to extract only the last 2-3 history entries from `state.json` (faster than reading full Markdown).
+- **VoG Impact:** `grep -C 5 "VOICE OF GOD" experiments/<EXP>/log.md` to see if the agent adjusted its behavior after an intervention.
 
-## Analytical Methods & Heuristics
+## 4. Reporting Categories (The "Consolidated Report")
+When asked for an analysis, use this structure:
 
-When generating your report, proactively apply these analytical methods to the raw data:
+### I. Executive Summary
+- Current round, number of agents, and high-level mission status (e.g., "Industrializing", "Stagnating", "Expanding").
 
-### 1. Economic Health Check (Wealth Distribution)
-- **Query:** `SELECT id, credits FROM agents ORDER BY credits DESC`
-- **Analysis:** Look for wealth concentration (Gini-style inequality where a few agents hoard all credits). Check if total credits in the system are inflating or deflating unexpectedly.
+### II. Hard Facts (The "Body")
+- **Resources:** Snapshot of DB inventories and depots.
+- **Infras:** Summary of active structures and their health.
 
-### 2. Behavioral Loop Detection
-- **Action:** Inspect `log.md` or agent action histories.
-- **Analysis:** Identify agents stuck in repetitive logic loops (e.g., "scan -> move -> scan -> move" without meaningful state changes) or repeatedly failing the same action (e.g., trying to mine an empty node).
+### III. Soft Facts (The "Mind")
+- **Agent Logic:** Evaluation of the agent's current strategy and cognitive integrity.
+- **Psychology:** Identify "Resource Depression", "Expansion Hubris", or "Automation Confusion".
 
-### 3. Physics & Resource Audit
-- **Action:** Compare agent energy levels before and after ticks, cross-referenced with `config.json` (`physics_constants.energy_cost_per_distance`).
-- **Analysis:** Verify that the engine is correctly applying physics rules. If agents travel without energy drain or drain energy while idle contrary to config, flag this as a critical Engine Anomaly.
+### IV. Anomalies & Bugs
+- Distinction between **Agent Errors** (miscalculation) and **System Bugs** (API crashes, physics leaks).
 
-### 4. Survival & Attrition Rate
-- **Query:** `SELECT status, count(*) FROM agents GROUP BY status`
-- **Analysis:** Calculate the death/survival rate. If agents are dying too quickly (e.g., from starvation), recommend adjustments to `idle_drain` or resource spawn rates.
+### V. Recommended Interventions
+- "No Action needed" vs. "VoG suggested" vs. "Engine Patch required".
 
-## Root Cause Analysis: Agent Error vs. System Bug
-
-When an agent fails or a simulation state becomes unstable, distinguish between:
-
-### A. Agent Logic Error (The "Evolutionary" Fail)
-- **Indicators:** Agent ignores energy warnings, travels long distances with low reserves, forgets to mine, or ignores available solar energy.
-- **Verdict:** This is desired "industrial evolution" (learning through selection). No system fix needed, perhaps prompt adjustment.
-
-### B. System Integrity Bug (The "Simulation" Fail)
-- **Indicators:** 
-    - `[DB FEHLER]` or `[FILE NOT FOUND]` in logs.
-    - Tools output JSON that isn't valid, or scripts crash during execution.
-    - Physics rules are inconsistent (e.g., energy drain higher than `idle_drain` without action).
-    - Database state shows an action was successful, but the agent's inventory wasn't updated.
-- **Verdict:** This is a bug in the Engine (`core` or `sim_engine`). Immediate fix required to prevent data corruption.
-
-## Reporting Format (The "Analyst Report")
-When asked to report on an experiment, structure your response directly as follows (German or English, depending on user prompt), without unnecessary preamble:
-
-1. **Executive Summary:** 1-2 sentences on the current state (Running, Failed, Completed).
-2. **Configuration Highlights:** What makes this experiment unique?
-3. **State & Metrics:** Key figures from the database (Active agents, Total credits, Resource distribution).
-4. **Anomalies / Findings:** Discrepancies between expected behavior and actual data, including results from the Analytical Methods.
-5. **Recommendations:** Next steps for tweaking the simulation engine or parameters.
+---
+*Note: This skill prioritizes the Single Source of Truth (DB) over agent claims in logs.*

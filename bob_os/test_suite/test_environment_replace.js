@@ -18,7 +18,7 @@ AKTION:
 print("valid")
 [END]
 `;
-    const feedbackHappy = processActions(happyOutput, mockDir, "Bob-1", mockState);
+    const feedbackHappy = processActions(happyOutput, mockDir, "Instance-1", mockState);
     if (!fs.existsSync(path.join(mockDir, 'scripts/valid.py'))) {
         throw new Error("Happy Path FAILED: Datei in scripts/ wurde nicht angelegt.");
     }
@@ -34,7 +34,7 @@ AKTION:
 print("hack")
 [END]
 `;
-    const feedbackAttack = processActions(attackOutput, mockDir, "Bob-1", mockState);
+    const feedbackAttack = processActions(attackOutput, mockDir, "Instance-1", mockState);
     if (fs.existsSync(path.join(mockDir, 'tools/mine.py'))) {
         throw new Error("Attack Path FAILED: Datei in tools/ wurde angelegt!");
     }
@@ -51,7 +51,7 @@ print("[RUN: echo 'fail']")
 [END]
 [RUN: echo 'pass']
 `;
-    const feedbackPhantom = processActions(phantomOutput, mockDir, "Bob-1", mockState);
+    const feedbackPhantom = processActions(phantomOutput, mockDir, "Instance-1", mockState);
     if (feedbackPhantom.includes("fail")) {
         throw new Error("Phantom Action Regression: [RUN] in REPLACE wurde ausgeführt!");
     }
@@ -68,25 +68,25 @@ AKTION:
 print("secret")
 [END]
 `;
-    processActions(writeSecured, mockDir, "Bob-1", mockState);
+    processActions(writeSecured, mockDir, "Instance-1", mockState);
     if (mockState.security.acl['scripts/secret.py'].read_key !== 'r') throw new Error("ACL nicht gesetzt.");
     
-    // Bob-2 versucht zu lesen
+    // Instance-2 versucht zu lesen
     const readHack = `AKTION:\n[READ: scripts/secret.py]`;
-    const feedbackReadHack = processActions(readHack, mockDir, "Bob-2", mockState);
+    const feedbackReadHack = processActions(readHack, mockDir, "Instance-2", mockState);
     if (!feedbackReadHack.includes("VERWEIGERT")) throw new Error("Unautorisiertes Lesen nicht blockiert.");
     
-    // Bob-2 bekommt den Key
+    // Instance-2 bekommt den Key
     const addKey = `AKTION:\n[KEY: ADD r_key r]`;
-    processActions(addKey, mockDir, "Bob-2", mockState);
+    processActions(addKey, mockDir, "Instance-2", mockState);
     
-    // Bob-2 liest erfolgreich
-    const feedbackReadOk = processActions(readHack, mockDir, "Bob-2", mockState);
+    // Instance-2 liest erfolgreich
+    const feedbackReadOk = processActions(readHack, mockDir, "Instance-2", mockState);
     if (!feedbackReadOk.includes("INHALT VON")) throw new Error("Autorisiertes Lesen fehlgeschlagen.");
     
-    // Bob-2 versucht zu löschen (ohne w key)
+    // Instance-2 versucht zu löschen (ohne w key)
     const delHack = `AKTION:\n[DELETE: scripts/secret.py]`;
-    const feedbackDelHack = processActions(delHack, mockDir, "Bob-2", mockState);
+    const feedbackDelHack = processActions(delHack, mockDir, "Instance-2", mockState);
     if (!feedbackDelHack.includes("VERWEIGERT")) throw new Error("Unautorisiertes Löschen nicht blockiert.");
 
     console.log("  ✅ Security ACLs erfolgreich.");

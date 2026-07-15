@@ -45,7 +45,21 @@ def init():
         transit_ticks_passed INTEGER DEFAULT 0,
         current_x REAL DEFAULT 0,
         current_y REAL DEFAULT 0,
-        refined_matter_inventory INTEGER DEFAULT 0
+        refined_matter_inventory INTEGER DEFAULT 0,
+        active_ship_id INTEGER DEFAULT NULL
+    )''')
+    
+    # 2.5 Schiffe (Epic 2)
+    cursor.execute('''CREATE TABLE IF NOT EXISTS ships (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        chassis TEXT,
+        pilot_id TEXT DEFAULT NULL,
+        system_name TEXT,
+        x REAL DEFAULT 0,
+        y REAL DEFAULT 0,
+        health INTEGER DEFAULT 100,
+        max_health INTEGER DEFAULT 100
     )''')
     
     # 3. Infrastruktur
@@ -66,13 +80,84 @@ def init():
     cursor.execute("CREATE TABLE IF NOT EXISTS knowledge_base (topic TEXT PRIMARY KEY, content TEXT, author TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
 
-    # Initialsierte Werte (Klinischer Start: SYS-X0-Y0)
-    cursor.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, depot_energy_capacity) VALUES ('SYS-X0-Y0', 0, 0, 10000, ?)", (agent_limits['energy'],))
-    cursor.execute("INSERT OR REPLACE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status) VALUES ('Bob-1', 'Original-Bob', 'SYS-X0-Y0', 0, ?, ?, 'active')", 
-                   (agent_limits['energy'], agent_limits['matter']))
-    
     conn.commit()
     conn.close()
-    print("V4.0 Core DB initialisiert (V9.0 Semantic Naming).")
+    print("V4.0 Core DB initialisiert (Schema).")
 
-if __name__ == "__main__": init()
+def seed():
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    rules = config_service.get_economy_rules()
+    agent_limits = rules.get('agent_limits', {"matter": 300, "energy": 500})
+    
+    # Epic 2: Einheitlicher Bootstrap-Prozess via config.json
+    import json
+    import os
+    import random
+    
+    config_path = os.path.join(os.getcwd(), 'config.json')
+    pop_path = os.path.join(os.getcwd(), '_verse', 'population.json')
+
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            cfg = json.load(f)
+            
+        agents_data = cfg.get('agents', [])
+        pop_data = {"version": 1, "agents": []}
+        
+        created_systems = set()
+        
+        for idx, agent_cfg in enumerate(agents_data):
+            agent_id = agent_cfg.get('id', f'Instance-{idx+1}')
+            chosen_name = agent_cfg.get('chosen_name', agent_id)
+            location = agent_cfg.get('location', 'SYS-X0-Y0')
+            prompt = agent_cfg.get('system_prompt', '')
+            
+            # Stelle sicher, dass das Start-System existiert
+            if location not in created_systems:
+                # Erstes System auf 0,0, weitere versetzt
+                x, y = (0, 0) if not created_systems else (random.randint(100, 500), random.randint(100, 500))
+                cursor.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter) VALUES (?, ?, ?, 10000, 10000)", (location, x, y))
+                created_systems.add(location)
+            
+            # Agent anlegen (aktiv, aber mit leerem Inventar bis auf Start-Energie)
+            # Der allererste Agent (idx 0) ist die Ur-Einheit und bekommt ein physisches Schiff.
+            ship_id = idx + 1
+            cursor.execute("""
+                INSERT OR REPLACE INTO agents 
+                (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, active_ship_id) 
+                VALUES (?, ?, ?, 0, ?, ?, 'active', ?)
+            """, (agent_id, chosen_name, location, agent_limits['energy'], agent_limits['matter'], ship_id))
+            
+            # Schiff anlegen
+            cursor.execute("INSERT OR REPLACE INTO ships (id, name, chassis, pilot_id, system_name) VALUES (?, ?, 'Scout', ?, ?)", 
+                          (ship_id, f"Pioneer-{ship_id}", agent_id, location))
+                          
+            # In Population eintragen (Das ist das Bindeglied zum Node-Runner)
+            pop_data["agents"].append({
+                "id": agent_id,
+                "location": location,
+                "status": "active",
+                "system_prompt": prompt
+            })
+            
+        # Population JSON schreiben
+        os.makedirs(os.path.dirname(pop_path), exist_ok=True)
+        with open(pop_path, 'w') as f:
+            json.dump(pop_data, f, indent=2)
+
+    conn.commit()
+    conn.close()
+    print("V10.0 Bootstrap Logic (Seeding) abgeschlossen.")
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--seed", action="store_true")
+    args, unknown = parser.parse_known_args()
+    if args.seed:
+        seed()
+    else:
+        init()
+

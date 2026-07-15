@@ -61,12 +61,16 @@ Aktuell basiert die Simulation auf einer fehleranfälligen und unsicheren Archit
 ---
 
 ## Phase 4: Physische Roamer (Die autonomen Maschinen)
-*Fokus: Einführung der Roamer als echte, mobile Objekte.*
+*Fokus: Einführung der Roamer als echte, mobile Hardware-Objekte auf Basis des Blueprint-Systems.*
 
-### 4.1 Roamer als Datenbank-Entität
-*   **Physischer Körper:** Roamer erhalten DB-Einträge mit eigener `location`, `energy` und einem **eigenen Inventar (Storage)**.
-*   **Logistik-Fähigkeit:** Roamer können eigenständig `move` Befehle ausführen, um Ressourcen zwischen Systemen zu transportieren.
-*   **Programming (Flashen):** Ein Bob "flasht" ein SDK-basiertes Skript auf den Roamer. Die Engine verifiziert über die ACL, ob der Bob dazu berechtigt ist.
+### 4.1 Roamer als Vessel (Hardware-Abhängigkeit)
+Ein Roamer ist nicht länger nur ein Code-Schnipsel in der Wolke. Er ist ein physikalisches Schiff (Vessel), das in einer Werft nach einem Blueprint gebaut werden muss (siehe `docs/concepts/SHIP_AND_ENGINEERING_V10.md`).
+*   **Hardware-Limitierung:** Der Wrapper führt Befehle nur aus, wenn die Hardware existiert. Ein `hardware.mine()` Aufruf in einem Roamer-Skript schlägt fehl, wenn das geflashte Chassis keinen `drill` besitzt.
+*   **Energie-Isolation:** Der Roamer zieht Energie ausschließlich aus seiner eigenen Chassis-Batterie, die anhand der Blueprint-Architektur und den Zero-Sum Physics (Masse, Speed, Idle Drain) berechnet wird.
+
+### 4.2 Programming (Flashen & Logic Core)
+Damit ein Schiff autonom fliegen kann, muss es einen `logic_core` in seinem Blueprint verbaut haben.
+Ein Bob "flasht" ein SDK-basiertes Skript auf das Schiff. Die Engine verifiziert über die ACL, ob der Bob dazu berechtigt ist, und entkoppelt das Skript dann von den persönlichen Ressourcen des Bobs.
 
 ---
 
@@ -80,16 +84,18 @@ Die `bob_sdk` liefert die Architektur-Klassen, die den Scope und die Ressourcen-
 *   **Scope:** Hat Zugriff auf die Sensoren des Bobs.
 
 ### 2. Roamer Wrapper (Phase 4)
-*   **Logik:** Läuft 1x pro System-Runde.
-*   **Energie:** Zieht aus der Batterie des Roamer-Objekts.
-*   **Inventar:** Nutzt `self_entity.storage` (den physischen Tank der Drohne).
+*   **Logik:** Läuft 1x pro System-Runde, solange der `logic_core` intakt und Energie vorhanden ist.
+*   **Energie:** Zieht aus der Batterie des Schiffs/Roamers.
+*   **Inventar:** Nutzt `self_entity.storage` (den Cargo-Hold des Chassis).
 *   **Beispiel:**
     ```python
     from bob_sdk import Roamer, hardware
     
     class AutomatedTransporter(Roamer):
-        def on_tick(self, drone):
-            if drone.storage.matter >= 50:
-                hardware.move("Alpha_Centauri")
-                hardware.deposit("silo", "matter", 50)
+        def on_tick(self, vessel):
+            # vessel ist das physische Blueprint-Objekt
+            if vessel.storage.matter >= 50:
+                if hardware.has_module('engine'):
+                    hardware.move("Alpha_Centauri")
+                    hardware.deposit("silo", "matter", 50)
     ```

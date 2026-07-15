@@ -17,7 +17,7 @@
   },
   "agents": [
     {
-      "id": "Bob-1",
+      "id": "Instance-1",
       "location": "SYS-X0-Y0",
       "initial_trigger": "System online. Mission gestartet.",
       "system_prompt": ""

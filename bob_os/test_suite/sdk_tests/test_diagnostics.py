@@ -14,7 +14,7 @@ class TestDiagnostics(unittest.TestCase):
         self.test_db = os.path.join(self.verse_dir, 'universe.db')
         os.environ['VERSE_DIR'] = self.verse_dir
         os.environ['TEST_DB_PATH'] = self.test_db
-        os.environ['BOB_ID'] = 'Test-Bob-1'
+        os.environ['BOB_ID'] = 'Test-Instance-1'
         
         if os.path.exists(self.verse_dir): shutil.rmtree(self.verse_dir)
         self.script_dir = os.path.join(self.verse_dir, 'scripts', 'active')
@@ -40,8 +40,8 @@ class TestDiagnostics(unittest.TestCase):
 
         conn = sqlite3.connect(self.test_db)
         c = conn.cursor()
-        c.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter INTEGER DEFAULT 0, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL)")
-        c.execute("INSERT INTO agents VALUES ('Test-Bob-1', 'DiagnosticBob', 'SYS-A', 100, 0, 0, 100, 'active', 0, 0)")
+        c.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL, active_ship_id INTEGER DEFAULT 1)")
+        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Test-Instance-1', 'DiagnosticBob', 'SYS-A', 100, 0, 0, 100, 'active', 0, 0)")
         conn.commit()
         conn.close()
 

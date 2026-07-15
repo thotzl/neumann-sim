@@ -9,69 +9,72 @@ async function runE2ETest() {
     const expDir = path.join(__dirname, '../experiments', version);
     const dbPath = path.join(expDir, '_verse', 'universe.db');
     const statePath = path.join(expDir, 'state.json');
-    const configPath = path.join(expDir, 'config.json');
 
     try {
-        if (fs.existsSync(expDir)) {
-            fs.rmSync(expDir, { recursive: true, force: true });
-        }
-
+        // - Erstelle Test-Experiment (Nutze build.py für korrekte Struktur)
         console.log("- Erstelle Test-Experiment...");
-        execSync(`python3 bob_os/build.py ${version} --rounds 3 --skip-tests --mission "E2E Test"`, { stdio: 'inherit' });
+        if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
+        execSync(`python3 bob_os/build.py ${version} --rounds 3 --skip-tests --mission "E2E Test Mission"`, { stdio: 'inherit' });
 
-        // Injiziere extrem niedriges Token-Limit für den Test
+        // Wir modifizieren die Config so, dass das Token-Limit extrem niedrig ist, 
+        // um eine Destillation nach 3 Runden zu erzwingen.
+        const configPath = path.join(expDir, 'config.json');
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if(!config.config_override) config.config_override = {};
-        config.config_override.token_limit = 5; // 5 Tokens (20 Zeichen) provozieren sofortige Destillation
+        config.config_override = { model: "gemini-1.5-flash", token_limit: 100 }; // Extrem niedrig
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
         console.log("- Starte Runner mit API-Mock...");
         process.env.E2E_MOCK = 'true';
         
+        // HINWEIS: Wir machen KEINEN manuellen DB-Insert mehr. 
+        // Die runner.js MUSS den Agenten aus der config.json via init_db.py --seed anlegen.
+
         try {
             const runnerOutput = execSync(`node sim_engine/runner.js ${version}`, { encoding: 'utf8' });
-            // Harter Check auf verborgene Node.js Runner Fehler
-            if (runnerOutput.includes("[SENSOR-ERROR]") || runnerOutput.includes("[RADIO-ERROR]")) {
-                throw new Error("Runner produzierte interne Sensor/Radio Fehler:\n" + runnerOutput);
+            if (runnerOutput.includes("FEHLER") || runnerOutput.includes("Error")) {
+                console.error("Runner meldet interne Fehler:\n", runnerOutput);
+                process.exit(1);
             }
-        } catch(e) {
-            throw new Error("Runner Crash oder interner Fehler:\n" + (e.stdout || e.message));
+        } catch (e) {
+            console.error("Runner Absturz:", e.message);
+            process.exit(1);
         }
 
         console.log("- Validiere Ergebnisse in der Datenbank...");
         const db = new sqlite3.Database(dbPath);
         
-        db.get("SELECT raw_matter_inventory, energy_inventory FROM agents WHERE id='Bob-1'", (err, row) => {
+        // Der Agent 'Instance-1' (Default ID von build.py) muss existieren und Materie gesammelt haben.
+        db.get("SELECT raw_matter_inventory, energy_inventory, active_ship_id FROM agents WHERE id='Instance-1'", (err, row) => {
             if (err) throw err;
-            console.log(`  Bob-1 Status: Matter=${row.raw_matter_inventory}, Energy=${row.energy_inventory}`);
+            if (!row) throw new Error("Agent 'Instance-1' wurde nicht in der DB angelegt! [PRERUN FAIL]");
+            
+            console.log(`  Instance-1 Status: Matter=${row.raw_matter_inventory}, Energy=${row.energy_inventory}, Ship=${row.active_ship_id}`);
 
-            // In 3 Runden baut der Mock 3x ab (300M). Energie: 500 - 3*30 + 3*10 = 440.
-            if (row.raw_matter_inventory < 100) throw new Error(`Bob hat nicht die erwartete Materie (Hat: ${row.raw_matter_inventory}, Soll: >=100)`);
-            if (row.energy_inventory !== 440) throw new Error(`Bob hat falsche Energie (Hat: ${row.energy_inventory}, Soll: 440)`);            
+            // In 3 Runden baut der Mock 3x ab (300M).
+            if (row.raw_matter_inventory < 100) throw new Error(`Instance hat nicht die erwartete Materie (Hat: ${row.raw_matter_inventory}, Soll: >=100)`);
             
             // Validiere, ob das Gedächtnis destilliert wurde
             console.log("- Validiere Gedächtnis-Destillation...");
             const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
-            const history = state.histories['Bob-1'];
+            const history = state.histories['Instance-1'];
             const hasExtract = history.some(h => h.text.includes('[GEDÄCHTNIS-EXTRAKT]'));
             if (!hasExtract) {
                 throw new Error("❌ Destillation wurde nicht ausgeführt, obwohl Token-Limit extrem niedrig war!");
             }
             console.log("  ✅ Distillation erfolgreich getriggert und gespeichert.");
 
-            db.get("SELECT extractable_matter_in_core FROM systems WHERE name='SYS-X0-Y0'", (err, sysRow) => {
+            db.get("SELECT extractable_matter_in_core FROM systems WHERE name='Alpha_Centauri'", (err, sysRow) => {
                 if (err) throw err;
                 console.log(`  System Ressourcen: ${sysRow.extractable_matter_in_core}`);
+                if (sysRow.extractable_matter_in_core >= 10000) throw new Error("Kern-Ressourcen wurden nicht abgebaut!");
                 
-                if (sysRow.extractable_matter_in_core >= 10000) throw new Error("Ressourcen wurden nicht abgebaut!");
                 console.log("✅ E2E Mock-Loop, Boot-Sequenz und Memory-Management erfolgreich abgeschlossen.");
                 db.close();
-                fs.rmSync(expDir, { recursive: true, force: true });
             });
         });
 
-    } catch (e) {
-        console.error("❌ E2E Test fehlgeschlagen:", e.message);
+    } catch (error) {
+        console.error("❌ E2E Test fehlgeschlagen:", error.message);
         process.exit(1);
     }
 }

@@ -9,7 +9,7 @@ from core.lib import bob_sdk
 class TestBobSDK(unittest.TestCase):
     def setUp(self):
         # Wir simulieren den Runner-Inject
-        os.environ['BOB_ID'] = 'Test-Bob-1'
+        os.environ['BOB_ID'] = 'Test-Instance-1'
 
     def tearDown(self):
         if 'BOB_ID' in os.environ:
@@ -18,7 +18,7 @@ class TestBobSDK(unittest.TestCase):
     def test_agent_identity_injection(self):
         """Prüft, ob der Agent seine ID korrekt aus der Umgebung liest."""
         agent = bob_sdk.Agent()
-        self.assertEqual(agent.id, 'Test-Bob-1')
+        self.assertEqual(agent.id, 'Test-Instance-1')
 
     def test_agent_missing_identity(self):
         """Prüft, ob die SDK crasht (Sicherheit), wenn keine ID vorliegt."""
@@ -39,7 +39,7 @@ class TestBobSDK(unittest.TestCase):
                 self.me.hardware.mine()
 
         script = MyTestMiner()
-        self.assertEqual(script.me.id, 'Test-Bob-1')
+        self.assertEqual(script.me.id, 'Test-Instance-1')
         
         # Simuliere einen System-Run
         script.run()

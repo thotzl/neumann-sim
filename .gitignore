@@ -2,3 +2,20 @@
 .agents/skills/sim-agent-loop/scripts/states/
 __pycache__/
 .venv/
+
+# Dynamische Simulationsdaten
+experiments/
+monitor/public/live_verse/
+
+# Agenten Artefakte & Temporäre Logs
+.agents/artifacts/
+.agents/state/
+
+# Patch- & Repro-Müll dieser Session
+sim_engine/patch*.js
+sim_engine/patch*.py
+sim_engine/fix*.js
+sim_engine/reproduce_*.py
+repro_*.js
+repro_*.py
+*.db

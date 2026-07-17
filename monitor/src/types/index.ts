@@ -13,6 +13,7 @@ export type Agent = {
   target_x: number; 
   target_y: number; 
   target_system: string | null;
+  active_ship_id: number | null;
   sensors?: {
     inventory?: {
       raw_matter_inventory: number;
@@ -51,6 +52,14 @@ export type System = {
   }>;
 };
 
+export type Ship = {
+  id: number;
+  name: string;
+  chassis: string;
+  pilot_id: string | null;
+  system_name: string | null;
+};
+
 export type WorldState = {
   tick: number; 
   total_turns: number; 
@@ -58,6 +67,7 @@ export type WorldState = {
   timestamp: number;
   systems: System[]; 
   agents: Agent[]; 
+  ships: Ship[];
   events: string[];
 };
 

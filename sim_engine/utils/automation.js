@@ -15,20 +15,58 @@ function runSystemAutomations(vDir, universeDir, state) {
         const acl = state.security?.acl?.[scriptRelPath];
         const ownerId = acl ? acl.owner : "Unknown";
 
+        // Ermittle Standort für die lokale Zustellung
+        const ownerAgent = state.agents.find(a => a.id === ownerId) || state.agents[0];
+        const targetLocation = ownerAgent ? ownerAgent.location : "Deep Space";
+
         try {
             // Führe Skript im Namen des Besitzers aus
             const out = runPython(vDir, `_verse/${scriptRelPath}`, [], { bobId: ownerId, aclState: state.security?.acl || {} });
+            
+            let feedback = "";
+            let reportOut = "Keine Ausgaben.";
+            
             if (out) {
-                // Die Aktionen werden weiterhin im Kontext des Besitzers verarbeitet
-                const feedback = envManager.processActions(out, universeDir, ownerId, state);
-                autoOutput += `\n[Skript: ${script} (Besitzer: ${ownerId})]:\n${out}\n[Ergebnis]:\n${feedback}`;
+                feedback = envManager.processActions(out, universeDir, ownerId, state);
+                reportOut = out.trim();
             }
+            
+            const report = `
+[AUTOMATION-REPORT]
+- System: ${targetLocation}
+- Skript: ${script}
+- Besitzer: ${ownerId}
+- Status: OK
+- Output: ${reportOut}
+- Ergebnis: ${feedback.trim() || 'Keine Engine-Aktionen'}`.trim();
+
+            autoOutput += `\n${report}`;
+            
+            // Zustellung an alle im System
+            state.agents.filter(a => a.alive && a.location === targetLocation).forEach(a => {
+                if (!state.global_inbox[a.id]) state.global_inbox[a.id] = [];
+                state.global_inbox[a.id].push({ type: 'automation', text: report });
+            });
         } catch (e) {
             let err = e.stderr ? e.stderr.toString() : e.message;
-            // Immersion Guard
             const expRoot = path.resolve(vDir);
             err = err.split(expRoot).join('');
-            autoOutput += `\n[Skript: ${script} FEHLGESCHLAGEN]:\n${err.trim()}`;
+            
+            const errorMsg = `
+[AUTOMATION-REPORT]
+- System: ${targetLocation}
+- Skript: ${script}
+- Besitzer: ${ownerId}
+- Status: FEHLGESCHLAGEN
+- Fehler: ${err.trim()}`.trim();
+
+            autoOutput += `\n${errorMsg}`;
+            
+            // Fehler-Zustellung an alle im System
+            state.agents.filter(a => a.alive && a.location === targetLocation).forEach(a => {
+                if (!state.global_inbox[a.id]) state.global_inbox[a.id] = [];
+                state.global_inbox[a.id].push({ type: 'automation', text: errorMsg });
+            });
         }
     }
     return autoOutput ? `[SYSTEM-AUTOMATION]:${autoOutput}` : "";

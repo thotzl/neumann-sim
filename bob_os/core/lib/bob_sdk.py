@@ -106,12 +106,15 @@ class Actuators:
 
     @agent_service.with_agent_context(require_active=True, action_name='Refining')
     def refine(self, cursor, agent, raw_matter_to_refine=100):
-        # Check if refinery exists in system
-        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'matter_refinery' AND status = 'active'", (agent['location'],))
+        sys_name = agent['location']
+        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'matter_refinery' AND status = 'active'", (sys_name,))
         if not cursor.fetchone():
-            print(f"[DENIED] No active 'matter_refinery' in {agent['location']} found.")
+            print(f"[DENIED] No active 'matter_refinery' in {sys_name} found.")
             return False
             
+        system = system_service.get_system_or_fail(cursor, sys_name)
+        if not system: return False
+
         rule = self.rules.get('tool_costs', {}).get('refine', {})
         energy_cost = rule.get('energy_cost', 50)
         raw_cost = rule.get('raw_matter_cost', 100)
@@ -122,17 +125,43 @@ class Actuators:
         total_raw = int(raw_cost * multiplier)
         total_yield = int(yield_refined * multiplier)
 
-        if agent['energy_inventory'] < total_energy:
-            print(f"[ERROR] Not enough energy. Need {total_energy}, but only have {agent['energy_inventory']}.")
+        # 1. Pipeline: Energy
+        avail_energy_inv = agent['energy_inventory']
+        avail_energy_depot = system['energy_depot']
+        if avail_energy_inv + avail_energy_depot < total_energy:
+            print(f"[ERROR] Not enough energy. Need {total_energy}, but only have {avail_energy_inv} Inv and {avail_energy_depot} Depot.")
             return False
-            
-        if agent['raw_matter_inventory'] < total_raw:
-            print(f"[ERROR] Not enough raw matter (have {agent['raw_matter_inventory']}, need {total_raw}).")
+
+        # 2. Pipeline: Raw Matter
+        avail_raw_inv = agent['raw_matter_inventory']
+        avail_raw_depot = system['raw_matter_depot']
+        if avail_raw_inv + avail_raw_depot < total_raw:
+            print(f"[ERROR] Not enough raw matter. Need {total_raw}, but only have {avail_raw_inv} Inv and {avail_raw_depot} Depot.")
             return False
+
+        # Abzug berechnen (Zuerst Depot, dann Inventar)
+        e_from_depot = min(total_energy, avail_energy_depot)
+        e_from_inv = total_energy - e_from_depot
         
+        m_from_depot = min(total_raw, avail_raw_depot)
+        m_from_inv = total_raw - m_from_depot
+
+        # 3. Pipeline: Output (Refined Matter)
+        cap = agent['matter_storage_capacity']
+        current_inv = agent['raw_matter_inventory'] - m_from_inv + agent['refined_matter_inventory']
+        space_in_inv = max(0, cap - current_inv)
+        
+        yield_to_inv = min(total_yield, space_in_inv)
+        yield_to_depot = total_yield - yield_to_inv
+
+        # Updates ausführen
         cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ?, raw_matter_inventory = raw_matter_inventory - ?, refined_matter_inventory = refined_matter_inventory + ? WHERE id = ?", 
-                       (total_energy, total_raw, total_yield, self.agent.id))
-        print(f"[SUCCESS] Refined {total_raw} matter into {total_yield} refined units.")
+                       (e_from_inv, m_from_inv, yield_to_inv, self.agent.id))
+        
+        cursor.execute("UPDATE systems SET energy_depot = energy_depot - ?, raw_matter_depot = raw_matter_depot - ?, refined_matter_depot = refined_matter_depot + ? WHERE name = ?", 
+                       (e_from_depot, m_from_depot, yield_to_depot, sys_name))
+
+        print(f"[SUCCESS] Refined {total_raw} matter. Used {m_from_inv} Inv / {m_from_depot} Depot. Output: {yield_to_inv} into Inv / {yield_to_depot} into System Depot.")
         return True
 
     @agent_service.with_agent_context(require_active=False)
@@ -350,13 +379,18 @@ class Actuators:
         phys = self.rules.get('tool_costs', {}).get('move', {})
         dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], target['x'], target['y'])
         cost = dist * phys.get('cost_per_distance', 0.1)
-        if agent['energy_inventory'] < cost: return False
+        if agent['energy_inventory'] < cost:
+            print(f"[WARNUNG] Energiemangel! Reise initiiert, aber Energie (Vorhanden: {agent['energy_inventory']}, Benötigt: {cost}) reicht nicht für die gesamte Strecke. Ankunft mit 0 Energie wahrscheinlich.")
         
         speed = self.rules.get('global_settings', {}).get('travel_speed_per_tick', 300)
         ticks = max(1, int(dist / speed))
         
-        cursor.execute("UPDATE agents SET status='traveling', target_system=?, origin_x=current_x, origin_y=current_y, target_x=?, target_y=?, transit_ticks_total=?, transit_ticks_passed=0, energy_inventory = energy_inventory - ? WHERE id=?", 
-                       (target_system, target['x'], target['y'], ticks, cost, self.agent.id))
+        cursor.execute("UPDATE agents SET status='traveling', location='Interstellar', target_system=?, origin_x=current_x, origin_y=current_y, target_x=?, target_y=?, transit_ticks_total=?, transit_ticks_passed=0, energy_inventory = energy_inventory WHERE id=?", 
+                       (target_system, target['x'], target['y'], ticks, self.agent.id))
+                       
+        if agent['active_ship_id']:
+            cursor.execute("UPDATE ships SET system_name = 'Interstellar' WHERE id = ?", (agent['active_ship_id'],))
+            
         print(f"[SUCCESS] Journey initiated to {target_system}. ETA: {ticks} Ticks.")
         return True
 
@@ -486,7 +520,9 @@ class Sensors:
         has_sat = cursor.fetchone()
         cost = base_cost * 0.5 if has_sat else base_cost
         
-        if agent['energy_inventory'] < cost: return False
+        if agent['energy_inventory'] < cost:
+            print(f"[ERROR] Nicht genug Energie für diesen Scan. Benötigt: {cost}, Vorhanden: {agent['energy_inventory']}")
+            return False
 
         global_settings = rules.get('global_settings', {})
         scan_min = global_settings.get('scan_range_min', 500)
@@ -516,21 +552,54 @@ class Sensors:
         
     @agent_service.with_agent_context(allow_disembodied=True)
     def local_system(self, cursor, agent):
+        if agent['status'] == 'traveling' or agent['location'] == 'Interstellar':
+            return {
+                "system": {
+                    "name": "Interstellar Space",
+                    "status": "In Transit",
+                    "target_system": agent.get('target_system', 'Unknown'),
+                    "transit_ticks_passed": agent.get('transit_ticks_passed', 0),
+                    "transit_ticks_total": agent.get('transit_ticks_total', 0)
+                }
+            }
+            
         system = system_service.get_system_or_fail(cursor, agent['location'])
+        if not system:
+            return {"error": "System data not found."}
+            
         infra_list = [dict(r) for r in system_service.get_infrastructure_at_location(cursor, agent['location'])]
         
         rules = config_service.get_economy_rules()
         infra_rules = rules.get('infrastructure', {})
+        
+        theoretical_max = 0
+        total_maint = 0
+
         for infra in infra_list:
             i_type = infra['type']
-            infra['maintenance_energy_cost'] = infra_rules.get(i_type, {}).get('maintenance_energy_cost', 1)
+            stats = infra_rules.get(i_type, {})
+            infra['maintenance_energy_cost'] = stats.get('maintenance_energy_cost', 1)
+            
+            if infra['status'] == 'active' and infra['health'] > 0:
+                lvl = infra['level']
+                theoretical_max += stats.get('energy_regen_bonus', 0) * lvl
+                total_maint += stats.get('maintenance_energy_cost', 1)
 
         cursor.execute("SELECT id, chosen_name, status FROM agents WHERE location = ? AND id != ?", (agent['location'], self.agent.id))
         entities = [dict(r) for r in cursor.fetchall()]
         cursor.execute("SELECT actor_id, event_type, description FROM visual_events WHERE location = ? ORDER BY rowid DESC LIMIT 10", (agent['location'],))
         events = [dict(r) for r in cursor.fetchall()]
         
-        s_dict = dict(system); s_dict['infra'] = infra_list
+        s_dict = dict(system)
+        
+        # Umbenennung des Keys
+        if 'energy_generation_per_cycle' in s_dict:
+            s_dict['current_energy_generation_per_cycle'] = s_dict.pop('energy_generation_per_cycle')
+            
+        s_dict['theoretical_max_energy_generation'] = theoretical_max
+        s_dict['total_maintenance_energy_cost'] = total_maint
+        
+        s_dict['infra'] = infra_list
         return {
             "you": {
                 "id": agent['id'], "name": agent['chosen_name'], 

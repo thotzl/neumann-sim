@@ -47,30 +47,55 @@ class TestV8_8Industrial(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(self.test_db): os.remove(self.test_db)
 
-    def test_refine_matter(self):
+    def test_refine_matter_pipeline(self):
         # 1. Ohne Raffinerie sollte es fehlschlagen
         success = self.agent.refine(raw_matter_to_refine=100)
         self.assertFalse(success)
         
-        # 2. Raffinerie hinzufügen
+        # 2. Raffinerie und Ressourcen im Depot hinzufügen, Agent auf 0 setzen
         conn = sqlite3.connect(self.test_db)
         conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS-A', 'matter_refinery', 'active', 1, 100)")
+        conn.execute("UPDATE systems SET raw_matter_depot = 500, energy_depot = 250 WHERE name='SYS-A'")
+        conn.execute("UPDATE agents SET raw_matter_inventory = 0, energy_inventory = 0 WHERE id='Instance-1'")
         conn.commit()
         conn.close()
         
-        # 3. Veredeln
-        rule = self.rules.get('tool_costs', {}).get('refine', {})
-        energy_cost = rule.get('energy_cost', 50)
-        raw_cost = rule.get('raw_matter_cost', 100)
-        yield_refined = rule.get('refined_yield', 100)
-        
-        success = self.agent.refine(raw_matter_to_refine=100)
+        # 3. Veredeln aus Depot
+        success = self.agent.refine(raw_matter_to_refine=500)
         self.assertTrue(success)
         
-        status = self.agent.storage()
-        self.assertEqual(status['refined_matter_inventory'], yield_refined)
-        self.assertEqual(status['raw_matter_inventory'], self.start_matter - raw_cost)
-        self.assertEqual(status['energy_inventory'], self.start_energy - energy_cost)
+        # 4. Überprüfung
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        agent_data = conn.execute("SELECT * FROM agents WHERE id='Instance-1'").fetchone()
+        sys_data = conn.execute("SELECT * FROM systems WHERE name='SYS-A'").fetchone()
+        conn.close()
+        
+        # System Depot sollte leer sein, Output in Inv (da Kapazität 2000 ist, passt alles rein)
+        self.assertEqual(sys_data['raw_matter_depot'], 0)
+        self.assertEqual(sys_data['energy_depot'], 0)
+        self.assertEqual(sys_data['refined_matter_depot'], 0)
+        self.assertEqual(agent_data['refined_matter_inventory'], 500)
+        
+        # 5. Überlauf-Test: Kapazität vollmachen
+        conn = sqlite3.connect(self.test_db)
+        conn.execute("UPDATE systems SET raw_matter_depot = 2000, energy_depot = 1000 WHERE name='SYS-A'")
+        conn.execute("UPDATE agents SET matter_storage_capacity = 500 WHERE id='Instance-1'")
+        conn.commit()
+        conn.close()
+        
+        # Veredele weitere 2000. Agent hat schon 500 (voll), also müssen die restlichen 2000 ins Depot wandern.
+        success = self.agent.refine(raw_matter_to_refine=2000)
+        self.assertTrue(success)
+        
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        agent_data = conn.execute("SELECT * FROM agents WHERE id='Instance-1'").fetchone()
+        sys_data = conn.execute("SELECT * FROM systems WHERE name='SYS-A'").fetchone()
+        conn.close()
+        
+        self.assertEqual(agent_data['refined_matter_inventory'], 500)
+        self.assertEqual(sys_data['refined_matter_depot'], 2000)
 
     def test_repair_infrastructure(self):
         # 1. Kaputtes Gebäude einfügen

@@ -5,10 +5,7 @@ def get_system_or_fail(cursor, system_name):
     Lädt Systemdaten oder gibt None zurück.
     """
     cursor.execute("SELECT * FROM systems WHERE name = ?", (system_name,))
-    system = cursor.fetchone()
-    if not system:
-        print(f"[ERROR] System '{system_name}' nicht gefunden.")
-    return system
+    return cursor.fetchone()
 
 def get_infrastructure_at_location(cursor, system_name):
     cursor.execute("SELECT * FROM infrastructure WHERE system_name = ?", (system_name,))

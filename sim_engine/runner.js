@@ -205,6 +205,7 @@ print(json.dumps({"messages": msgs, "visual_events": vis}))`;
                 if (item.type === 'vog') inboxText += `[VOICE OF GOD]: ${item.text}\n`;
                 if (item.type === 'scut') inboxText += `[SCUT] Von ${item.sender}: ${item.content}\n`;
                 if (item.type === 'visual') inboxText += `[OBSERVER] ${item.description}\n`;
+                if (item.type === 'automation') inboxText += `[SYSTEM-AUTOMATION]: ${item.text}\n`;
             });
             state.global_inbox[agent.id] = [];
         }

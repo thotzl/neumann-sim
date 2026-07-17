@@ -15,15 +15,16 @@ function exportWorldState(universeDir, state, lastAgentId) {
         db.all("SELECT * FROM systems", (err, systems) => {
             if (err) return;
             let systemsProcessed = 0;
-            if (systems.length === 0) finish(systems, []);
+            if (systems.length === 0) finish(systems, [], []);
             systems.forEach(sys => {
                 db.all("SELECT id, type, status, health, max_health, level, progress_matter, required_matter FROM infrastructure WHERE system_name = ?", [sys.name], (err, infra) => {
                     sys.infra = infra || [];
                     systemsProcessed++;
                     if (systemsProcessed === systems.length) {
-                        // V3.1: Alle neuen Agenten-Felder exportieren
                         db.all("SELECT * FROM agents", (err, agents) => {
-                            finish(systems, agents || []);
+                            db.all("SELECT * FROM ships", (err, ships) => {
+                                finish(systems, agents || [], ships || []);
+                            });
                         });
                     }
                 });
@@ -31,7 +32,7 @@ function exportWorldState(universeDir, state, lastAgentId) {
         });
     });
 
-    function finish(systems, agents) {
+    function finish(systems, agents, ships) {
         let popData = {};
         try {
             const popJson = JSON.parse(require('fs').readFileSync(path.join(universeDir, 'population.json'), 'utf8'));
@@ -104,6 +105,7 @@ function exportWorldState(universeDir, state, lastAgentId) {
             timestamp: Date.now(),
             systems: systems,
             agents: agents,
+            ships: ships,
             events: state.events || []
         };
 

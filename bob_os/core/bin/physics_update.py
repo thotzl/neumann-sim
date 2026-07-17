@@ -46,6 +46,11 @@ def update(current_tick=1):
         if new_passed >= t['transit_ticks_total']:
             cursor.execute("UPDATE agents SET status='active', location=?, current_x=?, current_y=?, transit_ticks_passed=?, energy_inventory=? WHERE id=?",
                            (t['target_system'], t['target_x'], t['target_y'], new_passed, new_energy, t['id']))
+            # NEU: Ziehe das Schiff mit an den neuen Ort
+            cursor.execute("""
+                UPDATE ships SET system_name = ? 
+                WHERE id = (SELECT active_ship_id FROM agents WHERE id = ?)
+            """, (t['target_system'], t['id']))
         else:
             cursor.execute("UPDATE agents SET current_x=?, current_y=?, transit_ticks_passed=?, energy_inventory=? WHERE id=?",
                            (cur_x, cur_y, new_passed, new_energy, t['id']))

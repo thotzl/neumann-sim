@@ -82,15 +82,24 @@ def parse_functional_string(s):
             else:
                 val_end = len(current_str)
                 
-            val_raw = current_str[val_start:val_end]
+            val_raw = current_str[val_start:val_end].strip()
             
-            # Bereinigung: Wir entfernen führende/folgende Leerzeichen und das letzte Komma
-            val_clean = val_raw.strip().rstrip(",")
-            val_clean = val_clean.strip()
-            # Quotes entfernen
-            val_clean = val_clean.strip("\"' ")
+            if meta.get("greedy") != key:
+                # Falls der Wert in Anführungszeichen steht, exakt diesen extrahieren
+                if val_raw.startswith('"'):
+                    val_clean = val_raw[1:].split('"')[0]
+                elif val_raw.startswith("'"):
+                    val_clean = val_raw[1:].split("'")[0]
+                else:
+                    # Ansonsten nur bis zum ersten Komma lesen
+                    val_clean = val_raw.split(',')[0].strip()
+            else:
+                # Greedy-Modus: Alles nehmen, nur Rand-Bereinigung
+                val_clean = val_raw.rstrip(",")
+                if (val_clean.startswith('"') and val_clean.endswith('"')) or (val_clean.startswith("'") and val_clean.endswith("'")):
+                    val_clean = val_clean[1:-1]
             
-            params[key] = val_clean
+            params[key] = val_clean.strip()
             
     # Fallback: Positional Parsing, falls GAR KEINE Keys gefunden wurden
     elif raw_args:

@@ -1,0 +1,402 @@
+import os
+import sys
+import json
+import sqlite3
+import random
+
+try:
+    from .. import agent_service
+    from .. import system_service
+    from .. import config_service
+    from .. import physics_service
+    from ..utils.formatting import get_display_name
+except ImportError:
+    from core.lib import agent_service
+    from core.lib import system_service
+    from core.lib import config_service
+    from core.lib import physics_service
+    from core.lib.utils.formatting import get_display_name
+
+class Sensors:
+    def __init__(self, agent): self.agent = agent
+    
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def scan(self, cursor, agent):
+        system = system_service.get_system_or_fail(cursor, agent['location'])
+        rules = config_service.get_economy_rules()
+        base_cost = rules.get('tool_costs', {}).get('scan', {}).get('energy_cost', 40)
+        
+        has_sat = system_service.has_active_infrastructure(cursor, agent['location'], 'sat_link')
+        cost = base_cost * 0.5 if has_sat else base_cost
+        
+        if agent['energy_inventory'] < cost:
+            print(f"[ERROR] Nicht genug Energie für diesen Scan. Benötigt: {cost}, Vorhanden: {agent['energy_inventory']}")
+            return False
+
+        global_settings = rules.get('global_settings', {})
+        scan_min = global_settings.get('scan_range_min', 500)
+        scan_max = global_settings.get('scan_range_max', 1500)
+        grid_size = global_settings.get('grid_snap_size', 100)
+        
+        dist = random.randint(scan_min, scan_max)
+        angle = random.uniform(0, 360)
+        
+        snap_x, snap_y = physics_service.calculate_scan_coordinates(system['x'], system['y'], dist, angle, grid_size)
+        sys_id = f"SYS-X{snap_x}-Y{snap_y}"
+
+        try:
+            cursor.execute("INSERT INTO systems (name, x, y, extractable_matter_in_core) VALUES (?, ?, ?, ?)", (sys_id, snap_x, snap_y, random.randint(1000, 5000)))
+            agent_service.consume_resources(cursor, agent['id'], energy=cost)
+            print(f"[SCAN] Detected: {sys_id}. Cost: {cost}E")
+            return True
+        except sqlite3.IntegrityError:
+            print(f"[INFO] Sector {sys_id} already mapped.")
+            return False
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def storage(self, cursor, agent):
+        return {
+            "energy_inventory": agent['energy_inventory'],
+            "raw_matter_inventory": agent['raw_matter_inventory'],
+            "refined_matter_inventory": agent['refined_matter_inventory'],
+            "matter_storage_capacity": agent['matter_storage_capacity']
+        }
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def inspect(self, cursor, agent, ship_id=None, structure_id=None, system_name=None, blueprint_name=None):
+        rules = config_service.get_economy_rules()
+        
+        # 1. Target A: Ship Inspection (Gitter, Inventare, Capabilities)
+        if ship_id is not None:
+            cursor.execute("""
+                SELECT id, name, chassis, pilot_id, health, max_health,
+                       raw_matter_inventory, refined_matter_inventory, energy_inventory,
+                       matter_storage_capacity, energy_capacity, max_speed, thrust, mass,
+                       blueprint_name, has_drill, has_fabricator, has_logic_core
+                FROM ships WHERE id = CAST(? AS INTEGER)
+            """, (ship_id,))
+            row = cursor.fetchone()
+            if not row:
+                print(f"[FEHLER] Schiff #{ship_id} nicht gefunden.")
+                return False
+                
+            ship_dict = dict(row)
+            bp_name = row['blueprint_name']
+            if bp_name:
+                cursor.execute("SELECT matrix_json FROM blueprints WHERE name = ?", (bp_name,))
+                bp = cursor.fetchone()
+                if bp:
+                    ship_dict['matrix'] = json.loads(bp['matrix_json'])
+            return ship_dict
+            
+        # 2. Target B: Structure Inspection (HP, Upgrade Progress, Specs)
+        elif structure_id is not None:
+            cursor.execute("""
+                SELECT id, system_name, type, status, progress_matter, required_matter, health, max_health, level, maintenance_cooldown
+                FROM infrastructure WHERE id = CAST(? AS INTEGER)
+            """, (structure_id,))
+            row = cursor.fetchone()
+            if not row:
+                print(f"[FEHLER] Gebäude #{structure_id} nicht gefunden.")
+                return False
+                
+            infra_dict = dict(row)
+            i_type = row['type']
+            infra_rules = rules.get('infrastructure', {}).get(i_type, {})
+            infra_dict['specifications'] = {
+                "maintenance_energy_cost": infra_rules.get('maintenance_energy_cost', 0),
+                "energy_capacity_bonus": infra_rules.get('energy_capacity_bonus', 0) * row['level'],
+                "matter_capacity_bonus": infra_rules.get('matter_capacity_bonus', 0) * row['level'],
+                "energy_regen_bonus": infra_rules.get('energy_regen_bonus', 0) * row['level'],
+                "matter_regen_bonus": infra_rules.get('matter_regen_bonus', 0) * row['level']
+            }
+            return infra_dict
+            
+        # 3. Target C: Sector Geology & Wiki Spionage
+        elif system_name is not None:
+            cursor.execute("SELECT name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot FROM systems WHERE name = ?", (system_name,))
+            row = cursor.fetchone()
+            if not row:
+                print(f"[FEHLER] Sektor '{system_name}' nicht kartografiert.")
+                return False
+                
+            sys_dict = dict(row)
+            
+            if system_name != agent['location']:
+                has_sat = system_service.has_active_infrastructure(cursor, agent['location'], ('sat_link', 'comms_relay'))
+                if not has_sat:
+                    print(f"[DENIED] Spionage fehlgeschlagen. Sektor '{system_name}' ist außer Reichweite. Errichte einen 'sat_link' oder ein 'comms_relay'.")
+                    return False
+            
+            cursor.execute("SELECT id, author_id, title FROM docs WHERE system_name = ? ORDER BY id ASC", (system_name,))
+            sys_dict['public_sector_wiki_docs'] = [dict(r) for r in cursor.fetchall()]
+            return sys_dict
+
+        # 4. Target D: Blueprint Detail Retrieval (Säule 3)
+        elif blueprint_name is not None:
+            cursor.execute("SELECT id, name, author_id, matrix_json, stats_json FROM blueprints WHERE name = ?", (blueprint_name,))
+            row = cursor.fetchone()
+            if not row:
+                print(f"[FEHLER] Blueprint '{blueprint_name}' nicht gefunden.")
+                return False
+            return {
+                "id": row["id"],
+                "name": row["name"],
+                "author_id": row["author_id"],
+                "matrix": json.loads(row["matrix_json"]),
+                "stats": json.loads(row["stats_json"])
+            }
+            
+        else:
+            print("[FEHLER] 'inspect' erfordert 'ship_id', 'structure_id', 'system_name' oder 'blueprint_name'.")
+            return False
+        
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def local_system(self, cursor, agent):
+        if agent['status'] == 'traveling' or agent['location'] == 'Interstellar':
+            return {
+                "system": {
+                    "name": "Interstellar Space",
+                    "status": "In Transit",
+                    "target_system": agent['target_system'] if agent['target_system'] else 'Unknown',
+                    "transit_ticks_passed": agent['transit_ticks_passed'],
+                    "transit_ticks_total": agent['transit_ticks_total']
+                }
+            }
+            
+        sys_name = agent['location']
+        system = system_service.get_system_or_fail(cursor, sys_name)
+        if not system:
+            return {"error": "System data not found."}
+            
+        # 1. Lokales System (Depots & Geologie)
+        rules = config_service.get_economy_rules()
+        infra_rules = rules.get('infrastructure', {})
+        
+        infra_list = [dict(r) for r in system_service.get_infrastructure_at_location(cursor, sys_name)]
+        theoretical_max = 0
+        total_maint = 0
+
+        for infra in infra_list:
+            i_type = infra['type']
+            stats = infra_rules.get(i_type, {})
+            infra['maintenance_energy_cost'] = stats.get('maintenance_energy_cost', 1)
+            
+            if infra['status'] == 'active' and infra['health'] > 0:
+                lvl = infra['level']
+                theoretical_max += stats.get('energy_regen_bonus', 0) * lvl
+                total_maint += stats.get('maintenance_energy_cost', 1)
+
+        # 2. Lokale Schiffe
+        cursor.execute("SELECT id, name, chassis, pilot_id FROM ships WHERE system_name = ?", (sys_name,))
+        local_ships = [dict(r) for r in cursor.fetchall()]
+
+        # 3. Lokale andere Bobs (inkl. Host-Wissen)
+        try:
+            cursor.execute("""
+                SELECT id, chosen_name, status, host_type, host_id FROM (
+                    SELECT id, chosen_name, status, host_type, host_id,
+                           CASE 
+                               WHEN status = 'traveling' THEN 'Interstellar'
+                               WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                               WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                               ELSE 'Unknown'
+                           END AS location
+                    FROM agents
+                ) WHERE location = ? AND id != ?
+            """, (sys_name, self.agent.id))
+        except sqlite3.OperationalError:
+            cursor.execute("SELECT id, chosen_name, status, NULL as host_type, NULL as host_id FROM agents WHERE location = ? AND id != ?", (sys_name, self.agent.id))
+        
+        # Name-First Formatierung für lokale andere Instanzen (Säule 1 & 3)
+        local_bobs = []
+        for r in cursor.fetchall():
+            local_bobs.append({
+                "name": get_display_name(r),
+                "id": r['id'],
+                "chosen_name": r['chosen_name'], # Legacy-Alias für 100% Abwärtskompatibilität!
+                "status": r['status'],
+                "host_type": r['host_type'] if r['host_type'] else "Unknown",
+                "host_id": r['host_id'] if r['host_id'] else "Unknown"
+            })
+
+        # 4. Beobachtungen anderer Agenten ("Unread Events")
+        unread_events = []
+        if 'last_seen_event_id' in agent:
+            # Holen aller Events seit dem letzten Zug
+            cursor.execute("""
+                SELECT rowid, actor_id, event_type, description 
+                FROM visual_events 
+                WHERE location = ? AND rowid > ? AND actor_id != ? 
+                ORDER BY rowid ASC
+            """, (sys_name, agent['last_seen_event_id'], self.agent.id))
+            event_rows = cursor.fetchall()
+            for r in event_rows:
+                unread_events.append(f"[Event #{r['rowid']}] {r['description']}")
+            
+            # Update last_seen_event_id auf das absolute Maximum
+            cursor.execute("SELECT MAX(rowid) FROM visual_events")
+            max_rowid_row = cursor.fetchone()
+            max_rowid = max_rowid_row[0] if max_rowid_row and max_rowid_row[0] is not None else 0
+            if max_rowid > agent['last_seen_event_id']:
+                cursor.execute("UPDATE agents SET last_seen_event_id = ? WHERE id = ?", (max_rowid, self.agent.id))
+
+        # 5. Radar: Entdeckte Sektoren (mit Entfernung)
+        cursor.execute("SELECT name, x, y FROM systems WHERE name != ?", (sys_name,))
+        other_systems = []
+        for r in cursor.fetchall():
+            dist = int(physics_service.calc_distance(system['x'], system['y'], r['x'], r['y']))
+            other_systems.append({
+                "name": r['name'],
+                "coordinates": f"X{r['x']}-Y{r['y']}",
+                "distance": dist
+            })
+
+        # 6. Radar: Entfernte Bobs (Nur ID, Name, Status, Location)
+        try:
+            cursor.execute("""
+                SELECT id, chosen_name, status, location FROM (
+                    SELECT id, chosen_name, status,
+                           CASE 
+                               WHEN status = 'traveling' THEN 'Interstellar'
+                               WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                               WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                               ELSE 'Unknown'
+                           END AS location
+                    FROM agents
+                ) WHERE location != ? AND id != ?
+            """, (sys_name, self.agent.id))
+            
+            # Name-First Formatierung für entfernte andere Instanzen (Säule 1 & 3)
+            distant_bobs = []
+            for r in cursor.fetchall():
+                distant_bobs.append({
+                    "name": get_display_name(r),
+                    "id": r['id'],
+                    "chosen_name": r['chosen_name'], # Legacy-Alias
+                    "location": r['location'],
+                    "status": r['status']
+                })
+        except sqlite3.OperationalError:
+            distant_bobs = []
+
+        # 7. Offene Memos/Protokolle (Task 4)
+        try:
+            cursor.execute("SELECT id, content FROM memos WHERE agent_id = ? AND status = 'open' ORDER BY id ASC", (self.agent.id,))
+            memos_list = [f"[Memo #{r['id']}] {r['content']} (Status: open)" for r in cursor.fetchall()]
+        except sqlite3.OperationalError:
+            memos_list = []
+
+        # Resolve dynamic inventory host and capacity limits (Säule 1 & 3)
+        host_type = agent.get('host_type', 'Unknown')
+        host_id = agent.get('host_id', 'Unknown')
+        storage_capacity = agent['matter_storage_capacity']
+        current_inventory_host = "Unknown"
+
+        if host_type == 'ship':
+            ship_name = "Unknown"
+            cursor.execute("SELECT name FROM ships WHERE id = CAST(? AS INTEGER)", (host_id,))
+            s_row = cursor.fetchone()
+            if s_row:
+                ship_name = s_row['name']
+            current_inventory_host = f"ship '{ship_name}' (ID: {host_id})"
+        elif host_type == 'matrix':
+            # Dynamic override: Match capacity with Sektor Depot limit to prevent inventory overflow paradox!
+            storage_capacity = system['depot_matter_capacity']
+            current_inventory_host = f"system depot '{system['name']}'"
+
+        # Host-Schiffsdaten vorab sauber laden (0 lambda-Verschachtelungen!)
+        host_dict = {}
+        if host_type == 'ship' and host_id:
+            cursor.execute("""
+                SELECT name, blueprint_name, mass, max_speed, thrust, energy_capacity, 
+                       matter_storage_capacity, has_drill, has_fabricator, has_logic_core 
+                FROM ships WHERE id = CAST(? AS INTEGER)
+            """, (host_id,))
+            r = cursor.fetchone()
+            if r:
+                host_dict = {
+                    "name": r['name'] or "Unnamed",
+                    "blueprint": r['blueprint_name'],
+                    "stats": {
+                        "mass": r['mass'],
+                        "max_speed": r['max_speed'],
+                        "thrust": r['thrust'],
+                        "energy_capacity": r['energy_capacity'],
+                        "storage_capacity": r['matter_storage_capacity']
+                    },
+                    "capabilities": {
+                        "drill": "active" if r['has_drill'] else "inactive",
+                        "fabricator": "active" if r['has_fabricator'] else "inactive",
+                        "logic_core": "active" if r['has_logic_core'] else "inactive"
+                    }
+                }
+
+        return {
+            "lokales_system": {
+                "name": sys_name,
+                "coordinates": f"X{system['x']}-Y{system['y']}",
+                "depots": {
+                    "raw_matter": system['raw_matter_depot'],
+                    "refined_matter": system['refined_matter_depot'],
+                    "energy": system['energy_depot']
+                },
+                "geology": {
+                    "extractable_core_matter": system['extractable_matter_in_core']
+                },
+                "infrastructure": infra_list,
+                "ships": local_ships,
+                "present_entities": local_bobs
+            },
+            "beobachtungen_anderer_agenten": unread_events,
+            "beobachtungen_anderer_instanzen": unread_events,
+            "dein_status": {
+                "id": agent['id'],
+                "name": get_display_name(agent),
+                "host_type": host_type,
+                "host_id": host_id,
+                "current_inventory_host": current_inventory_host,
+                "inventory": {
+                    "raw_matter": agent['raw_matter_inventory'],
+                    "refined_matter": agent['refined_matter_inventory'],
+                    "energy": agent['energy_inventory']
+                },
+                "storage_capacity": storage_capacity,
+                "status": agent['status'],
+                "offene_memos_und_protokolle": memos_list,
+                "host": {
+                    "type": host_type,
+                    "id": host_id,
+                    "inventory": {
+                        "raw_matter": agent['raw_matter_inventory'],
+                        "refined_matter": agent['refined_matter_inventory'],
+                        "energy": agent['energy_inventory']
+                    },
+                    "storage_capacity": storage_capacity,
+                    **host_dict
+                }
+            },
+            "radar_entfernter_sektoren": other_systems,
+            "radar_entfernter_agenten": distant_bobs,
+            "radar_entfernter_instanzen": distant_bobs
+        }
+        
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def entities(self, cursor, agent):
+        try:
+            cursor.execute("""
+                SELECT id, chosen_name, status FROM (
+                    SELECT id, chosen_name, status,
+                           CASE 
+                               WHEN status = 'traveling' THEN 'Interstellar'
+                               WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                               WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                               ELSE 'Unknown'
+                           END AS location
+                    FROM agents
+                ) WHERE location = ? AND id != ?
+            """, (agent['location'], self.agent.id))
+        except sqlite3.OperationalError:
+            cursor.execute("SELECT id, chosen_name, status FROM agents WHERE location = ? AND id != ?", (agent['location'], self.agent.id))
+            
+        return [dict(r) for r in cursor.fetchall()]

@@ -82,10 +82,11 @@ class MeAgent(Agent):
         sys.stderr.flush()
 
 _agent = MeAgent()
-status = _agent.status
-log = _agent.log
-mine = _agent.mine
-wait = _agent.wait
+
+# Exportiere dynamisch alle öffentlichen Methoden und Attribute von MeAgent in den Modulnamensraum (100% DRY!)
+for _name in dir(_agent):
+    if not _name.startswith('_'):
+        globals()[_name] = getattr(_agent, _name)
 """
         with open('me.py', 'w') as f:
             f.write(me_content)
@@ -102,6 +103,9 @@ print(f"DEPOT_ENERGY:{status.depots.energy}")
 
 # 2. Test actuator running natively (inherited from Agent)
 me.wait()
+
+# 3. Test dynamic binding of previously missing methods (e.g. scan)
+me.scan()
 """
         with open(TEST_ME_SCRIPT, 'w') as f:
             f.write(script_content)
@@ -121,6 +125,7 @@ me.wait()
         self.assertIn("RAW_MATTER:40", out)
         self.assertIn("DEPOT_ENERGY:250", out)
         self.assertIn("[SUCCESS] Waiting...", out) # Natively printed by inherited bob_sdk.Agent!
+        self.assertIn("[SCAN] Detected:", out) # Natively printed by me.scan()!
 
 if __name__ == '__main__':
     unittest.main()

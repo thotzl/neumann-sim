@@ -55,15 +55,11 @@ class MeAgent(Agent):
         sys.stderr.flush()
 
 _agent = MeAgent()
-status = _agent.status
-log = _agent.log
-mine = _agent.mine
-wait = _agent.wait
-deposit = _agent.deposit
-withdraw = _agent.withdraw
-refine = _agent.refine
-build = _agent.build
-scut = _agent.scut
+
+# Exportiere dynamisch alle öffentlichen Methoden und Attribute von MeAgent in den Modulnamensraum (100% DRY!)
+for _name in dir(_agent):
+    if not _name.startswith('_'):
+        globals()[_name] = getattr(_agent, _name)
 `;
     fs.writeFileSync(mePyPath, mePyContent);
 

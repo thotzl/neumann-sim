@@ -167,7 +167,7 @@ def main():
                 if len(res) > 0:
                     print(yaml.dump([clean_dict(r) for r in res], sort_keys=False, default_flow_style=False).strip())
                 else:
-                    print("[INFO] Keine Blaupausen im Sektor-Archiv registriert. Entwirf und speichere eine neue Schiffsklasse mit me.save_blueprint(name, matrix_json)!")
+                    print("[INFO] Keine Blaupausen im Sektor-Archiv registriert. Entwirf und speichere eine neue Schiffsklasse! Nutze 'me --help' für das Schiffs-Konstruktions-Handbuch.")
         elif method == "delete_blueprint":
             agent.delete_blueprint(
                 name=params.get('name')

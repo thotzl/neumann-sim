@@ -53,15 +53,8 @@ DESCRIPTIONS = {
     "docs": "Verwalte Sektor-Dokumente und öffentliche Relikte (Aktionen: add, list, find, remove).",
 }
 
-def clean_dict(d):
-    if not isinstance(d, dict): return d
-    clean = {}
-    for k, v in d.items():
-        if v is None or v == [] or v == {}: clean[k] = ""
-        elif isinstance(v, dict): clean[k] = clean_dict(v)
-        elif isinstance(v, list): clean[k] = [clean_dict(i) if isinstance(i, dict) else i for i in v]
-        else: clean[k] = v
-    return clean
+from core.lib.utils.formatting import clean_dict
+from core.lib.utils.parsing import safe_int
 
 def print_help():
     print("Unified Command Line (UCL) - V10.0 Functional Evolution")
@@ -89,11 +82,6 @@ def print_help():
             print(f"- {method}: {desc}")
             print(f"  CLI: [RUN: me {method}] (oder me {method}())")
     print("-" * 50)
-
-def safe_int(val, param_name, default=None):
-    if val is None or val == '': return default
-    try: return int(val)
-    except ValueError: raise ValueError(f"Parameter '{param_name}' erwartet eine Ganzzahl, erhielt aber '{val}'.")
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ["--help", "-h"]:

@@ -56,10 +56,12 @@ class MeAgent(Agent):
 
 _agent = MeAgent()
 
-# Exportiere dynamisch alle öffentlichen Methoden und Attribute von MeAgent in den Modulnamensraum (100% DRY!)
+# Exportiere dynamisch ausschließlich öffentliche, aufrufbare Methoden von MeAgent in den Modulnamensraum (100% DRY & sicher!)
 for _name in dir(_agent):
     if not _name.startswith('_'):
-        globals()[_name] = getattr(_agent, _name)
+        _attr = getattr(_agent, _name)
+        if callable(_attr):
+            globals()[_name] = _attr
 `;
     fs.writeFileSync(mePyPath, mePyContent);
 

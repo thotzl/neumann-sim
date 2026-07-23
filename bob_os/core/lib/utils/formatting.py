@@ -126,3 +126,29 @@ def aggregate_ship_telemetry(ship_row, blueprint_stats=None):
         "capabilities": capabilities_dict,
         "diagnostics": diagnostics_dict
     }
+
+def get_ship_display_name(ship_row):
+    """
+    Formatiert den Schiffsnamen kollisionsfrei für alle Text-Ausgaben (z.B. "'Sovereign' (ID: 1)").
+    """
+    if not ship_row:
+        return "Unknown Ship"
+    if not isinstance(ship_row, dict):
+        ship_row = dict(ship_row)
+    name = ship_row.get('name') or "Unnamed"
+    ship_id = ship_row.get('id', "Unknown")
+    return f"'{name}' (ID: {ship_id})"
+
+def get_system_display_name(system_row):
+    """
+    Formatiert den Sektornamen kollisionsfrei (z.B. "'HomeBase' (ID: SYS-X0-Y0)" oder einfach "SYS-X0-Y0").
+    """
+    if not system_row:
+        return "Unknown Sector"
+    if not isinstance(system_row, dict):
+        system_row = dict(system_row)
+    name = system_row.get('name', "Unknown")
+    display_name = system_row.get('display_name')
+    if display_name and display_name != name:
+        return f"'{display_name}' (ID: {name})"
+    return name

@@ -43,6 +43,7 @@ DESCRIPTIONS = {
     "exit_ship": "Verlässt das aktuelle Schiff und kehrt in die SEM-Matrix zurück.",
     "build_ship": "Baut ein neues Schiff in einer aktiven shipyard anhand eines Blaupausen-Namens.",
     "deconstruct_ship": "Baut ein unbemanntes Schiff am Standort ab und erstattet 50% der Baukosten an das Sektor-Depot (Argumente: ship_id).",
+    "rename_ship": "Benennt ein physisches Schiff am aktuellen Standort um (Argumente: ship_id, new_name).",
     "design_blueprint": "Simuliere und plane eine neue Schiffsklasse anhand einer Gitter-Matrix (Argumente: name, matrix_json).",
     "save_blueprint": "Simuliere, plane und speichere eine neue Schiffsklasse dauerhaft in der Sektor-Datenbank (Argumente: name, matrix_json).",
     "view_blueprint": "Zeigt das detaillierte Gitter-Layout und die Leistungsdaten einer entworfenen Schiffsklasse an (Argumente: name).",

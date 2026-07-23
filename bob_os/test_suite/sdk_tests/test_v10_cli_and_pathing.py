@@ -58,7 +58,7 @@ class TestV10Fixes(unittest.TestCase):
     @patch('sys.stdout', new_callable=StringIO)
     def test_cli_board(self, mock_stdout):
         bob.main()
-        self.assertIn("[SUCCESS] Boarded ship 6.", mock_stdout.getvalue())
+        self.assertIn("[SUCCESS] Boarded ship 'Vessel-6' (ID: 6).", mock_stdout.getvalue())
         
         conn = db_config.get_connection()
         conn.row_factory = sqlite3.Row
@@ -78,7 +78,7 @@ class TestV10Fixes(unittest.TestCase):
         conn.close()
         
         bob.main()
-        self.assertIn("[SUCCESS] Exited ship 6", mock_stdout.getvalue())
+        self.assertIn("[SUCCESS] Exited ship 'Vessel-6' (ID: 6) and transferred to local SEM-Matrix.", mock_stdout.getvalue())
 
     @patch('sys.argv', ['bob.py', '--help'])
     @patch('sys.stdout', new_callable=StringIO)

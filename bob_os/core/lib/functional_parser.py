@@ -33,7 +33,8 @@ METHOD_META = {
     "list_blueprints": {"params": [], "greedy": None},
     "delete_blueprint": {"params": ["name"], "greedy": None},
     "build_ship": {"params": ["blueprint_name"], "greedy": None},
-    "deconstruct_ship": {"params": ["ship_id"], "greedy": None}
+    "deconstruct_ship": {"params": ["ship_id"], "greedy": None},
+    "rename_ship": {"params": ["ship_id", "new_name"], "greedy": "new_name"}
 }
 
 def parse_functional_string(s):

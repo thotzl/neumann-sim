@@ -150,5 +150,23 @@ class TestV105Utils(unittest.TestCase):
         self.assertTrue(aggregated["diagnostics"]["can_mine"]) # Hat drill und battery > 0!
         self.assertEqual(aggregated["diagnostics"]["idle_lifetime_cycles"], "unlimited")
 
+    def test_get_ship_display_name(self):
+        # 1. Schiff mit vergebenem Namen
+        ship_row = {"id": 1, "name": "Sovereign"}
+        self.assertEqual(formatting.get_ship_display_name(ship_row), "'Sovereign' (ID: 1)")
+        
+        # 2. Unbenanntes Schiff
+        ship_unnamed = {"id": 2, "name": None}
+        self.assertEqual(formatting.get_ship_display_name(ship_unnamed), "'Unnamed' (ID: 2)")
+
+    def test_get_system_display_name(self):
+        # 1. Sektor mit vergebenem Namen
+        system_row = {"name": "SYS-A", "display_name": "HomeBase"}
+        self.assertEqual(formatting.get_system_display_name(system_row), "'HomeBase' (ID: SYS-A)")
+        
+        # 2. Unbenannter Sektor / Standardname
+        system_default = {"name": "SYS-A", "display_name": None}
+        self.assertEqual(formatting.get_system_display_name(system_default), "SYS-A")
+
 if __name__ == '__main__':
     unittest.main()

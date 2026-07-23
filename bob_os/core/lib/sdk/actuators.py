@@ -12,14 +12,14 @@ try:
     from .. import config_service
     from .. import physics_service
     from .. import transaction_service
-    from ..utils.formatting import get_display_name_with_id
+    from ..utils.formatting import get_display_name_with_id, get_ship_display_name, get_system_display_name
 except ImportError:
     from core.lib import agent_service
     from core.lib import system_service
     from core.lib import config_service
     from core.lib import physics_service
     from core.lib import transaction_service
-    from core.lib.utils.formatting import get_display_name_with_id
+    from core.lib.utils.formatting import get_display_name_with_id, get_ship_display_name, get_system_display_name
 
 class Actuators:
     def __init__(self, agent):
@@ -300,7 +300,9 @@ class Actuators:
                 ) VALUES (?, ?, ?, ?, 0, 100, 300, 500, 300, 500, 100, 'Scout', 0, 0, 0)
             """, (new_id, name, blueprint_name, sys_name))
             
-            print(f"[SUCCESS] {blueprint_name} vessel '{name}' (ID: {new_id}) built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
+            cursor.execute("SELECT * FROM ships WHERE id = ?", (new_id,))
+            new_ship_row = cursor.fetchone()
+            print(f"[SUCCESS] {blueprint_name} vessel {get_ship_display_name(new_ship_row)} built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
             return True
 
         # 2. CUSTOM BLUEPRINT (Säule 3)
@@ -336,7 +338,9 @@ class Actuators:
             ) VALUES (?, ?, ?, NULL, ?, 0, 0, 100, 100, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (new_id, name, blueprint_name, sys_name, battery, cargo, battery, speed, thrust, mass, blueprint_name, has_drill, has_fabricator, has_logic_core))
 
-        print(f"[SUCCESS] {blueprint_name} vessel '{name}' (ID: {new_id}) built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
+        cursor.execute("SELECT * FROM ships WHERE id = ?", (new_id,))
+        new_ship_row = cursor.fetchone()
+        print(f"[SUCCESS] {blueprint_name} vessel {get_ship_display_name(new_ship_row)} built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True, action_name='Deconstruct Ship')
@@ -345,7 +349,7 @@ class Actuators:
         sys_name = agent['location']
 
         # 1. Fetch ship details
-        cursor.execute("SELECT pilot_id, system_name, chassis, blueprint_name FROM ships WHERE id = ?", (ship_id,))
+        cursor.execute("SELECT * FROM ships WHERE id = ?", (ship_id,))
         ship = cursor.fetchone()
 
         if not ship:
@@ -387,8 +391,11 @@ class Actuators:
         else:
             cursor.execute("UPDATE systems SET raw_matter_depot = raw_matter_depot + ? WHERE name = ?", (refund, sys_name))
 
+        # Capture display name before deconstruction
+        ship_display = get_ship_display_name(ship)
+
         cursor.execute("DELETE FROM ships WHERE id = ?", (ship_id,))
-        print(f"[SUCCESS] Ship {ship_id} ({ship['chassis']}) deconstructed successfully. Refunded {refund} {material_type} to Sektor Depot.")
+        print(f"[SUCCESS] Ship {ship_display} ({ship['chassis']}) deconstructed successfully. Refunded {refund} {material_type} to Sektor Depot.")
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True)
@@ -429,7 +436,7 @@ class Actuators:
         if agent['active_ship_id']:
             cursor.execute("UPDATE ships SET system_name = 'Interstellar' WHERE id = ?", (agent['active_ship_id'],))
             
-        print(f"[SUCCESS] Journey initiated to {target_system}. ETA: {ticks} Ticks.")
+        print(f"[SUCCESS] Journey initiated to {get_system_display_name(target)}. ETA: {ticks} Ticks.")
         return True
 
     @agent_service.with_agent_context(require_active=True, action_name='Replication')
@@ -549,7 +556,7 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
             print(f"[DENIED] You are already in ship {dict(agent)['active_ship_id']}. Exit it first.")
             return False
             
-        cursor.execute("SELECT system_name, pilot_id FROM ships WHERE id = ?", (ship_id,))
+        cursor.execute("SELECT * FROM ships WHERE id = ?", (ship_id,))
         ship = cursor.fetchone()
         
         if not ship:
@@ -566,7 +573,7 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
             
         cursor.execute("UPDATE agents SET host_type = 'ship', host_id = ?, active_ship_id = ? WHERE id = ?", (str(ship_id), ship_id, self.agent.id))
         cursor.execute("UPDATE ships SET pilot_id = ? WHERE id = ?", (self.agent.id, ship_id))
-        print(f"[SUCCESS] Boarded ship {ship_id}.")
+        print(f"[SUCCESS] Boarded ship {get_ship_display_name(ship)}.")
         return True
 
     @agent_service.with_agent_context(require_active=True, allow_disembodied=False, action_name='ExitShip')
@@ -579,7 +586,37 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
             return False
             
         matrix_id = str(matrix_row['id'])
+        
+        cursor.execute("SELECT * FROM ships WHERE id = ?", (ship_id,))
+        ship = cursor.fetchone()
+        ship_display = get_ship_display_name(ship) if ship else f"ID: {ship_id}"
+
         cursor.execute("UPDATE agents SET host_type = 'matrix', host_id = ?, active_ship_id = NULL WHERE id = ?", (matrix_id, self.agent.id))
         cursor.execute("UPDATE ships SET pilot_id = NULL WHERE id = ?", (ship_id,))
-        print(f"[SUCCESS] Exited ship {ship_id} and transferred to local SEM-Matrix.")
+        print(f"[SUCCESS] Exited ship {ship_display} and transferred to local SEM-Matrix.")
+        return True
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def rename_ship(self, cursor, agent, ship_id, new_name):
+        """
+        Benennt ein physisches Schiff im Sektor um (z.B. von 'Ship-1' zu 'ScoutPrime').
+        """
+        if not new_name:
+            print("[FEHLER] 'rename_ship' erfordert einen 'new_name'.")
+            return False
+            
+        ship_id = int(ship_id)
+        cursor.execute("SELECT system_name FROM ships WHERE id = ?", (ship_id,))
+        ship = cursor.fetchone()
+        if not ship:
+            print(f"[FEHLER] Schiff #{ship_id} nicht gefunden.")
+            return False
+            
+        # Sektor-Schutz: Replikant darf nur Schiffe im eigenen Sektor umbenennen!
+        if ship['system_name'] != agent['location']:
+            print(f"[DENIED] Schiff #{ship_id} ist in {ship['system_name']}, aber du bist in {agent['location']}.")
+            return False
+            
+        cursor.execute("UPDATE ships SET name = ? WHERE id = ?", (new_name, ship_id))
+        print(f"[SUCCESS] Ship #{ship_id} renamed to '{new_name}'.")
         return True

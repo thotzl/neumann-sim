@@ -878,6 +878,24 @@ class Sensors:
         except sqlite3.OperationalError:
             memos_list = []
 
+        # Resolve dynamic inventory host and capacity limits (Säule 1 & 3)
+        host_type = agent.get('host_type', 'Unknown')
+        host_id = agent.get('host_id', 'Unknown')
+        storage_capacity = agent['matter_storage_capacity']
+        current_inventory_host = "Unknown"
+
+        if host_type == 'ship':
+            ship_name = "Unknown"
+            cursor.execute("SELECT name FROM ships WHERE id = CAST(? AS INTEGER)", (host_id,))
+            s_row = cursor.fetchone()
+            if s_row:
+                ship_name = s_row['name']
+            current_inventory_host = f"ship '{ship_name}' (ID: {host_id})"
+        elif host_type == 'matrix':
+            # Dynamic override: Match capacity with Sektor Depot limit to prevent inventory overflow paradox!
+            storage_capacity = system['depot_matter_capacity']
+            current_inventory_host = f"system depot '{system['name']}'"
+
         return {
             "lokales_system": {
                 "name": sys_name,
@@ -899,26 +917,27 @@ class Sensors:
             "dein_status": {
                 "id": agent['id'],
                 "name": agent['chosen_name'],
-                "host_type": agent.get('host_type', 'Unknown'),
-                "host_id": agent.get('host_id', 'Unknown'),
+                "host_type": host_type,
+                "host_id": host_id,
+                "current_inventory_host": current_inventory_host,
                 "inventory": {
                     "raw_matter": agent['raw_matter_inventory'],
                     "refined_matter": agent['refined_matter_inventory'],
                     "energy": agent['energy_inventory']
                 },
-                "storage_capacity": agent['matter_storage_capacity'],
+                "storage_capacity": storage_capacity,
                 "status": agent['status'],
                 "offene_memos_und_protokolle": memos_list,
                 # NEU (Säule 1 & 3): Kognitive Host-Verschachtelung mit echten Gitter-Schiffskonfigurationen
                 "host": (lambda: {
-                    "type": agent.get('host_type', 'Unknown'),
-                    "id": agent.get('host_id', 'Unknown'),
+                    "type": host_type,
+                    "id": host_id,
                     "inventory": {
                         "raw_matter": agent['raw_matter_inventory'],
                         "refined_matter": agent['refined_matter_inventory'],
                         "energy": agent['energy_inventory']
                     },
-                    "storage_capacity": agent['matter_storage_capacity'],
+                    "storage_capacity": storage_capacity,
                     **((lambda: (lambda r: {
                         "name": r['name'],
                         "blueprint": r['blueprint_name'],
@@ -939,8 +958,8 @@ class Sensors:
                             SELECT name, blueprint_name, mass, max_speed, thrust, energy_capacity, 
                                    matter_storage_capacity, has_drill, has_fabricator, has_logic_core 
                             FROM ships WHERE id = CAST(? AS INTEGER)
-                        """, (agent['host_id'],)).fetchone()
-                    ))() if (agent.get('host_type') == 'ship' and agent.get('host_id')) else {})
+                        """, (host_id,)).fetchone()
+                    ))() if (host_type == 'ship' and host_id) else {})
                 })()
             },
             "radar_entfernter_sektoren": other_systems,

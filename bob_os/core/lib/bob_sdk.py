@@ -52,6 +52,7 @@ class Agent:
     def board(self, ship_id): return self.actuators.board(ship_id)
     def exit_ship(self): return self.actuators.exit_ship()
     def build_ship(self, blueprint_name=None, chassis=None): return self.actuators.build_ship(blueprint_name, chassis)
+    def deconstruct_ship(self, ship_id): return self.actuators.deconstruct_ship(ship_id)
     def memo(self, action, content=None, id=None, query=None): return self.journal.memo(action, content, id, query)
     def docs(self, action, title=None, content=None, id=None, query=None): return self.journal.docs(action, title, content, id, query)
     def design_blueprint(self, name, matrix_json): return self.journal.design_blueprint(name, matrix_json)
@@ -388,6 +389,58 @@ class Actuators:
         """, (new_id, name, blueprint_name, sys_name, battery, cargo, battery, speed, thrust, mass, blueprint_name, has_drill, has_fabricator, has_logic_core))
 
         print(f"[SUCCESS] {blueprint_name} vessel '{name}' (ID: {new_id}) built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
+        return True
+
+    @agent_service.with_agent_context(allow_disembodied=True, action_name='Deconstruct Ship')
+    def deconstruct_ship(self, cursor, agent, ship_id):
+        ship_id = int(ship_id)
+        sys_name = agent['location']
+
+        # 1. Fetch ship details
+        cursor.execute("SELECT pilot_id, system_name, chassis, blueprint_name FROM ships WHERE id = ?", (ship_id,))
+        ship = cursor.fetchone()
+
+        if not ship:
+            print(f"[ERROR] Ship {ship_id} not found.")
+            return False
+
+        # 2. Location Check
+        if ship['system_name'] != sys_name:
+            print(f"[DENIED] Ship {ship_id} is in {ship['system_name']}, but you are in {sys_name}.")
+            return False
+
+        # 3. Mind-Orphan Guard (Safety Check)
+        if ship['pilot_id'] is not None:
+            print(f"[DENIED] Cannot deconstruct ship {ship_id}. Pilot '{ship['pilot_id']}' is still onboard! Eject pilot first.")
+            return False
+
+        # 4. Calculate Salvage Refund (50%)
+        global_settings = config_service.get_economy_rules().get('global_settings', {})
+        refund_ratio = global_settings.get('deconstruct_refund_ratio', 0.5)
+
+        # Check blueprint or legacy fallback for cost basis
+        cursor.execute("SELECT stats_json FROM blueprints WHERE name = ?", (ship['blueprint_name'],))
+        bp_row = cursor.fetchone()
+
+        if bp_row:
+            stats = json.loads(bp_row['stats_json'])
+            cost_basis = stats.get('cost', 1000)
+            material_type = 'refined_matter'
+        else:
+            # Legacy Scout cost basis (1000 raw_matter)
+            cost_basis = 1000
+            material_type = 'raw_matter'
+
+        refund = int(cost_basis * refund_ratio)
+
+        # 5. Process Refund & Delete Ship
+        if material_type == 'refined_matter':
+            cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot + ? WHERE name = ?", (refund, sys_name))
+        else:
+            cursor.execute("UPDATE systems SET raw_matter_depot = raw_matter_depot + ? WHERE name = ?", (refund, sys_name))
+
+        cursor.execute("DELETE FROM ships WHERE id = ?", (ship_id,))
+        print(f"[SUCCESS] Ship {ship_id} ({ship['chassis']}) deconstructed successfully. Refunded {refund} {material_type} to Sektor Depot.")
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True)

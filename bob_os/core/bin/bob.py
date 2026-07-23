@@ -42,6 +42,7 @@ DESCRIPTIONS = {
     "board": "Betritt ein Schiff am aktuellen Standort (ID nötig). Erlaubt physische Aktionen (mine, build, move).",
     "exit_ship": "Verlässt das aktuelle Schiff und kehrt in die SEM-Matrix zurück.",
     "build_ship": "Baut ein neues Schiff in einer aktiven shipyard anhand eines Blaupausen-Namens.",
+    "deconstruct_ship": "Baut ein unbemanntes Schiff am Standort ab und erstattet 50% der Baukosten an das Sektor-Depot (Argumente: ship_id).",
     "design_blueprint": "Entwirf eine neue Schiffsklasse anhand einer 2D-Gitter-Matrix (Argumente: name, matrix_json).",
     "list_blueprints": "Listet alle registrierten Schiffs-Blaupausen im Sektor auf.",
     "delete_blueprint": "Löscht einen Entwurf aus dem Blaupausen-Archiv (Argumente: name).",
@@ -137,6 +138,10 @@ def main():
             agent.build_ship(
                 blueprint_name=params.get('blueprint_name'),
                 chassis=params.get('chassis')
+            )
+        elif method == "deconstruct_ship":
+            agent.deconstruct_ship(
+                ship_id=safe_int(params.get('ship_id'), 'ship_id')
             )
         elif method == "design_blueprint":
             agent.design_blueprint(

@@ -40,7 +40,6 @@ if (sourcePath === 'engine') {
     console.log(`[ERFOLG] Engine synchronisiert.`);
 } else if (sourcePath === 'tools') {
     console.log(`Injiziere Python Tools & Libs in ${expName}...`);
-    copyRecursiveSync(path.join(__dirname, '../bob_os/_verse/tools'), path.join(expDir, '_verse/tools'));
     copyRecursiveSync(path.join(__dirname, '../bob_os/core'), path.join(expDir, 'core'));
     console.log(`[ERFOLG] Python Logik synchronisiert.`);
 } else if (sourcePath === 'migrate') {

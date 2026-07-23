@@ -60,6 +60,13 @@ export type Ship = {
   chassis: string;
   pilot_id: string | null;
   system_name: string | null;
+  max_speed?: number;
+  thrust?: number;
+  mass?: number;
+  has_drill?: number | boolean;
+  has_fabricator?: number | boolean;
+  has_logic_core?: number | boolean;
+  blueprint_name?: string | null;
 };
 
 export type Memo = {
@@ -79,6 +86,15 @@ export type Doc = {
   created_cycle: number;
 };
 
+export type VisualEvent = {
+  rowid: number;
+  cycle: number;
+  location: string;
+  actor_id: string;
+  event_type: string;
+  description: string;
+};
+
 export type WorldState = {
   tick: number; 
   total_turns: number; 
@@ -89,6 +105,7 @@ export type WorldState = {
   ships: Ship[];
   memos?: Memo[];
   docs?: Doc[];
+  visual_events?: VisualEvent[];
   events: string[];
 };
 

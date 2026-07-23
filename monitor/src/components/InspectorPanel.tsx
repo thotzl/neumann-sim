@@ -13,18 +13,40 @@ interface InspectorPanelProps {
 const parseManifestation = (manifestation: string | undefined) => {
   if (!manifestation) return { thought: '', action: '' };
   const raw = manifestation.trim();
-  const actionIdx = raw.search(/AKTION(?:EN)?[:]/i);
-  if (actionIdx !== -1) {
-    const thought = raw.substring(0, actionIdx)
-      .replace(/^(?:> )?(?:\d+\.\s*)?ANALYSE:\s*/i, '')
+  
+  // Find the action index. Bobs might output "AKTION:" or "1. AKTION:" or "**AKTION:**" or similar.
+  const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?AKTION(?:EN)?\s*(?:Befehl|Buffer)?[：:]*(?:\*\*|\*)?/i;
+  const match = raw.match(actionRegex);
+  
+  if (match && match.index !== undefined) {
+    const thoughtRaw = raw.substring(0, match.index).trim();
+    const actionRaw = raw.substring(match.index + match[0].length).trim();
+    
+    // Clean up analysis tags and numbering from thought
+    const thought = thoughtRaw
+      .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSE\s*[：:]*(?:\*\*|\*)?/i, '')
       .replace(/\[EIGENIMPULS\]:\s*/i, '')
       .trim();
-    const action = raw.substring(actionIdx)
-      .replace(/^(?:\d+\.\s*)?AKTION(?:EN)?[:]\s*/i, '')
-      .trim();
-    return { thought, action };
+      
+    return { thought, action: actionRaw };
   }
-  return { thought: raw, action: '' };
+  
+  // Fallback if no action tag is found but the text has [RUN: me ...]
+  const runMatch = raw.indexOf('[RUN:');
+  if (runMatch !== -1) {
+    const thoughtRaw = raw.substring(0, runMatch).trim();
+    const actionRaw = raw.substring(runMatch).trim();
+    const thought = thoughtRaw
+      .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSE\s*[：:]*(?:\*\*|\*)?/i, '')
+      .replace(/\[EIGENIMPULS\]:\s*/i, '')
+      .trim();
+    return { thought, action: actionRaw };
+  }
+
+  const cleanedThought = raw
+    .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSE\s*[：:]*(?:\*\*|\*)?/i, '')
+    .trim();
+  return { thought: cleanedThought, action: '' };
 };
 
 // Custom recursive YAML dumper in TypeScript to match Python's output
@@ -75,6 +97,60 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
     .filter(m => m.agent_id === agent.id)
     .map(m => `[Memo #${m.id}] ${m.content} (Status: ${m.status})`) : [];
 
+  const ship = agent.host_type === 'ship' ? state.ships?.find(s => s.id.toString() === agent.host_id?.toString()) : null;
+
+  const buildHostObject = () => {
+    if (agent.host_type === 'ship') {
+      return {
+        type: "ship",
+        id: agent.host_id || 'Unknown',
+        name: ship ? ship.name : 'Unknown',
+        blueprint: ship ? (ship.blueprint_name || ship.chassis || 'Scout') : 'Scout',
+        stats: {
+          mass: ship ? (ship.mass || 290) : 290,
+          max_speed: ship ? (ship.max_speed || 34.48) : 34.48,
+          thrust: ship ? (ship.thrust || 500) : 500,
+          energy_capacity: agent.sensors?.inventory?.energy_limit || 5000,
+          storage_capacity: ship ? (ship.matter_storage_capacity || 300) : 300
+        },
+        capabilities: {
+          drill: ship ? (ship.has_drill ? "active" : "inactive") : "inactive",
+          fabricator: ship ? (ship.has_fabricator ? "active" : "inactive") : "inactive",
+          logic_core: ship ? (ship.has_logic_core ? "active" : "inactive") : "inactive"
+        },
+        inventory: {
+          raw_matter: agent.sensors?.inventory?.raw_matter_inventory || 0,
+          refined_matter: agent.sensors?.inventory?.refined_matter_inventory || 0,
+          energy: agent.sensors?.inventory?.energy_inventory || 0
+        }
+      };
+    } else {
+      return {
+        type: "matrix",
+        id: agent.host_id || 'Unknown',
+        name: "SEM-Matrix Server Rack",
+        blueprint: "Neural Matrix V1",
+        stats: {
+          mass: 5000,
+          max_speed: 0,
+          thrust: 0,
+          energy_capacity: 50, // Emergency rack backup batteries
+          storage_capacity: 1000000
+        },
+        capabilities: {
+          drill: "inactive",
+          fabricator: "inactive",
+          logic_core: "active"
+        },
+        inventory: {
+          raw_matter: 0,
+          refined_matter: 0,
+          energy: Math.max(50, agent.sensors?.inventory?.energy_inventory || 50) // permanent emergency backup current
+        }
+      };
+    }
+  };
+
   if (agent.status === 'traveling' || agent.location === 'Interstellar') {
     return {
       lokales_system: {
@@ -96,16 +172,7 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
         },
         storage_capacity: agent.sensors?.inventory?.matter_limit || 100,
         status: agent.status,
-        host: {
-          type: agent.host_type || 'Unknown',
-          id: agent.host_id || 'Unknown',
-          inventory: {
-            raw_matter: agent.sensors?.inventory?.raw_matter_inventory || 0,
-            refined_matter: agent.sensors?.inventory?.refined_matter_inventory || 0,
-            energy: agent.sensors?.inventory?.energy_inventory || 0
-          },
-          storage_capacity: agent.sensors?.inventory?.matter_limit || 100
-        },
+        host: buildHostObject(),
         offene_memos_und_protokolle: agentMemos
       }
     };
@@ -181,16 +248,7 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
       },
       storage_capacity: agent.sensors?.inventory?.matter_limit || 100,
       status: agent.status,
-      host: {
-        type: agent.host_type || 'Unknown',
-        id: agent.host_id || 'Unknown',
-        inventory: {
-          raw_matter: agent.sensors?.inventory?.raw_matter_inventory || 0,
-          refined_matter: agent.sensors?.inventory?.refined_matter_inventory || 0,
-          energy: agent.sensors?.inventory?.energy_inventory || 0
-        },
-        storage_capacity: agent.sensors?.inventory?.matter_limit || 100
-      },
+      host: buildHostObject(),
       offene_memos_und_protokolle: agentMemos
     },
     radar_entfernter_sektoren: otherSystems,
@@ -284,6 +342,60 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                     <div className="mono-text" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                       HOST_ID: <span style={{ color: '#fff' }}>{dashboardObj.dein_status.host.id}</span>
                     </div>
+
+                    {/* Host Specifications and Modules (Säule 1 & 3) */}
+                    {(() => {
+                      if (dashboardObj.dein_status.host.type === 'ship') {
+                        const ship = state.ships?.find(s => s.id.toString() === dashboardObj.dein_status.host.id.toString());
+                        if (!ship) return null;
+                        return (
+                          <div style={{ marginTop: '6px', borderTop: '1px dashed rgba(56,189,248,0.15)', paddingTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                              BLUEPRINT: <span style={{ color: '#fff', fontWeight: 'bold' }}>{ship.blueprint_name || 'Standard Scout'}</span>
+                            </div>
+                            <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                              CHASSIS: <span style={{ color: '#fff' }}>{ship.chassis}</span>
+                            </div>
+                            {ship.max_speed !== undefined && (
+                              <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                                PHYSICS: <span style={{ color: '#e0f2fe' }}>{ship.max_speed} m/s • {ship.thrust} N • {ship.mass} t</span>
+                              </div>
+                            )}
+                            <div style={{ marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              {ship.has_drill ? (
+                                <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ DRILL</span>
+                              ) : null}
+                              {ship.has_fabricator ? (
+                                <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ FABRICATOR</span>
+                              ) : null}
+                              {ship.has_logic_core ? (
+                                <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ LOGIC_CORE</span>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      } else if (dashboardObj.dein_status.host.type === 'matrix') {
+                        const hostMat = dashboardObj.dein_status.host;
+                        return (
+                          <div style={{ marginTop: '6px', borderTop: '1px dashed rgba(129,140,248,0.15)', paddingTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                              HARDWARE: <span style={{ color: '#fff', fontWeight: 'bold' }}>{hostMat.name}</span>
+                            </div>
+                            <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                              ARCHITECTURE: <span style={{ color: '#fff' }}>{hostMat.blueprint}</span>
+                            </div>
+                            <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                              BACKUP_BATTERY: <span style={{ color: '#10b981', fontWeight: 'bold' }}>50E (Emergency Solar Bypass Active)</span>
+                            </div>
+                            <div style={{ marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.6rem', background: 'rgba(129,140,248,0.1)', color: '#818cf8', border: '1px solid rgba(129,140,248,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>⚡ CONSCIOUSNESS_SAFEGUARD</span>
+                              <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>🧠 LOGIC_CORE</span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
                 <div>

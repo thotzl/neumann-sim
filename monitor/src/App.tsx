@@ -31,6 +31,7 @@ export default function App() {
   const mapRef = useRef<HTMLDivElement>(null);
   
   const lastProcessedTick = useRef<number>(-1);
+  const lastProcessedEventId = useRef<number>(-1);
   const [vogMsg, setVogMsg] = useState("");
   const [selection, setSelection] = useState<Selection | null>(null);
 
@@ -133,25 +134,71 @@ export default function App() {
         }
 
         setState(data);
+        
+        // 1. Process thoughts (last_manifestation) per tick
         if (data.tick > lastProcessedTick.current) {
            const newEntries: LogEntry[] = [];
            data.agents.forEach(a => {
                if (a.last_manifestation?.trim()) {
-                   let raw = a.last_manifestation;
-                   const actionIdx = raw.search(/AKTION(?:EN)?[:]/i);
-                   if (actionIdx !== -1) {
-                       const thought = raw.substring(0, actionIdx).replace(/^(?:> )?ANALYSE:\s*/i, '').replace(/\[EIGENIMPULS\]:\s*/i, '').trim();
-                       const action = raw.substring(actionIdx).replace(/^AKTION(?:EN)?[:]\s*/i, '').trim();
-                       if (thought) newEntries.push({ id: `t-${data.tick}-${a.id}`, tick: data.tick, agentId: a.id, type: 'thought', text: thought });
-                       if (action) newEntries.push({ id: `a-${data.tick}-${a.id}`, tick: data.tick, agentId: a.id, type: action.includes('scut') ? 'scut' : 'action', text: action });
+                   const raw = a.last_manifestation.trim();
+                   
+                   // Robust Split for thoughts
+                   const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?AKTION(?:EN)?\s*(?:Befehl|Buffer)?[：:]*(?:\*\*|\*)?/i;
+                   const match = raw.match(actionRegex);
+                   
+                   let thought = '';
+                   if (match && match.index !== undefined) {
+                       thought = raw.substring(0, match.index).trim();
                    } else {
-                       const isSystem = raw.includes('[SYSTEM') || raw.includes('[OBSERVER');
-                       newEntries.push({ id: `u-${data.tick}-${a.id}`, tick: data.tick, agentId: a.id, type: isSystem ? 'system' : 'action', text: raw });
+                       const runMatch = raw.indexOf('[RUN:');
+                       if (runMatch !== -1) {
+                           thought = raw.substring(0, runMatch).trim();
+                       } else {
+                           thought = raw;
+                       }
+                   }
+                   
+                   thought = thought
+                       .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSE\s*[：:]*(?:\*\*|\*)?/i, '')
+                       .replace(/\[EIGENIMPULS\]:\s*/i, '')
+                       .trim();
+                       
+                   if (thought) {
+                       newEntries.push({ 
+                           id: `t-${data.tick}-${a.id}`, 
+                           tick: data.tick, 
+                           agentId: a.id, 
+                           type: 'thought', 
+                           text: thought 
+                       });
                    }
                }
            });
            if (newEntries.length > 0) setLogs(prev => [...prev, ...newEntries]);
            lastProcessedTick.current = data.tick;
+        }
+
+        // 2. Process physical actions from visual_events
+        if (data.visual_events && Array.isArray(data.visual_events)) {
+           // We sort and filter by rowid to process oldest to newest
+           const sortedEvents = [...data.visual_events]
+               .filter(e => e.rowid > lastProcessedEventId.current)
+               .sort((a, b) => a.rowid - b.rowid);
+               
+           if (sortedEvents.length > 0) {
+               const eventEntries: LogEntry[] = sortedEvents.map(e => {
+                   const isScut = e.description.includes('scut(') || e.description.includes('gemeldet') || e.description.includes('nachricht') || e.description.includes('SCUT');
+                   return {
+                       id: `ve-${e.rowid}`,
+                       tick: e.cycle,
+                       agentId: e.actor_id,
+                       type: isScut ? 'scut' : 'action',
+                       text: e.description
+                   };
+               });
+               setLogs(prev => [...prev, ...eventEntries]);
+               lastProcessedEventId.current = Math.max(...sortedEvents.map(e => e.rowid));
+           }
         }
       } catch (err) {}
     };

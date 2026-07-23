@@ -36,6 +36,10 @@ def validate_module_connectivity(matrix):
     """
     Checks if all modules spanning multiple tiles are orthogonally connected (Säule 3 Adjazenz).
     """
+    # 0. SSoT-Typsicherung (Säule 3 Robustheits-Garantie)
+    if not isinstance(matrix, list) or len(matrix) == 0 or any(not isinstance(row, list) for row in matrix):
+        return False, "Matrix must be a 2D list of lists (e.g., [['engine', 'cargo']]). Do not wrap in a dictionary."
+
     rows = len(matrix)
     cols = len(matrix[0]) if rows > 0 else 0
     
@@ -79,6 +83,10 @@ def evaluate_ship_matrix(name, matrix, rules):
     """
     Deterministischer 2D-Gitter Evaluator für Schiffe (Säule 3 Physik-Regelwerk).
     """
+    # 0. SSoT-Typsicherung (Säule 3 Robustheits-Garantie)
+    if not isinstance(matrix, list) or len(matrix) == 0 or any(not isinstance(row, list) for row in matrix):
+        return {"error": "Matrix must be a 2D list of lists (e.g., [['engine', 'cargo']]). Do not wrap in a dictionary."}
+
     p = rules.get('ship_physics') or rules.get('physics')
     
     # Adapt global rules (Säule 3 schema unification)

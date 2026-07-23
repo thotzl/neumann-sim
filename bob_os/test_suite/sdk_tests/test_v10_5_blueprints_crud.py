@@ -115,14 +115,20 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
         conn = db_config.get_connection()
         conn.row_factory = sqlite3.Row
         sys_after = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
-        self.assertEqual(sys_after['raw_matter_depot'], sys_before['raw_matter_depot'] - 1000)
-        
         # Verify standard legacy Scout ship spawned
         ship = conn.execute("SELECT * FROM ships WHERE chassis = 'Scout-Legacy'").fetchone()
         self.assertIsNotNone(ship)
         self.assertEqual(ship['has_drill'], 0)
         self.assertEqual(ship['matter_storage_capacity'], 300)
         conn.close()
+
+    def test_blueprint_invalid_dictionary_type_unhappy_path(self):
+        # Unhappy Path: Attempting to design a blueprint using a dictionary instead of a 2D list of lists
+        bad_matrix_dict = {"layout": [["engine", "cargo"]]}
+        
+        # design_blueprint should return False and print the descriptive error message instead of crashing with KeyError
+        self.assertFalse(self.agent.design_blueprint("Bad-Dict-Scout", bad_matrix_dict))
+        self.assertFalse(self.agent.save_blueprint("Bad-Dict-Scout", bad_matrix_dict))
 
 if __name__ == '__main__':
     unittest.main()

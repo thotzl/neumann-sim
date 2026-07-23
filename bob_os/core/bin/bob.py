@@ -82,6 +82,20 @@ def print_help():
             print(f"- {method}: {desc}")
             print(f"  CLI: [RUN: me {method}] (oder me {method}())")
     print("-" * 50)
+    print("SCHIFFS-KONSTRUKTIONS-HANDBUCH (FREESTYLE ENGINEERING v10.5)")
+    print("Befehle: me.design_blueprint(name, matrix_json) / me.save_blueprint(name, matrix_json)")
+    print("Das matrix_json MUSS ein rohes 2D-Array (Liste von Listen) sein, z.B. '[[\"engine\", \"cargo\"], [\"logic_core\", \"battery\"]]'.")
+    print("Erlaubte Modulkacheln (Module):")
+    print("  - \"engine\": Triebwerk (Schub +500)")
+    print("  - \"cargo\": Frachtraum (Materie-Kapazität +2500)")
+    print("  - \"battery\": Energiespeicher (Energie-Kapazität +5000)")
+    print("  - \"solar\": Solarpaneel (Passiver Energiezufluss +5E/Runde)")
+    print("  - \"comm\": Funkantenne (Ermöglicht Sektor-Funkverkehr)")
+    print("  - \"drill\": Bohr-Modul (Schaltet me.mine() frei)")
+    print("  - \"fabricator\": Fertigung (Schaltet me.build() frei)")
+    print("  - \"logic_core\": Logik-Kern (Eignung für autonome Roamer)")
+    print("HINWEIS: Alle Module desselben Typs müssen orthogonal zusammenhängen (Adjazenz-BFS).")
+    print("-" * 50)
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ["--help", "-h"]:

@@ -27,7 +27,7 @@ DESCRIPTIONS = {
     "repair": "Repariert beschädigte Infrastruktur (Struktur-ID aus Dashboard nötig).",
     "deconstruct": "Baut Infrastruktur ab und erstattet Teil der Materie.",
     "move": "Startet eine Reise zu einem anderen (entdeckten) System.",
-    "replicate": "Erschafft einen autarken Sonden-Replikanten in einer aktiven mind_forge.",
+    "replicate": "Erschafft einen autarken Sonden-Replikanten in einer aktiven mind_forge (ID wird vom Sonden-Kernel generiert).",
     "set_name": "Legt eine individuelle Identität (Namen) fest.",
     "rename_system": "Gibt dem aktuellen System einen neuen Anzeigenamen.",
     "scan": "Scannt die Umgebung nach neuen Systemen (Deep Space Scan).",
@@ -120,7 +120,7 @@ def main():
         elif method == "build": agent.build(building_type=params.get('building_type'), matter_to_invest=safe_int(params.get('matter_to_invest'), 'matter_to_invest', 100))
         elif method == "deconstruct": agent.deconstruct(structure_id=safe_int(params.get('structure_id'), 'structure_id'))
         elif method == "move": agent.move(target_system=params.get('target_system'))
-        elif method == "replicate": agent.replicate(new_agent_id=params.get('new_agent_id'))
+        elif method == "replicate": agent.replicate()
         elif method == "set_name": agent.set_name(name=params.get('name'))
         elif method == "rename_system": agent.rename_system(new_name=params.get('new_name'))
         elif method == "scan": agent.scan()

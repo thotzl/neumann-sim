@@ -42,12 +42,13 @@ class TestReplicate(unittest.TestCase):
         conn.commit()
         conn.close()
 
-        success = self.agent.replicate(new_agent_id='Instance-2')
-        self.assertTrue(success)
+        success_id = self.agent.replicate()
+        self.assertIsNotNone(success_id)
+        self.assertTrue(success_id.startswith("X0Y0-C"))
         
         # Test if the new agent is disembodied
         conn = db_config.get_connection()
-        clone = conn.execute("SELECT active_ship_id FROM agents WHERE id = 'Instance-2'").fetchone()
+        clone = conn.execute("SELECT active_ship_id FROM agents WHERE id = ?", (success_id,)).fetchone()
         self.assertIsNone(clone['active_ship_id'])
         conn.close()
 
@@ -55,7 +56,7 @@ class TestReplicate(unittest.TestCase):
         with open(TEST_POP, 'r') as f:
             pop = json.load(f)
         self.assertEqual(len(pop['agents']), 1)
-        self.assertEqual(pop['agents'][0]['id'], 'Instance-2')
+        self.assertEqual(pop['agents'][0]['id'], success_id)
         self.assertIn("Lege mit 'set_name' deine individuelle Identität fest", pop['agents'][0]['system_prompt'])
 
         # Überprüfe DB

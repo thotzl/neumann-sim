@@ -46,7 +46,7 @@ class Agent:
     def repair(self, structure_id, hp_to_restore=50): return self.actuators.repair(structure_id, hp_to_restore)
     def deconstruct(self, structure_id): return self.actuators.deconstruct(structure_id)
     def move(self, target_system): return self.actuators.move(target_system)
-    def replicate(self, new_agent_id): return self.actuators.replicate(new_agent_id)
+    def replicate(self): return self.actuators.replicate()
     def set_name(self, name): return self.actuators.set_name(name)
     def rename_system(self, new_name): return self.actuators.rename_system(new_name)
     def board(self, ship_id): return self.actuators.board(ship_id)
@@ -501,7 +501,7 @@ class Actuators:
         return True
 
     @agent_service.with_agent_context(require_active=True, action_name='Replication')
-    def replicate(self, cursor, agent, new_agent_id):
+    def replicate(self, cursor, agent):
         sys_name = agent['location']
         system = system_service.get_system_or_fail(cursor, sys_name)
         
@@ -516,6 +516,28 @@ class Actuators:
         if system['refined_matter_depot'] < matter_cost:
             print(f"[ERROR] System depot low on refined matter ({system['refined_matter_depot']}/{matter_cost}).")
             return False
+            
+        # Dynamische RSNS Seriennummer-Zuweisung (Säule 1 & 3)
+        # 1. Lokalisation (X..Y..)
+        x_code = int(system['x'] / 100)
+        y_code = int(system['y'] / 100)
+        loc_seg = f"X{x_code}Y{y_code}"
+        
+        # 2. Chronologie (Aktueller Zyklus aus visual_events auslesen)
+        try:
+            cursor.execute("SELECT COALESCE(MAX(cycle), 0) FROM visual_events")
+            current_cycle = cursor.fetchone()[0]
+        except:
+            current_cycle = 0
+        cycle_seg = f"C{current_cycle}"
+        
+        # 3. 6-stelliger Alphanumerischer Unique-Identifier (Großbuchstaben und Zahlen!)
+        import random
+        import string
+        uniq_chars = string.ascii_uppercase + string.digits
+        uniq_seg = "".join(random.choices(uniq_chars, k=6))
+        
+        new_agent_id = f"{loc_seg}-{cycle_seg}-{uniq_seg}"
         
         # Check for host (sem_matrix or unpiloted ship)
         cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'sem_matrix' AND status = 'active'", (sys_name,))
@@ -562,9 +584,9 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
 
         cursor.execute("""
             INSERT OR IGNORE INTO agents 
-            (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) 
-            VALUES (?, 'Unnamed', ?, ?, 'active', ?, ?, ?)
-        """, (new_agent_id, host_id, host_type, system['x'], system['y'], active_ship_id))
+            (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id, birth_cycle) 
+            VALUES (?, 'Unnamed', ?, ?, 'active', ?, ?, ?, ?)
+        """, (new_agent_id, host_id, host_type, system['x'], system['y'], active_ship_id, current_cycle))
         
         pop_file = os.environ.get('TEST_POP_PATH', os.path.abspath(os.path.join(os.environ.get('VERSE_DIR', ''), 'population.json')))
         try:
@@ -576,7 +598,7 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
         except Exception as e: pass
 
         print(f"[SUCCESS] Clone '{new_agent_id}' started.")
-        return True
+        return new_agent_id
 
     @agent_service.with_agent_context(allow_disembodied=True)
     def set_name(self, cursor, agent, name):

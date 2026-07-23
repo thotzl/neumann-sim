@@ -32,13 +32,8 @@ class TestReplicateHostGuard(unittest.TestCase):
 
     def test_replicate_denied_no_host(self):
         agent = bob_sdk.Agent('Instance-1')
-        res = agent.replicate("Clone-Fail")
+        res = agent.replicate()
         self.assertFalse(res)
-        
-        conn = db_config.get_connection()
-        clone = conn.execute("SELECT * FROM agents WHERE id='Clone-Fail'").fetchone()
-        self.assertIsNone(clone)
-        conn.close()
 
     def test_replicate_success_with_sem_matrix(self):
         conn = db_config.get_connection()
@@ -47,11 +42,12 @@ class TestReplicateHostGuard(unittest.TestCase):
         conn.close()
         
         agent = bob_sdk.Agent('Instance-1')
-        res = agent.replicate("Clone-Matrix")
-        self.assertTrue(res)
+        res_id = agent.replicate()
+        self.assertIsNotNone(res_id)
+        self.assertTrue(res_id.startswith("X0Y0-C"))
         
         conn = db_config.get_connection()
-        clone = conn.execute("SELECT * FROM agents WHERE id='Clone-Matrix'").fetchone()
+        clone = conn.execute("SELECT * FROM agents WHERE id=?", (res_id,)).fetchone()
         self.assertIsNotNone(clone)
         conn.close()
 
@@ -62,11 +58,12 @@ class TestReplicateHostGuard(unittest.TestCase):
         conn.close()
         
         agent = bob_sdk.Agent('Instance-1')
-        res = agent.replicate("Clone-Ship")
-        self.assertTrue(res)
+        res_id = agent.replicate()
+        self.assertIsNotNone(res_id)
+        self.assertTrue(res_id.startswith("X0Y0-C"))
         
         conn = db_config.get_connection()
-        clone = conn.execute("SELECT * FROM agents WHERE id='Clone-Ship'").fetchone()
+        clone = conn.execute("SELECT * FROM agents WHERE id=?", (res_id,)).fetchone()
         self.assertIsNotNone(clone)
         conn.close()
 

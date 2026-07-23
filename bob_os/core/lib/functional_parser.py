@@ -9,7 +9,7 @@ METHOD_META = {
     "repair": {"params": ["structure_id", "hp_to_restore"], "greedy": None},
     "deconstruct": {"params": ["structure_id"], "greedy": None},
     "move": {"params": ["target_system"], "greedy": None},
-    "replicate": {"params": ["new_agent_id"], "greedy": None},
+    "replicate": {"params": [], "greedy": None},
     "set_name": {"params": ["name"], "greedy": "name"},
     "rename_system": {"params": ["new_name"], "greedy": "new_name"},
     "scan": {"params": [], "greedy": None},

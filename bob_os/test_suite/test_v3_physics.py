@@ -46,7 +46,7 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         
         self.assertEqual(res['location'], 'SYS-X0-Y0')
         self.assertEqual(res['energy_inventory'], start_energy - mine_cost)
-        self.assertEqual(res['raw_matter_inventory'], 100)
+        self.assertEqual(res['raw_matter_inventory'], 250)
         conn.close()
 
     def test_02_async_build_in_grid(self):

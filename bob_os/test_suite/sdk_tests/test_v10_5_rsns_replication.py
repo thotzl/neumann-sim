@@ -44,12 +44,11 @@ class TestV105RSNSReplication(unittest.TestCase):
             VALUES ('Instance-1', 'Pioneer', '1', 'ship', 'active', 500, 1000, 1)
         """)
         
-        # 2. Seede visual_events, um den aktuellen Zyklus auf 65 zu setzen.
-        # Dies muss sich im C-Segment des Replikanten als 'C65' niederschlagen!
-        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (65, 'SYS-X500-Y1000', 'Instance-1', 'Replication', 'Pioneer initiated cell mitosis.')")
-        
         conn.commit()
         conn.close()
+        
+        # Setze den aktuellen Zyklus über die BOB_CYCLE-Umgebungsvariable (Soll-Verhalten der Engine!)
+        os.environ['BOB_CYCLE'] = '65'
         
         with open(TEST_POP, 'w') as f:
             f.write('{"agents": []}')
@@ -60,6 +59,7 @@ class TestV105RSNSReplication(unittest.TestCase):
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_POP): os.remove(TEST_POP)
         if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
+        if 'BOB_CYCLE' in os.environ: del os.environ['BOB_CYCLE']
         if 'TEST_DB_PATH' in os.environ: del os.environ['TEST_DB_PATH']
         if 'TEST_POP_PATH' in os.environ: del os.environ['TEST_POP_PATH']
 

@@ -39,8 +39,10 @@ class TestFullSDK(unittest.TestCase):
         success = self.agent.mine()
         self.assertTrue(success)
         status = self.agent.sensors.storage()
-        self.assertEqual(status['raw_matter_inventory'], 150)
-        self.assertEqual(status['energy_inventory'], 70)
+        # Starting raw matter was 50, yield is 250 -> total 300!
+        # Starting energy was 100, cost is 20 -> total 80!
+        self.assertEqual(status['raw_matter_inventory'], 300)
+        self.assertEqual(status['energy_inventory'], 80)
 
     def test_deposit_success(self):
         success = self.agent.logistics.deposit(quantity=50)

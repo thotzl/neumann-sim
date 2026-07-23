@@ -57,11 +57,11 @@ def get_agent_or_fail(cursor, agent_id, required_columns="*"):
                     ELSE 100
                 END AS matter_storage_capacity
             FROM agents a
-            WHERE a.id = ? OR a.chosen_name = ?
-        """, (agent_id, agent_id))
+            WHERE a.id = ?
+        """, (agent_id,))
     except sqlite3.OperationalError:
         # Fallback for unittests that create a legacy mock database layout!
-        cursor.execute("SELECT * FROM agents WHERE id = ? OR chosen_name = ?", (agent_id, agent_id))
+        cursor.execute("SELECT * FROM agents WHERE id = ?", (agent_id,))
 
     row = cursor.fetchone()
     if not row:

@@ -1,24 +1,24 @@
 {
   "agent_limits": {
-    "matter": 300,
+    "matter": 500,
     "energy": 500,
     "energy_regen_base": 10,
     "energy_drain_idle": 0
   },
   "tool_costs": {
-    "mine": { "energy_cost": 30, "matter_yield": 100 },
+    "mine": { "energy_cost": 20, "matter_yield": 250 },
     "build": { "energy_cost": 15 },
     "scan": { "energy_cost": 40, "matter_cost": 0 },
     "move": { "energy_cost": 0, "matter_cost": 0, "cost_per_distance": 0.1 },
     "replicate": { "energy_cost": 180, "matter_cost": 1000 },
-    "refine": { "energy_cost": 50, "raw_matter_cost": 100, "refined_yield": 100 }
+    "refine": { "energy_cost": 20, "raw_matter_cost": 100, "refined_yield": 100 }
   },
   "infrastructure": {
     "matter_silo": { "matter_cost": 400, "required_material": "raw_matter", "matter_capacity_bonus": 1000, "maintenance_energy_cost": 0 },
     "solar_collector": { "matter_cost": 400, "required_material": "raw_matter", "energy_capacity_bonus": 1000, "energy_regen_bonus": 100, "maintenance_energy_cost": 0 },
-    "shipyard": { "matter_cost": 1000, "required_material": "raw_matter", "allows_ship_building": true, "maintenance_energy_cost": 0 },
+    "shipyard": { "matter_cost": 1000, "required_material": "raw_matter", "allows_ship_building": true, "maintenance_energy_cost": 2 },
     "battery_bank": { "matter_cost": 600, "required_material": "raw_matter", "energy_capacity_bonus": 5000, "maintenance_energy_cost": 0 },
-    "matter_refinery": { "matter_cost": 800, "required_material": "raw_matter", "allows_refine": true, "maintenance_energy_cost": 0 },
+    "matter_refinery": { "matter_cost": 800, "required_material": "raw_matter", "allows_refine": true, "maintenance_energy_cost": 2 },
     "sat_link": { "matter_cost": 500, "required_material": "raw_matter", "scan_cost_multiplier": 0.5, "maintenance_energy_cost": 2 },
     "comms_relay": { "matter_cost": 300, "required_material": "raw_matter", "maintenance_energy_cost": 3 },
     "sem_matrix": { "matter_cost": 500, "required_material": "refined_matter", "allows_disembodied_hosting": true, "maintenance_energy_cost": 5 },
@@ -27,6 +27,8 @@
     "deep_space_scanner": { "matter_cost": 800, "required_material": "refined_matter", "scan_range_bonus": 2000, "maintenance_energy_cost": 10 }
   },
   "global_settings": {
+    "default_sector_depot_capacity": 5000,
+    "default_sector_core_resources": 50000,
     "decay_per_tick": 1,
     "decay_interval": 10,
     "core_regen_per_tick": 5,
@@ -45,13 +47,13 @@
       "base_speed": 20,
       "base_travel_cost": 0.05,
       "mass_efficiency_divisor": 1000,
-      "shipyard_rate": 250
+      "shipyard_rate": 500
     }
   },
   "ship_physics": {
     "chassis_tile": { "mass": 20, "cost": 50 },
     "engine": { "max_thrust_per_tile": 500, "mass_per_thrust": 0.1, "cost_per_thrust": 0.5, "drain_per_thrust": 0.05 },
-    "cargo": { "max_volume_per_tile": 2500, "mass_per_volume": 0.05, "cost_per_volume": 0.2 },
+    "cargo": { "max_volume_per_tile": 5000, "mass_per_volume": 0.025, "cost_per_volume": 0.1 },
     "battery": { "max_energy_per_tile": 5000, "mass_per_energy": 0.01, "cost_per_energy": 0.1 },
     "solar": { "max_regen_per_tile": 25, "mass_per_regen": 0.5, "cost_per_regen": 20 },
     "comm": { "max_range_per_tile": 10000, "mass_per_range": 0.005, "cost_per_range": 0.2, "idle_drain": 5 },

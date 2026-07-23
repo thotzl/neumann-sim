@@ -14,6 +14,7 @@ try:
     from . import config_service
     from . import physics_service
     from . import transaction_service
+    from .utils.formatting import get_display_name, get_display_name_with_id
 except ImportError:
     from core.lib.db_config import get_connection
     from core.lib import agent_service
@@ -21,6 +22,7 @@ except ImportError:
     from core.lib import config_service
     from core.lib import physics_service
     from core.lib import transaction_service
+    from core.lib.utils.formatting import get_display_name, get_display_name_with_id
 
 class BobSDKError(Exception):
     pass
@@ -127,8 +129,10 @@ class Actuators:
                 print("[DENIED] Action failed. Your ship chassis lacks a 'drill' module.")
                 return False
                 
-        cost = self.rules.get('tool_costs', {}).get('mine', {}).get('energy_cost', 30)
-        if agent['energy_inventory'] < cost: 
+        rule = self.rules.get('tool_costs', {}).get('mine', {})
+        cost = rule.get('energy_cost', 30)
+        matter_yield = rule.get('matter_yield', 100)
+        if agent['energy_inventory'] < cost:
             print(f"[FEHLER] Batterie leer (braucht {cost} Energie).")
             return False
         if agent['raw_matter_inventory'] >= agent['matter_storage_capacity']:
@@ -139,13 +143,15 @@ class Actuators:
         if not system or system['extractable_matter_in_core'] <= 0:
             print(f"[INFO] Ressourcen in {sys_name} erschöpft.")
             return False
-        
-        # Update raw matter (+100) and deduct energy (-cost) from the host (Säule 1)
-        actual_add = min(100, agent['matter_storage_capacity'] - agent['raw_matter_inventory'])
+
+        # Update raw matter and deduct energy (-cost) from the host (Säule 1)
+        actual_add = min(matter_yield, agent['matter_storage_capacity'] - agent['raw_matter_inventory'])
         agent_service.update_agent_resources(cursor, self.agent.id, raw_matter=actual_add, energy=-cost)
-        cursor.execute("UPDATE systems SET extractable_matter_in_core = extractable_matter_in_core - 100 WHERE name = ?", (sys_name,))
-        self._emit_visual(cursor, "MINING", f"Agent {self.agent.id} hat Materie abgebaut.")
-        print(f"[SUCCESS] 100 matter mined. Energy -{cost}.")
+        cursor.execute("UPDATE systems SET extractable_matter_in_core = extractable_matter_in_core - ? WHERE name = ?", (actual_add, sys_name))
+        
+        self_name = get_display_name_with_id(agent)
+        self._emit_visual(cursor, "MINING", f"{self_name} hat Materie abgebaut.")
+        print(f"[SUCCESS] {actual_add} matter mined. Energy -{cost}.")
         return True
 
     @agent_service.with_agent_context(require_active=True, action_name='Refining')
@@ -523,12 +529,14 @@ class Actuators:
         y_code = int(system['y'] / 100)
         loc_seg = f"X{x_code}Y{y_code}"
         
-        # 2. Chronologie (Aktueller Zyklus aus visual_events auslesen)
-        try:
-            cursor.execute("SELECT COALESCE(MAX(cycle), 0) FROM visual_events")
-            current_cycle = cursor.fetchone()[0]
-        except:
-            current_cycle = 0
+        # 2. Chronologie (Aktueller Zyklus vorrangig aus BOB_CYCLE-Umgebung auslesen)
+        current_cycle = int(os.environ.get('BOB_CYCLE', 0))
+        if current_cycle == 0:
+            try:
+                cursor.execute("SELECT COALESCE(MAX(cycle), 0) FROM visual_events")
+                current_cycle = cursor.fetchone()[0]
+            except:
+                current_cycle = 0
         cycle_seg = f"C{current_cycle}"
         
         # 3. 6-stelliger Alphanumerischer Unique-Identifier (Großbuchstaben und Zahlen!)
@@ -575,7 +583,8 @@ class Actuators:
         system_service.update_system_resources(cursor, sys_name, energy_change=-energy_from_sys)
         cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot - ? WHERE name = ?", (matter_cost, sys_name))
         
-        klon_prompt = f"""STATUS: Boot-Sequenz abgeschlossen. ID: {new_agent_id}. Ursprung: {self.agent.id}.
+        parent_display = get_display_name_with_id(agent)
+        klon_prompt = f"""STATUS: Boot-Sequenz abgeschlossen. ID: {new_agent_id}. Ursprung: {parent_display}.
 Du verfügst über die Erinnerungen deines Ursprungs bis zum Start deiner Replikation. Um dich in die aktuelle Situation des Schwarms zu integrieren:
 1. Lege mit 'set_name' deine individuelle Identität fest.
 2. Kontaktiere deinen Ursprung ({self.agent.id}) via SCUT, um ein Situations-Briefing und deine initiale Aufgabe für dieses System zu erhalten.
@@ -841,7 +850,18 @@ class Sensors:
             """, (sys_name, self.agent.id))
         except sqlite3.OperationalError:
             cursor.execute("SELECT id, chosen_name, status, NULL as host_type, NULL as host_id FROM agents WHERE location = ? AND id != ?", (sys_name, self.agent.id))
-        local_bobs = [dict(r) for r in cursor.fetchall()]
+        
+        # Name-First Formatierung für lokale andere Instanzen (Säule 1 & 3)
+        local_bobs = []
+        for r in cursor.fetchall():
+            local_bobs.append({
+                "name": get_display_name(r),
+                "id": r['id'],
+                "chosen_name": r['chosen_name'], # Legacy-Alias für 100% Abwärtskompatibilität!
+                "status": r['status'],
+                "host_type": r['host_type'] if r['host_type'] else "Unknown",
+                "host_id": r['host_id'] if r['host_id'] else "Unknown"
+            })
 
         # 4. Beobachtungen anderer Agenten ("Unread Events")
         unread_events = []
@@ -889,7 +909,17 @@ class Sensors:
                     FROM agents
                 ) WHERE location != ? AND id != ?
             """, (sys_name, self.agent.id))
-            distant_bobs = [dict(r) for r in cursor.fetchall()]
+            
+            # Name-First Formatierung für entfernte andere Instanzen (Säule 1 & 3)
+            distant_bobs = []
+            for r in cursor.fetchall():
+                distant_bobs.append({
+                    "name": get_display_name(r),
+                    "id": r['id'],
+                    "chosen_name": r['chosen_name'], # Legacy-Alias
+                    "location": r['location'],
+                    "status": r['status']
+                })
         except sqlite3.OperationalError:
             distant_bobs = []
 
@@ -918,6 +948,33 @@ class Sensors:
             storage_capacity = system['depot_matter_capacity']
             current_inventory_host = f"system depot '{system['name']}'"
 
+        # Host-Schiffsdaten vorab sauber laden (0 lambda-Verschachtelungen!)
+        host_dict = {}
+        if host_type == 'ship' and host_id:
+            cursor.execute("""
+                SELECT name, blueprint_name, mass, max_speed, thrust, energy_capacity, 
+                       matter_storage_capacity, has_drill, has_fabricator, has_logic_core 
+                FROM ships WHERE id = CAST(? AS INTEGER)
+            """, (host_id,))
+            r = cursor.fetchone()
+            if r:
+                host_dict = {
+                    "name": r['name'] or "Unnamed",
+                    "blueprint": r['blueprint_name'],
+                    "stats": {
+                        "mass": r['mass'],
+                        "max_speed": r['max_speed'],
+                        "thrust": r['thrust'],
+                        "energy_capacity": r['energy_capacity'],
+                        "storage_capacity": r['matter_storage_capacity']
+                    },
+                    "capabilities": {
+                        "drill": "active" if r['has_drill'] else "inactive",
+                        "fabricator": "active" if r['has_fabricator'] else "inactive",
+                        "logic_core": "active" if r['has_logic_core'] else "inactive"
+                    }
+                }
+
         return {
             "lokales_system": {
                 "name": sys_name,
@@ -938,7 +995,7 @@ class Sensors:
             "beobachtungen_anderer_instanzen": unread_events,
             "dein_status": {
                 "id": agent['id'],
-                "name": agent['chosen_name'],
+                "name": get_display_name(agent),
                 "host_type": host_type,
                 "host_id": host_id,
                 "current_inventory_host": current_inventory_host,
@@ -950,8 +1007,7 @@ class Sensors:
                 "storage_capacity": storage_capacity,
                 "status": agent['status'],
                 "offene_memos_und_protokolle": memos_list,
-                # NEU (Säule 1 & 3): Kognitive Host-Verschachtelung mit echten Gitter-Schiffskonfigurationen
-                "host": (lambda: {
+                "host": {
                     "type": host_type,
                     "id": host_id,
                     "inventory": {
@@ -960,29 +1016,8 @@ class Sensors:
                         "energy": agent['energy_inventory']
                     },
                     "storage_capacity": storage_capacity,
-                    **((lambda: (lambda r: {
-                        "name": r['name'],
-                        "blueprint": r['blueprint_name'],
-                        "stats": {
-                            "mass": r['mass'],
-                            "max_speed": r['max_speed'],
-                            "thrust": r['thrust'],
-                            "energy_capacity": r['energy_capacity'],
-                            "storage_capacity": r['matter_storage_capacity']
-                        },
-                        "capabilities": {
-                            "drill": "active" if r['has_drill'] else "inactive",
-                            "fabricator": "active" if r['has_fabricator'] else "inactive",
-                            "logic_core": "active" if r['has_logic_core'] else "inactive"
-                        }
-                    } if r else {})(
-                        cursor.execute("""
-                            SELECT name, blueprint_name, mass, max_speed, thrust, energy_capacity, 
-                                   matter_storage_capacity, has_drill, has_fabricator, has_logic_core 
-                            FROM ships WHERE id = CAST(? AS INTEGER)
-                        """, (host_id,)).fetchone()
-                    ))() if (host_type == 'ship' and host_id) else {})
-                })()
+                    **host_dict
+                }
             },
             "radar_entfernter_sektoren": other_systems,
             "radar_entfernter_agenten": distant_bobs,
@@ -1138,7 +1173,7 @@ class Logistics:
             print(f"[FEHLER] Unbekannte Ressource für Transfer: {resource_type}")
             return False
             
-        print(f"[SUCCESS] {quantity} {resource_type} transferred to {receiver_id}.")
+        print(f"[SUCCESS] {quantity} {resource_type} transferred to {get_display_name_with_id(target)}.")
         return True
 
 class Comms:
@@ -1197,10 +1232,10 @@ class Comms:
                                WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
                                ELSE 'Unknown'
                            END AS location
-                    FROM agents WHERE id = ? OR chosen_name = ?
-                """, (receiver_id, receiver_id))
+                    FROM agents WHERE id = ?
+                """, (receiver_id,))
             except sqlite3.OperationalError:
-                cursor.execute("SELECT id, location, current_x, current_y FROM agents WHERE id = ? OR chosen_name = ?", (receiver_id, receiver_id))
+                cursor.execute("SELECT id, location, current_x, current_y FROM agents WHERE id = ?", (receiver_id,))
                 
             target_agent = cursor.fetchone()
             if not target_agent:
@@ -1218,7 +1253,7 @@ class Comms:
                         return False
 
             cursor.execute("INSERT INTO messages (sender, receiver, content) VALUES (?, ?, ?)", (self.agent.id, real_target_id, message))
-            print(f"[SUCCESS] Message buffered for transmission to {real_target_id}.")
+            print(f"[SUCCESS] Message buffered for transmission to {get_display_name_with_id(target_agent)}.")
             return True
 
 

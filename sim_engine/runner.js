@@ -200,7 +200,13 @@ print(json.dumps({"messages": msgs}))`;
             inboxText += "\n[POSTEINGANG (Ereignisse des letzten Zyklus)]:\n";
             myInbox.forEach(item => {
                 if (item.type === 'vog') inboxText += `[VOICE OF GOD]: ${item.text}\n`;
-                if (item.type === 'scut') inboxText += `[SCUT] Von ${item.sender}: ${item.content}\n`;
+                if (item.type === 'scut') {
+                    const senderAgent = state.agents.find(a => a.id === item.sender);
+                    const senderName = senderAgent 
+                        ? `${senderAgent.chosen_name} (ID: ${item.sender})` 
+                        : `Unnamed (ID: ${item.sender})`;
+                    inboxText += `[SCUT] Von ${senderName}: ${item.content}\n`;
+                }
                 if (item.type === 'visual') inboxText += `[OBSERVER] ${item.description}\n`;
                 if (item.type === 'automation') inboxText += `[SYSTEM-AUTOMATION]: ${item.text}\n`;
                 if (item.type === 'resonance') inboxText += `\n${item.text}\n`;

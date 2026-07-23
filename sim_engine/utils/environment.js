@@ -253,6 +253,7 @@ function processActions(text, universeDir, agentId, state) {
                     ...process.env, 
                     PYTHONPATH: expRoot, 
                     BOB_ID: agentId,
+                    BOB_CYCLE: String(state?.round || 0),
                     TEST_DB_PATH: path.join(universeDir, 'universe.db')
                 }
             }).toString();

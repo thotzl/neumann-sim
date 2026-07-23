@@ -77,8 +77,8 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
         # 4. Build ship from this custom blueprint
         conn = db_config.get_connection()
         sys_before = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
-        # Build cost is 100 (base) + 4 tiles * 50 (chassis) + 800 (log) + 250 (eng) + 600 (drl) + 500 (crg) = 2350 refined_matter
-        self.assertEqual(blueprints[0]['stats']['cost'], 2350)
+        # Build cost is 100 (base) + 4 tiles * 50 (chassis) + 800 (log) + 250 (eng) + 600 (drl) + 250 (crg) = 2100 refined_matter
+        self.assertEqual(blueprints[0]['stats']['cost'], 2100)
         conn.close()
 
         self.assertTrue(self.agent.build_ship(blueprint_name="Mini-Miner"))
@@ -86,9 +86,9 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
         # Verify resources deducted from Sektor-Depot and ship spawned with capability flags
         conn = db_config.get_connection()
         conn.row_factory = sqlite3.Row
-        
+
         sys_after = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
-        self.assertEqual(sys_after['refined_matter_depot'], sys_before['refined_matter_depot'] - 2350)
+        self.assertEqual(sys_after['refined_matter_depot'], sys_before['refined_matter_depot'] - 2100)
         
         ship = conn.execute("SELECT * FROM ships WHERE blueprint_name = 'Mini-Miner'").fetchone()
         self.assertIsNotNone(ship)

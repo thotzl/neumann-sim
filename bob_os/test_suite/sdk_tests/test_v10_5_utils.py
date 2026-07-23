@@ -48,5 +48,38 @@ class TestV105Utils(unittest.TestCase):
         self.assertTrue(math_helpers.is_within_bounds(100, -200))
         self.assertFalse(math_helpers.is_within_bounds(9999, 0))
 
+    def test_get_display_name_happy_path(self):
+        # 1. Agent mit Namen
+        agent = {"id": "Instance-1", "chosen_name": "Robert"}
+        self.assertEqual(formatting.get_display_name(agent), "Robert")
+        
+    def test_get_display_name_fallback_unnamed(self):
+        # 2. Agent ohne Name (None)
+        agent_none = {"id": "Instance-1", "chosen_name": None}
+        self.assertEqual(formatting.get_display_name(agent_none), "Unnamed")
+        
+        # 3. Agent mit Name 'Unnamed'
+        agent_unnamed = {"id": "Instance-1", "chosen_name": "Unnamed"}
+        self.assertEqual(formatting.get_display_name(agent_unnamed), "Unnamed")
+        
+        # 4. Leerer Datensatz / Fallback
+        self.assertEqual(formatting.get_display_name({}), "Unnamed")
+        self.assertEqual(formatting.get_display_name(None), "Unnamed")
+
+    def test_get_display_name_with_id_happy_path(self):
+        # 1. Mit Namen und ID im Dict
+        agent = {"id": "Instance-1", "chosen_name": "Robert"}
+        self.assertEqual(formatting.get_display_name_with_id(agent), "Robert (ID: Instance-1)")
+        
+    def test_get_display_name_with_id_unnamed(self):
+        # 2. Unbenannt mit ID im Dict
+        agent = {"id": "Instance-1", "chosen_name": None}
+        self.assertEqual(formatting.get_display_name_with_id(agent), "Unnamed (ID: Instance-1)")
+        
+    def test_get_display_name_with_id_explicit_override(self):
+        # 3. Explizite ID-Übergabe
+        agent = {"chosen_name": "Alice"}
+        self.assertEqual(formatting.get_display_name_with_id(agent, "Alice-ID"), "Alice (ID: Alice-ID)")
+
 if __name__ == '__main__':
     unittest.main()

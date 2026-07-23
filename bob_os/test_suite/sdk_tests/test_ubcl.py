@@ -53,7 +53,7 @@ class TestUBCL(unittest.TestCase):
                 f"DB SYSTEMS: {sys_data}"
             )
             
-        self.assertIn('[SUCCESS] 100 matter mined', result.stdout)
+        self.assertIn('[SUCCESS] 250 matter mined', result.stdout)
 
     def test_cli_scut_keywords(self):
         env = os.environ.copy()
@@ -62,7 +62,7 @@ class TestUBCL(unittest.TestCase):
         # Teste, ob der Parser receiver_id und message korrekt an die SDK weitergibt
         cmd = [sys.executable, os.path.join(BASE_DIR, 'core', 'bin', 'bob.py'), 'scut(receiver_id=Bob-Alpha, message=Test)']
         result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-        self.assertIn('[SUCCESS] Message buffered for transmission to Bob-Alpha.', result.stdout)
+        self.assertIn('[SUCCESS] Message buffered for transmission to Unnamed (ID: Bob-Alpha).', result.stdout)
 
     def test_cli_storage(self):
         env = os.environ.copy()

@@ -24,6 +24,7 @@ async function start() {
         { name: "Python Physics v3 (Geometry)", cmd: "python3 -m unittest discover -s bob_os/test_suite -p 'test_v3_*.py'" },
         { name: "Python Logistics v3.1 (Transit)", cmd: "python3 bob_os/test_suite/test_v3_1_logistics.py" },
         { name: "Python Ship Balancing Simulation", cmd: "python3 sim_engine/verify_ship_balancing.py" },
+        { name: "Python Economy Balancing Simulation", cmd: "python3 sim_engine/verify_economy_balancing.py" },
         { name: "JS Environment Core", cmd: "node bob_os/test_suite/test_environment.js" },
         { name: "JS Parser Isolation", cmd: "node bob_os/test_suite/test_environment_replace.js" },
         { name: "JS Diary-Only Memory", cmd: "node bob_os/test_suite/test_diary_only.js" },

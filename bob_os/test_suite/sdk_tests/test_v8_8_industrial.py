@@ -73,7 +73,8 @@ class TestV8_8Industrial(unittest.TestCase):
         
         # System Depot sollte leer sein, Output in Inv (da Kapazität 2000 ist, passt alles rein)
         self.assertEqual(sys_data['raw_matter_depot'], 0)
-        self.assertEqual(sys_data['energy_depot'], 0)
+        # Starting energy: 250. 5 refining batches * 20 energy cost = 100. Remaining: 150!
+        self.assertEqual(sys_data['energy_depot'], 150)
         self.assertEqual(sys_data['refined_matter_depot'], 0)
         self.assertEqual(agent_data['refined_matter_inventory'], 500)
         

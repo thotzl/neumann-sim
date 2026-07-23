@@ -27,6 +27,7 @@ class TestFlatSDK(unittest.TestCase):
         c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-1', 'Pioneer', 'SYS-A', 100, 500, 0, 1000, 'active', 0, 0)")
         c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-2', 'Klon', 'SYS-A', 100, 50, 0, 100, 'active', 0, 0)")
         c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, x, y) VALUES ('SYS-A', 1000, 100, 1000, 500, 2500, 0, 0)")
+        c.execute("INSERT INTO infrastructure (system_name, type, status, progress_matter, required_matter) VALUES ('SYS-A', 'solar_collector', 'active', 400, 400)")
         conn.commit()
         conn.close()
         
@@ -36,13 +37,13 @@ class TestFlatSDK(unittest.TestCase):
         if os.path.exists(self.test_db): os.remove(self.test_db)
 
     def test_flat_mine(self):
-        # 1. Mine (30 Energie, +100 Materie)
+        # 1. Mine (20 Energie, +250 Materie)
         success = self.agent.mine()
         self.assertTrue(success)
         
         status = self.agent.storage()
-        self.assertEqual(status['raw_matter_inventory'], 600)
-        self.assertEqual(status['energy_inventory'], 70)
+        self.assertEqual(status['raw_matter_inventory'], 750) # 500 + 250 = 750!
+        self.assertEqual(status['energy_inventory'], 80)
 
     def test_flat_scan(self):
         success = self.agent.scan()
@@ -58,7 +59,7 @@ class TestFlatSDK(unittest.TestCase):
         self.assertTrue(success)
         
         conn = db_config.get_connection()
-        infra = conn.execute("SELECT type, progress_matter FROM infrastructure WHERE system_name='SYS-A'").fetchone()
+        infra = conn.execute("SELECT type, progress_matter FROM infrastructure WHERE system_name='SYS-A' AND type='shipyard'").fetchone()
         self.assertEqual(infra['type'], 'shipyard')
         self.assertEqual(infra['progress_matter'], 100)
         conn.close()

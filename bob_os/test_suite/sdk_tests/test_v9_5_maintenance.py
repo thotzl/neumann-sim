@@ -37,6 +37,7 @@ class TestMaintenanceCooldown(unittest.TestCase):
             
         c.execute("INSERT INTO systems (name, extractable_matter_in_core) VALUES ('SYS-A', 1000)")
         c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, status) VALUES ('Instance-1', 'SYS-A', 1000, 1000, 'active')")
+        c.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS-A', 'solar_collector', 'active', 1, 100)")
         conn.commit()
         
         self.agent = bob_sdk.Agent()

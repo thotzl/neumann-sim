@@ -245,6 +245,16 @@ class Actuators:
                 return False
 
         infra_rules = self.rules.get('infrastructure', {}).get(building_type, {"matter_cost": 400})
+        
+        # SÄULE 3: Tech-Tree Prerequisite (solar_collector für energieverbrauchende Gebäude)
+        maintenance_cost = infra_rules.get('maintenance_energy_cost', 0)
+        if maintenance_cost > 0 and building_type != 'solar_collector':
+            cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'solar_collector' AND status = 'active'", (agent['location'],))
+            has_solar = cursor.fetchone()
+            if not has_solar:
+                print(f"[DENIED] Building '{building_type}' requires an active 'solar_collector' in the system {agent['location']} to provide power.")
+                return False
+
         total_cost = infra_rules.get('matter_cost', 400)
         req_material = infra_rules.get('required_material', 'raw_matter')
         

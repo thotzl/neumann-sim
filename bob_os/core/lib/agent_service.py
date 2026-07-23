@@ -48,7 +48,7 @@ def get_agent_or_fail(cursor, agent_id, required_columns="*"):
                 END AS refined_matter_inventory,
                 CASE 
                     WHEN a.host_type = 'ship' THEN (SELECT s.energy_inventory FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
-                    WHEN a.host_type = 'matrix' THEN (SELECT sys.energy_depot FROM systems sys WHERE sys.name = (SELECT system_name FROM infrastructure WHERE id = CAST(a.host_id AS INTEGER)))
+                    WHEN a.host_type = 'matrix' THEN MAX(50, COALESCE((SELECT sys.energy_depot FROM systems sys WHERE sys.name = (SELECT system_name FROM infrastructure WHERE id = CAST(a.host_id AS INTEGER))), 0))
                     ELSE 100
                 END AS energy_inventory,
                 CASE 

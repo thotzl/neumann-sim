@@ -125,7 +125,8 @@ def update(current_tick=1):
             # aktive Boni (Produktion) werden deaktiviert.
             new_energy_rate = 0
             new_matter_rate = 0
-            final_energy = 0
+            # Blackout deactivates manufacturing, but keeps a baseline survival solar/RTG regen (+5) active (Step 2)
+            final_energy = min(5, sys['energy_depot'] + 5)
         else:
             final_energy = max(0, sys['energy_depot'] - total_maintenance_cost + new_energy_rate)
             # Default cap for energy_depot is the energy_inventory limit of a standard probe if no batteries exist

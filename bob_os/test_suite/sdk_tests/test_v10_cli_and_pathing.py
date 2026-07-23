@@ -80,6 +80,12 @@ class TestV10Fixes(unittest.TestCase):
         bob.main()
         self.assertIn("[SUCCESS] Exited ship 'Vessel-6' (ID: 6) and transferred to local SEM-Matrix.", mock_stdout.getvalue())
 
+    @patch('sys.argv', ['bob.py', 'rename_ship(ship_id=6, new_name="SovereignPrime")'])
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_cli_rename_ship(self, mock_stdout):
+        bob.main()
+        self.assertIn("[SUCCESS] Ship #6 renamed to 'SovereignPrime'.", mock_stdout.getvalue())
+
     @patch('sys.argv', ['bob.py', '--help'])
     @patch('sys.stdout', new_callable=StringIO)
     def test_cli_help_content(self, mock_stdout):

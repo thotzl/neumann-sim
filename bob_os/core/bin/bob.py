@@ -148,6 +148,11 @@ def main():
             agent.deconstruct_ship(
                 ship_id=safe_int(params.get('ship_id'), 'ship_id')
             )
+        elif method == "rename_ship":
+            agent.rename_ship(
+                ship_id=safe_int(params.get('ship_id'), 'ship_id'),
+                new_name=params.get('new_name')
+            )
         elif method == "design_blueprint":
             agent.design_blueprint(
                 name=params.get('name'),

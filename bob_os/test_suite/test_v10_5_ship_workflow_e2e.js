@@ -129,7 +129,7 @@ AKTION:
 `;
     console.log("  3-Verify. Inspiziere das neue Schiff und Sektor SYS-A depots...");
     const feedbackInspect = processActions(inspectInput, absMockDir, "Instance-1", mockState);
-    if (!feedbackInspect.includes("has_logic_core: 1") || !feedbackInspect.includes("refined_matter_depot: 3250")) {
+    if (!feedbackInspect.includes("logic_core: active") || !feedbackInspect.includes("refined_matter_depot: 3250")) {
         throw new Error("SCHRITT C-VERIFY FAILED: Falsche Gitter-Specs oder Depot-Ressourcen nicht abgezogen! Feedback: " + feedbackInspect);
     }
     console.log("    ✅ Schritt C-Verify (Specs & Depot-Abzug verifiziert) erfolgreich.");

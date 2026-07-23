@@ -9,13 +9,13 @@ try:
     from .. import system_service
     from .. import config_service
     from .. import physics_service
-    from ..utils.formatting import get_display_name
+    from ..utils.formatting import get_display_name, aggregate_ship_telemetry
 except ImportError:
     from core.lib import agent_service
     from core.lib import system_service
     from core.lib import config_service
     from core.lib import physics_service
-    from core.lib.utils.formatting import get_display_name
+    from core.lib.utils.formatting import get_display_name, aggregate_ship_telemetry
 
 class Sensors:
     def __init__(self, agent): self.agent = agent
@@ -66,7 +66,7 @@ class Sensors:
     def inspect(self, cursor, agent, ship_id=None, structure_id=None, system_name=None, blueprint_name=None):
         rules = config_service.get_economy_rules()
         
-        # 1. Target A: Ship Inspection (Gitter, Inventare, Capabilities)
+        # 1. Target A: Ship Inspection (Gitter, Inventare, Capabilities, Diagnostics)
         if ship_id is not None:
             cursor.execute("""
                 SELECT id, name, chassis, pilot_id, health, max_health,
@@ -80,13 +80,20 @@ class Sensors:
                 print(f"[FEHLER] Schiff #{ship_id} nicht gefunden.")
                 return False
                 
-            ship_dict = dict(row)
-            bp_name = row['blueprint_name']
-            if bp_name:
-                cursor.execute("SELECT matrix_json FROM blueprints WHERE name = ?", (bp_name,))
-                bp = cursor.fetchone()
-                if bp:
-                    ship_dict['matrix'] = json.loads(bp['matrix_json'])
+            # Blueprint-Daten für Diagnostics (SSoT) laden
+            bp_name = row['blueprint_name'] or row['chassis']
+            cursor.execute("SELECT stats_json, matrix_json FROM blueprints WHERE name = ?", (bp_name,))
+            bp = cursor.fetchone()
+            
+            bp_stats = json.loads(bp['stats_json']) if bp else None
+            
+            # Zentrales Aggregieren (Säule 1 & 3)
+            ship_dict = aggregate_ship_telemetry(row, bp_stats)
+            
+            # Matrix-Layout anheften, falls verknüpft
+            if bp:
+                ship_dict['matrix'] = json.loads(bp['matrix_json'])
+                
             return ship_dict
             
         # 2. Target B: Structure Inspection (HP, Upgrade Progress, Specs)
@@ -305,32 +312,27 @@ class Sensors:
             storage_capacity = system['depot_matter_capacity']
             current_inventory_host = f"system depot '{system['name']}'"
 
-        # Host-Schiffsdaten vorab sauber laden (0 lambda-Verschachtelungen!)
+        # Host-Schiffsdaten vorab sauber laden (Säule 1 & 3: SSoT Telemetrie Aggregation)
         host_dict = {}
         if host_type == 'ship' and host_id:
             cursor.execute("""
-                SELECT name, blueprint_name, mass, max_speed, thrust, energy_capacity, 
-                       matter_storage_capacity, has_drill, has_fabricator, has_logic_core 
+                SELECT id, name, chassis, pilot_id, health, max_health,
+                       raw_matter_inventory, refined_matter_inventory, energy_inventory,
+                       matter_storage_capacity, energy_capacity, max_speed, thrust, mass,
+                       blueprint_name, has_drill, has_fabricator, has_logic_core
                 FROM ships WHERE id = CAST(? AS INTEGER)
             """, (host_id,))
             r = cursor.fetchone()
             if r:
-                host_dict = {
-                    "name": r['name'] or "Unnamed",
-                    "blueprint": r['blueprint_name'],
-                    "stats": {
-                        "mass": r['mass'],
-                        "max_speed": r['max_speed'],
-                        "thrust": r['thrust'],
-                        "energy_capacity": r['energy_capacity'],
-                        "storage_capacity": r['matter_storage_capacity']
-                    },
-                    "capabilities": {
-                        "drill": "active" if r['has_drill'] else "inactive",
-                        "fabricator": "active" if r['has_fabricator'] else "inactive",
-                        "logic_core": "active" if r['has_logic_core'] else "inactive"
-                    }
-                }
+                # Blueprint-Daten für exakte Diagnostics / Telemetrien laden
+                bp_name = r['blueprint_name'] or r['chassis']
+                cursor.execute("SELECT stats_json FROM blueprints WHERE name = ?", (bp_name,))
+                bp = cursor.fetchone()
+                
+                bp_stats = json.loads(bp['stats_json']) if bp else None
+                
+                # SSoT Aggregation (Keine lambdas!)
+                host_dict = aggregate_ship_telemetry(r, bp_stats)
 
         return {
             "lokales_system": {

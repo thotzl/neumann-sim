@@ -81,5 +81,74 @@ class TestV105Utils(unittest.TestCase):
         agent = {"chosen_name": "Alice"}
         self.assertEqual(formatting.get_display_name_with_id(agent, "Alice-ID"), "Alice (ID: Alice-ID)")
 
+    def test_aggregate_ship_telemetry_happy_path(self):
+        # 1. Simuliere Schiffs-Zeile aus DB
+        ship_row = {
+            "id": 1,
+            "name": "Scout-1",
+            "blueprint_name": "Scout",
+            "pilot_id": "Instance-1",
+            "health": 100,
+            "max_health": 100,
+            "mass": 240,
+            "max_speed": 300,
+            "thrust": 500,
+            "energy_capacity": 5000,
+            "matter_storage_capacity": 300,
+            "has_drill": 0,
+            "has_fabricator": 0,
+            "has_logic_core": 1
+        }
+        
+        # Simuliere Blueprint-Stats
+        bp_stats = {
+            "drain": 27.0,
+            "regen": 0.0,
+            "build": 4,
+            "diagnostics": {
+                "can_move": True,
+                "can_mine": False,
+                "can_build": False,
+                "has_energy_grid": True,
+                "travel_cost_per_unit": 0.0620,
+                "net_energy_balance": -27.0,
+                "idle_lifetime_cycles": 185
+            }
+        }
+        
+        aggregated = formatting.aggregate_ship_telemetry(ship_row, bp_stats)
+        self.assertEqual(aggregated["name"], "Scout-1")
+        self.assertEqual(aggregated["blueprint"], "Scout")
+        self.assertEqual(aggregated["stats"]["mass"], 240)
+        self.assertEqual(aggregated["stats"]["drain"], 27.0)
+        self.assertEqual(aggregated["capabilities"]["drill"], "inactive")
+        self.assertTrue(aggregated["diagnostics"]["can_move"])
+        self.assertFalse(aggregated["diagnostics"]["can_mine"])
+        self.assertEqual(aggregated["diagnostics"]["idle_lifetime_cycles"], 185)
+
+    def test_aggregate_ship_telemetry_fallback(self):
+        # 2. Simuliere Schiffs-Zeile ohne Blueprint-Stats (Fallback-Modus)
+        ship_row = {
+            "id": 2,
+            "name": None, # Unnamed
+            "chassis": "Scout-Legacy",
+            "pilot_id": None,
+            "mass": 100,
+            "energy_capacity": 500,
+            "matter_storage_capacity": 300,
+            "thrust": 500,
+            "has_drill": 1,
+            "has_fabricator": 0,
+            "has_logic_core": 0
+        }
+        
+        aggregated = formatting.aggregate_ship_telemetry(ship_row, None)
+        self.assertEqual(aggregated["name"], "Unnamed")
+        self.assertEqual(aggregated["blueprint"], "Scout-Legacy")
+        self.assertEqual(aggregated["capabilities"]["drill"], "active")
+        self.assertTrue(aggregated["diagnostics"]["can_move"])
+        self.assertTrue(aggregated["diagnostics"]["can_mine"]) # Hat drill und battery > 0!
+        self.assertEqual(aggregated["diagnostics"]["idle_lifetime_cycles"], "unlimited")
+
 if __name__ == '__main__':
     unittest.main()

@@ -147,6 +147,8 @@ def evaluate_ship_matrix(name, matrix, rules):
         'drain': 0
     }
 
+    total_comm_range = 0
+
     for m_id, data in modules.items():
         m_type = data['type']
         tiles = module_tiles[m_id]
@@ -191,6 +193,10 @@ def evaluate_ship_matrix(name, matrix, rules):
         if stats_key in stats:
             stats[stats_key] += val
             
+        # Antennenreichweite akkumulieren (Säule 3)
+        if m_type == 'comm':
+            total_comm_range += val
+            
         # Drain berechnen
         stats['drain'] += val * m_rule.get(f'drain_per_{val_key}', 0)
         if 'idle_drain' in m_rule:
@@ -201,6 +207,23 @@ def evaluate_ship_matrix(name, matrix, rules):
     cost_per_dist = g['base_travel_cost'] * (1 + (stats['mass'] / float(g['mass_efficiency_divisor'])))
     max_range = int(stats['battery'] / cost_per_dist) if cost_per_dist > 0 else 0
     build_time = math.ceil(stats['cost'] / float(g['shipyard_rate']))
+
+    # Berechne Energie-Netto-Bilanz und Drift-Lebenszeit (Säule 3 Physik-Formeln)
+    net_energy_balance = round(stats['regen'] - stats['drain'], 1)
+    
+    if net_energy_balance >= 0:
+        idle_lifetime = "unlimited"
+    else:
+        idle_lifetime = int(stats['battery'] / abs(net_energy_balance)) if stats['battery'] > 0 and net_energy_balance != 0 else 0
+
+    # Berechne passive Ladezyklen (Solar)
+    if stats['regen'] > 0:
+        solar_recharge = math.ceil(stats['battery'] / float(stats['regen']))
+    else:
+        solar_recharge = "infinite"
+
+    thrust_to_mass = round(stats['thrust'] / float(stats['mass']), 4) if stats['mass'] > 0 else 0.0
+    cargo_to_mass = round(stats['cargo'] / float(stats['mass']), 4) if stats['mass'] > 0 else 0.0
 
     return {
         "mass": int(stats['mass']), 
@@ -216,5 +239,19 @@ def evaluate_ship_matrix(name, matrix, rules):
         "has_drill": 1 if has_drill else 0,
         "has_fabricator": 1 if has_fab else 0,
         "has_logic_core": 1 if has_logic_core else 0,
-        "m/b/c": f"{'Y' if has_drill else '-'}/{'Y' if has_fab else '-'}/{'Y' if has_comms else '-'}"
+        "m/b/c": f"{'Y' if has_drill else '-'}/{'Y' if has_fab else '-'}/{'Y' if has_comms else '-'}",
+        "diagnostics": {
+            "can_move": stats['thrust'] > 0 and stats['battery'] > 0,
+            "can_mine": True if (has_drill and stats['battery'] > 0) else False,
+            "can_build": True if (has_fab and stats['battery'] > 0) else False,
+            "has_energy_grid": stats['battery'] > 0,
+            "travel_cost_per_unit": round(cost_per_dist, 4),
+            "net_energy_balance": net_energy_balance,
+            "idle_lifetime_cycles": idle_lifetime,
+            "thrust_to_mass_ratio": thrust_to_mass,
+            "is_self_sustainable": True if net_energy_balance >= 0 else False,
+            "comm_range": total_comm_range,
+            "solar_recharge_cycles": solar_recharge,
+            "cargo_to_mass_ratio": cargo_to_mass
+        }
     }

@@ -40,5 +40,43 @@ class TestPhysicsService(unittest.TestCase):
         self.assertEqual(physics_service.calculate_upgrade_cost(400, 1.5), 600)
         self.assertEqual(physics_service.calculate_upgrade_cost(100, 2.0), 200)
 
+    def test_ship_cad_diagnostics(self):
+        # 1. Setup mock rules
+        from core.lib import config_service
+        rules = config_service.get_economy_rules()
+
+        # 2. Scout Layout: Triebwerk + Batterie, kein Bohrer, 1x Antenne
+        scout_matrix = [
+            ["logic_core", {"id": "eng", "type": "engine", "thrust": 500}],
+            [{"id": "bat", "type": "battery", "energy": 5000}, {"id": "ant", "type": "comm", "range": 10000}]
+        ]
+        scout_stats = physics_service.evaluate_ship_matrix("Scout-Test", scout_matrix, rules)
+        self.assertNotIn("error", scout_stats)
+        self.assertTrue(scout_stats["diagnostics"]["can_move"])
+        self.assertFalse(scout_stats["diagnostics"]["can_mine"])
+        self.assertFalse(scout_stats["diagnostics"]["can_build"])
+        self.assertTrue(scout_stats["diagnostics"]["has_energy_grid"])
+        
+        # NEUE TELEMETRIE ASSETS (Säule 3)
+        self.assertEqual(scout_stats["diagnostics"]["comm_range"], 10000)
+        self.assertEqual(scout_stats["diagnostics"]["solar_recharge_cycles"], "infinite") # Da keine Solarzellen!
+        self.assertFalse(scout_stats["diagnostics"]["is_self_sustainable"])
+        self.assertLess(scout_stats["diagnostics"]["net_energy_balance"], 0) # Drain > Regen (0)
+        self.assertGreater(scout_stats["diagnostics"]["travel_cost_per_unit"], 0.05) # Basis (0.05) + Masse-Malus
+        self.assertGreater(scout_stats["diagnostics"]["thrust_to_mass_ratio"], 0.0)
+
+        # 3. Defektes Layout: Bohrer + Triebwerk, aber KEINE BATTERIE!
+        broken_matrix = [
+            ["logic_core", {"id": "eng", "type": "engine", "thrust": 500}],
+            ["drill", None]
+        ]
+        broken_stats = physics_service.evaluate_ship_matrix("Broken-Test", broken_matrix, rules)
+        self.assertNotIn("error", broken_stats)
+        # Darf sich weder bewegen noch minen können, da keine Batteriezellen verbaut sind!
+        self.assertFalse(broken_stats["diagnostics"]["can_move"])
+        self.assertFalse(broken_stats["diagnostics"]["can_mine"])
+        self.assertFalse(broken_stats["diagnostics"]["has_energy_grid"])
+        self.assertEqual(broken_stats["diagnostics"]["comm_range"], 0)
+
 if __name__ == '__main__':
     unittest.main()

@@ -131,10 +131,21 @@ def evaluate_ship_matrix(name, matrix, rules):
     if not ok:
         return {"error": err_msg}
 
-    # 3. Physics Evaluation
-    has_drill = False
-    has_fab = False
-    has_comms = False
+    # --- DEKLARATIVE METADATEN-SPERRE & CAPABILITIES (Komplett entkoppelt vom Loop!) ---
+    has_drill = any(d['type'] == 'drill' for d in modules.values())
+    has_fab = any(d['type'] == 'fabricator' for d in modules.values())
+    has_comms = any(d['type'] == 'comm' for d in modules.values())
+    has_logic_core = any(d['type'] == 'logic_core' for d in modules.values())
+
+    stats = {
+        'mass': total_mass,
+        'cost': total_cost,
+        'thrust': 0,
+        'battery': 0,
+        'cargo': 0,
+        'regen': 0,
+        'drain': 0
+    }
 
     for m_id, data in modules.items():
         m_type = data['type']
@@ -143,80 +154,65 @@ def evaluate_ship_matrix(name, matrix, rules):
         
         if not m_rule: return {"error": f"Unknown module: {m_type}"}
         
-        if m_type == 'engine':
-            val = data.get('thrust', 0)
-            if tiles < math.ceil(val / float(m_rule['max_thrust_per_tile'])): 
-                return {"error": f"{name}: Engine {m_id} too small for {val} thrust. Needs at least {math.ceil(val / float(m_rule['max_thrust_per_tile']))} tiles."}
-            total_thrust += val
-            total_mass += val * m_rule['mass_per_thrust']
-            total_cost += val * m_rule['cost_per_thrust']
-            total_idle_drain += val * m_rule['drain_per_thrust']
+        # A. Statische Festpreis-Module (logic_core, drill, fabricator)
+        # Wenn das Modul feste static mass/cost im JSON definiert, akkumulieren wir direkt!
+        if 'mass' in m_rule and 'cost' in m_rule:
+            stats['mass'] += m_rule['mass']
+            stats['cost'] += m_rule['cost']
+            stats['drain'] += m_rule.get('idle_drain', 0)
+            continue
+
+        # B. Skalierbare Module (Automatische SSoT-Schlüsselerkennung!)
+        # Wir finden die Metrik dynamisch (z.B. extrahiert 'thrust' aus 'max_thrust_per_tile')
+        val_key = next((k[4:-9] for k in m_rule if k.startswith('max_') and k.endswith('_per_tile')), None)
+        if not val_key:
+            return {"error": f"Invalid module rule for {m_type}: Missing scaling limit key."}
             
-        elif m_type == 'cargo':
-            val = data.get('volume', 0)
-            if tiles < math.ceil(val / float(m_rule['max_volume_per_tile'])): 
-                return {"error": f"{name}: Cargo {m_id} too small for {val} volume. Needs at least {math.ceil(val / float(m_rule['max_volume_per_tile']))} tiles."}
-            total_matter_cap += val
-            total_mass += val * m_rule['mass_per_volume']
-            total_cost += val * m_rule['cost_per_volume']
+        limit_key = f"max_{val_key}_per_tile"
+        max_per_tile = m_rule[limit_key]
+        
+        # Abwärtskompatibler Fallback (falls der explizite Wert im Dict fehlt!)
+        val = data.get(val_key)
+        if val is None:
+            val = tiles * max_per_tile
             
-        elif m_type == 'battery':
-            val = data.get('energy', 0)
-            if tiles < math.ceil(val / float(m_rule['max_energy_per_tile'])): 
-                return {"error": f"{name}: Battery {m_id} too small for {val} energy. Needs at least {math.ceil(val / float(m_rule['max_energy_per_tile']))} tiles."}
-            total_energy_cap += val
-            total_mass += val * m_rule['mass_per_energy']
-            total_cost += val * m_rule['cost_per_energy']
+        # Validierung der Größen-Beschränkung
+        if tiles < math.ceil(val / float(max_per_tile)): 
+            return {"error": f"{name}: {m_type.capitalize()} {m_id} too small for {val} {val_key}. Needs at least {math.ceil(val / float(max_per_tile))} tiles."}
+
+        # Dynamisches Akkumulieren von Masse, Kosten & Leistungen (100% DRY!)
+        stats['mass'] += val * m_rule.get(f'mass_per_{val_key}', 0)
+        stats['cost'] += val * m_rule.get(f'cost_per_{val_key}', 0)
+        
+        # Sektor-Ressourcen mappen (mit Aliasen für cargo/battery)
+        ALIAS_MAP = {'volume': 'cargo', 'energy': 'battery'}
+        stats_key = ALIAS_MAP.get(val_key, val_key)
+        
+        if stats_key in stats:
+            stats[stats_key] += val
             
-        elif m_type == 'solar':
-            val = data.get('regen', 0)
-            if tiles < math.ceil(val / float(m_rule['max_regen_per_tile'])): 
-                return {"error": f"{name}: Solar {m_id} too small for {val} regen. Needs at least {math.ceil(val / float(m_rule['max_regen_per_tile']))} tiles."}
-            total_regen += val
-            total_mass += val * m_rule['mass_per_regen']
-            total_cost += val * m_rule['cost_per_regen']
-            
-        elif m_type == 'comm':
-            val = data.get('range', 0)
-            if tiles < math.ceil(val / float(m_rule['max_range_per_tile'])): 
-                return {"error": f"{name}: Comm {m_id} too small for {val} range. Needs at least {math.ceil(val / float(m_rule['max_range_per_tile']))} tiles."}
-            total_mass += val * m_rule['mass_per_range']
-            total_cost += val * m_rule['cost_per_range']
-            total_idle_drain += m_rule['idle_drain']
-            has_comms = True
-            
-        elif m_type == 'logic_core':
-            total_mass += m_rule['mass']
-            total_cost += m_rule['cost']
-            total_idle_drain += m_rule['idle_drain']
-        elif m_type == 'drill':
-            total_mass += m_rule['mass']
-            total_cost += m_rule['cost']
-            has_drill = True
-        elif m_type == 'fabricator':
-            total_mass += m_rule['mass']
-            total_cost += m_rule['cost']
-            has_fab = True
+        # Drain berechnen
+        stats['drain'] += val * m_rule.get(f'drain_per_{val_key}', 0)
+        if 'idle_drain' in m_rule:
+            stats['drain'] += m_rule['idle_drain']
 
     # Final Stats
-    speed = round((total_thrust / float(total_mass)) * g['base_speed'], 2) if total_thrust > 0 else 0
-    cost_per_dist = g['base_travel_cost'] * (1 + (total_mass / float(g['mass_efficiency_divisor'])))
-    max_range = int(total_energy_cap / cost_per_dist) if cost_per_dist > 0 else 0
-    build_time = math.ceil(total_cost / float(g['shipyard_rate']))
-
-    has_logic_core = any(data.get('type') == 'logic_core' for m_id, data in modules.items())
+    speed = round((stats['thrust'] / float(stats['mass'])) * g['base_speed'], 2) if stats['thrust'] > 0 else 0
+    cost_per_dist = g['base_travel_cost'] * (1 + (stats['mass'] / float(g['mass_efficiency_divisor'])))
+    max_range = int(stats['battery'] / cost_per_dist) if cost_per_dist > 0 else 0
+    build_time = math.ceil(stats['cost'] / float(g['shipyard_rate']))
 
     return {
-        "mass": int(total_mass), 
-        "cost": int(total_cost), 
+        "mass": int(stats['mass']), 
+        "cost": int(stats['cost']), 
         "speed": speed, 
         "range": max_range,
-        "cargo": total_matter_cap, 
-        "regen": total_regen, 
-        "drain": round(total_idle_drain, 1),
+        "cargo": stats['cargo'], 
+        "regen": stats['regen'], 
+        "drain": round(stats['drain'], 1),
         "build": build_time, 
-        "thrust": total_thrust,
-        "battery": total_energy_cap,
+        "thrust": stats['thrust'],
+        "battery": stats['battery'],
         "has_drill": 1 if has_drill else 0,
         "has_fabricator": 1 if has_fab else 0,
         "has_logic_core": 1 if has_logic_core else 0,

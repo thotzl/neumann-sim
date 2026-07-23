@@ -65,7 +65,15 @@ for _name in dir(_agent):
 `;
     fs.writeFileSync(mePyPath, mePyContent);
 
-    const scripts = fs.readdirSync(activeScriptsDir).filter(f => f.endsWith('.py') && f !== 'me.py');
+    // sitecustomize.py für permanenten, importfreien Bootstrapping-Support schreiben
+    const sitePyPath = path.join(activeScriptsDir, "sitecustomize.py");
+    const sitePyContent = `import builtins
+import me
+builtins.me = me
+`;
+    fs.writeFileSync(sitePyPath, sitePyContent);
+
+    const scripts = fs.readdirSync(activeScriptsDir).filter(f => f.endsWith('.py') && f !== 'me.py' && f !== 'sitecustomize.py');
     for (const script of scripts) {
         const scriptRelPath = `scripts/active/${script}`;
         const acl = state.security?.acl?.[scriptRelPath];

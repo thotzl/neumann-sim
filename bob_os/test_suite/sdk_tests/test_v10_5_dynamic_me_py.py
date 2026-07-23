@@ -30,11 +30,20 @@ class TestV105DynamicMePy(unittest.TestCase):
         
         # We write the identical me.py to the local directory for testing.
         self._write_local_me_py()
+        
+        # Write sitecustomize.py directly beside me.py to simulate the active sandbox environment
+        site_content = """import builtins
+import me
+builtins.me = me
+"""
+        with open('sitecustomize.py', 'w') as f:
+            f.write(site_content)
 
     def tearDown(self):
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_ME_SCRIPT): os.remove(TEST_ME_SCRIPT)
         if os.path.exists('me.py'): os.remove('me.py')
+        if os.path.exists('sitecustomize.py'): os.remove('sitecustomize.py')
         if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
     def _write_local_me_py(self):
@@ -94,8 +103,8 @@ for _name in dir(_agent):
             f.write(me_content)
 
     def test_dynamic_me_py_execution(self):
-        # 1. Create a test script simulating Bob's automated background script
-        script_content = """import me
+        # 1. Create a test script simulating Bob's automated background script (IMPORTLESS!)
+        script_content = """# NO 'import me' STATEMENT NEEDED! sitecustomize.py bootstraps it as a builtin global!
 # 1. Test status retrieval
 status = me.status()
 print(f"HOST_TYPE:{status.host.type}")

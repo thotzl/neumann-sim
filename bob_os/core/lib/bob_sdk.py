@@ -749,8 +749,8 @@ class Sensors:
                 "storage_capacity": agent['matter_storage_capacity'],
                 "status": agent['status'],
                 "offene_memos_und_protokolle": memos_list,
-                # NEU (Säule 1): Kognitive Host-Verschachtelung für Robert (Die Bob-Augen)
-                "host": {
+                # NEU (Säule 1 & 3): Kognitive Host-Verschachtelung mit echten Gitter-Schiffskonfigurationen
+                "host": (lambda: {
                     "type": agent.get('host_type', 'Unknown'),
                     "id": agent.get('host_id', 'Unknown'),
                     "inventory": {
@@ -758,8 +758,30 @@ class Sensors:
                         "refined_matter": agent['refined_matter_inventory'],
                         "energy": agent['energy_inventory']
                     },
-                    "storage_capacity": agent['matter_storage_capacity']
-                }
+                    "storage_capacity": agent['matter_storage_capacity'],
+                    **((lambda: (lambda r: {
+                        "name": r['name'],
+                        "blueprint": r['blueprint_name'],
+                        "stats": {
+                            "mass": r['mass'],
+                            "max_speed": r['max_speed'],
+                            "thrust": r['thrust'],
+                            "energy_capacity": r['energy_capacity'],
+                            "storage_capacity": r['matter_storage_capacity']
+                        },
+                        "capabilities": {
+                            "drill": "active" if r['has_drill'] else "inactive",
+                            "fabricator": "active" if r['has_fabricator'] else "inactive",
+                            "logic_core": "active" if r['has_logic_core'] else "inactive"
+                        }
+                    } if r else {})(
+                        cursor.execute("""
+                            SELECT name, blueprint_name, mass, max_speed, thrust, energy_capacity, 
+                                   matter_storage_capacity, has_drill, has_fabricator, has_logic_core 
+                            FROM ships WHERE id = CAST(? AS INTEGER)
+                        """, (agent['host_id'],)).fetchone()
+                    ))() if (agent.get('host_type') == 'ship' and agent.get('host_id')) else {})
+                })()
             },
             "radar_entfernter_sektoren": other_systems,
             "radar_entfernter_agenten": distant_bobs

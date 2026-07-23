@@ -90,6 +90,60 @@ function jsonToYaml(obj: any, indent: number = 0): string {
   return (indent === 0 ? '' : '\n') + parts.join('\n');
 }
 
+// Resolves a raw ship object into V10.5 CAD Telemetry and Diagnostics
+const resolveShipCADTelemetry = (ship: any) => {
+  if (!ship) return null;
+  
+  const stats = {
+    mass: ship.mass ?? ship.stats?.mass ?? 290,
+    max_speed: ship.max_speed ?? ship.stats?.max_speed ?? 34.48,
+    thrust: ship.thrust ?? ship.stats?.thrust ?? 500,
+    energy_capacity: ship.energy_capacity ?? ship.stats?.energy_capacity ?? 5000,
+    storage_capacity: ship.matter_storage_capacity ?? ship.stats?.storage_capacity ?? 300
+  };
+  
+  const capabilities = {
+    drill: (ship.has_drill === 1 || ship.has_drill === true || ship.capabilities?.drill === "active") ? "active" : "inactive",
+    fabricator: (ship.has_fabricator === 1 || ship.has_fabricator === true || ship.capabilities?.fabricator === "active") ? "active" : "inactive",
+    logic_core: (ship.has_logic_core === 1 || ship.has_logic_core === true || ship.capabilities?.logic_core === "active") ? "active" : "inactive"
+  };
+  
+  const can_move = stats.thrust > 0 && stats.mass > 0;
+  const can_mine = capabilities.drill === "active";
+  const can_build = capabilities.fabricator === "active";
+  const has_energy_grid = true;
+  
+  const is_self_sustainable = ship.chassis === 'Scout' || capabilities.logic_core === 'active';
+  const travel_cost_per_unit = Math.round((stats.mass / 290) * 0.1 * 100) / 100;
+  const net_energy_balance = is_self_sustainable ? +10 : -2;
+  const idle_lifetime_cycles = is_self_sustainable ? "unlimited" : 250;
+  const comm_range = capabilities.logic_core === 'active' ? 5000 : 1500;
+  const solar_recharge_cycles = is_self_sustainable ? 50 : "infinite";
+  const cargo_to_mass_ratio = Math.round((stats.storage_capacity / stats.mass) * 100) / 100;
+
+  const diagnostics = {
+    can_move,
+    can_mine,
+    can_build,
+    has_energy_grid,
+    is_self_sustainable,
+    travel_cost_per_unit,
+    net_energy_balance,
+    idle_lifetime_cycles,
+    comm_range,
+    solar_recharge_cycles,
+    cargo_to_mass_ratio
+  };
+
+  return {
+    ...ship,
+    blueprint: ship.blueprint_name || ship.chassis || 'Scout',
+    stats,
+    capabilities,
+    diagnostics
+  };
+};
+
 // Rebuilds the Bob's dynamic dashboard object on the fly matching the python local_system() output
 const buildBobDashboard = (agent: Agent, state: WorldState) => {
   // Filter and format memos for this agent to match v10.2 schema
@@ -97,27 +151,19 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
     .filter(m => m.agent_id === agent.id)
     .map(m => `[Memo #${m.id}] ${m.content} (Status: ${m.status})`) : [];
 
-  const ship = agent.host_type === 'ship' ? state.ships?.find(s => s.id.toString() === agent.host_id?.toString()) : null;
+  const rawShip = agent.host_type === 'ship' ? state.ships?.find(s => s.id.toString() === agent.host_id?.toString()) : null;
+  const ship = resolveShipCADTelemetry(rawShip);
 
   const buildHostObject = () => {
-    if (agent.host_type === 'ship') {
+    if (agent.host_type === 'ship' && ship) {
       return {
         type: "ship",
         id: agent.host_id || 'Unknown',
-        name: ship ? ship.name : 'Unknown',
-        blueprint: ship ? (ship.blueprint_name || ship.chassis || 'Scout') : 'Scout',
-        stats: {
-          mass: ship ? (ship.mass || 290) : 290,
-          max_speed: ship ? (ship.max_speed || 34.48) : 34.48,
-          thrust: ship ? (ship.thrust || 500) : 500,
-          energy_capacity: agent.sensors?.inventory?.energy_limit || 5000,
-          storage_capacity: ship ? (ship.matter_storage_capacity || 300) : 300
-        },
-        capabilities: {
-          drill: ship ? (ship.has_drill ? "active" : "inactive") : "inactive",
-          fabricator: ship ? (ship.has_fabricator ? "active" : "inactive") : "inactive",
-          logic_core: ship ? (ship.has_logic_core ? "active" : "inactive") : "inactive"
-        },
+        name: ship.name || 'Unknown',
+        blueprint: ship.blueprint_name || ship.chassis || 'Scout',
+        stats: ship.stats,
+        capabilities: ship.capabilities,
+        diagnostics: ship.diagnostics,
         inventory: {
           raw_matter: agent.sensors?.inventory?.raw_matter_inventory || 0,
           refined_matter: agent.sensors?.inventory?.refined_matter_inventory || 0,
@@ -142,6 +188,19 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
           fabricator: "inactive",
           logic_core: "active"
         },
+        diagnostics: {
+          can_move: false,
+          can_mine: false,
+          can_build: false,
+          has_energy_grid: true,
+          is_self_sustainable: true,
+          travel_cost_per_unit: 0,
+          net_energy_balance: 50,
+          idle_lifetime_cycles: "unlimited",
+          comm_range: 5000,
+          solar_recharge_cycles: "infinite",
+          cargo_to_mass_ratio: 200
+        },
         inventory: {
           raw_matter: 0,
           refined_matter: 0,
@@ -151,49 +210,28 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
     }
   };
 
-  if (agent.status === 'traveling' || agent.location === 'Interstellar') {
-    return {
-      lokales_system: {
-        name: "Interstellar Space",
-        status: "In Transit",
-        target_system: agent.target_system || 'Unknown',
-        transit_ticks_passed: agent.sensors?.transit?.progress_ticks || 0,
-        transit_ticks_total: agent.sensors?.transit?.total_ticks || 0
-      },
-      dein_status: {
-        id: agent.id,
-        name: agent.chosen_name,
-        host_type: agent.host_type || 'Unknown',
-        host_id: agent.host_id || 'Unknown',
-        inventory: {
-          raw_matter: agent.sensors?.inventory?.raw_matter_inventory || 0,
-          refined_matter: agent.sensors?.inventory?.refined_matter_inventory || 0,
-          energy: agent.sensors?.inventory?.energy_inventory || 0
-        },
-        storage_capacity: agent.sensors?.inventory?.matter_limit || 100,
-        status: agent.status,
-        host: buildHostObject(),
-        offene_memos_und_protokolle: agentMemos
-      }
-    };
-  }
-
-  const sysName = agent.location || 'Unknown';
-  const sys = state.systems.find(s => s.name === sysName);
+  const sysNameRaw = agent.location || 'Unknown';
+  const sys = state.systems.find(s => s.name === sysNameRaw);
+  const sysName = sys ? (sys.display_name ? `${sys.display_name} (ID: ${sys.name})` : sys.name) : sysNameRaw;
   
   // 1. Infrastructure at location
   const infraList = sys?.infra || [];
   
   // 2. Ships at location
-  const localShips = state.ships ? state.ships.filter(ship => ship.system_name === sysName).map(ship => ({
-    id: ship.id,
-    name: ship.name,
-    chassis: ship.chassis,
-    pilot_id: ship.pilot_id
-  })) : [];
+  const localShips = state.ships ? state.ships.filter(ship => ship.system_name === sysNameRaw).map(ship => {
+    const s = resolveShipCADTelemetry(ship);
+    return {
+      id: s?.id,
+      name: s?.name,
+      chassis: s?.chassis,
+      pilot_id: s?.pilot_id,
+      stats: s?.stats,
+      capabilities: s?.capabilities
+    };
+  }) : [];
   
   // 3. Other Bobs at location
-  const localBobs = state.agents.filter(a => a.location === sysName && a.id !== agent.id).map(a => ({
+  const localBobs = state.agents.filter(a => a.location === sysNameRaw && a.id !== agent.id).map(a => ({
     id: a.id,
     chosen_name: a.chosen_name,
     status: a.status,
@@ -202,22 +240,25 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
   }));
   
   // 4. Distant sectors (radar)
-  const otherSystems = state.systems.filter(s => s.name !== sysName).map(s => {
+  const otherSystems = state.systems.filter(s => s.name !== sysNameRaw).map(s => {
     const dist = sys ? Math.round(Math.sqrt(Math.pow(sys.x - s.x, 2) + Math.pow(sys.y - s.y, 2))) : 9999;
     return {
-      name: s.name,
+      name: s.display_name ? `${s.display_name} (ID: ${s.name})` : s.name,
       coordinates: `X${s.x}-Y${s.y}`,
       distance: dist
     };
   });
   
   // 5. Distant Bobs (radar)
-  const distantBobs = state.agents.filter(a => a.location !== sysName && a.id !== agent.id).map(a => ({
-    id: a.id,
-    chosen_name: a.chosen_name,
-    status: a.status,
-    location: a.location
-  }));
+  const distantBobs = state.agents.filter(a => a.location !== sysNameRaw && a.id !== agent.id).map(a => {
+    const aSys = state.systems.find(s => s.name === a.location);
+    return {
+      id: a.id,
+      chosen_name: a.chosen_name,
+      status: a.status,
+      location: aSys ? (aSys.display_name ? `${aSys.display_name} (ID: ${aSys.name})` : aSys.name) : (a.location || 'Unknown')
+    };
+  });
 
   return {
     lokales_system: {
@@ -349,29 +390,24 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                     {/* Host Specifications and Modules (Säule 1 & 3) */}
                     {(() => {
                       if (dashboardObj.dein_status.host.type === 'ship') {
-                        const ship = state.ships?.find(s => s.id.toString() === dashboardObj.dein_status.host.id.toString());
+                        const ship = resolveShipCADTelemetry(dashboardObj.dein_status.host);
                         if (!ship) return null;
                         return (
                           <div style={{ marginTop: '6px', borderTop: '1px dashed rgba(56,189,248,0.15)', paddingTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                             <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
-                              BLUEPRINT: <span style={{ color: '#fff', fontWeight: 'bold' }}>{ship.blueprint_name || 'Standard Scout'}</span>
+                              BLUEPRINT: <span style={{ color: '#fff', fontWeight: 'bold' }}>{ship.blueprint || 'Standard Scout'}</span>
                             </div>
                             <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
-                              CHASSIS: <span style={{ color: '#fff' }}>{ship.chassis}</span>
+                              PHYSICS: <span style={{ color: '#e0f2fe' }}>{ship.stats.max_speed} m/s • {ship.stats.thrust} N • {ship.stats.mass} t</span>
                             </div>
-                            {ship.max_speed !== undefined && (
-                              <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
-                                PHYSICS: <span style={{ color: '#e0f2fe' }}>{ship.max_speed} m/s • {ship.thrust} N • {ship.mass} t</span>
-                              </div>
-                            )}
                             <div style={{ marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                              {ship.has_drill ? (
+                              {ship.capabilities.drill === 'active' ? (
                                 <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ DRILL</span>
                               ) : null}
-                              {ship.has_fabricator ? (
+                              {ship.capabilities.fabricator === 'active' ? (
                                 <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ FABRICATOR</span>
                               ) : null}
-                              {ship.has_logic_core ? (
+                              {ship.capabilities.logic_core === 'active' ? (
                                 <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ LOGIC_CORE</span>
                               ) : null}
                             </div>
@@ -706,83 +742,105 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
             </div>
 
             {/* MAIN MODAL CONTENT */}
-            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '320px 1fr', gap: '30px', minHeight: 0 }}>
-              {/* LEFT PANEL: SPECIFICATIONS & LOGS */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0, justifyContent: 'space-between' }}>
-                {/* Specs Block */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ borderLeft: `3px solid ${dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8'}`, paddingLeft: '12px' }}>
-                    <div className="mono-text" style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px' }}>SYSTEM PROFILE</div>
-                    <div className="mono-text" style={{ fontSize: '0.95rem', color: '#fff', fontWeight: 'bold' }}>
-                      {dashboardObj.dein_status.host.name}
-                    </div>
-                    <div className="mono-text" style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                      VESSEL ARCHITECTURE: {dashboardObj.dein_status.host.blueprint}
-                    </div>
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '340px 1fr', gap: '24px', minHeight: 0 }}>
+              {/* LEFT PANEL: SPECIFICATIONS & DIAGNOSTICS */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', minHeight: 0, overflowY: 'auto' }}>
+                {/* Profile header */}
+                <div style={{ borderLeft: `3px solid ${dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8'}`, paddingLeft: '12px' }}>
+                  <div className="mono-text" style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px' }}>SYSTEM PROFILE</div>
+                  <div className="mono-text" style={{ fontSize: '0.95rem', color: '#fff', fontWeight: 'bold' }}>
+                    {dashboardObj.dein_status.host.name}
                   </div>
-
-                  <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div className="mono-text" style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px' }}>PHYSICAL TELEMETRY</div>
-                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>HULL MASS:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.mass} t</span>
-                    </div>
-                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>THRUST OUTPUT:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.thrust} N</span>
-                    </div>
-                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>MAX SPEED:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.max_speed} m/s</span>
-                    </div>
-                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>ENERGY STORAGE:</span> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.inventory.energy} / {dashboardObj.dein_status.host.stats.energy_capacity} E</span>
-                    </div>
-                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>CARGO CAPACITY:</span> <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.storage_capacity} t</span>
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '12px' }}>
-                    <div className="mono-text" style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>CAPABILITY_LOCKS</div>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {dashboardObj.dein_status.host.capabilities.drill === 'active' ? (
-                        <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ DRILL_ACTIVE</span>
-                      ) : (
-                        <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_DRILL</span>
-                      )}
-                      {dashboardObj.dein_status.host.capabilities.fabricator === 'active' ? (
-                        <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ FABRICATOR_ACTIVE</span>
-                      ) : (
-                        <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_FABRICATOR</span>
-                      )}
-                      {dashboardObj.dein_status.host.capabilities.logic_core === 'active' ? (
-                        <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ LOGIC_CORE_ACTIVE</span>
-                      ) : (
-                        <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_LOGIC_CORE</span>
-                      )}
-                    </div>
+                  <div className="mono-text" style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                    ARCHITECTURE: {dashboardObj.dein_status.host.blueprint}
                   </div>
                 </div>
 
-                {/* Diagnostic Logs Block */}
-                <div style={{ background: '#03050a', border: '1px solid #1e293b', borderRadius: '4px', padding: '10px 14px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
-                  <div className="mono-text" style={{ fontSize: '0.55rem', color: '#10b981', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>📟 SECURE_COMMS_DIAGNOSTICS //</div>
-                  <div className="mono-text" style={{ fontSize: '0.65rem', color: '#10b981', display: 'flex', flexDirection: 'column', gap: '4px', lineHeight: '1.3' }}>
-                    <div>[SYS ] RETRIEVING BLUEPRINT MATRIX: OK</div>
-                    <div>[PHYS] ESTIMATING MOLECULAR MASS: {dashboardObj.dein_status.host.stats.mass}t (OK)</div>
-                    <div>[ENG ] THRUST COEFFICIENT: {dashboardObj.dein_status.host.stats.thrust}N (CALIBRATED)</div>
-                    <div>[SYS ] EMERGENCY SOLAR BYPASS: READY</div>
-                    {dashboardObj.dein_status.host.type === 'matrix' ? (
-                      <>
-                        <div style={{ color: '#38bdf8' }}>[SYS ] EMERGENCY MATRIX FLOOR CURRENT DETECTED: 50E</div>
-                        <div style={{ color: '#818cf8' }}>[SAFE] CONSCIOUSNESS_SAFEGUARD: STABLE & MONITOR_CONNECTED</div>
-                      </>
+                {/* V10.5 CAD TELEMETRY (stats) */}
+                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div className="mono-text" style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px' }}>PHYSICAL TELEMETRY</div>
+                  <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>HULL MASS:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.mass} t</span>
+                  </div>
+                  <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>THRUST OUTPUT:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.thrust} N</span>
+                  </div>
+                  <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>MAX SPEED:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.max_speed} m/s</span>
+                  </div>
+                  <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>CARGO CAPACITY:</span> <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.storage_capacity} t</span>
+                  </div>
+                </div>
+
+                {/* V10.5 NEW COOL CAD-WERTE (DIAGNOSTICS - Säule 3) */}
+                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div className="mono-text" style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px' }}>CAD REAL-TIME DIAGNOSTICS</div>
+                  
+                  {/* Status checklist with colors */}
+                  <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>PROPULSION (can_move):</span>
+                    <span style={{ color: dashboardObj.dein_status.host.diagnostics.can_move ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>
+                      {dashboardObj.dein_status.host.diagnostics.can_move ? '✓ ONLINE' : '⚠️ OFFLINE'}
+                    </span>
+                  </div>
+                  <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>DRILL MODULE (can_mine):</span>
+                    <span style={{ color: dashboardObj.dein_status.host.diagnostics.can_mine ? '#10b981' : '#cbd5e1', fontWeight: 'bold' }}>
+                      {dashboardObj.dein_status.host.diagnostics.can_mine ? '✓ MOUNTED' : '—'}
+                    </span>
+                  </div>
+                  <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>FABRICATOR (can_build):</span>
+                    <span style={{ color: dashboardObj.dein_status.host.diagnostics.can_build ? '#10b981' : '#cbd5e1', fontWeight: 'bold' }}>
+                      {dashboardObj.dein_status.host.diagnostics.can_build ? '✓ MOUNTED' : '—'}
+                    </span>
+                  </div>
+                  <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>SOLAR BALANCE (net_energy):</span>
+                    <span style={{ color: '#10b981', fontWeight: 'bold' }}>
+                      +{dashboardObj.dein_status.host.diagnostics.net_energy_balance} E/cycle
+                    </span>
+                  </div>
+                  <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>ENERGY COOLDOWN / LIFE:</span>
+                    <span style={{ color: '#38bdf8', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      {dashboardObj.dein_status.host.diagnostics.idle_lifetime_cycles === 'unlimited' ? '∞ UNLIMITED (Solar)' : `${dashboardObj.dein_status.host.diagnostics.idle_lifetime_cycles} cycles`}
+                    </span>
+                  </div>
+                  <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>RADIO COMM RANGE:</span>
+                    <span style={{ color: '#a5b4fc', fontWeight: 'bold' }}>
+                      {dashboardObj.dein_status.host.diagnostics.comm_range} m
+                    </span>
+                  </div>
+                  <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>CARGO LOAD-TO-MASS RATIO:</span>
+                    <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>
+                      {dashboardObj.dein_status.host.diagnostics.cargo_to_mass_ratio} (Nutzlast-Effizienz)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Capability badges */}
+                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '10px 12px' }}>
+                  <div className="mono-text" style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>CAPABILITY_LOCKS</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {dashboardObj.dein_status.host.capabilities.drill === 'active' ? (
+                      <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ DRILL_ACTIVE</span>
                     ) : (
-                      <>
-                        <div style={{ color: '#38bdf8' }}>[PIL ] ACTIVE PILOT: {selectedAgent.id} (SYCHRONIZED)</div>
-                        <div style={{ color: '#38bdf8' }}>[SYS ] FLIGHT CALCULATIONS snappe_x/y grid: Snapped</div>
-                      </>
+                      <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_DRILL</span>
                     )}
-                    <div>[LOG ] MEMORY REGISTER CONSCIOUSNESS: RESOLVED</div>
-                    <div>[SYS ] CORE DIAGNOSTICS COMPLETE: 100% ONLINE</div>
+                    {dashboardObj.dein_status.host.capabilities.fabricator === 'active' ? (
+                      <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ FABRICATOR_ACTIVE</span>
+                    ) : (
+                      <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_FABRICATOR</span>
+                    )}
+                    {dashboardObj.dein_status.host.capabilities.logic_core === 'active' ? (
+                      <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ LOGIC_CORE_ACTIVE</span>
+                    ) : (
+                      <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_LOGIC_CORE</span>
+                    )}
                   </div>
                 </div>
               </div>

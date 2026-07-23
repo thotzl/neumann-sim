@@ -28,6 +28,7 @@ async function start() {
         { name: "JS Parser Isolation", cmd: "node bob_os/test_suite/test_environment_replace.js" },
         { name: "JS Diary-Only Memory", cmd: "node bob_os/test_suite/test_diary_only.js" },
         { name: "JS Bracket-Counting Parser", cmd: "node bob_os/test_suite/test_parser_brackets.js" },
+        { name: "JS Ship-Workflow E2E", cmd: "node bob_os/test_suite/test_v10_5_ship_workflow_e2e.js" },
         { name: "Meta-Pipeline (Build/Inject)", cmd: "node bob_os/test_suite/test_pipeline.js" },
         { name: "Runner Hard-Boot & Inheritance", cmd: "node bob_os/test_suite/test_runner_boot.js" },
         { name: "E2E Mock Simulation Loop", cmd: "node sim_engine/test_e2e.js" },

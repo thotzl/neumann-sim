@@ -104,7 +104,7 @@ print(json.dumps(res))`;
                 // Die physische DB-Erstellung übernimmt init_db.py oder bob_sdk.py (beim Klonen)
                 const dashOut = runPython(vDir, `core/bin/bob.py`, ['dashboard'], { bobId: agentObj.id });
                 
-                const parentText = parentId ? `\nAbstammung: Klon von ${parentId}` : '';
+                const parentText = parentId ? `\nAbstammung: Replikant von ${parentId}` : '';
                 const bootMsg = `[SYSTEM BOOT SEQUENZ ABGESCHLOSSEN]\nIdentität: ${agentObj.id}${parentText}\nAktueller Standort: ${agentObj.location}\n\n[INITIALER SENSOR-SCAN (DASHBOARD)]:\n${dashOut.trim()}`;
                 
                 state.histories[agentObj.id].push({ agent: "System", text: bootMsg });

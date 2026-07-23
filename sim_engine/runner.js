@@ -212,7 +212,7 @@ print(json.dumps({"messages": msgs}))`;
         let contextArray = [...state.histories[agent.id]];
 
         if (agent.needsResumeNotify) {
-            promptText += `\n[SYSTEM NOTIFICATION]: Die Simulation wurde manuell pausiert und nun fortgesetzt.\n`;
+            promptText += `\n[SYSTEM NOTIFICATION]: Raumzeitliche Interferenzen wurden stabilisiert. Sensorströme reaktiviert.\n`;
             agent.needsResumeNotify = false;
         }
 

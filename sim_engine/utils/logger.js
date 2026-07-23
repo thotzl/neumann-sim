@@ -33,7 +33,7 @@ function appendTurnLog(logFile, cycle, agentId, totalTurns, historyLength, manif
 function appendBirthLog(logFile, round, agentId, parentId, fullContextBlock) {
     let logEntry = `\n---\n`;
     logEntry += `## 🧬 GEBURT: ${agentId} (Zyklus ${round})\n`;
-    logEntry += `- **Abstammung:** Klon von ${parentId || 'Unknown'}\n\n`;
+    logEntry += `- **Abstammung:** Replikant von ${parentId || 'Unknown'}\n\n`;
 
     let truncatedBlock = fullContextBlock;
     if (truncatedBlock) {

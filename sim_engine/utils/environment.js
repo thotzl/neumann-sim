@@ -186,17 +186,40 @@ function processActions(text, universeDir, agentId, state) {
         safeRunText = safeRunText.replace(match[0], '');
     }
 
-    // --- RUN ---
-    const runRegex = /\[RUN:\s*(.*?)\]/g;
-    while ((match = runRegex.exec(safeRunText)) !== null) {
-        let cmd = match[1].trim().replace(/^`|`$/g, '');
+    // --- RUN (V10.5 Bracket-Counting Parser) ---
+    let pos = 0;
+    while (true) {
+        let startIdx = safeRunText.indexOf("[RUN:", pos);
+        if (startIdx === -1) break;
+
+        let braceCount = 1;
+        let endIdx = startIdx + 5;
+        while (endIdx < safeRunText.length && braceCount > 0) {
+            if (safeRunText[endIdx] === '[') braceCount++;
+            else if (safeRunText[endIdx] === ']') braceCount--;
+            endIdx++;
+        }
+
+        if (braceCount !== 0) {
+            // Unmatched brackets, slide forward to prevent hang
+            pos = startIdx + 5;
+            continue;
+        }
+
+        const fullBlock = safeRunText.substring(startIdx, endIdx);
+        let cmd = safeRunText.substring(startIdx + 5, endIdx - 1).trim().replace(/^`|`$/g, '');
+
+        // Splicing out the block (100% safe)
+        safeRunText = safeRunText.substring(0, startIdx) + safeRunText.substring(endIdx);
+        pos = startIdx; // Next startIdx search starts at the splice index
 
         if (cmd === "..." || cmd === "" || cmd.startsWith("<")) continue;
+
+        let displayCmd = cmd; // The original command the agent wrote
 
         // Path Mapping für Unified CLI (V10.0 Functional)
         if (cmd.startsWith("me ")) {
             const funcPart = cmd.replace(/^me\s+/, "").trim();
-            // Wir escapen eventuelle Single-Quotes im Funktions-String
             const safeFuncPart = funcPart.replace(/'/g, "'\\''");
             const aclState = state.security?.acl || {};
             cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py '${safeFuncPart}'`;
@@ -205,13 +228,11 @@ function processActions(text, universeDir, agentId, state) {
             const aclState = state.security?.acl || {};
             cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py 'me${safeFuncPart}'`;
         } else if (cmd.startsWith("bob ") || cmd.startsWith("bob(")) {
-            // Harte Ablehnung alter Syntax
             feedback += `[CLI ERROR] Syntax 'bob ...' ist veraltet. Nutze 'me ...' (Beispiel: [RUN: me mine()]).\n`;
             continue;
         }
 
         // Security Hook für python3 scripts/
-        let displayCmd = match[1].trim(); // Der Pioneerbefehl des LLMs
         if (cmd.includes("scripts/")) {
             const parts = cmd.split(' ');
             let targetScript = parts.find(p => p.includes("scripts/")).replace("_verse/", "");
@@ -238,7 +259,6 @@ function processActions(text, universeDir, agentId, state) {
             feedback += `[RESONANZ: '${displayCmd}' ::\n${out.trim() || "OK"}]\n`;
         } catch (e) {
             let err = e.stderr ? e.stderr.toString() : e.message;
-            // Immersion Guard: Entferne absolute Host-Pfade
             const expRoot = path.resolve(universeDir, '..');
             err = err.split(expRoot).join('');
             feedback += `[FEHLER-RESONANZ: '${displayCmd}' ::\n${err.trim()}]\n`;

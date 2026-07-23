@@ -83,10 +83,8 @@ export default function App() {
           const historyData = await res.json();
           const parsedLogs: LogEntry[] = historyData.map((d: any, i: number) => {
             const agentId = d.agent || d.agentId || 'System';
-            const isSystem = agentId === 'System';
-            const isScut = d.text.includes('SCUT') || d.text.includes('scut(');
-            let type: LogCategory = isSystem ? 'system' : (isScut ? 'scut' : 'action');
-            if (!isSystem && !isScut && d.text.includes('ANALYSE:')) type = 'thought';
+            const isSystem = agentId === 'System' || agentId === 'Creator' || agentId === 'Observer';
+            let type: LogCategory = isSystem ? 'system' : 'thought'; // HISTORIC LOGS ARE THOUGHTS ONLY!
             return { id: `hist-${i}`, tick: d.tick === "?" ? 0 : d.tick, agentId: agentId, type, text: d.text.trim() };
           });
           setLogs(parsedLogs);
@@ -135,24 +133,27 @@ export default function App() {
 
         setState(data);
         
-        // 1. Process thoughts (last_manifestation) per tick
-        if (data.tick > lastProcessedTick.current) {
+        // 1. Process thoughts & actions (last_manifestation) per tick
+        if (data.tick >= lastProcessedTick.current) {
            const newEntries: LogEntry[] = [];
            data.agents.forEach(a => {
                if (a.last_manifestation?.trim()) {
                    const raw = a.last_manifestation.trim();
                    
-                   // Robust Split for thoughts
+                   // Robust Split for thoughts & actions
                    const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?AKTION(?:EN)?\s*(?:Befehl|Buffer)?[：:]*(?:\*\*|\*)?/i;
                    const match = raw.match(actionRegex);
                    
                    let thought = '';
+                   let action = '';
                    if (match && match.index !== undefined) {
                        thought = raw.substring(0, match.index).trim();
+                       action = raw.substring(match.index + match[0].length).trim();
                    } else {
                        const runMatch = raw.indexOf('[RUN:');
                        if (runMatch !== -1) {
                            thought = raw.substring(0, runMatch).trim();
+                           action = raw.substring(runMatch).trim();
                        } else {
                            thought = raw;
                        }
@@ -172,9 +173,25 @@ export default function App() {
                            text: thought 
                        });
                    }
+                   
+                   if (action) {
+                       const isScut = action.includes('scut(') || action.includes('scut') || action.includes('SCUT');
+                       newEntries.push({ 
+                           id: `a-${data.tick}-${a.id}`, 
+                           tick: data.tick, 
+                           agentId: a.id, 
+                           type: isScut ? 'scut' : 'action', 
+                           text: action 
+                       });
+                   }
                }
            });
-           if (newEntries.length > 0) setLogs(prev => [...prev, ...newEntries]);
+           if (newEntries.length > 0) {
+               setLogs(prev => {
+                   const filtered = newEntries.filter(ne => !prev.some(p => p.id === ne.id));
+                   return [...prev, ...filtered];
+               });
+           }
            lastProcessedTick.current = data.tick;
         }
 
@@ -196,7 +213,10 @@ export default function App() {
                        text: e.description
                    };
                });
-               setLogs(prev => [...prev, ...eventEntries]);
+               setLogs(prev => {
+                   const filtered = eventEntries.filter(ne => !prev.some(p => p.id === ne.id));
+                   return [...prev, ...filtered];
+               });
                lastProcessedEventId.current = Math.max(...sortedEvents.map(e => e.rowid));
            }
         }

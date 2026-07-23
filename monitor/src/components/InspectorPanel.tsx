@@ -134,7 +134,7 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
           mass: 5000,
           max_speed: 0,
           thrust: 0,
-          energy_capacity: 50, // Emergency rack backup batteries
+          energy_capacity: 50,
           storage_capacity: 1000000
         },
         capabilities: {
@@ -145,7 +145,7 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
         inventory: {
           raw_matter: 0,
           refined_matter: 0,
-          energy: Math.max(50, agent.sensors?.inventory?.energy_inventory || 50) // permanent emergency backup current
+          energy: Math.max(50, agent.sensors?.inventory?.energy_inventory || 50)
         }
       };
     }
@@ -258,10 +258,12 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
 
 export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, selectedSystem }: InspectorPanelProps) => {
   const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'meta' | 'raw'>('status');
+  const [showVesselSchematic, setShowVesselSchematic] = useState(false);
 
   // Reset Tab bei Selektionswechsel
   useEffect(() => {
     setActiveTab('status');
+    setShowVesselSchematic(false);
   }, [selection?.id]);
 
   if (!selection) return null;
@@ -316,8 +318,9 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
             {activeTab === 'status' && (
               <>
                 <div>
-                  <h2 style={{ margin: '0 0 10px 0', color: '#fff', fontSize: '1.5rem' }}>{selectedAgent.id} <span style={{color: '#38bdf8', fontSize: '0.9rem', fontWeight: 400}}>{selectedAgent.sensors?.chosen_name ? `"${selectedAgent.sensors.chosen_name}"` : ''}</span></h2>
+                  <h2 style={{ margin: '0 0 10px 0', color: '#fff', fontSize: '1.5rem' }}>{selectedAgent.chosen_name || selectedAgent.sensors?.chosen_name || selectedAgent.id}</h2>
                   <div className="mono-text" style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '15px', lineHeight: '1.8' }}>
+                      ID: <span style={{ color: '#fff' }}>{selectedAgent.id}</span><br/>
                       STATUS: <span style={{ color: selectedAgent.status === 'active' ? '#10b981' : '#f59e0b' }}>{(selectedAgent.status || 'unknown').toUpperCase()}</span><br/>
                       LOCATION: {selectedAgent.location || 'DEEP SPACE'}<br/>
                   </div>
@@ -372,6 +375,30 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                                 <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ LOGIC_CORE</span>
                               ) : null}
                             </div>
+                            
+                            {/* Stenciled Sci-Fi Schematic Button */}
+                            <button 
+                              onClick={() => setShowVesselSchematic(true)}
+                              style={{ 
+                                marginTop: '10px', 
+                                padding: '5px 10px', 
+                                background: 'rgba(56,189,248,0.08)', 
+                                border: '1px solid rgba(56,189,248,0.3)', 
+                                borderRadius: '3px', 
+                                color: '#38bdf8', 
+                                fontSize: '0.65rem', 
+                                fontWeight: 700, 
+                                cursor: 'pointer', 
+                                transition: 'all 0.15s',
+                                letterSpacing: '1px',
+                                textShadow: '0 0 4px rgba(56,189,248,0.4)',
+                                boxShadow: 'inset 0 0 5px rgba(56,189,248,0.1)'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(56,189,248,0.15)'; e.currentTarget.style.border = '1px solid #38bdf8'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(56,189,248,0.08)'; e.currentTarget.style.border = '1px solid rgba(56,189,248,0.3)'; }}
+                            >
+                              🔍 SCHEMATIC_HUD // DIAGNOSE
+                            </button>
                           </div>
                         );
                       } else if (dashboardObj.dein_status.host.type === 'matrix') {
@@ -391,6 +418,30 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                               <span style={{ fontSize: '0.6rem', background: 'rgba(129,140,248,0.1)', color: '#818cf8', border: '1px solid rgba(129,140,248,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>⚡ CONSCIOUSNESS_SAFEGUARD</span>
                               <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>🧠 LOGIC_CORE</span>
                             </div>
+                            
+                            {/* Stenciled Sci-Fi Schematic Button for Matrix */}
+                            <button 
+                              onClick={() => setShowVesselSchematic(true)}
+                              style={{ 
+                                marginTop: '10px', 
+                                padding: '5px 10px', 
+                                background: 'rgba(129,140,248,0.08)', 
+                                border: '1px solid rgba(129,140,248,0.3)', 
+                                borderRadius: '3px', 
+                                color: '#818cf8', 
+                                fontSize: '0.65rem', 
+                                fontWeight: 700, 
+                                cursor: 'pointer', 
+                                transition: 'all 0.15s',
+                                letterSpacing: '1px',
+                                textShadow: '0 0 4px rgba(129,140,248,0.4)',
+                                boxShadow: 'inset 0 0 5px rgba(129,140,248,0.1)'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(129,140,248,0.15)'; e.currentTarget.style.border = '1px solid #818cf8'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(129,140,248,0.08)'; e.currentTarget.style.border = '1px solid rgba(129,140,248,0.3)'; }}
+                            >
+                              🔍 NEURAL_MATRIX // DIAGNOSE
+                            </button>
                           </div>
                         );
                       }
@@ -497,7 +548,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                           <h3 style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#e0f2fe', letterSpacing: '1px' }}>📡 RADAR_AGENTEN:</h3>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {dashboardObj.radar_entfernter_agenten.map((tp: any, idx: number) => (
-                              <div key={idx} className="mono-text" style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '2px' }}>
+                              <div key={idx} className="mono-text" style={{ fontSize: '0.7rem', color: '#e0f2fe', fontWeight: 'bold' }}>
                                 <span style={{ color: '#e0f2fe', fontWeight: 'bold' }}>{tp.chosen_name || tp.id}</span>
                                 <span>{tp.status.toUpperCase()} @ {tp.location || 'Unknown'}</span>
                               </div>
@@ -597,6 +648,362 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
           </div>
         )}
       </div>
+
+      {/* HOLOGRAPHIC VESSEL DIAGNOSTIC CAD MODAL (Säule 3 Freestyle Visualizer) */}
+      {showVesselSchematic && selectedAgent && dashboardObj && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(3, 4, 8, 0.95)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div className="scifi-panel" style={{
+            width: '850px',
+            height: '560px',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: `0 0 40px ${dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.25)' : 'rgba(129,140,248,0.25)'}`,
+            border: `1px solid ${dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8'}`,
+            background: '#070a13',
+            padding: '24px',
+            boxSizing: 'border-box',
+            position: 'relative'
+          }}>
+            {/* CLOSE BUTTON */}
+            <button 
+              onClick={() => setShowVesselSchematic(false)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'transparent',
+                border: 'none',
+                color: '#64748b',
+                cursor: 'pointer',
+                fontSize: '1.5rem',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; }}
+            >
+              ×
+            </button>
+
+            {/* MODAL HEADER */}
+            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', marginBottom: '20px' }}>
+              <div className="mono-text" style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, letterSpacing: '2px' }}>
+                SONDEN-CORE V10.5 // DIARY-INTELLIGENZ // CAD V1.0
+              </div>
+              <h2 style={{ margin: '4px 0 0 0', color: '#fff', fontSize: '1.4rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {dashboardObj.dein_status.host.type === 'ship' ? '🚢 HOLOGRAPHIC_VESSEL_SCHEMATIC' : '🖲️ NEURAL_MATRIX_DIAGNOSTICS'}
+                <span style={{ color: dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8', fontSize: '1rem' }}>[{selectedAgent.id}]</span>
+              </h2>
+            </div>
+
+            {/* MAIN MODAL CONTENT */}
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '320px 1fr', gap: '30px', minHeight: 0 }}>
+              {/* LEFT PANEL: SPECIFICATIONS & LOGS */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0, justifyContent: 'space-between' }}>
+                {/* Specs Block */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ borderLeft: `3px solid ${dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8'}`, paddingLeft: '12px' }}>
+                    <div className="mono-text" style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px' }}>SYSTEM PROFILE</div>
+                    <div className="mono-text" style={{ fontSize: '0.95rem', color: '#fff', fontWeight: 'bold' }}>
+                      {dashboardObj.dein_status.host.name}
+                    </div>
+                    <div className="mono-text" style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                      VESSEL ARCHITECTURE: {dashboardObj.dein_status.host.blueprint}
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div className="mono-text" style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px' }}>PHYSICAL TELEMETRY</div>
+                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>HULL MASS:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.mass} t</span>
+                    </div>
+                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>THRUST OUTPUT:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.thrust} N</span>
+                    </div>
+                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>MAX SPEED:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.max_speed} m/s</span>
+                    </div>
+                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>ENERGY STORAGE:</span> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.inventory.energy} / {dashboardObj.dein_status.host.stats.energy_capacity} E</span>
+                    </div>
+                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>CARGO CAPACITY:</span> <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.storage_capacity} t</span>
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '12px' }}>
+                    <div className="mono-text" style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>CAPABILITY_LOCKS</div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {dashboardObj.dein_status.host.capabilities.drill === 'active' ? (
+                        <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ DRILL_ACTIVE</span>
+                      ) : (
+                        <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_DRILL</span>
+                      )}
+                      {dashboardObj.dein_status.host.capabilities.fabricator === 'active' ? (
+                        <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ FABRICATOR_ACTIVE</span>
+                      ) : (
+                        <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_FABRICATOR</span>
+                      )}
+                      {dashboardObj.dein_status.host.capabilities.logic_core === 'active' ? (
+                        <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ LOGIC_CORE_ACTIVE</span>
+                      ) : (
+                        <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_LOGIC_CORE</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Diagnostic Logs Block */}
+                <div style={{ background: '#03050a', border: '1px solid #1e293b', borderRadius: '4px', padding: '10px 14px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                  <div className="mono-text" style={{ fontSize: '0.55rem', color: '#10b981', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>📟 SECURE_COMMS_DIAGNOSTICS //</div>
+                  <div className="mono-text" style={{ fontSize: '0.65rem', color: '#10b981', display: 'flex', flexDirection: 'column', gap: '4px', lineHeight: '1.3' }}>
+                    <div>[SYS ] RETRIEVING BLUEPRINT MATRIX: OK</div>
+                    <div>[PHYS] ESTIMATING MOLECULAR MASS: {dashboardObj.dein_status.host.stats.mass}t (OK)</div>
+                    <div>[ENG ] THRUST COEFFICIENT: {dashboardObj.dein_status.host.stats.thrust}N (CALIBRATED)</div>
+                    <div>[SYS ] EMERGENCY SOLAR BYPASS: READY</div>
+                    {dashboardObj.dein_status.host.type === 'matrix' ? (
+                      <>
+                        <div style={{ color: '#38bdf8' }}>[SYS ] EMERGENCY MATRIX FLOOR CURRENT DETECTED: 50E</div>
+                        <div style={{ color: '#818cf8' }}>[SAFE] CONSCIOUSNESS_SAFEGUARD: STABLE & MONITOR_CONNECTED</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ color: '#38bdf8' }}>[PIL ] ACTIVE PILOT: {selectedAgent.id} (SYCHRONIZED)</div>
+                        <div style={{ color: '#38bdf8' }}>[SYS ] FLIGHT CALCULATIONS snappe_x/y grid: Snapped</div>
+                      </>
+                    )}
+                    <div>[LOG ] MEMORY REGISTER CONSCIOUSNESS: RESOLVED</div>
+                    <div>[SYS ] CORE DIAGNOSTICS COMPLETE: 100% ONLINE</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT PANEL: DYNAMIC SVG VECTOR BLUEPRINT */}
+              <div style={{ 
+                background: '#03050a', 
+                border: '1px solid #1e293b', 
+                borderRadius: '4px', 
+                position: 'relative', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                overflow: 'hidden'
+              }}>
+                {/* Fine holographic coordinate grid */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundImage: 'radial-gradient(circle, rgba(56,189,248,0.1) 1px, transparent 1px)',
+                  backgroundSize: '20px 20px',
+                  opacity: 0.5
+                }} />
+
+                {/* Static compass ring background */}
+                <div style={{
+                  position: 'absolute',
+                  width: '380px',
+                  height: '380px',
+                  border: `1px dashed ${dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.08)' : 'rgba(129,140,248,0.08)'}`,
+                  borderRadius: '50%'
+                }} />
+
+                <div style={{
+                  position: 'absolute',
+                  width: '420px',
+                  height: '420px',
+                  border: `1px solid ${dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.03)' : 'rgba(129,140,248,0.03)'}`,
+                  borderRadius: '50%'
+                }} />
+
+                {/* The SVG Diagram */}
+                <svg width="400" height="400" viewBox="0 0 400 400" style={{ zIndex: 1, position: 'relative' }}>
+                  <defs>
+                    <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="6" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                    <filter id="glow-indigo" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="6" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+
+                  {dashboardObj.dein_status.host.type === 'ship' ? (
+                    <>
+                      {/* SHIP SCHEMATIC GRAPHICS (cyan) */}
+                      {/* Engine Flame */}
+                      {dashboardObj.dein_status.host.stats.thrust > 0 && (
+                        <polygon 
+                          points="200,310 185,360 200,380 215,360" 
+                          fill="url(#thrustGrad)" 
+                          opacity="0.8"
+                        />
+                      )}
+                      <defs>
+                        <linearGradient id="thrustGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.8" />
+                          <stop offset="60%" stopColor="#f59e0b" stopOpacity="0.5" />
+                          <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+
+                      {/* Ship Silhouette Polygon */}
+                      <polygon 
+                        points="200,80 250,220 230,240 255,270 200,285 145,270 170,240 150,220" 
+                        fill="none" 
+                        stroke="#38bdf8" 
+                        strokeWidth="2.5" 
+                        filter="url(#glow-cyan)"
+                      />
+                      <polygon 
+                        points="200,105 235,215 210,230 225,260 200,270 175,260 190,230 165,215" 
+                        fill="rgba(56,189,248,0.03)" 
+                        stroke="rgba(56,189,248,0.4)" 
+                        strokeWidth="1" 
+                        strokeDasharray="4,2"
+                      />
+
+                      {/* Center Line */}
+                      <line x1="200" y1="50" x2="200" y2="330" stroke="rgba(56,189,248,0.15)" strokeDasharray="3,3" />
+                      <line x1="50" y1="200" x2="350" y2="200" stroke="rgba(56,189,248,0.15)" strokeDasharray="3,3" />
+
+                      {/* Drilling Laser Component at the nose */}
+                      {dashboardObj.dein_status.host.capabilities.drill === 'active' ? (
+                        <>
+                          {/* Drill emitter */}
+                          <polygon points="192,80 200,45 208,80" fill="rgba(16,185,129,0.2)" stroke="#10b981" strokeWidth="1.5" />
+                          {/* Concentric rotating energy focus rings */}
+                          <ellipse cx="200" cy="55" rx="14" ry="4" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.8" />
+                          <ellipse cx="200" cy="40" rx="8" ry="2.5" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.8" />
+                          {/* Callout Pointer line */}
+                          <line x1="200" y1="45" x2="290" y2="45" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                          <circle cx="290" cy="45" r="2" fill="#10b981" />
+                          <text x="300" y="49" fill="#10b981" className="mono-text" style={{ fontSize: '9px', fontWeight: 'bold' }}>[SYS_LASER_DRILL: ACTIVE]</text>
+                        </>
+                      ) : (
+                        <circle cx="200" cy="80" r="3" fill="#38bdf8" />
+                      )}
+
+                      {/* Assembler Modules on wings */}
+                      {dashboardObj.dein_status.host.capabilities.fabricator === 'active' ? (
+                        <>
+                          {/* Left wing Fab */}
+                          <rect x="135" y="240" width="16" height="20" fill="rgba(16,185,129,0.15)" stroke="#10b981" strokeWidth="1.5" />
+                          <circle cx="143" cy="250" r="3" fill="#10b981" />
+                          {/* Right wing Fab */}
+                          <rect x="249" y="240" width="16" height="20" fill="rgba(16,185,129,0.15)" stroke="#10b981" strokeWidth="1.5" />
+                          <circle cx="257" cy="250" r="3" fill="#10b981" />
+                          {/* Callout Pointer line */}
+                          <line x1="257" y1="250" x2="310" y2="250" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                          <circle cx="310" cy="250" r="2" fill="#10b981" />
+                          <text x="310" y="240" fill="#10b981" className="mono-text" style={{ fontSize: '9px', fontWeight: 'bold' }}>[SYS_MICRO_FAB: ONLINE]</text>
+                        </>
+                      ) : null}
+
+                      {/* Neural Logic Core inside the central cabin */}
+                      {dashboardObj.dein_status.host.capabilities.logic_core === 'active' ? (
+                        <>
+                          {/* Centered neural matrix globe */}
+                          <circle cx="200" cy="210" r="14" fill="rgba(16,185,129,0.1)" stroke="#10b981" strokeWidth="1.5" />
+                          <circle cx="200" cy="210" r="8" fill="none" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                          <circle cx="200" cy="210" r="3" fill="#10b981" />
+                          {/* Callout Pointer line */}
+                          <line x1="200" y1="210" x2="70" y2="210" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                          <circle cx="70" cy="210" r="2" fill="#10b981" />
+                          <text x="75" y="214" fill="#10b981" className="mono-text" style={{ fontSize: '9px', fontWeight: 'bold' }}>[QUANTUM_LOGIC_CORE: ONLINE]</text>
+                        </>
+                      ) : (
+                        <>
+                          {/* Standard Battery power grid cabin */}
+                          <circle cx="200" cy="210" r="8" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" strokeWidth="1.5" />
+                          <circle cx="200" cy="210" r="3" fill="#38bdf8" />
+                        </>
+                      )}
+
+                      {/* Engine Vector thrusters */}
+                      <rect x="190" y="285" width="20" height="12" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" strokeWidth="1.5" />
+                      <line x1="190" y1="297" x2="185" y2="305" stroke="#38bdf8" strokeWidth="1.5" />
+                      <line x1="210" y1="297" x2="215" y2="305" stroke="#38bdf8" strokeWidth="1.5" />
+                      {/* Engine Callout */}
+                      <line x1="185" y1="305" x2="95" y2="305" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2,2" />
+                      <circle cx="95" cy="305" r="2" fill="#38bdf8" />
+                      <text x="100" y="297" fill="#38bdf8" className="mono-text" style={{ fontSize: '9px', fontWeight: 'bold' }}>[THRUST_VECTOR: {dashboardObj.dein_status.host.stats.thrust}N]</text>
+
+                      {/* Stenciled scale calipers on the left */}
+                      <path d="M 60,80 L 45,80 L 45,285 L 60,285" fill="none" stroke="rgba(56,189,248,0.3)" strokeWidth="1" />
+                      <text x="25" y="185" fill="rgba(56,189,248,0.6)" className="mono-text" style={{ fontSize: '8px', transform: 'rotate(-90 25 185)', transformOrigin: 'center' }}>LENGTH SCALE: ~28m</text>
+
+                    </>
+                  ) : (
+                    <>
+                      {/* MATRIX DIAGNOSTICS GRAPHICS (indigo) */}
+                      {/* Central server rack stack chassis */}
+                      <rect x="140" y="110" width="120" height="180" fill="none" stroke="#818cf8" strokeWidth="2.5" filter="url(#glow-indigo)" />
+                      <rect x="145" y="115" width="110" height="170" fill="rgba(129,140,248,0.02)" stroke="rgba(129,140,248,0.3)" strokeWidth="1" strokeDasharray="4,2" />
+
+                      {/* Horizontal server blades */}
+                      <line x1="140" y1="140" x2="260" y2="140" stroke="#818cf8" strokeWidth="1.5" />
+                      <line x1="140" y1="170" x2="260" y2="170" stroke="#818cf8" strokeWidth="1.5" />
+                      <line x1="140" y1="200" x2="260" y2="200" stroke="#818cf8" strokeWidth="1.5" />
+                      <line x1="140" y1="230" x2="260" y2="230" stroke="#818cf8" strokeWidth="1.5" />
+                      <line x1="140" y1="260" x2="260" y2="260" stroke="#818cf8" strokeWidth="1.5" />
+
+                      {/* Glowing led nodes on server blades */}
+                      <circle cx="155" cy="127" r="2.5" fill="#10b981" />
+                      <circle cx="165" cy="127" r="2.5" fill="#10b981" />
+                      <circle cx="155" cy="155" r="2.5" fill="#10b981" />
+                      <circle cx="165" cy="155" r="2.5" fill="#f59e0b" />
+                      <circle cx="155" cy="185" r="2.5" fill="#10b981" />
+                      <circle cx="165" cy="185" r="2.5" fill="#10b981" />
+                      <circle cx="155" cy="215" r="2.5" fill="#10b981" />
+                      {/* This led represents the active consciousness safeguard */}
+                      <circle cx="165" cy="215" r="2.5" fill="#38bdf8" />
+
+                      {/* Concentric neural connection rings at center of rack */}
+                      <circle cx="215" cy="185" r="18" fill="rgba(129,140,248,0.1)" stroke="#818cf8" strokeWidth="1.5" />
+                      <circle cx="215" cy="185" r="10" fill="none" stroke="#818cf8" strokeWidth="1" strokeDasharray="2,2" />
+                      <circle cx="215" cy="185" r="3" fill="#818cf8" />
+
+                      {/* Callout pointer for Safeguard */}
+                      <line x1="165" y1="215" x2="60" y2="215" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2,2" />
+                      <circle cx="60" cy="215" r="2" fill="#38bdf8" />
+                      <text x="65" y="208" fill="#38bdf8" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[⚡ SAFEGUARD_BATTERY: ACTIVE]</text>
+
+                      {/* Callout pointer for Logic Core */}
+                      <line x1="215" y1="185" x2="310" y2="185" stroke="#818cf8" strokeWidth="1" strokeDasharray="2,2" />
+                      <circle cx="310" cy="185" r="2" fill="#818cf8" />
+                      <text x="310" y="178" fill="#818cf8" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[🧠 NEURAL_MATRIX: ONLINE]</text>
+                    </>
+                  )}
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          {/* Styles for stenciled keyframe animations (only fadeIn transition is active) */}
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 };

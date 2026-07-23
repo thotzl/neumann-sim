@@ -26,6 +26,7 @@ METHOD_META = {
     "fs": {"params": [], "greedy": None},
     "board": {"params": ["ship_id"], "greedy": None},
     "exit_ship": {"params": [], "greedy": None},
+    "inspect": {"params": ["ship_id", "structure_id", "system_name"], "greedy": None},
     "design_blueprint": {"params": ["name", "matrix_json"], "greedy": "matrix_json"},
     "list_blueprints": {"params": [], "greedy": None},
     "delete_blueprint": {"params": ["name"], "greedy": None},

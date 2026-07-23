@@ -57,6 +57,7 @@ class Agent:
     def design_blueprint(self, name, matrix_json): return self.journal.design_blueprint(name, matrix_json)
     def list_blueprints(self): return self.journal.list_blueprints()
     def delete_blueprint(self, name): return self.journal.delete_blueprint(name)
+    def inspect(self, ship_id=None, structure_id=None, system_name=None): return self.sensors.inspect(ship_id, structure_id, system_name)
     
     def deposit(self, quantity=100, resource_type="matter"): return self.logistics.deposit(quantity, resource_type)
     def withdraw(self, resource_type="energy", quantity=50): return self.logistics.withdraw(resource_type, quantity)
@@ -603,6 +604,80 @@ class Sensors:
             "refined_matter_inventory": agent['refined_matter_inventory'],
             "matter_storage_capacity": agent['matter_storage_capacity']
         }
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def inspect(self, cursor, agent, ship_id=None, structure_id=None, system_name=None):
+        rules = config_service.get_economy_rules()
+        
+        # 1. Target A: Ship Inspection (Gitter, Inventare, Capabilities)
+        if ship_id is not None:
+            cursor.execute("""
+                SELECT id, name, chassis, pilot_id, health, max_health,
+                       raw_matter_inventory, refined_matter_inventory, energy_inventory,
+                       matter_storage_capacity, energy_capacity, max_speed, thrust, mass,
+                       blueprint_name, has_drill, has_fabricator, has_logic_core
+                FROM ships WHERE id = CAST(? AS INTEGER)
+            """, (ship_id,))
+            row = cursor.fetchone()
+            if not row:
+                print(f"[FEHLER] Schiff #{ship_id} nicht gefunden.")
+                return False
+                
+            ship_dict = dict(row)
+            bp_name = row['blueprint_name']
+            if bp_name:
+                cursor.execute("SELECT matrix_json FROM blueprints WHERE name = ?", (bp_name,))
+                bp = cursor.fetchone()
+                if bp:
+                    ship_dict['matrix'] = json.loads(bp['matrix_json'])
+            return ship_dict
+            
+        # 2. Target B: Structure Inspection (HP, Upgrade Progress, Specs)
+        elif structure_id is not None:
+            cursor.execute("""
+                SELECT id, system_name, type, status, progress_matter, required_matter, health, max_health, level, maintenance_cooldown
+                FROM infrastructure WHERE id = CAST(? AS INTEGER)
+            """, (structure_id,))
+            row = cursor.fetchone()
+            if not row:
+                print(f"[FEHLER] Gebäude #{structure_id} nicht gefunden.")
+                return False
+                
+            infra_dict = dict(row)
+            i_type = row['type']
+            infra_rules = rules.get('infrastructure', {}).get(i_type, {})
+            infra_dict['specifications'] = {
+                "maintenance_energy_cost": infra_rules.get('maintenance_energy_cost', 0),
+                "energy_capacity_bonus": infra_rules.get('energy_capacity_bonus', 0) * row['level'],
+                "matter_capacity_bonus": infra_rules.get('matter_capacity_bonus', 0) * row['level'],
+                "energy_regen_bonus": infra_rules.get('energy_regen_bonus', 0) * row['level'],
+                "matter_regen_bonus": infra_rules.get('matter_regen_bonus', 0) * row['level']
+            }
+            return infra_dict
+            
+        # 3. Target C: Sector Geology & Wiki Spionage
+        elif system_name is not None:
+            cursor.execute("SELECT name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot FROM systems WHERE name = ?", (system_name,))
+            row = cursor.fetchone()
+            if not row:
+                print(f"[FEHLER] Sektor '{system_name}' nicht kartografiert.")
+                return False
+                
+            sys_dict = dict(row)
+            
+            if system_name != agent['location']:
+                has_sat = system_service.has_active_infrastructure(cursor, agent['location'], ('sat_link', 'comms_relay'))
+                if not has_sat:
+                    print(f"[DENIED] Spionage fehlgeschlagen. Sektor '{system_name}' ist außer Reichweite. Errichte einen 'sat_link' oder ein 'comms_relay'.")
+                    return False
+            
+            cursor.execute("SELECT id, author_id, title FROM docs WHERE system_name = ? ORDER BY id ASC", (system_name,))
+            sys_dict['public_sector_wiki_docs'] = [dict(r) for r in cursor.fetchall()]
+            return sys_dict
+            
+        else:
+            print("[FEHLER] 'inspect' erfordert 'ship_id', 'structure_id' oder 'system_name'.")
+            return False
         
     @agent_service.with_agent_context(allow_disembodied=True)
     def local_system(self, cursor, agent):

@@ -45,6 +45,7 @@ DESCRIPTIONS = {
     "design_blueprint": "Entwirf eine neue Schiffsklasse anhand einer 2D-Gitter-Matrix (Argumente: name, matrix_json).",
     "list_blueprints": "Listet alle registrierten Schiffs-Blaupausen im Sektor auf.",
     "delete_blueprint": "Löscht einen Entwurf aus dem Blaupausen-Archiv (Argumente: name).",
+    "inspect": "Führe eine detaillierte Vor-Ort- oder Spionage-Inspektion durch (Argumente: ship_id, structure_id, system_name).",
     "memo": "Verwalte deine privaten Memos, Tagebucheinträge und Protokolle (Aktionen: add, check, uncheck, remove, list, find).",
     "docs": "Verwalte Sektor-Dokumente und öffentliche Relikte (Aktionen: add, list, find, remove).",
 }
@@ -150,6 +151,14 @@ def main():
             agent.delete_blueprint(
                 name=params.get('name')
             )
+        elif method == "inspect":
+            res = agent.inspect(
+                ship_id=safe_int(params.get('ship_id'), 'ship_id'),
+                structure_id=safe_int(params.get('structure_id'), 'structure_id'),
+                system_name=params.get('system_name')
+            )
+            if res:
+                print(yaml.dump(clean_dict(res), sort_keys=False, default_flow_style=False).strip())
         elif method == "memo":
             res = agent.memo(
                 action=params.get('action'),

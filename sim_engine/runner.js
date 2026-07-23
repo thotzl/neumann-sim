@@ -147,11 +147,14 @@ c = conn.cursor()
 c.execute("SELECT sender, receiver, content FROM messages")
 msgs = [dict(r) for r in c.fetchall()]
 c.execute("DELETE FROM messages")
+c.execute("SELECT id, chosen_name FROM agents")
+names = {r['id']: r['chosen_name'] for r in c.fetchall()}
 conn.commit()
 conn.close()
-print(json.dumps({"messages": msgs}))`;
+print(json.dumps({"messages": msgs, "names": names}))`;
                 const batchOut = require('child_process').execFileSync('python3', ['-c', dbScript], { env: { ...process.env, TEST_DB_PATH: path.join(universeDir, 'universe.db') }, encoding: 'utf8' });
                 const batchData = JSON.parse(batchOut);
+                state.agentNames = batchData.names;
                 
                 batchData.messages.forEach(m => {
                     if (m.receiver === 'ALL') {
@@ -201,10 +204,8 @@ print(json.dumps({"messages": msgs}))`;
             myInbox.forEach(item => {
                 if (item.type === 'vog') inboxText += `[VOICE OF GOD]: ${item.text}\n`;
                 if (item.type === 'scut') {
-                    const senderAgent = state.agents.find(a => a.id === item.sender);
-                    const senderName = senderAgent 
-                        ? `${senderAgent.chosen_name} (ID: ${item.sender})` 
-                        : `Unnamed (ID: ${item.sender})`;
+                    const chosenName = (state.agentNames && state.agentNames[item.sender]) || "Unnamed";
+                    const senderName = `${chosenName} (ID: ${item.sender})`;
                     inboxText += `[SCUT] Von ${senderName}: ${item.content}\n`;
                 }
                 if (item.type === 'visual') inboxText += `[OBSERVER] ${item.description}\n`;

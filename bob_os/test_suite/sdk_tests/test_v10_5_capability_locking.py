@@ -49,7 +49,7 @@ class TestV105CapabilityLocking(unittest.TestCase):
             [BAT, None]
         ]
         
-        self.assertTrue(self.agent.design_blueprint("No-Tools-Scout", scout_matrix))
+        self.assertTrue(self.agent.save_blueprint("No-Tools-Scout", scout_matrix))
         self.assertTrue(self.agent.build_ship(blueprint_name="No-Tools-Scout")) # Spawns Ship 1
         
         # Board the ship
@@ -72,7 +72,7 @@ class TestV105CapabilityLocking(unittest.TestCase):
             [DRL, FAB, None, None]
         ]
         
-        self.assertTrue(self.agent.design_blueprint("Super-Vessel", miner_builder_matrix))
+        self.assertTrue(self.agent.save_blueprint("Super-Vessel", miner_builder_matrix))
         self.assertTrue(self.agent.build_ship(blueprint_name="Super-Vessel")) # Spawns Ship 2
         
         # Board ship 2

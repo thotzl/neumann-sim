@@ -56,9 +56,25 @@ class Agent:
     def memo(self, action, content=None, id=None, query=None): return self.journal.memo(action, content, id, query)
     def docs(self, action, title=None, content=None, id=None, query=None): return self.journal.docs(action, title, content, id, query)
     def design_blueprint(self, name, matrix_json): return self.journal.design_blueprint(name, matrix_json)
+    def save_blueprint(self, name, matrix_json): return self.journal.save_blueprint(name, matrix_json)
     def list_blueprints(self): return self.journal.list_blueprints()
     def delete_blueprint(self, name): return self.journal.delete_blueprint(name)
-    def inspect(self, ship_id=None, structure_id=None, system_name=None): return self.sensors.inspect(ship_id, structure_id, system_name)
+    def inspect(self, ship_id=None, structure_id=None, system_name=None, blueprint_name=None): return self.sensors.inspect(ship_id, structure_id, system_name, blueprint_name)
+    
+    def view_blueprint(self, name):
+        """
+        Shortcut wrapper: Calls inspect under the hood and prints it beautifully as YAML.
+        """
+        if not name:
+            print("[FEHLER] 'view_blueprint' erfordert den Namen des Blueprints.")
+            return False
+            
+        bp = self.inspect(blueprint_name=name)
+        if bp:
+            import yaml
+            print(f"\nDETAIL-ANSICHT BLAUPAUSE '{name}':\n---\n{yaml.dump(bp, sort_keys=False, default_flow_style=False).strip()}\n---")
+            return True
+        return False
     
     def deposit(self, quantity=100, resource_type="matter"): return self.logistics.deposit(quantity, resource_type)
     def withdraw(self, resource_type="energy", quantity=50): return self.logistics.withdraw(resource_type, quantity)
@@ -659,7 +675,7 @@ class Sensors:
         }
 
     @agent_service.with_agent_context(allow_disembodied=True)
-    def inspect(self, cursor, agent, ship_id=None, structure_id=None, system_name=None):
+    def inspect(self, cursor, agent, ship_id=None, structure_id=None, system_name=None, blueprint_name=None):
         rules = config_service.get_economy_rules()
         
         # 1. Target A: Ship Inspection (Gitter, Inventare, Capabilities)
@@ -727,9 +743,24 @@ class Sensors:
             cursor.execute("SELECT id, author_id, title FROM docs WHERE system_name = ? ORDER BY id ASC", (system_name,))
             sys_dict['public_sector_wiki_docs'] = [dict(r) for r in cursor.fetchall()]
             return sys_dict
+
+        # 4. Target D: Blueprint Detail Retrieval (Säule 3)
+        elif blueprint_name is not None:
+            cursor.execute("SELECT id, name, author_id, matrix_json, stats_json FROM blueprints WHERE name = ?", (blueprint_name,))
+            row = cursor.fetchone()
+            if not row:
+                print(f"[FEHLER] Blueprint '{blueprint_name}' nicht gefunden.")
+                return False
+            return {
+                "id": row["id"],
+                "name": row["name"],
+                "author_id": row["author_id"],
+                "matrix": json.loads(row["matrix_json"]),
+                "stats": json.loads(row["stats_json"])
+            }
             
         else:
-            print("[FEHLER] 'inspect' erfordert 'ship_id', 'structure_id' oder 'system_name'.")
+            print("[FEHLER] 'inspect' erfordert 'ship_id', 'structure_id', 'system_name' oder 'blueprint_name'.")
             return False
         
     @agent_service.with_agent_context(allow_disembodied=True)
@@ -1299,7 +1330,35 @@ class Journal:
         rules = config_service.get_economy_rules()
         stats = physics_service.evaluate_ship_matrix(name, matrix, rules)
         if "error" in stats:
-            print(f"[FEHLER] Blueprint-Validierung fehlgeschlagen: {stats['error']}")
+            print(f"[FEHLER] Blueprint-Planung fehlgeschlagen: {stats['error']}")
+            return False
+            
+        yaml_stats = yaml.dump({"blueprint_specs": stats}, sort_keys=False, default_flow_style=False).strip()
+        print(f"[SUCCESS] Blueprint '{name}' successfully simulated/planned (NOT SAVED)!")
+        print(f"\nERRECHNETE HARDWARE-SPEZIFIKATIONEN:\n---\n{yaml_stats}\n---")
+        print(f"[HINWEIS]: Dieser Befehl dient rein der risikofreien Simulation. Um diesen Entwurf dauerhaft im Sektor-Wiki zu speichern, führe 'me.save_blueprint(name, matrix)' aus!")
+        return True
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def save_blueprint(self, cursor, agent, name, matrix_json):
+        if not name or not matrix_json:
+            print("[FEHLER] 'save_blueprint' erfordert einen 'name' und ein 'matrix_json' Layout.")
+            return False
+        
+        try:
+            if isinstance(matrix_json, str):
+                matrix = json.loads(matrix_json)
+            else:
+                matrix = matrix_json
+        except Exception as e:
+            print(f"[FEHLER] Ungültiges Gitter-JSON Format: {str(e)}")
+            return False
+            
+        # Evaluator aufrufen
+        rules = config_service.get_economy_rules()
+        stats = physics_service.evaluate_ship_matrix(name, matrix, rules)
+        if "error" in stats:
+            print(f"[FEHLER] Blueprint-Speicherung fehlgeschlagen: {stats['error']}")
             return False
             
         cursor.execute("""
@@ -1307,7 +1366,9 @@ class Journal:
             VALUES (?, ?, ?, ?)
         """, (name, self.agent.id, json.dumps(matrix), json.dumps(stats)))
         
-        print(f"[SUCCESS] Blueprint '{name}' designed. Mass: {stats['mass']}, Speed: {stats['speed']}, Capacity: {stats['cargo']}. Build Cost: {stats['cost']} refined_matter.")
+        yaml_stats = yaml.dump({"blueprint_specs": stats}, sort_keys=False, default_flow_style=False).strip()
+        print(f"[SUCCESS] Blueprint '{name}' successfully saved to sector database!")
+        print(f"\nERRECHNETE HARDWARE-SPEZIFIKATIONEN:\n---\n{yaml_stats}\n---")
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True)

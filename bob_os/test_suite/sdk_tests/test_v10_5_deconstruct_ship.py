@@ -49,7 +49,7 @@ class TestV105DeconstructShip(unittest.TestCase):
             [BAT, None]
         ]
         
-        self.assertTrue(self.agent.design_blueprint("No-Tools-Scout", scout_matrix))
+        self.assertTrue(self.agent.save_blueprint("No-Tools-Scout", scout_matrix))
         self.assertTrue(self.agent.build_ship(blueprint_name="No-Tools-Scout")) # Spawns Ship 1
         
         # Cost of No-Tools-Scout is 1750 refined_matter. Refund at 50% is 875 refined_matter!

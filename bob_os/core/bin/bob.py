@@ -43,7 +43,9 @@ DESCRIPTIONS = {
     "exit_ship": "Verlässt das aktuelle Schiff und kehrt in die SEM-Matrix zurück.",
     "build_ship": "Baut ein neues Schiff in einer aktiven shipyard anhand eines Blaupausen-Namens.",
     "deconstruct_ship": "Baut ein unbemanntes Schiff am Standort ab und erstattet 50% der Baukosten an das Sektor-Depot (Argumente: ship_id).",
-    "design_blueprint": "Entwirf eine neue Schiffsklasse anhand einer 2D-Gitter-Matrix (Argumente: name, matrix_json).",
+    "design_blueprint": "Simuliere und plane eine neue Schiffsklasse anhand einer Gitter-Matrix (Argumente: name, matrix_json).",
+    "save_blueprint": "Simuliere, plane und speichere eine neue Schiffsklasse dauerhaft in der Sektor-Datenbank (Argumente: name, matrix_json).",
+    "view_blueprint": "Zeigt das detaillierte Gitter-Layout und die Leistungsdaten einer entworfenen Schiffsklasse an (Argumente: name).",
     "list_blueprints": "Listet alle registrierten Schiffs-Blaupausen im Sektor auf.",
     "delete_blueprint": "Löscht einen Entwurf aus dem Blaupausen-Archiv (Argumente: name).",
     "inspect": "Führe eine detaillierte Vor-Ort- oder Spionage-Inspektion durch (Argumente: ship_id, structure_id, system_name).",
@@ -148,6 +150,15 @@ def main():
                 name=params.get('name'),
                 matrix_json=params.get('matrix_json')
             )
+        elif method == "save_blueprint":
+            agent.save_blueprint(
+                name=params.get('name'),
+                matrix_json=params.get('matrix_json')
+            )
+        elif method == "view_blueprint":
+            agent.view_blueprint(
+                name=params.get('name')
+            )
         elif method == "list_blueprints":
             res = agent.list_blueprints()
             if res:
@@ -160,7 +171,8 @@ def main():
             res = agent.inspect(
                 ship_id=safe_int(params.get('ship_id'), 'ship_id'),
                 structure_id=safe_int(params.get('structure_id'), 'structure_id'),
-                system_name=params.get('system_name')
+                system_name=params.get('system_name'),
+                blueprint_name=params.get('blueprint_name')
             )
             if res:
                 print(yaml.dump(clean_dict(res), sort_keys=False, default_flow_style=False).strip())

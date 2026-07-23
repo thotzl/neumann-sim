@@ -52,7 +52,7 @@ class TestV105UniversalInspect(unittest.TestCase):
             [BAT, None]
         ]
         
-        self.assertTrue(self.agent.design_blueprint("Custom-Scout", scout_matrix))
+        self.assertTrue(self.agent.save_blueprint("Custom-Scout", scout_matrix))
         self.assertTrue(self.agent.build_ship(blueprint_name="Custom-Scout")) # Spawns Ship 1
         
         # 2. Inspect Ship 1

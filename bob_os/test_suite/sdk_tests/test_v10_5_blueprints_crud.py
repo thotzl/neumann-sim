@@ -53,9 +53,20 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
             [DRL, CRG]
         ]
 
-        self.assertTrue(self.agent.design_blueprint("Mini-Miner", miner_matrix))
+        # 1. Design valid blueprint for a Custom Miner (Simulation only, NOT SAVED!)
+        self.assertTrue(self.agent.design_blueprint("Mini-Miner-Plan", miner_matrix))
         
-        # 2. List blueprints
+        # Verify no blueprint is saved to the database yet!
+        blueprints_after_plan = self.agent.list_blueprints()
+        self.assertEqual(len(blueprints_after_plan), 0)
+        
+        # 2. Save blueprint (Plan, Show specs, AND SAVE!)
+        self.assertTrue(self.agent.save_blueprint("Mini-Miner", miner_matrix))
+        
+        # Verify blueprint detail retrieval shortcut (view_blueprint)
+        self.assertTrue(self.agent.view_blueprint("Mini-Miner"))
+        
+        # 3. List blueprints (Now should be 1!)
         blueprints = self.agent.list_blueprints()
         self.assertEqual(len(blueprints), 1)
         self.assertEqual(blueprints[0]['name'], "Mini-Miner")
@@ -63,7 +74,7 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
         self.assertEqual(blueprints[0]['stats']['has_drill'], 1)
         self.assertEqual(blueprints[0]['stats']['has_fabricator'], 0)
         
-        # 3. Build ship from this custom blueprint
+        # 4. Build ship from this custom blueprint
         conn = db_config.get_connection()
         sys_before = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
         # Build cost is 100 (base) + 4 tiles * 50 (chassis) + 800 (log) + 250 (eng) + 600 (drl) + 500 (crg) = 2350 refined_matter

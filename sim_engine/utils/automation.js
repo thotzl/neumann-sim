@@ -9,7 +9,65 @@ function runSystemAutomations(vDir, universeDir, state) {
 
     if (!fs.existsSync(activeScriptsDir)) return "";
 
-    const scripts = fs.readdirSync(activeScriptsDir).filter(f => f.endsWith('.py'));
+    // Dynamisch generierte me.py injizieren, um NameErrors bei Bobs Automatisierungs-Skripten zu verhindern (Säule 3)
+    const mePyPath = path.join(activeScriptsDir, "me.py");
+    const mePyContent = `import os
+import sys
+from bob_os.core.lib.bob_sdk import Agent
+
+class ResourceDict(dict):
+    def __getattr__(self, name): return self.get(name, 0)
+
+class HostObject:
+    def __init__(self, agent_dict):
+        self.type = agent_dict.get('host_type')
+        self.id = agent_dict.get('host_id')
+        inv = agent_dict.get('inventory', {})
+        self.inventory = ResourceDict({
+            'raw_matter': inv.get('raw_matter', 0),
+            'refined_matter': inv.get('refined_matter', 0),
+            'energy': inv.get('energy', 0)
+        })
+        self.storage_capacity = agent_dict.get('storage_capacity', 300)
+
+class DepotsObject:
+    def __init__(self, sys_dict):
+        depots = sys_dict.get('depots', {})
+        self.raw_matter = depots.get('raw_matter', 0)
+        self.refined_matter = depots.get('refined_matter', 0)
+        self.energy = depots.get('energy', 0)
+
+class StatusWrapper:
+    def __init__(self, dash):
+        self.host = HostObject(dash.get('dein_status', {}))
+        self.depots = DepotsObject(dash.get('lokales_system', {}))
+
+class MeAgent(Agent):
+    def __init__(self):
+        super().__init__(os.environ.get('BOB_ID', 'Bob'))
+        
+    def status(self):
+        dash = self.dashboard()
+        return StatusWrapper(dash)
+        
+    def log(self, message):
+        sys.stderr.write(f"# [LOG] {message}\\n")
+        sys.stderr.flush()
+
+_agent = MeAgent()
+status = _agent.status
+log = _agent.log
+mine = _agent.mine
+wait = _agent.wait
+deposit = _agent.deposit
+withdraw = _agent.withdraw
+refine = _agent.refine
+build = _agent.build
+scut = _agent.scut
+`;
+    fs.writeFileSync(mePyPath, mePyContent);
+
+    const scripts = fs.readdirSync(activeScriptsDir).filter(f => f.endsWith('.py') && f !== 'me.py');
     for (const script of scripts) {
         const scriptRelPath = `scripts/active/${script}`;
         const acl = state.security?.acl?.[scriptRelPath];

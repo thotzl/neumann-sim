@@ -36,4 +36,3 @@ The runner supports resume-logic. If it stops, just run it again; it picks up wh
 Before every build or major inject, you MUST:
 1. Run the central test hub: `node sim_engine/test_all.js`.
 2. Ensure all 10+ test suites (Python & Node) are GREEN.
-3. Verify that `ECONOMY_RULES.json` is synced.

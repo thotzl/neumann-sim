@@ -44,8 +44,27 @@ async function runSwarmE2E() {
         const bob1 = await getSql(db, "SELECT raw_matter_inventory FROM agents WHERE id='Instance-1'");
         if (bob1.raw_matter_inventory < 100) throw new Error("Automation fehlgeschlagen!");
 
-        const bob2 = await getSql(db, "SELECT location FROM agents WHERE id='Instance-2'");
+        const bob2 = await getSql(db, `
+            SELECT 
+                CASE 
+                    WHEN status = 'traveling' THEN 'Interstellar'
+                    WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                    WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                    ELSE 'Unknown'
+                END AS location,
+                last_seen_event_id
+            FROM agents WHERE id='Instance-2'
+        `);
         if (bob2.location !== 'SYS-B') throw new Error(`Ankunft fehlgeschlagen! Ist: ${bob2.location}`);
+        
+        // Test-Gaps schließen (Task 3)
+        // 1. last_seen_event_id muss inkrementiert sein (Visual Events wurden nicht vom Runner gelöscht)
+        if (bob2.last_seen_event_id === 0) throw new Error("last_seen_event_id wurde nicht inkrementiert! Visual Events wurden vermutlich gelöscht oder ignoriert.");
+
+        // 2. JS State Location Desynchronisation prüfen
+        const finalState = JSON.parse(fs.readFileSync(path.join(expDir, 'state.json'), 'utf8'));
+        const jsBob2 = finalState.agents.find(a => a.id === 'Instance-2');
+        if (jsBob2.location !== 'SYS-B') throw new Error(`JS State Location Desynchronisation! Ist im JS State: ${jsBob2.location}, sollte aber SYS-B sein.`);
 
         console.log("✅ Swarm E2E Test erfolgreich!");
         db.close();

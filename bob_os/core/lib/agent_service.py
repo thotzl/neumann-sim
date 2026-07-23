@@ -2,12 +2,33 @@ import sqlite3
 import functools
 from .db_config import get_connection
 
+def resolve_agent_location(cursor, host_type, host_id, status):
+    if status == 'traveling':
+        return 'Interstellar'
+    if host_type == 'ship' and host_id:
+        try:
+            cursor.execute("SELECT system_name FROM ships WHERE id = ?", (host_id,))
+            row = cursor.fetchone()
+            if row: return row['system_name']
+        except: pass
+    if host_type == 'matrix' and host_id:
+        try:
+            cursor.execute("SELECT system_name FROM infrastructure WHERE id = ?", (host_id,))
+            row = cursor.fetchone()
+            if row: return row['system_name']
+        except: pass
+    return 'Unknown'
+
 def get_agent_or_fail(cursor, agent_id, required_columns="*"):
-    cursor.execute(f"SELECT {required_columns} FROM agents WHERE id = ? OR chosen_name = ?", (agent_id, agent_id))
-    agent = cursor.fetchone()
-    if not agent:
+    cursor.execute("SELECT * FROM agents WHERE id = ? OR chosen_name = ?", (agent_id, agent_id))
+    row = cursor.fetchone()
+    if not row:
         print(f"[ERROR] Agent '{agent_id}' nicht gefunden.")
-    return agent
+        return None
+    agent_dict = dict(row)
+    if 'host_id' in agent_dict or 'host_type' in agent_dict:
+        agent_dict['location'] = resolve_agent_location(cursor, agent_dict.get('host_type'), agent_dict.get('host_id'), agent_dict.get('status'))
+    return agent_dict
 
 def require_active_status(agent, tool_name):
     if agent['status'] == 'traveling':

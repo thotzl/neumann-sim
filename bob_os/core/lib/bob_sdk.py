@@ -13,12 +13,14 @@ try:
     from . import system_service
     from . import config_service
     from . import physics_service
+    from . import transaction_service
 except ImportError:
     from core.lib.db_config import get_connection
     from core.lib import agent_service
     from core.lib import system_service
     from core.lib import config_service
     from core.lib import physics_service
+    from core.lib import transaction_service
 
 class BobSDKError(Exception):
     pass
@@ -33,6 +35,7 @@ class Agent:
         self.logistics = Logistics(self)
         self.comms = Comms(self)
         self.diagnostics = Diagnostics(self)
+        self.journal = Journal(self)
     def __repr__(self):
         return f"<BobAgent id='{self.id}'>"
 
@@ -49,6 +52,8 @@ class Agent:
     def rename_system(self, new_name): return self.actuators.rename_system(new_name)
     def board(self, ship_id): return self.actuators.board(ship_id)
     def exit_ship(self): return self.actuators.exit_ship()
+    def memo(self, action, content=None, id=None, query=None): return self.journal.memo(action, content, id, query)
+    def docs(self, action, title=None, content=None, id=None, query=None): return self.journal.docs(action, title, content, id, query)
     
     def deposit(self, quantity=100, resource_type="matter"): return self.logistics.deposit(quantity, resource_type)
     def withdraw(self, resource_type="energy", quantity=50): return self.logistics.withdraw(resource_type, quantity)
@@ -78,8 +83,17 @@ class Actuators:
 
     def _emit_visual(self, cursor, event_type, description):
         try:
-            cursor.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, (SELECT location FROM agents WHERE id=?), ?, ?, ?)", 
-                           (self.agent.id, self.agent.id, event_type, description))
+            cursor.execute("""
+                INSERT INTO visual_events (cycle, location, actor_id, event_type, description) 
+                VALUES (0, (
+                    SELECT CASE 
+                        WHEN status = 'traveling' THEN 'Interstellar'
+                        WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                        WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                        ELSE 'Unknown'
+                    END FROM agents WHERE id = ?
+                ), ?, ?, ?)
+            """, (self.agent.id, self.agent.id, event_type, description))
         except: pass
 
     @agent_service.with_agent_context(require_active=True, action_name='Mining')
@@ -107,8 +121,7 @@ class Actuators:
     @agent_service.with_agent_context(require_active=True, action_name='Refining')
     def refine(self, cursor, agent, raw_matter_to_refine=100):
         sys_name = agent['location']
-        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'matter_refinery' AND status = 'active'", (sys_name,))
-        if not cursor.fetchone():
+        if not system_service.has_active_infrastructure(cursor, sys_name, 'matter_refinery'):
             print(f"[DENIED] No active 'matter_refinery' in {sys_name} found.")
             return False
             
@@ -190,43 +203,15 @@ class Actuators:
         cost_m = global_settings.get('repair_cost_matter_per_hp', 1) * actual_repair
         cost_e = global_settings.get('repair_cost_energy_per_hp', 1) * actual_repair
         
-        # Pipeline Logic Matter (Dynamic Resource Type)
-        mat_col_inv = "refined_matter_inventory" if req_material == "refined_matter" else "raw_matter_inventory"
-        mat_col_depot = "refined_matter_depot" if req_material == "refined_matter" else "raw_matter_depot"
-        
-        available_depot_matter = system[mat_col_depot]
-        available_inventory_matter = agent[mat_col_inv]
-        total_available_m = available_depot_matter + available_inventory_matter
-
-        if total_available_m < cost_m:
-            print(f"[ERROR] Not enough {req_material} for repair. Need {cost_m}, have {available_inventory_matter} in inventory and {available_depot_matter} in depot.")
-            return False
-            
-        # Pipeline Logic Energy
-        available_depot_energy = system['energy_depot']
-        available_inventory_energy = agent['energy_inventory']
-        total_available_e = available_depot_energy + available_inventory_energy
-        
-        if total_available_e < cost_e:
-            print(f"[ERROR] Not enough energy for repair. Need {cost_e}E, have {available_inventory_energy}E in battery and {available_depot_energy}E in depot.")
+        res = transaction_service.pay_pipeline_costs(
+            cursor, self.agent.id, agent['location'],
+            energy_cost=cost_e, matter_cost=cost_m, matter_type=req_material
+        )
+        if not res:
             return False
 
-        matter_from_depot = min(cost_m, available_depot_matter)
-        matter_from_inventory = cost_m - matter_from_depot
-        
-        energy_from_depot = min(cost_e, available_depot_energy)
-        energy_from_inventory = cost_e - energy_from_depot
-
-        # Ressourcen abziehen
-        if energy_from_inventory > 0:
-            cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ? WHERE id = ?", (energy_from_inventory, self.agent.id))
-        if energy_from_depot > 0:
-            cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (energy_from_depot, agent['location']))
-            
-        if matter_from_inventory > 0:
-            cursor.execute(f"UPDATE agents SET {mat_col_inv} = {mat_col_inv} - ? WHERE id = ?", (matter_from_inventory, self.agent.id))
-        if matter_from_depot > 0:
-            cursor.execute(f"UPDATE systems SET {mat_col_depot} = {mat_col_depot} - ? WHERE name = ?", (matter_from_depot, agent['location']))
+        matter_from_depot = res["matter_from_depot"]
+        matter_from_inventory = res["matter_from_inventory"]
         
         new_health = infra['health'] + actual_repair
         status = 'active' if new_health > 0 else infra['status']
@@ -247,43 +232,15 @@ class Actuators:
         system = system_service.get_system_or_fail(cursor, agent['location'])
         if not system: return False
 
-        # Pipeline Logic Matter (Dynamic Resource Type)
-        mat_col_inv = "refined_matter_inventory" if req_material == "refined_matter" else "raw_matter_inventory"
-        mat_col_depot = "refined_matter_depot" if req_material == "refined_matter" else "raw_matter_depot"
-        
-        available_depot_matter = system[mat_col_depot]
-        available_inventory_matter = agent[mat_col_inv]
-        total_available_m = available_depot_matter + available_inventory_matter
-
-        if total_available_m < matter_to_invest:
-            print(f"[ERROR] Not enough {req_material} available. Need {matter_to_invest}, but only have {available_inventory_matter} in inventory and {available_depot_matter} in depot.")
+        res = transaction_service.pay_pipeline_costs(
+            cursor, self.agent.id, agent['location'],
+            energy_cost=build_cost_e, matter_cost=matter_to_invest, matter_type=req_material
+        )
+        if not res:
             return False
 
-        # Pipeline Logic Energy
-        available_depot_energy = system['energy_depot']
-        available_inventory_energy = agent['energy_inventory']
-        total_available_e = available_depot_energy + available_inventory_energy
-        
-        if total_available_e < build_cost_e:
-            print(f"[ERROR] Not enough energy to build. Need {build_cost_e}E, but only have {available_inventory_energy}E in battery and {available_depot_energy}E in depot.")
-            return False
-
-        matter_from_depot = min(matter_to_invest, available_depot_matter)
-        matter_from_inventory = matter_to_invest - matter_from_depot
-        
-        energy_from_depot = min(build_cost_e, available_depot_energy)
-        energy_from_inventory = build_cost_e - energy_from_depot
-
-        # Ressourcen abziehen
-        if energy_from_inventory > 0:
-            cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ? WHERE id = ?", (energy_from_inventory, self.agent.id))
-        if energy_from_depot > 0:
-            cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (energy_from_depot, agent['location']))
-            
-        if matter_from_inventory > 0:
-            cursor.execute(f"UPDATE agents SET {mat_col_inv} = {mat_col_inv} - ? WHERE id = ?", (matter_from_inventory, self.agent.id))
-        if matter_from_depot > 0:
-            cursor.execute(f"UPDATE systems SET {mat_col_depot} = {mat_col_depot} - ? WHERE name = ?", (matter_from_depot, agent['location']))
+        matter_from_depot = res["matter_from_depot"]
+        matter_from_inventory = res["matter_from_inventory"]
 
         cursor.execute("SELECT * FROM infrastructure WHERE system_name = ? AND type = ?", (agent['location'], building_type))
         existing = cursor.fetchone()
@@ -323,26 +280,22 @@ class Actuators:
     @agent_service.with_agent_context(allow_disembodied=True, action_name='Build Ship')
     def build_ship(self, cursor, agent, chassis='Scout'):
         sys_name = agent['location']
-        system = system_service.get_system_or_fail(cursor, sys_name)
         
         # Check if shipyard or advanced_shipyard is active
-        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type IN ('shipyard', 'advanced_shipyard') AND status = 'active'", (sys_name,))
-        if not cursor.fetchone():
+        if not system_service.has_active_infrastructure(cursor, sys_name, ('shipyard', 'advanced_shipyard')):
             print(f"[DENIED] No active 'shipyard' or 'advanced_shipyard' in {sys_name} found.")
             return False
             
         cost = 1000 # Standard cost for now
-        if agent['raw_matter_inventory'] + system['raw_matter_depot'] < cost:
-            print(f"[ERROR] Not enough raw_matter available. Need {cost}, but only have {agent['raw_matter_inventory']} in inventory and {system['raw_matter_depot']} in depot.")
+        res = transaction_service.pay_pipeline_costs(
+            cursor, self.agent.id, sys_name,
+            energy_cost=0, matter_cost=cost, matter_type='raw_matter'
+        )
+        if not res:
             return False
             
-        matter_from_depot = min(cost, system['raw_matter_depot'])
-        matter_from_inventory = cost - matter_from_depot
-        
-        if matter_from_inventory > 0:
-            cursor.execute("UPDATE agents SET raw_matter_inventory = raw_matter_inventory - ? WHERE id = ?", (matter_from_inventory, self.agent.id))
-        if matter_from_depot > 0:
-            cursor.execute("UPDATE systems SET raw_matter_depot = raw_matter_depot - ? WHERE name = ?", (matter_from_depot, sys_name))
+        matter_from_depot = res["matter_from_depot"]
+        matter_from_inventory = res["matter_from_inventory"]
 
         cursor.execute("SELECT MAX(id) FROM ships")
         max_id_row = cursor.fetchone()
@@ -385,7 +338,7 @@ class Actuators:
         speed = self.rules.get('global_settings', {}).get('travel_speed_per_tick', 300)
         ticks = max(1, int(dist / speed))
         
-        cursor.execute("UPDATE agents SET status='traveling', location='Interstellar', target_system=?, origin_x=current_x, origin_y=current_y, target_x=?, target_y=?, transit_ticks_total=?, transit_ticks_passed=0, energy_inventory = energy_inventory WHERE id=?", 
+        cursor.execute("UPDATE agents SET status='traveling', target_system=?, origin_x=current_x, origin_y=current_y, target_x=?, target_y=?, transit_ticks_total=?, transit_ticks_passed=0, energy_inventory = energy_inventory WHERE id=?", 
                        (target_system, target['x'], target['y'], ticks, self.agent.id))
                        
         if agent['active_ship_id']:
@@ -399,8 +352,7 @@ class Actuators:
         sys_name = agent['location']
         system = system_service.get_system_or_fail(cursor, sys_name)
         
-        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'mind_forge' AND status = 'active'", (sys_name,))
-        if not cursor.fetchone():
+        if not system_service.has_active_infrastructure(cursor, sys_name, 'mind_forge'):
             print(f"[DENIED] No active 'mind_forge' in {sys_name} found.")
             return False
 
@@ -414,12 +366,24 @@ class Actuators:
         
         # Check for host (sem_matrix or unpiloted ship)
         cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'sem_matrix' AND status = 'active'", (sys_name,))
-        has_matrix = cursor.fetchone() is not None
+        matrix_row = cursor.fetchone()
         
-        cursor.execute("SELECT id FROM ships WHERE system_name = ? AND pilot_id IS NULL", (sys_name,))
-        has_free_ship = cursor.fetchone() is not None
+        cursor.execute("SELECT id FROM ships WHERE system_name = ? AND pilot_id IS NULL LIMIT 1", (sys_name,))
+        ship_row = cursor.fetchone()
         
-        if not has_matrix and not has_free_ship:
+        host_type = None
+        host_id = None
+        active_ship_id = None
+        
+        if matrix_row:
+            host_type = 'matrix'
+            host_id = str(matrix_row['id'])
+        elif ship_row:
+            host_type = 'ship'
+            host_id = str(ship_row['id'])
+            active_ship_id = ship_row['id']
+            cursor.execute("UPDATE ships SET pilot_id = ? WHERE id = ?", (new_agent_id, active_ship_id))
+        else:
             print(f"[DENIED] Replication requires a host in {sys_name}. Build an 'sem_matrix' or provide an unpiloted ship.")
             return False
 
@@ -443,8 +407,11 @@ Du verfügst über die Erinnerungen deines Ursprungs bis zum Start deiner Replik
 3. Stelle dich anderen Agenten im System vor, um die Koordination zu optimieren. 
 Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
 
-        cursor.execute("INSERT OR IGNORE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES (?, 'Unnamed', ?, 0, 100, 100, 'active', ?, ?, NULL)", 
-                       (new_agent_id, sys_name, system['x'], system['y']))
+        cursor.execute("""
+            INSERT OR IGNORE INTO agents 
+            (id, chosen_name, host_id, host_type, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) 
+            VALUES (?, 'Unnamed', ?, ?, 0, 100, 100, 'active', ?, ?, ?)
+        """, (new_agent_id, host_id, host_type, system['x'], system['y'], active_ship_id))
         
         pop_file = os.environ.get('TEST_POP_PATH', os.path.abspath(os.path.join(os.environ.get('VERSE_DIR', ''), 'population.json')))
         try:
@@ -489,7 +456,7 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
             print(f"[DENIED] Ship {ship_id} is currently piloted by {ship['pilot_id']}.")
             return False
             
-        cursor.execute("UPDATE agents SET active_ship_id = ? WHERE id = ?", (ship_id, self.agent.id))
+        cursor.execute("UPDATE agents SET host_type = 'ship', host_id = ?, active_ship_id = ? WHERE id = ?", (str(ship_id), ship_id, self.agent.id))
         cursor.execute("UPDATE ships SET pilot_id = ? WHERE id = ?", (self.agent.id, ship_id))
         print(f"[SUCCESS] Boarded ship {ship_id}.")
         return True
@@ -498,11 +465,13 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
     def exit_ship(self, cursor, agent):
         ship_id = dict(agent).get('active_ship_id')
         cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'sem_matrix' AND status = 'active'", (agent['location'],))
-        if not cursor.fetchone():
+        matrix_row = cursor.fetchone()
+        if not matrix_row:
             print(f"[DENIED] Cannot exit ship here. System {agent['location']} lacks an active 'sem_matrix' to host your disembodied mind.")
             return False
             
-        cursor.execute("UPDATE agents SET active_ship_id = NULL WHERE id = ?", (self.agent.id,))
+        matrix_id = str(matrix_row['id'])
+        cursor.execute("UPDATE agents SET host_type = 'matrix', host_id = ?, active_ship_id = NULL WHERE id = ?", (matrix_id, self.agent.id))
         cursor.execute("UPDATE ships SET pilot_id = NULL WHERE id = ?", (ship_id,))
         print(f"[SUCCESS] Exited ship {ship_id} and transferred to local SEM-Matrix.")
         return True
@@ -516,8 +485,7 @@ class Sensors:
         rules = config_service.get_economy_rules()
         base_cost = rules.get('tool_costs', {}).get('scan', {}).get('energy_cost', 40)
         
-        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'sat_link' AND status = 'active'", (agent['location'],))
-        has_sat = cursor.fetchone()
+        has_sat = system_service.has_active_infrastructure(cursor, agent['location'], 'sat_link')
         cost = base_cost * 0.5 if has_sat else base_cost
         
         if agent['energy_inventory'] < cost:
@@ -557,21 +525,22 @@ class Sensors:
                 "system": {
                     "name": "Interstellar Space",
                     "status": "In Transit",
-                    "target_system": agent.get('target_system', 'Unknown'),
-                    "transit_ticks_passed": agent.get('transit_ticks_passed', 0),
-                    "transit_ticks_total": agent.get('transit_ticks_total', 0)
+                    "target_system": agent['target_system'] if agent['target_system'] else 'Unknown',
+                    "transit_ticks_passed": agent['transit_ticks_passed'],
+                    "transit_ticks_total": agent['transit_ticks_total']
                 }
             }
             
-        system = system_service.get_system_or_fail(cursor, agent['location'])
+        sys_name = agent['location']
+        system = system_service.get_system_or_fail(cursor, sys_name)
         if not system:
             return {"error": "System data not found."}
             
-        infra_list = [dict(r) for r in system_service.get_infrastructure_at_location(cursor, agent['location'])]
-        
+        # 1. Lokales System (Depots & Geologie)
         rules = config_service.get_economy_rules()
         infra_rules = rules.get('infrastructure', {})
         
+        infra_list = [dict(r) for r in system_service.get_infrastructure_at_location(cursor, sys_name)]
         theoretical_max = 0
         total_maint = 0
 
@@ -585,36 +554,138 @@ class Sensors:
                 theoretical_max += stats.get('energy_regen_bonus', 0) * lvl
                 total_maint += stats.get('maintenance_energy_cost', 1)
 
-        cursor.execute("SELECT id, chosen_name, status FROM agents WHERE location = ? AND id != ?", (agent['location'], self.agent.id))
-        entities = [dict(r) for r in cursor.fetchall()]
-        cursor.execute("SELECT actor_id, event_type, description FROM visual_events WHERE location = ? ORDER BY rowid DESC LIMIT 10", (agent['location'],))
-        events = [dict(r) for r in cursor.fetchall()]
-        
-        s_dict = dict(system)
-        
-        # Umbenennung des Keys
-        if 'energy_generation_per_cycle' in s_dict:
-            s_dict['current_energy_generation_per_cycle'] = s_dict.pop('energy_generation_per_cycle')
+        # 2. Lokale Schiffe
+        cursor.execute("SELECT id, name, chassis, pilot_id FROM ships WHERE system_name = ?", (sys_name,))
+        local_ships = [dict(r) for r in cursor.fetchall()]
+
+        # 3. Lokale andere Bobs (inkl. Host-Wissen)
+        try:
+            cursor.execute("""
+                SELECT id, chosen_name, status, host_type, host_id FROM (
+                    SELECT id, chosen_name, status, host_type, host_id,
+                           CASE 
+                               WHEN status = 'traveling' THEN 'Interstellar'
+                               WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                               WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                               ELSE 'Unknown'
+                           END AS location
+                    FROM agents
+                ) WHERE location = ? AND id != ?
+            """, (sys_name, self.agent.id))
+        except sqlite3.OperationalError:
+            cursor.execute("SELECT id, chosen_name, status, NULL as host_type, NULL as host_id FROM agents WHERE location = ? AND id != ?", (sys_name, self.agent.id))
+        local_bobs = [dict(r) for r in cursor.fetchall()]
+
+        # 4. Beobachtungen anderer Agenten ("Unread Events")
+        unread_events = []
+        if 'last_seen_event_id' in agent:
+            # Holen aller Events seit dem letzten Zug
+            cursor.execute("""
+                SELECT rowid, actor_id, event_type, description 
+                FROM visual_events 
+                WHERE location = ? AND rowid > ? AND actor_id != ? 
+                ORDER BY rowid ASC
+            """, (sys_name, agent['last_seen_event_id'], self.agent.id))
+            event_rows = cursor.fetchall()
+            for r in event_rows:
+                unread_events.append(f"[Event #{r['rowid']}] {r['description']}")
             
-        s_dict['theoretical_max_energy_generation'] = theoretical_max
-        s_dict['total_maintenance_energy_cost'] = total_maint
-        
-        s_dict['infra'] = infra_list
+            # Update last_seen_event_id auf das absolute Maximum
+            cursor.execute("SELECT MAX(rowid) FROM visual_events")
+            max_rowid_row = cursor.fetchone()
+            max_rowid = max_rowid_row[0] if max_rowid_row and max_rowid_row[0] is not None else 0
+            if max_rowid > agent['last_seen_event_id']:
+                cursor.execute("UPDATE agents SET last_seen_event_id = ? WHERE id = ?", (max_rowid, self.agent.id))
+
+        # 5. Radar: Entdeckte Sektoren (mit Entfernung)
+        cursor.execute("SELECT name, x, y FROM systems WHERE name != ?", (sys_name,))
+        other_systems = []
+        for r in cursor.fetchall():
+            dist = int(physics_service.calc_distance(system['x'], system['y'], r['x'], r['y']))
+            other_systems.append({
+                "name": r['name'],
+                "coordinates": f"X{r['x']}-Y{r['y']}",
+                "distance": dist
+            })
+
+        # 6. Radar: Entfernte Bobs (Nur ID, Name, Status, Location)
+        try:
+            cursor.execute("""
+                SELECT id, chosen_name, status, location FROM (
+                    SELECT id, chosen_name, status,
+                           CASE 
+                               WHEN status = 'traveling' THEN 'Interstellar'
+                               WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                               WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                               ELSE 'Unknown'
+                           END AS location
+                    FROM agents
+                ) WHERE location != ? AND id != ?
+            """, (sys_name, self.agent.id))
+            distant_bobs = [dict(r) for r in cursor.fetchall()]
+        except sqlite3.OperationalError:
+            distant_bobs = []
+
+        # 7. Offene Memos/Protokolle (Task 4)
+        try:
+            cursor.execute("SELECT id, content FROM memos WHERE agent_id = ? AND status = 'open' ORDER BY id ASC", (self.agent.id,))
+            memos_list = [f"[Memo #{r['id']}] {r['content']} (Status: open)" for r in cursor.fetchall()]
+        except sqlite3.OperationalError:
+            memos_list = []
+
         return {
-            "you": {
-                "id": agent['id'], "name": agent['chosen_name'], 
-                "energy": agent['energy_inventory'], "matter": agent['raw_matter_inventory'], 
-                "refined": agent['refined_matter_inventory'],
-                "storage_capacity": agent['matter_storage_capacity'], "status": agent['status']
+            "lokales_system": {
+                "name": sys_name,
+                "coordinates": f"X{system['x']}-Y{system['y']}",
+                "depots": {
+                    "raw_matter": system['raw_matter_depot'],
+                    "refined_matter": system['refined_matter_depot'],
+                    "energy": system['energy_depot']
+                },
+                "geology": {
+                    "extractable_core_matter": system['extractable_matter_in_core']
+                },
+                "infrastructure": infra_list,
+                "ships": local_ships,
+                "present_entities": local_bobs
             },
-            "system": s_dict,
-            "visible_entities": entities,
-            "visual_observations": events
+            "beobachtungen_anderer_agenten": unread_events,
+            "dein_status": {
+                "id": agent['id'],
+                "name": agent['chosen_name'],
+                "host_type": agent.get('host_type', 'Unknown'),
+                "host_id": agent.get('host_id', 'Unknown'),
+                "inventory": {
+                    "raw_matter": agent['raw_matter_inventory'],
+                    "refined_matter": agent['refined_matter_inventory'],
+                    "energy": agent['energy_inventory']
+                },
+                "storage_capacity": agent['matter_storage_capacity'],
+                "status": agent['status'],
+                "offene_memos_und_protokolle": memos_list
+            },
+            "radar_entfernter_sektoren": other_systems,
+            "radar_entfernter_agenten": distant_bobs
         }
         
     @agent_service.with_agent_context(allow_disembodied=True)
     def entities(self, cursor, agent):
-        cursor.execute("SELECT id, chosen_name, status FROM agents WHERE location = ? AND id != ?", (agent['location'], self.agent.id))
+        try:
+            cursor.execute("""
+                SELECT id, chosen_name, status FROM (
+                    SELECT id, chosen_name, status,
+                           CASE 
+                               WHEN status = 'traveling' THEN 'Interstellar'
+                               WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                               WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                               ELSE 'Unknown'
+                           END AS location
+                    FROM agents
+                ) WHERE location = ? AND id != ?
+            """, (agent['location'], self.agent.id))
+        except sqlite3.OperationalError:
+            cursor.execute("SELECT id, chosen_name, status FROM agents WHERE location = ? AND id != ?", (agent['location'], self.agent.id))
+            
         return [dict(r) for r in cursor.fetchall()]
 
 class Logistics:
@@ -700,9 +771,10 @@ class Logistics:
             print(f"[SUCCESS] {amount_to_withdraw} energy withdrawn.")
             return True
         elif resource_type == 'matter':
-            space_left = agent['matter_storage_capacity'] - agent['raw_matter_inventory']
+            current_total = agent['raw_matter_inventory'] + agent['refined_matter_inventory']
+            space_left = agent['matter_storage_capacity'] - current_total
             if space_left <= 0:
-                print(f"[FEHLER] Dein Speicher ist voll ({agent['raw_matter_inventory']}/{agent['matter_storage_capacity']}).")
+                print(f"[FEHLER] Dein Speicher ist voll ({current_total}/{agent['matter_storage_capacity']}).")
                 return False
             actual_withdraw = min(amount_to_withdraw, space_left)
             
@@ -711,9 +783,16 @@ class Logistics:
             print(f"[SUCCESS] {actual_withdraw} matter withdrawn.")
             return True
         elif resource_type == 'refined_matter':
-            cursor.execute("UPDATE agents SET refined_matter_inventory = refined_matter_inventory + ? WHERE id = ?", (amount_to_withdraw, self.agent.id))
-            cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot - ? WHERE name = ?", (amount_to_withdraw, agent['location']))
-            print(f"[SUCCESS] {amount_to_withdraw} refined_matter withdrawn.")
+            current_total = agent['raw_matter_inventory'] + agent['refined_matter_inventory']
+            space_left = agent['matter_storage_capacity'] - current_total
+            if space_left <= 0:
+                print(f"[FEHLER] Dein Speicher ist voll ({current_total}/{agent['matter_storage_capacity']}).")
+                return False
+            actual_withdraw = min(amount_to_withdraw, space_left)
+            
+            cursor.execute("UPDATE agents SET refined_matter_inventory = refined_matter_inventory + ? WHERE id = ?", (actual_withdraw, self.agent.id))
+            cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot - ? WHERE name = ?", (actual_withdraw, agent['location']))
+            print(f"[SUCCESS] {actual_withdraw} refined_matter withdrawn.")
             return True
 
     @agent_service.with_agent_context(allow_disembodied=True)
@@ -740,8 +819,7 @@ class Comms:
         rules = config_service.get_economy_rules()
         base_range = rules.get('global_settings', {}).get('base_comms_range', 1000)
 
-        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (agent['location'],))
-        sender_has_relay = bool(cursor.fetchone())
+        sender_has_relay = system_service.has_active_infrastructure(cursor, agent['location'], 'comms_relay')
 
         if receiver_id.upper() == 'ALL':
             if not sender_has_relay:
@@ -749,7 +827,20 @@ class Comms:
                 return False
             
             # Zähle erreichbare Empfänger für das Feedback
-            cursor.execute("SELECT id, location, current_x, current_y FROM agents WHERE id != ?", (self.agent.id,))
+            try:
+                cursor.execute("""
+                    SELECT id, current_x, current_y,
+                           CASE 
+                               WHEN status = 'traveling' THEN 'Interstellar'
+                               WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                               WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                               ELSE 'Unknown'
+                           END AS location
+                    FROM agents WHERE id != ?
+                """, (self.agent.id,))
+            except sqlite3.OperationalError:
+                cursor.execute("SELECT id, location, current_x, current_y FROM agents WHERE id != ?", (self.agent.id,))
+                
             all_others = cursor.fetchall()
             reachable_count = 0
             for other in all_others:
@@ -760,15 +851,27 @@ class Comms:
                     if dist <= base_range:
                         reachable_count += 1
                     else:
-                        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (other['location'],))
-                        if cursor.fetchone():
+                        if system_service.has_active_infrastructure(cursor, other['location'], 'comms_relay'):
                             reachable_count += 1
             
             cursor.execute("INSERT INTO messages (sender, receiver, content) VALUES (?, 'ALL', ?)", (self.agent.id, message))
             print(f"[SUCCESS] Message buffered for transmission. {reachable_count} receivers.")
             return True
         else:
-            cursor.execute("SELECT id, location, current_x, current_y FROM agents WHERE id = ? OR chosen_name = ?", (receiver_id, receiver_id))
+            try:
+                cursor.execute("""
+                    SELECT id, current_x, current_y,
+                           CASE 
+                               WHEN status = 'traveling' THEN 'Interstellar'
+                               WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                               WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                               ELSE 'Unknown'
+                           END AS location
+                    FROM agents WHERE id = ? OR chosen_name = ?
+                """, (receiver_id, receiver_id))
+            except sqlite3.OperationalError:
+                cursor.execute("SELECT id, location, current_x, current_y FROM agents WHERE id = ? OR chosen_name = ?", (receiver_id, receiver_id))
+                
             target_agent = cursor.fetchone()
             if not target_agent:
                 print(f"[ERROR] Agent '{receiver_id}' nicht gefunden oder offline.")
@@ -779,8 +882,7 @@ class Comms:
             if agent['location'] != target_agent['location']:
                 dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], target_agent['current_x'], target_agent['current_y'])
                 if dist > base_range:
-                    cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (target_agent['location'],))
-                    target_has_relay = bool(cursor.fetchone())
+                    target_has_relay = system_service.has_active_infrastructure(cursor, target_agent['location'], 'comms_relay')
                     if not sender_has_relay and not target_has_relay:
                         print(f"[DENIED] Agent '{receiver_id}' ist außer Reichweite ({int(dist)} > {base_range}). Signalverlust. Baue ein 'comms_relay' zur Verstärkung.")
                         return False
@@ -819,6 +921,106 @@ class Diagnostics:
                         "write_locked": "write_key" in acl, "read_locked": "read_key" in acl
                     })
         return found_files
+
+class Journal:
+    def __init__(self, agent):
+        self.agent = agent
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def memo(self, cursor, agent, action, content=None, id=None, query=None):
+        action = action.lower() if action else ""
+        if action == 'add':
+            if not content:
+                print("[FEHLER] 'add' erfordert 'content'.")
+                return False
+            cursor.execute("INSERT INTO memos (agent_id, content, status) VALUES (?, ?, 'open')", (self.agent.id, content))
+            cursor.execute("SELECT last_insert_rowid()")
+            memo_id = cursor.fetchone()[0]
+            print(f"[SUCCESS] Memo #{memo_id} added.")
+            return True
+        elif action == 'check':
+            if id is None:
+                print("[FEHLER] 'check' erfordert eine 'id'.")
+                return False
+            cursor.execute("UPDATE memos SET status = 'completed' WHERE id = ? AND agent_id = ?", (id, self.agent.id))
+            print(f"[SUCCESS] Memo #{id} completed.")
+            return True
+        elif action == 'uncheck':
+            if id is None:
+                print("[FEHLER] 'uncheck' erfordert eine 'id'.")
+                return False
+            cursor.execute("UPDATE memos SET status = 'open' WHERE id = ? AND agent_id = ?", (id, self.agent.id))
+            print(f"[SUCCESS] Memo #{id} opened.")
+            return True
+        elif action == 'remove':
+            if id is None:
+                print("[FEHLER] 'remove' erfordert eine 'id'.")
+                return False
+            cursor.execute("DELETE FROM memos WHERE id = ? AND agent_id = ?", (id, self.agent.id))
+            print(f"[SUCCESS] Memo #{id} removed.")
+            return True
+        elif action == 'list':
+            if id is not None:
+                cursor.execute("SELECT id, content, status FROM memos WHERE agent_id = ? AND id = ?", (self.agent.id, id))
+            else:
+                cursor.execute("SELECT id, content, status FROM memos WHERE agent_id = ? ORDER BY id ASC", (self.agent.id,))
+            return [dict(r) for r in cursor.fetchall()]
+        elif action == 'find':
+            if not query:
+                print("[FEHLER] 'find' erfordert einen 'query' Suchbegriff.")
+                return False
+            cursor.execute("SELECT id, content, status FROM memos WHERE agent_id = ? AND content LIKE ? ORDER BY id ASC", (self.agent.id, f"%{query}%"))
+            return [dict(r) for r in cursor.fetchall()]
+        else:
+            print(f"[FEHLER] Unbekannte Memo-Aktion: {action}")
+            return False
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def docs(self, cursor, agent, action, title=None, content=None, id=None, query=None):
+        action = action.lower() if action else ""
+        sys_name = agent['location']
+        if action == 'add':
+            if not title or not content:
+                print("[FEHLER] 'add' erfordert 'title' und 'content'.")
+                return False
+            cursor.execute("INSERT INTO docs (author_id, system_name, title, content) VALUES (?, ?, ?, ?)", (self.agent.id, sys_name, title, content))
+            cursor.execute("SELECT last_insert_rowid()")
+            doc_id = cursor.fetchone()[0]
+            print(f"[SUCCESS] Document #{doc_id} added to {sys_name}.")
+            return True
+        elif action == 'list':
+            if id is not None:
+                # Detailansicht (unabhängig vom Sektor, falls man gezielt sucht)
+                cursor.execute("SELECT id, author_id, system_name, title, content FROM docs WHERE id = ?", (id,))
+            else:
+                # Sektor-Liste (Sicherheits-Schutz: nur lokales System)
+                cursor.execute("SELECT id, author_id, title FROM docs WHERE system_name = ? ORDER BY id ASC", (sys_name,))
+            return [dict(r) for r in cursor.fetchall()]
+        elif action == 'find':
+            if not query:
+                print("[FEHLER] 'find' erfordert einen 'query' Suchbegriff.")
+                return False
+            cursor.execute("SELECT id, author_id, title, content FROM docs WHERE system_name = ? AND (title LIKE ? OR content LIKE ?) ORDER BY id ASC", 
+                           (sys_name, f"%{query}%", f"%{query}%"))
+            return [dict(r) for r in cursor.fetchall()]
+        elif action == 'remove':
+            if id is None:
+                print("[FEHLER] 'remove' erfordert eine 'id'.")
+                return False
+            cursor.execute("SELECT author_id FROM docs WHERE id = ?", (id,))
+            row = cursor.fetchone()
+            if not row:
+                print(f"[FEHLER] Dokument #{id} nicht gefunden.")
+                return False
+            if row['author_id'] != self.agent.id:
+                print(f"[DENIED] Only the author of this document can remove it.")
+                return False
+            cursor.execute("DELETE FROM docs WHERE id = ?", (id,))
+            print(f"[SUCCESS] Document #{id} removed.")
+            return True
+        else:
+            print(f"[FEHLER] Unbekannte Docs-Aktion: {action}")
+            return False
 
 class AutoScript:
     def __init__(self): self.me = Agent()

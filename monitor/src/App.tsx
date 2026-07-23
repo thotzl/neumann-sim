@@ -100,6 +100,38 @@ export default function App() {
         const res = await fetch('/live_verse/world_state.json');
         if (!res.ok) return;
         const data: WorldState = await res.json();
+        
+        // Self-healing: Resolve locations & parents dynamically in the frontend
+        if (data && Array.isArray(data.agents)) {
+          data.agents.forEach(a => {
+            // parent_id compatibility
+            if (a.parent_id === undefined && a.sensors?.parent_id) {
+              a.parent_id = a.sensors.parent_id;
+            }
+            
+            // location resolution
+            if (a.status === 'traveling') {
+              a.location = 'Interstellar';
+            } else if (a.host_type === 'ship' && a.host_id) {
+              const ship = data.ships?.find(s => s.id.toString() === a.host_id?.toString());
+              a.location = ship ? ship.system_name : 'Unknown';
+            } else if (a.host_type === 'matrix' && a.host_id) {
+              let systemName = 'Unknown';
+              if (data.systems) {
+                for (const sys of data.systems) {
+                  if (sys.infra && sys.infra.some(inf => inf.id.toString() === a.host_id?.toString())) {
+                    systemName = sys.name;
+                    break;
+                  }
+                }
+              }
+              a.location = systemName;
+            } else if (!a.location) {
+              a.location = 'Unknown';
+            }
+          });
+        }
+
         setState(data);
         if (data.tick > lastProcessedTick.current) {
            const newEntries: LogEntry[] = [];
@@ -270,7 +302,7 @@ export default function App() {
             })}
           </div>
         </div>
-        <InspectorPanel selection={selection} setSelection={setSelection} selectedAgent={selectedAgent} selectedSystem={selectedSystem} />
+        <InspectorPanel state={state} selection={selection} setSelection={setSelection} selectedAgent={selectedAgent} selectedSystem={selectedSystem} />
       </div>
 
       <LogPanel logs={logs} filters={filters} setFilters={setFilters} vogMsg={vogMsg} setVogMsg={setVogMsg} />

@@ -89,6 +89,7 @@ export const ExplorerPanel = ({ state, selection, setSelection, focusBounds }: E
               const isSel = selection?.type === 'system' && selection.id === sys.name;
               const sysAgents = state.agents.filter(a => a.location === sys.name && a.status !== 'traveling');
               const hasInfra = sys.infra && sys.infra.length > 0;
+              const isBuilding = sys.infra && sys.infra.some(inf => inf.status === 'construction');
               return (                <div 
                   key={sys.name}
                   onClick={() => { setSelection({ type: 'system', id: sys.name }); focusBounds([{x: sys.x, y: sys.y}]); }}
@@ -110,7 +111,7 @@ export const ExplorerPanel = ({ state, selection, setSelection, focusBounds }: E
                       <span style={{ color: isSel ? '#ffffff' : '#f1f5f9', fontSize: '0.95rem', fontWeight: 600 }}>{sys.display_name || sys.name}</span>
                       <div style={{ display: 'flex', gap: '4px' }}>
                           {sysAgents.length > 0 && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 5px #38bdf8' }} title="Units present" />}
-                          {hasInfra && <span style={{ width: '6px', height: '6px', borderRadius: '1px', background: '#ef4444', boxShadow: '0 0 5px #ef4444' }} title="Infrastructure present" />}
+                          {hasInfra && <span style={{ width: '6px', height: '6px', borderRadius: '1px', background: isBuilding ? '#f59e0b' : '#ef4444', boxShadow: `0 0 5px ${isBuilding ? '#f59e0b' : '#ef4444'}` }} title={isBuilding ? "Construction in progress" : "Infrastructure present"} />}
                       </div>
                     </div>
                     <span className="mono-text" style={{ fontSize: '0.7rem', color: '#64748b' }}>{sys.x}, {sys.y}</span>

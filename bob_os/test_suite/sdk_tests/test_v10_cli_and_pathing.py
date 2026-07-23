@@ -29,7 +29,8 @@ class TestV10Fixes(unittest.TestCase):
         conn = db_config.get_connection()
         conn.row_factory = sqlite3.Row
         conn.execute("INSERT INTO systems (name, x, y) VALUES ('SYS-X0-Y0', 0, 0)")
-        conn.execute("INSERT INTO agents (id, chosen_name, location, status) VALUES ('Instance-1', 'Bob', 'SYS-X0-Y0', 'active')")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS-X0-Y0', 'sem_matrix', 'active')")
+        conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status) VALUES ('Instance-1', 'Bob', '100', 'matrix', 'active')")
         conn.execute("INSERT INTO ships (id, name, chassis, system_name) VALUES (6, 'Vessel-6', 'Scout', 'SYS-X0-Y0')")
         conn.commit()
         conn.close()

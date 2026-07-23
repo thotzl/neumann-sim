@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { safeReadJsonSync } = require('./io_helpers');
 
 function deepMerge(target, source) {
     const output = Object.assign({}, target);
@@ -15,11 +16,9 @@ function deepMerge(target, source) {
 }
 
 function loadConfig(corePath, versionPath) {
-    let coreConfig = { model: "gemini-2.5-flash", anonymity: true, endless_mode: false };
-    if (fs.existsSync(corePath)) {
-        try { coreConfig = JSON.parse(fs.readFileSync(corePath, 'utf8')); } catch (e) { console.error("Warnung: core-config.json ungültig."); }
-    }
-    const versionConfig = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
+    const defaultCore = { model: "gemini-2.5-flash", anonymity: true, endless_mode: false };
+    const coreConfig = safeReadJsonSync(corePath, defaultCore);
+    const versionConfig = safeReadJsonSync(versionPath, {});
     return deepMerge(coreConfig, versionConfig);
 }
 

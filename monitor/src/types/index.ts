@@ -14,6 +14,8 @@ export type Agent = {
   target_y: number; 
   target_system: string | null;
   active_ship_id: number | null;
+  host_id?: string | null;
+  host_type?: 'ship' | 'matrix' | null;
   sensors?: {
     inventory?: {
       raw_matter_inventory: number;
@@ -60,6 +62,23 @@ export type Ship = {
   system_name: string | null;
 };
 
+export type Memo = {
+  id: number;
+  agent_id: string;
+  content: string;
+  status: 'open' | 'completed';
+  created_cycle: number;
+};
+
+export type Doc = {
+  id: number;
+  author_id: string;
+  system_name: string;
+  title: string;
+  content: string;
+  created_cycle: number;
+};
+
 export type WorldState = {
   tick: number; 
   total_turns: number; 
@@ -68,6 +87,8 @@ export type WorldState = {
   systems: System[]; 
   agents: Agent[]; 
   ships: Ship[];
+  memos?: Memo[];
+  docs?: Doc[];
   events: string[];
 };
 

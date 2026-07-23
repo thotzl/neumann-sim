@@ -26,7 +26,8 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         init_db.init()
         conn = db_config.get_connection()
         conn.execute("INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS-X0-Y0', 10000, 10000)")
-        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Pioneer', 'SYS-X0-Y0', 0, 500, 300, 'active', 0, 0, 1)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-X0-Y0')")
+        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Pioneer', '1', 'ship', 0, 500, 300, 'active', 0, 0, 1)")
         conn.commit()
         conn.close()
         cls.agent = bob_sdk.Agent('Instance-1')
@@ -67,7 +68,9 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         for _ in range(ticks):
             physics_update.update()
             
-        res = conn.execute("SELECT status, location FROM agents WHERE id='Instance-1'").fetchone()
+        cursor = conn.cursor()
+        from core.lib import agent_service
+        res = agent_service.get_agent_or_fail(cursor, 'Instance-1')
         self.assertEqual(res['status'], 'active')
         self.assertEqual(res['location'], 'SYS-X400-Y400')
         conn.close()

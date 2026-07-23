@@ -94,5 +94,28 @@ class TestRefinedEconomy(unittest.TestCase):
         self.assertEqual(sys_data[1], 0) # Raw untouched
         conn.close()
 
+    def test_withdraw_limit_on_refined_matter(self):
+        # Setup: Set agent matter storage capacity to 100
+        conn = sqlite3.connect(self.test_db)
+        conn.execute("UPDATE agents SET raw_matter_inventory = 50, refined_matter_inventory = 10, matter_storage_capacity = 100 WHERE id='Instance-1'")
+        conn.execute("UPDATE systems SET refined_matter_depot = 100 WHERE name='SYS-A'")
+        conn.commit()
+        
+        # Space left: 100 - (50 + 10) = 40.
+        # If we try to withdraw 50 refined_matter, it should be capped to 40.
+        success = self.agent.withdraw('refined_matter', 50)
+        self.assertTrue(success)
+        
+        # Verify that total inventory is exactly 100 (50 raw + 10 start refined + 40 withdrawn refined)
+        agent_data = conn.execute("SELECT raw_matter_inventory, refined_matter_inventory FROM agents WHERE id='Instance-1'").fetchone()
+        self.assertEqual(agent_data[0], 50)
+        self.assertEqual(agent_data[1], 50) # 10 + 40 = 50
+        
+        # Try to withdraw more (should fail because capacity is full: 100/100)
+        success = self.agent.withdraw('refined_matter', 10)
+        self.assertFalse(success)
+        
+        conn.close()
+
 if __name__ == '__main__':
     unittest.main()

@@ -44,8 +44,8 @@ def update(current_tick=1):
         new_energy = max(0, t['energy_inventory'] - tick_cost)
         
         if new_passed >= t['transit_ticks_total']:
-            cursor.execute("UPDATE agents SET status='active', location=?, current_x=?, current_y=?, transit_ticks_passed=?, energy_inventory=? WHERE id=?",
-                           (t['target_system'], t['target_x'], t['target_y'], new_passed, new_energy, t['id']))
+            cursor.execute("UPDATE agents SET status='active', current_x=?, current_y=?, transit_ticks_passed=?, energy_inventory=? WHERE id=?",
+                           (t['target_x'], t['target_y'], new_passed, new_energy, t['id']))
             # NEU: Ziehe das Schiff mit an den neuen Ort
             cursor.execute("""
                 UPDATE ships SET system_name = ? 

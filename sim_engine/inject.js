@@ -43,6 +43,25 @@ if (sourcePath === 'engine') {
     copyRecursiveSync(path.join(__dirname, '../bob_os/_verse/tools'), path.join(expDir, '_verse/tools'));
     copyRecursiveSync(path.join(__dirname, '../bob_os/core'), path.join(expDir, 'core'));
     console.log(`[ERFOLG] Python Logik synchronisiert.`);
+} else if (sourcePath === 'migrate') {
+    console.log(`Führe Datenbank-Migration für ${expName} aus...`);
+    // Kopiere migrations.py
+    const srcMigrate = path.resolve(__dirname, '../bob_os/core/lib/migrations.py');
+    const targetMigrate = path.join(expDir, 'core/lib/migrations.py');
+    fs.copyFileSync(srcMigrate, targetMigrate);
+    try {
+        const { execSync } = require('child_process');
+        execSync('python3 -m core.lib.migrations', {
+            cwd: expDir,
+            env: { ...process.env, PYTHONPATH: expDir },
+            stdio: 'inherit'
+        });
+        console.log(`[ERFOLG] Migration erfolgreich angewendet.`);
+    } catch (e) {
+        console.error(`[MIGRATION FEHLER]`, e.message);
+        process.exit(1);
+    }
+    process.exit(0);
 } else {
     const absoluteSrc = path.resolve(sourcePath);
     if (!fs.existsSync(absoluteSrc)) {

@@ -34,7 +34,8 @@ class TestReplicate(unittest.TestCase):
         # Setup: Werft und genug Materie im Depot
         conn = db_config.get_connection()
         conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, depot_energy_capacity) VALUES ('SYS-X0-Y0', 0, 0, 10000, 500)")
-        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, active_ship_id) VALUES ('Instance-1', 'Pioneer', 'SYS-X0-Y0', 0, 100, 100, 'active', 1)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-X0-Y0')")
+        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, active_ship_id) VALUES ('Instance-1', 'Pioneer', '1', 'ship', 0, 100, 100, 'active', 1)")
         conn.execute("INSERT INTO infrastructure (system_name, type, status, required_matter) VALUES ('SYS-X0-Y0', 'mind_forge', 'active', 1000)")
         conn.execute("INSERT INTO infrastructure (system_name, type, status, required_matter) VALUES ('SYS-X0-Y0', 'sem_matrix', 'active', 500)")
         conn.execute("UPDATE systems SET refined_matter_depot = 2000, energy_depot = 180 WHERE name = 'SYS-X0-Y0'")

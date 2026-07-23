@@ -1,17 +1,13 @@
 const fs = require('fs');
+const { safeReadJsonSync } = require('./io_helpers');
 
 async function callGemini(apiUrl, payload, retries = 3) {
     if (process.env.E2E_MOCK === 'true') {
         const agentId = process.env.CURRENT_MOCK_AGENT || "Instance-1";
         const stateFile = process.env.TEST_STATE_PATH || 'state.json';
-        let round = 1;
         
-        try {
-            if (fs.existsSync(stateFile)) {
-                const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-                round = state.round || 1;
-            }
-        } catch (e) {}
+        const state = safeReadJsonSync(stateFile, {});
+        let round = state.round || 1;
 
         const stepVar = `E2E_MOCK_STEP_${round}_${agentId.toUpperCase().replace(/-/g, '')}`;
         const respVar = `E2E_MOCK_RESPONSE_${agentId.toUpperCase().replace(/-/g, '')}`;

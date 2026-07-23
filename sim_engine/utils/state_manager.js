@@ -1,21 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const { callGemini } = require('./api_client');
+const { safeReadJsonSync } = require('./io_helpers');
 
 function saveState(statePath, data) {
     fs.writeFileSync(statePath, JSON.stringify(data, null, 2));
 }
 
 function loadState(statePath) {
-    if (fs.existsSync(statePath)) {
-        try {
-            return JSON.parse(fs.readFileSync(statePath, 'utf8'));
-        } catch (e) {
-            console.error("Fehler beim Laden des States:", e.message);
-            return null;
-        }
-    }
-    return null;
+    return safeReadJsonSync(statePath, null);
 }
 
 async function runDistillation(apiUrl, globalHistory, currentMemoryPath) {

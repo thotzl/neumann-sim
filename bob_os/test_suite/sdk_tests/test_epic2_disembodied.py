@@ -16,8 +16,9 @@ class TestEpic2Disembodied(unittest.TestCase):
         
         init_db.init()
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO agents (id, chosen_name, location, status, active_ship_id, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES ('Instance-1', 'Pioneer', 'SYS-X0-Y0', 'active', NULL, 0, 100, 100)")
-        conn.execute("INSERT INTO agents (id, chosen_name, location, status, active_ship_id, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES ('Instance-2', 'Clone', 'SYS-X0-Y0', 'active', NULL, 0, 100, 100)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS-X0-Y0', 'sem_matrix', 'active')")
+        conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, active_ship_id, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES ('Instance-1', 'Pioneer', '100', 'matrix', 'active', NULL, 0, 100, 100)")
+        conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, active_ship_id, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES ('Instance-2', 'Clone', '100', 'matrix', 'active', NULL, 0, 100, 100)")
         conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (2, 'Fighter', 'Scout', NULL, 'SYS-X0-Y0')")
         conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core) VALUES ('SYS-X0-Y0', 0, 0, 10000)")
         conn.commit()
@@ -56,11 +57,15 @@ class TestEpic2Disembodied(unittest.TestCase):
         self.assertTrue(self.agent.mine())
         
         # Exit ship fails because no sem_matrix
+        conn = db_config.get_connection()
+        conn.execute("UPDATE infrastructure SET status = 'construction' WHERE id = 100")
+        conn.commit()
+        conn.close()
         self.assertFalse(self.agent.exit_ship())
         
         # Build sem_matrix using ship
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS-X0-Y0', 'sem_matrix', 'active')")
+        conn.execute("UPDATE infrastructure SET status = 'active' WHERE id = 100")
         conn.commit()
         conn.close()
         

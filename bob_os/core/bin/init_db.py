@@ -30,7 +30,8 @@ def init():
     cursor.execute('''CREATE TABLE IF NOT EXISTS agents (
         id TEXT PRIMARY KEY, 
         chosen_name TEXT, 
-        location TEXT, 
+        host_id TEXT DEFAULT NULL,
+        host_type TEXT DEFAULT NULL,
         raw_matter_inventory INTEGER DEFAULT 0, 
         energy_inventory INTEGER DEFAULT 100, 
         matter_storage_capacity INTEGER DEFAULT 100, 
@@ -46,7 +47,8 @@ def init():
         current_x REAL DEFAULT 0,
         current_y REAL DEFAULT 0,
         refined_matter_inventory INTEGER DEFAULT 0,
-        active_ship_id INTEGER DEFAULT NULL
+        active_ship_id INTEGER DEFAULT NULL,
+        last_seen_event_id INTEGER DEFAULT 0
     )''')
     
     # 2.5 Schiffe (Epic 2)
@@ -79,6 +81,25 @@ def init():
     cursor.execute("CREATE TABLE IF NOT EXISTS messages (sender TEXT, receiver TEXT, content TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS knowledge_base (topic TEXT PRIMARY KEY, content TEXT, author TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS memos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id TEXT,
+            content TEXT,
+            status TEXT DEFAULT 'open',
+            created_cycle INTEGER DEFAULT 0
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS docs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            author_id TEXT,
+            system_name TEXT,
+            title TEXT,
+            content TEXT,
+            created_cycle INTEGER DEFAULT 0
+        )
+    """)
 
     conn.commit()
     conn.close()
@@ -126,9 +147,9 @@ def seed():
             ship_id = idx + 1
             cursor.execute("""
                 INSERT OR REPLACE INTO agents 
-                (id, chosen_name, location, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, active_ship_id) 
-                VALUES (?, ?, ?, 0, ?, ?, 'active', ?)
-            """, (agent_id, chosen_name, location, agent_limits['energy'], agent_limits['matter'], ship_id))
+                (id, chosen_name, host_id, host_type, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, active_ship_id) 
+                VALUES (?, ?, ?, 'ship', 0, ?, ?, 'active', ?)
+            """, (agent_id, chosen_name, str(ship_id), agent_limits['energy'], agent_limits['matter'], ship_id))
             
             # Schiff anlegen
             cursor.execute("INSERT OR REPLACE INTO ships (id, name, chassis, pilot_id, system_name) VALUES (?, ?, 'Scout', ?, ?)", 

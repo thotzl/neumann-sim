@@ -1,10 +1,39 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const { runPython } = require('./python_executor');
+const { safeReadJsonSync } = require('./io_helpers');
 
 function syncPopulation(populationFile, universeDir, vDir, state, logger, logFile, currentRound) {
-    let popData = null;
-    if (!fs.existsSync(populationFile)) {
+    // Dynamically resolve actual locations from SQLite universe.db (Step 2)
+    let resolvedLocations = {};
+    const dbPath = path.join(universeDir, 'universe.db');
+    if (fs.existsSync(dbPath)) {
+        try {
+            const pyScript = `
+import sqlite3, json
+from core.lib.agent_service import resolve_agent_location
+conn = sqlite3.connect('${dbPath.replace(/\\/g, '\\\\')}')
+conn.row_factory = sqlite3.Row
+c_outer = conn.cursor()
+c_inner = conn.cursor()
+res = {}
+for r in c_outer.execute('SELECT * FROM agents'):
+    loc = resolve_agent_location(c_inner, r['host_type'], r['host_id'], r['status'])
+    res[r['id']] = loc
+conn.close()
+print(json.dumps(res))`;
+            const out = execSync(`python3 -c "${pyScript.replace(/"/g, '\\"')}"`, {
+                env: { ...process.env, PYTHONPATH: path.resolve(universeDir, '..') }
+            }).toString().trim();
+            resolvedLocations = JSON.parse(out);
+        } catch (e) {
+            console.error("[SYNC-LOCATION-ERROR]", e.message);
+        }
+    }
+
+    let popData = safeReadJsonSync(populationFile);
+    if (!popData) {
         popData = { 
             version: 1, 
             agents: state.agents.filter(a => a.alive).map(a => ({
@@ -13,34 +42,50 @@ function syncPopulation(populationFile, universeDir, vDir, state, logger, logFil
         };
         fs.writeFileSync(populationFile, JSON.stringify(popData, null, 2));
     } else {
-        try {
-            popData = JSON.parse(fs.readFileSync(populationFile, 'utf8'));
-            if (!popData.agents || popData.agents.length === 0) {
-                 popData.agents = state.agents.filter(a => a.alive).map(a => ({
-                    id: a.id, location: a.location || ".", system_prompt: a.system_prompt, status: "active" 
-                }));
-                fs.writeFileSync(populationFile, JSON.stringify(popData, null, 2));
-            }
-        } catch (e) { return; }
+        if (!popData.agents || popData.agents.length === 0) {
+             popData.agents = state.agents.filter(a => a.alive).map(a => ({
+                id: a.id, location: a.location || ".", system_prompt: a.system_prompt, status: "active" 
+            }));
+            fs.writeFileSync(populationFile, JSON.stringify(popData, null, 2));
+        }
     }
 
     if (!popData || !Array.isArray(popData.agents)) return;
+
+    // Self-healing: Ensure all state.agents exist in popData.agents (Task 3)
+    let popChanged = false;
+    state.agents.forEach(sa => {
+        let exists = popData.agents.some(pa => pa.id === sa.id);
+        if (!exists) {
+            popData.agents.push({
+                id: sa.id,
+                location: sa.location,
+                status: sa.alive ? "active" : "inactive",
+                system_prompt: sa.system_prompt
+            });
+            popChanged = true;
+        }
+    });
+    if (popChanged) {
+        fs.writeFileSync(populationFile, JSON.stringify(popData, null, 2));
+    }
     
     popData.agents.forEach(pAgent => {
         let agentObj = state.agents.find(a => a.id === pAgent.id);
+        const actualLocation = resolvedLocations[pAgent.id] || pAgent.location || ".";
         if (!agentObj) {
             const fallbackPrompt = state.agents[0] ? state.agents[0].system_prompt : ".";
             agentObj = {
                 id: pAgent.id,
                 system_prompt: pAgent.system_prompt || pAgent.prompt || fallbackPrompt,
-                location: pAgent.location || ".",
+                location: actualLocation,
                 alive: pAgent.status === "active",
                 needsResumeNotify: true
             };
             state.agents.push(agentObj);
         } else {
             agentObj.system_prompt = pAgent.system_prompt || pAgent.prompt || agentObj.system_prompt;
-            agentObj.location = pAgent.location || ".";
+            agentObj.location = actualLocation;
             agentObj.alive = (pAgent.status === "active");
         }
 

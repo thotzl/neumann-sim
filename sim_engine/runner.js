@@ -147,12 +147,9 @@ c = conn.cursor()
 c.execute("SELECT sender, receiver, content FROM messages")
 msgs = [dict(r) for r in c.fetchall()]
 c.execute("DELETE FROM messages")
-c.execute("SELECT location, actor_id, description FROM visual_events")
-vis = [dict(r) for r in c.fetchall()]
-c.execute("DELETE FROM visual_events")
 conn.commit()
 conn.close()
-print(json.dumps({"messages": msgs, "visual_events": vis}))`;
+print(json.dumps({"messages": msgs}))`;
                 const batchOut = require('child_process').execFileSync('python3', ['-c', dbScript], { env: { ...process.env, TEST_DB_PATH: path.join(universeDir, 'universe.db') }, encoding: 'utf8' });
                 const batchData = JSON.parse(batchOut);
                 
@@ -167,17 +164,17 @@ print(json.dumps({"messages": msgs, "visual_events": vis}))`;
                         }
                     }
                 });
-                
-                batchData.visual_events.forEach(v => {
-                    state.agents.filter(a => a.alive && a.location === v.location && a.id !== v.actor_id).forEach(a => {
-                        state.global_inbox[a.id].push({ type: 'visual', description: v.description });
-                    });
-                });
             } catch(e) { console.error("[BATCH-ERROR]", e.message); }
 
             const activeAgents = state.agents.filter(a => a.alive);
             if (activeAgents.length === 0) return false;
-            state.turnSequence = activeAgents.map(a => a.id);
+            let sequence = activeAgents.map(a => a.id);
+            // Fisher-Yates Shuffle for randomized turn order (Task 3)
+            for (let i = sequence.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [sequence[i], sequence[j]] = [sequence[j], sequence[i]];
+            }
+            state.turnSequence = sequence;
         }
 
         const agentId = state.turnSequence[state.currentTurnIndex];
@@ -206,6 +203,7 @@ print(json.dumps({"messages": msgs, "visual_events": vis}))`;
                 if (item.type === 'scut') inboxText += `[SCUT] Von ${item.sender}: ${item.content}\n`;
                 if (item.type === 'visual') inboxText += `[OBSERVER] ${item.description}\n`;
                 if (item.type === 'automation') inboxText += `[SYSTEM-AUTOMATION]: ${item.text}\n`;
+                if (item.type === 'resonance') inboxText += `\n${item.text}\n`;
             });
             state.global_inbox[agent.id] = [];
         }
@@ -218,13 +216,11 @@ print(json.dumps({"messages": msgs, "visual_events": vis}))`;
             agent.needsResumeNotify = false;
         }
 
-        // Dashboard
+        // Dashboard (Task 3: Automatic Injected Dashboard)
         try {
-            const obsOut = runPython(vDir, `core/bin/bob.py`, ['dashboard()'], { bobId: agent.id, aclState: state.security?.acl || {} });
-            const obs = yaml.load(obsOut);
-            if (obs && obs.visual_observations && obs.visual_observations.length > 0) {
-                promptText += `\n[VISUELLE BEOBACHTUNGEN (SYSTEM)]:\n`;
-                obs.visual_observations.forEach(o => { promptText += `- ${o.description}\n`; });
+            const dashboardOut = runPython(vDir, `core/bin/bob.py`, ['dashboard()'], { bobId: agent.id, aclState: state.security?.acl || {} });
+            if (dashboardOut && dashboardOut.trim()) {
+                promptText += `\n[AKTUELLE UMGEBUNG (ECHTZEIT)]:\n${dashboardOut.trim()}\n`;
             }
         } catch (e) { console.error(`[SENSOR-ERROR] bei Agent ${agent.id}:`, e.message); }
 
@@ -243,8 +239,24 @@ print(json.dumps({"messages": msgs, "visual_events": vis}))`;
 
         if (responseText) {
             let feedback = envManager.processActions(responseText, universeDir, agent.id, state);
-            state.histories[agent.id].push({ agent: agent.id, text: responseText });
-            state.histories[agent.id].push({ agent: "System", text: feedback });
+            
+            // Extract ONLY the thoughts (1. ANALYSE) for the permanent diary history (Step 2)
+            const analyseMatch = responseText.match(/1\.\s*ANALYSE:([\s\S]*?)(?=2\.\s*AKTION:|$)/i) 
+                                 || responseText.match(/ANALYSE:([\s\S]*?)(?=AKTION:|$)/i);
+            const thoughts = analyseMatch ? "1. ANALYSE:\n" + analyseMatch[1].trim() : responseText;
+            state.histories[agent.id].push({ agent: agent.id, text: thoughts });
+            
+            // Store the raw action and engine resonance transiently in the global inbox for the next turn
+            if (!state.global_inbox[agent.id]) state.global_inbox[agent.id] = [];
+            
+            const actionPart = responseText.match(/2\.\s*AKTION:[\s\S]*/i) 
+                               ? responseText.match(/2\.\s*AKTION:[\s\S]*/i)[0] 
+                               : (responseText.match(/AKTION:[\s\S]*/i) ? responseText.match(/AKTION:[\s\S]*/i)[0] : "Keine Aktion.");
+            
+            state.global_inbox[agent.id].push({
+                type: 'resonance',
+                text: `[DEINE LETZTE AKTION & RESONANZ (FLÜCHTIG - NUR ALS SENSORISCHES FEEDBACK)]:\n${actionPart.trim()}\n\nRESONANZ:\n${feedback.trim()}`
+            });
             
             logger.appendTurnLog(logFile, state.round, agent.id, state.totalTurns, state.histories[agent.id].length, responseText, feedback, false, preTurnEvents);
             stateExporter.exportWorldState(universeDir, state, agent.id);

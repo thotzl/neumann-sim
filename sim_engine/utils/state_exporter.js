@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
+const { safeReadJsonSync } = require('./io_helpers');
 
 function exportWorldState(universeDir, state, lastAgentId) {
     const dbPath = path.join(universeDir, 'universe.db');
@@ -23,7 +24,11 @@ function exportWorldState(universeDir, state, lastAgentId) {
                     if (systemsProcessed === systems.length) {
                         db.all("SELECT * FROM agents", (err, agents) => {
                             db.all("SELECT * FROM ships", (err, ships) => {
-                                finish(systems, agents || [], ships || []);
+                                db.all("SELECT * FROM memos", (errMemos, memos) => {
+                                    db.all("SELECT * FROM docs", (errDocs, docs) => {
+                                        finish(systems, agents || [], ships || [], memos || [], docs || []);
+                                    });
+                                });
                             });
                         });
                     }
@@ -32,16 +37,38 @@ function exportWorldState(universeDir, state, lastAgentId) {
         });
     });
 
-    function finish(systems, agents, ships) {
+    function finish(systems, agents, ships, memos = [], docs = []) {
         let popData = {};
-        try {
-            const popJson = JSON.parse(require('fs').readFileSync(path.join(universeDir, 'population.json'), 'utf8'));
+        const popJson = safeReadJsonSync(path.join(universeDir, 'population.json'), null);
+        if (popJson && Array.isArray(popJson.agents)) {
             popJson.agents.forEach(a => {
                 if (a.parent_id) popData[a.id] = a.parent_id;
             });
-        } catch(e) {}
+        }
 
         agents.forEach(a => {
+            // Set parent_id on root of agent for frontend compatibility
+            a.parent_id = popData[a.id] || null;
+
+            // Resolve location dynamically for the monitor
+            if (a.status === 'traveling') {
+                a.location = 'Interstellar';
+            } else if (a.host_type === 'ship' && a.host_id) {
+                const ship = ships.find(s => s.id.toString() === a.host_id.toString());
+                a.location = ship ? ship.system_name : 'Unknown';
+            } else if (a.host_type === 'matrix' && a.host_id) {
+                let systemName = 'Unknown';
+                for (const sys of systems) {
+                    if (sys.infra && sys.infra.some(inf => inf.id.toString() === a.host_id.toString())) {
+                        systemName = sys.name;
+                        break;
+                    }
+                }
+                a.location = systemName;
+            } else {
+                a.location = 'Unknown';
+            }
+
             const history = state.histories[a.id] || [];
             
             // Suche den letzten echten Gedankengang des Agenten (rückwärts)
@@ -106,6 +133,8 @@ function exportWorldState(universeDir, state, lastAgentId) {
             systems: systems,
             agents: agents,
             ships: ships,
+            memos: memos,
+            docs: docs,
             events: state.events || []
         };
 

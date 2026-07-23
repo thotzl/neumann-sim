@@ -1,3 +1,14 @@
+# UNBEDINGT NÄCHSTE PUNKTE (Juli 2026)
+
+*Details siehe [NEXT_TODOS.md](./NEXT_TODOS.md)*
+
+- [ ] **1. Trennung Bob/Schiff:** Bobs haben nur noch `host_id`, keine eigene `location`. (Software vs. Hardware).
+- [ ] **2. First-Mover Fix:** Info-Buffering (Comms/Visuals) über eine Runde, Release zu Rundenbeginn. Dashboard bleibt Live.
+- [ ] **3. Token Reduktion:** Dashboard nur noch Injected, scope-filtered (Details nur im aktuellen System).
+- [ ] **4. Blueprints & Schiffsbau:** Implementierung von `design_blueprint` und asynchronem Schiffsbau in Werften.
+
+---
+
 ### ⚡ ENERGY PIPELINE FIX (Prio 1)
 - [ ] **Systemübergreifende Energie-Abrechnung:** Es macht keinen Sinn, materielle Pipelines zu haben, aber die "Stromleitung" zu ignorieren. Das Tool `replicate.py` muss so angepasst werden, dass die `energy_cost` primär aus dem `energy_stored` des Systems (Silo/Netz) abgezogen wird, falls vorhanden. Der Bob sollte nur dann persönlich Energie beisteuern müssen, wenn das Systemnetz leer ist. Dies verhindert die kognitive "Warte-Paralyse" der Agenten bei der Replikation.
 

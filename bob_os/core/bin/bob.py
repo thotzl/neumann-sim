@@ -37,12 +37,13 @@ DESCRIPTIONS = {
     "scut": "Sendet eine Funk-Nachricht. Reichweite > 1000 oder Broadcasts an 'ALL' erfordern ein aktives 'comms_relay'.",
     "wait": "Pausiert eine Runde, um z.B. Energie zu regenerieren.",
     "storage": "Zeigt den Füllstand des eigenen Inventars an.",
-    "dashboard": "Vollständiger Sensor-Scan der Umgebung (System, Infra, Andere).",
     "entities": "Scannt nach anderen Agenten am Standort.",
     "fs": "Listet die Dateien (Skripte) im eigenen Dateisystem auf.",
     "board": "Betritt ein Schiff am aktuellen Standort (ID nötig). Erlaubt physische Aktionen (mine, build, move).",
     "exit_ship": "Verlässt das aktuelle Schiff und kehrt in die SEM-Matrix zurück.",
-    "build_ship": "Baut ein neues Schiff in einer aktiven shipyard. (Kosten: 1000 Raw Matter)."
+    "build_ship": "Baut ein neues Schiff in einer aktiven shipyard. (Kosten: 1000 Raw Matter).",
+    "memo": "Verwalte deine privaten Memos, Tagebucheinträge und Protokolle (Aktionen: add, check, uncheck, remove, list, find).",
+    "docs": "Verwalte Sektor-Dokumente und öffentliche Relikte (Aktionen: add, list, find, remove).",
 }
 
 def clean_dict(d):
@@ -67,6 +68,8 @@ def print_help():
     }
 
     for method, meta in METHOD_META.items():
+        if meta.get("internal"):
+            continue
         desc = DESCRIPTIONS.get(method, "Keine Beschreibung verfügbar.")
         greedy_info = f"\n    [HINWEIS ZU '{meta['greedy']}']: Dieser Parameter ist GREEDY. Kommata im Text sind erlaubt und brechen den Befehl nicht." if meta.get("greedy") else ""
         if meta["params"]:
@@ -121,12 +124,31 @@ def main():
             res = agent._internal_poll()
             if res: print(res)
         elif method == "storage": print(yaml.dump(clean_dict(agent.storage()), sort_keys=False, default_flow_style=False).strip())
-        elif method == "dashboard": print(yaml.dump(clean_dict(agent.dashboard()), sort_keys=False, default_flow_style=False).strip())
+        elif method == "dashboard": print(yaml.dump(clean_dict(agent.sensors.local_system()), sort_keys=False, default_flow_style=False).strip())
         elif method == "entities": print(yaml.dump(clean_dict(agent.entities()), sort_keys=False, default_flow_style=False).strip())
         elif method == "fs": print(yaml.dump(clean_dict(agent.fs()), sort_keys=False, default_flow_style=False).strip())
         elif method == "board": agent.board(ship_id=safe_int(params.get('ship_id'), 'ship_id'))
         elif method == "exit_ship": agent.exit_ship()
         elif method == "build_ship": agent.build_ship(chassis=params.get('chassis', 'Scout'))
+        elif method == "memo":
+            res = agent.memo(
+                action=params.get('action'),
+                content=params.get('content'),
+                id=safe_int(params.get('id'), 'id'),
+                query=params.get('query')
+            )
+            if params.get('action') in ['list', 'find'] and res:
+                print(yaml.dump([clean_dict(r) for r in res], sort_keys=False, default_flow_style=False).strip())
+        elif method == "docs":
+            res = agent.docs(
+                action=params.get('action'),
+                title=params.get('title'),
+                content=params.get('content'),
+                id=safe_int(params.get('id'), 'id'),
+                query=params.get('query')
+            )
+            if params.get('action') in ['list', 'find'] and res:
+                print(yaml.dump([clean_dict(r) for r in res], sort_keys=False, default_flow_style=False).strip())
         else: print(f"[CLI ERROR] Methode '{method}' nicht implementiert.")
             
     except ValueError as ve:

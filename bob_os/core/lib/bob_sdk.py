@@ -697,7 +697,7 @@ class Logistics:
         if not system: return False
         
         quantity = int(quantity)
-        if resource_type == "matter":
+        if resource_type in ["matter", "raw_matter"]:
             if agent['raw_matter_inventory'] < quantity:
                 print(f"[FEHLER] Nicht genug Materie im Inventar ({agent['raw_matter_inventory']} < {quantity}).")
                 return False
@@ -751,7 +751,7 @@ class Logistics:
         
         if resource_type == 'energy':
             avail = system['energy_depot']
-        elif resource_type == 'matter':
+        elif resource_type in ['matter', 'raw_matter']:
             avail = system['raw_matter_depot']
         elif resource_type == 'refined_matter':
             avail = system['refined_matter_depot']
@@ -770,7 +770,7 @@ class Logistics:
             cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (amount_to_withdraw, agent['location']))
             print(f"[SUCCESS] {amount_to_withdraw} energy withdrawn.")
             return True
-        elif resource_type == 'matter':
+        elif resource_type in ['matter', 'raw_matter']:
             current_total = agent['raw_matter_inventory'] + agent['refined_matter_inventory']
             space_left = agent['matter_storage_capacity'] - current_total
             if space_left <= 0:
@@ -800,14 +800,23 @@ class Logistics:
         target = agent_service.get_agent_or_fail(cursor, receiver_id)
         if not target or agent['location'] != target['location']: return False
         quantity = int(quantity)
+        
         if resource_type == 'energy':
             if agent['energy_inventory'] < quantity: return False
             cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ? WHERE id = ?", (quantity, self.agent.id))
             cursor.execute("UPDATE agents SET energy_inventory = energy_inventory + ? WHERE id = ?", (quantity, receiver_id))
-        else:
+        elif resource_type in ['matter', 'raw_matter']:
             if agent['raw_matter_inventory'] < quantity: return False
             cursor.execute("UPDATE agents SET raw_matter_inventory = raw_matter_inventory - ? WHERE id = ?", (quantity, self.agent.id))
             cursor.execute("UPDATE agents SET raw_matter_inventory = raw_matter_inventory + ? WHERE id = ?", (quantity, receiver_id))
+        elif resource_type == 'refined_matter':
+            if agent['refined_matter_inventory'] < quantity: return False
+            cursor.execute("UPDATE agents SET refined_matter_inventory = refined_matter_inventory - ? WHERE id = ?", (quantity, self.agent.id))
+            cursor.execute("UPDATE agents SET refined_matter_inventory = refined_matter_inventory + ? WHERE id = ?", (quantity, receiver_id))
+        else:
+            print(f"[FEHLER] Unbekannte Ressource für Transfer: {resource_type}")
+            return False
+            
         print(f"[SUCCESS] {quantity} {resource_type} transferred to {receiver_id}.")
         return True
 

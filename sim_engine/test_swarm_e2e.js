@@ -33,7 +33,7 @@ async function runSwarmE2E() {
 
         const db = new sqlite3.Database(dbPath);
         await runSql(db, "INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, x, y) VALUES ('SYS-B', 5000, 600, 0)");
-        await runSql(db, `UPDATE agents SET energy_inventory = 500 WHERE id IN ('Instance-1', 'Instance-2')`);
+        await runSql(db, `UPDATE ships SET energy_inventory = 500 WHERE id IN (1, 2)`);
 
         process.env.E2E_MOCK = 'true';
         process.env.E2E_MOCK_STEP_1_INSTANCE1 = "ANALYSE: Skript.\nAKTION:\n[WRITE: scripts/active/auto.py (READ_KEY: secret)]\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n[END]\n[RUN: me scut(receiver_id=Instance-2, message=secret)]";
@@ -41,7 +41,7 @@ async function runSwarmE2E() {
 
         execSync(`node sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 
-        const bob1 = await getSql(db, "SELECT raw_matter_inventory FROM agents WHERE id='Instance-1'");
+        const bob1 = await getSql(db, "SELECT s.raw_matter_inventory FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='Instance-1'");
         if (bob1.raw_matter_inventory < 100) throw new Error("Automation fehlgeschlagen!");
 
         const bob2 = await getSql(db, `

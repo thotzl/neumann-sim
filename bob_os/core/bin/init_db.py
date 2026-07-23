@@ -27,14 +27,12 @@ def init():
     )''')
     
     # 2. Agenten
+    # 2. Agenten (Steuerung) - Physisch entkoppelt (Säule 1)
     cursor.execute('''CREATE TABLE IF NOT EXISTS agents (
         id TEXT PRIMARY KEY, 
         chosen_name TEXT, 
         host_id TEXT DEFAULT NULL,
         host_type TEXT DEFAULT NULL,
-        raw_matter_inventory INTEGER DEFAULT 0, 
-        energy_inventory INTEGER DEFAULT 100, 
-        matter_storage_capacity INTEGER DEFAULT 100, 
         status TEXT,
         birth_cycle INTEGER DEFAULT 0,
         target_system TEXT DEFAULT NULL,
@@ -46,12 +44,11 @@ def init():
         transit_ticks_passed INTEGER DEFAULT 0,
         current_x REAL DEFAULT 0,
         current_y REAL DEFAULT 0,
-        refined_matter_inventory INTEGER DEFAULT 0,
         active_ship_id INTEGER DEFAULT NULL,
         last_seen_event_id INTEGER DEFAULT 0
     )''')
     
-    # 2.5 Schiffe (Epic 2)
+    # 2.5 Schiffe (Epic 2) - Trägt physische Ressourcen & Performance-Kacheln (Säule 1 & 3)
     cursor.execute('''CREATE TABLE IF NOT EXISTS ships (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
@@ -61,7 +58,28 @@ def init():
         x REAL DEFAULT 0,
         y REAL DEFAULT 0,
         health INTEGER DEFAULT 100,
-        max_health INTEGER DEFAULT 100
+        max_health INTEGER DEFAULT 100,
+        raw_matter_inventory INTEGER DEFAULT 0,
+        refined_matter_inventory INTEGER DEFAULT 0,
+        energy_inventory INTEGER DEFAULT 100,
+        matter_storage_capacity INTEGER DEFAULT 300,
+        energy_capacity INTEGER DEFAULT 500,
+        max_speed REAL DEFAULT 300,
+        thrust INTEGER DEFAULT 500,
+        mass INTEGER DEFAULT 100,
+        blueprint_name TEXT DEFAULT 'Scout',
+        has_drill INTEGER DEFAULT 0,
+        has_fabricator INTEGER DEFAULT 0,
+        has_logic_core INTEGER DEFAULT 0
+    )''')
+
+    # 2.6 Blueprints (Säule 3) - Konstruktions-Bibliothek
+    cursor.execute('''CREATE TABLE IF NOT EXISTS blueprints (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE,
+        author_id TEXT,
+        matrix_json TEXT,
+        stats_json TEXT
     )''')
     
     # 3. Infrastruktur
@@ -142,18 +160,21 @@ def seed():
                 cursor.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter) VALUES (?, ?, ?, 10000, 10000)", (location, x, y))
                 created_systems.add(location)
             
-            # Agent anlegen (aktiv, aber mit leerem Inventar bis auf Start-Energie)
+            # Agent anlegen (aktiv, physisch entkoppelt)
             # Der allererste Agent (idx 0) ist die Ur-Einheit und bekommt ein physisches Schiff.
             ship_id = idx + 1
             cursor.execute("""
                 INSERT OR REPLACE INTO agents 
-                (id, chosen_name, host_id, host_type, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, active_ship_id) 
-                VALUES (?, ?, ?, 'ship', 0, ?, ?, 'active', ?)
-            """, (agent_id, chosen_name, str(ship_id), agent_limits['energy'], agent_limits['matter'], ship_id))
+                (id, chosen_name, host_id, host_type, status, active_ship_id) 
+                VALUES (?, ?, ?, 'ship', 'active', ?)
+            """, (agent_id, chosen_name, str(ship_id), ship_id))
             
-            # Schiff anlegen
-            cursor.execute("INSERT OR REPLACE INTO ships (id, name, chassis, pilot_id, system_name) VALUES (?, ?, 'Scout', ?, ?)", 
-                          (ship_id, f"Pioneer-{ship_id}", agent_id, location))
+            # Schiff mit den physischen Ressourcen anlegen (Säule 1)
+            cursor.execute("""
+                INSERT OR REPLACE INTO ships 
+                (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity, has_drill, has_fabricator) 
+                VALUES (?, ?, 'Scout', ?, ?, 0, ?, ?, 1, 1)
+            """, (ship_id, f"Pioneer-{ship_id}", agent_id, location, agent_limits['energy'], agent_limits['matter']))
                           
             # In Population eintragen (Das ist das Bindeglied zum Node-Runner)
             pop_data["agents"].append({

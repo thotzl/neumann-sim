@@ -1,5 +1,5 @@
 from .system_service import get_system_or_fail
-from .agent_service import get_agent_or_fail
+from .agent_service import get_agent_or_fail, update_agent_resources
 
 def pay_pipeline_costs(cursor, agent_id, system_name, energy_cost, matter_cost, matter_type="raw_matter"):
     """
@@ -37,13 +37,16 @@ def pay_pipeline_costs(cursor, agent_id, system_name, energy_cost, matter_cost, 
     energy_from_depot = min(energy_cost, available_depot_energy)
     energy_from_inventory = energy_cost - energy_from_depot
 
-    if energy_from_inventory > 0:
-        cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ? WHERE id = ?", (energy_from_inventory, agent_id))
+    # Subduce matter and energy via the unified update_agent_resources service (Säule 1)
+    if energy_from_inventory > 0 or matter_from_inventory > 0:
+        if matter_type == "refined_matter":
+            update_agent_resources(cursor, agent_id, refined_matter=-matter_from_inventory, energy=-energy_from_inventory)
+        else:
+            update_agent_resources(cursor, agent_id, raw_matter=-matter_from_inventory, energy=-energy_from_inventory)
+
     if energy_from_depot > 0:
         cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (energy_from_depot, system_name))
         
-    if matter_from_inventory > 0:
-        cursor.execute(f"UPDATE agents SET {mat_col_inv} = {mat_col_inv} - ? WHERE id = ?", (matter_from_inventory, agent_id))
     if matter_from_depot > 0:
         cursor.execute(f"UPDATE systems SET {mat_col_depot} = {mat_col_depot} - ? WHERE name = ?", (matter_from_depot, system_name))
         

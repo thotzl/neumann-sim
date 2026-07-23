@@ -44,7 +44,7 @@ async function runE2ETest() {
         const db = new sqlite3.Database(dbPath);
         
         // Der Agent 'Instance-1' (Default ID von build.py) muss existieren und Materie gesammelt haben.
-        db.get("SELECT raw_matter_inventory, energy_inventory, active_ship_id FROM agents WHERE id='Instance-1'", (err, row) => {
+        db.get("SELECT s.raw_matter_inventory, s.energy_inventory, a.active_ship_id FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='Instance-1'", (err, row) => {
             if (err) throw err;
             if (!row) throw new Error("Agent 'Instance-1' wurde nicht in der DB angelegt! [PRERUN FAIL]");
             

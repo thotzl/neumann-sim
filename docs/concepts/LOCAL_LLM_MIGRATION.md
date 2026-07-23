@@ -32,7 +32,7 @@ Das Kern-Paradigma von V10.0 ist die strikte Trennung von **Simulations-Logik (P
 └─────────────────┘      └─────────────────┘      └─────────────────┘
          │                        │                        │
          ▼                        ▼                        ▼
-    (Google API)            (OpenAI API)             (Local Ollama)
+    (Google API)            (OpenAI API)             (Native Ollama API)
 ```
 
 ### Die beiden Kern-Rollen im System:
@@ -116,8 +116,8 @@ const GeminiDriver = {
 module.exports = GeminiDriver;
 ```
 
-### B. OpenAI / Ollama Treiber (`ai_drivers/openai_driver.js`)
-*Universal-Treiber für alle OpenAI-kompatiblen REST-Endpunkte (Ollama, LM Studio, vLLM, OpenAI API).*
+### B. OpenAI Treiber (`ai_drivers/openai_driver.js`)
+*Universal-Treiber für alle OpenAI-kompatiblen REST-Endpunkte (LM Studio, vLLM, OpenAI API).*
 ```javascript
 const OpenAIDriver = {
     buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) {
@@ -169,6 +169,27 @@ const OpenAIDriver = {
 module.exports = OpenAIDriver;
 ```
 
+### C. Nativer Ollama Treiber (`ai_drivers/ollama_driver.js`)
+*Nativer Treiber für die Ollama API (`/api/chat`). Erlaubt präzise Kontrolle über modellspezifische Optionen wie Temperature und Stream-Verhalten via nativem Body.*
+```javascript
+const OllamaDriver = {
+    // buildContext() analog zu OpenAI
+    async generateText(payload, config, retries = 3) {
+        const endpoint = config.config_override?.ollama_endpoint || "http://localhost:11434/api/chat";
+        const model = config.config_override?.model || config.model || "qwen2.5-coder:7b";
+
+        const requestBody = {
+            model: model,
+            messages: payload.messages,
+            stream: false,
+            options: { temperature: 0.2 }
+        };
+        // ... (fetch to endpoint with requestBody)
+    }
+};
+module.exports = OllamaDriver;
+```
+
 ---
 
 ## 4. Die Factory-Klasse: `sim_engine/utils/ai_bridge.js`
@@ -187,8 +208,9 @@ class AIBridge {
 
     _loadDriver() {
         switch (this.provider.toLowerCase()) {
-            case 'openai':
             case 'ollama':
+                return require('./ai_drivers/ollama_driver');
+            case 'openai':
             case 'lmstudio':
                 return require('./ai_drivers/openai_driver');
             case 'gemini':

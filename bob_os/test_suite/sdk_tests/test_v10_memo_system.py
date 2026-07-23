@@ -22,11 +22,11 @@ class TestV10MemoDocsSystem(unittest.TestCase):
         conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 10000, 100, 100)")
         conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-B', 300, 400, 5000, 500, 500)")
         
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-A')")
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (2, 'Ship-2', 'Scout', 'Instance-2', 'SYS-A')") # Both in SYS-A
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-A', 0, 500, 300)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (2, 'Ship-2', 'Scout', 'Instance-2', 'SYS-A', 0, 500, 300)") # Both in SYS-A
         
-        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Pioneer-1', '1', 'ship', 0, 500, 300, 'active', 0, 0, 1)")
-        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES ('Instance-2', 'Pioneer-2', '2', 'ship', 0, 500, 300, 'active', 0, 0, 2)")
+        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Pioneer-1', '1', 'ship', 'active', 0, 0, 1)")
+        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) VALUES ('Instance-2', 'Pioneer-2', '2', 'ship', 'active', 0, 0, 2)")
         conn.commit()
         conn.close()
         

@@ -22,15 +22,55 @@ function exportWorldState(universeDir, state, lastAgentId) {
                     sys.infra = infra || [];
                     systemsProcessed++;
                     if (systemsProcessed === systems.length) {
-                        db.all("SELECT * FROM agents", (err, agents) => {
+                        db.all(`
+                            SELECT
+                                a.*,
+                                CASE
+                                    WHEN a.status = 'traveling' THEN 'Interstellar'
+                                    WHEN a.host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(a.host_id AS INTEGER))
+                                    WHEN a.host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(a.host_id AS INTEGER))
+                                    ELSE 'Unknown'
+                                END AS location,
+                                CASE
+                                    WHEN a.host_type = 'ship' THEN (SELECT s.raw_matter_inventory FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
+                                    WHEN a.host_type = 'matrix' THEN (SELECT sys.raw_matter_depot FROM systems sys WHERE sys.name = (SELECT system_name FROM infrastructure WHERE id = CAST(a.host_id AS INTEGER)))
+                                    ELSE 0
+                                END AS raw_matter_inventory,
+                                CASE
+                                    WHEN a.host_type = 'ship' THEN (SELECT s.refined_matter_inventory FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
+                                    WHEN a.host_type = 'matrix' THEN (SELECT sys.refined_matter_depot FROM systems sys WHERE sys.name = (SELECT system_name FROM infrastructure WHERE id = CAST(a.host_id AS INTEGER)))
+                                    ELSE 0
+                                END AS refined_matter_inventory,
+                                CASE
+                                    WHEN a.host_type = 'ship' THEN (SELECT s.energy_inventory FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
+                                    WHEN a.host_type = 'matrix' THEN (SELECT sys.energy_depot FROM systems sys WHERE sys.name = (SELECT system_name FROM infrastructure WHERE id = CAST(a.host_id AS INTEGER)))
+                                    ELSE 100
+                                END AS energy_inventory,
+                                CASE
+                                    WHEN a.host_type = 'ship' THEN (SELECT s.matter_storage_capacity FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
+                                    WHEN a.host_type = 'matrix' THEN 1000000
+                                    ELSE 100
+                                END AS matter_storage_capacity
+                            FROM agents a
+                        `, (err, agents) => {
+                            if (err) {
+                                db.all("SELECT * FROM agents", (errLegacy, legacyAgents) => {
+                                    handleAgentsAndShips(legacyAgents || []);
+                                });
+                            } else {
+                                handleAgentsAndShips(agents || []);
+                            }
+                        });
+
+                        function handleAgentsAndShips(agentsList) {
                             db.all("SELECT * FROM ships", (err, ships) => {
                                 db.all("SELECT * FROM memos", (errMemos, memos) => {
                                     db.all("SELECT * FROM docs", (errDocs, docs) => {
-                                        finish(systems, agents || [], ships || [], memos || [], docs || []);
+                                        finish(systems, agentsList, ships || [], memos || [], docs || []);
                                     });
                                 });
                             });
-                        });
+                        }
                     }
                 });
             });

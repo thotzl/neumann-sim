@@ -90,17 +90,14 @@ AKTION:
         }
 
         // 3. Verify Build Grace Period
-        // We invest 300 so it finishes in one go.
-        // Wait, the mock invests 100 but comms_relay costs 300.
-        // We should fix the mock to invest 300.
         const infraT1 = await getSql(dbPath, "SELECT status, maintenance_cooldown FROM infrastructure WHERE type = 'comms_relay'");
         if (!infraT1) throw new Error("Tier-1 Bau nicht registriert.");
         if (infraT1.maintenance_cooldown <= 0) {
             throw new Error(`Grace Period für neuen Bau nicht gesetzt. Cooldown: ${infraT1.maintenance_cooldown}`);
         }
-        
+
         // 4. Verify Correct Inventories (Refined vs Raw used)
-        const agent = await getSql(dbPath, "SELECT refined_matter_inventory, raw_matter_inventory FROM agents WHERE id = 'Instance-1'");
+        const agent = await getSql(dbPath, "SELECT s.refined_matter_inventory, s.raw_matter_inventory FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id = 'Instance-1'");
         // 200 refined start - 10 for repair = 190
         if (agent.refined_matter_inventory !== 190) {
              throw new Error(`Falscher refined_matter Abzug. Erwartet 190, ist ${agent.refined_matter_inventory}`);

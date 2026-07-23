@@ -23,7 +23,7 @@ class TestEpic2BuildShip(unittest.TestCase):
         conn = db_config.get_connection()
         conn.execute("INSERT INTO systems (name, x, y, raw_matter_depot) VALUES ('SYS-A', 0, 0, 1500)")
         conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS-A', 'sem_matrix', 'active')")
-        conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, raw_matter_inventory, status) VALUES ('Instance-1', 'Bob', '100', 'matrix', 0, 'active')")
+        conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status) VALUES ('Instance-1', 'Bob', '100', 'matrix', 'active')")
         conn.commit()
         conn.close()
 

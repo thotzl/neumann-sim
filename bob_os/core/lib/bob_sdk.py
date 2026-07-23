@@ -42,7 +42,6 @@ class Agent:
     # --- FLAT API (V9.0 Semantic API) ---
     def mine(self): return self.actuators.mine()
     def build(self, building_type, matter_to_invest=100): return self.actuators.build(building_type, matter_to_invest)
-    def build_ship(self, chassis="Scout"): return self.actuators.build_ship(chassis)
     def refine(self, raw_matter_to_refine=100): return self.actuators.refine(raw_matter_to_refine)
     def repair(self, structure_id, hp_to_restore=50): return self.actuators.repair(structure_id, hp_to_restore)
     def deconstruct(self, structure_id): return self.actuators.deconstruct(structure_id)
@@ -52,8 +51,12 @@ class Agent:
     def rename_system(self, new_name): return self.actuators.rename_system(new_name)
     def board(self, ship_id): return self.actuators.board(ship_id)
     def exit_ship(self): return self.actuators.exit_ship()
+    def build_ship(self, blueprint_name=None, chassis=None): return self.actuators.build_ship(blueprint_name, chassis)
     def memo(self, action, content=None, id=None, query=None): return self.journal.memo(action, content, id, query)
     def docs(self, action, title=None, content=None, id=None, query=None): return self.journal.docs(action, title, content, id, query)
+    def design_blueprint(self, name, matrix_json): return self.journal.design_blueprint(name, matrix_json)
+    def list_blueprints(self): return self.journal.list_blueprints()
+    def delete_blueprint(self, name): return self.journal.delete_blueprint(name)
     
     def deposit(self, quantity=100, resource_type="matter"): return self.logistics.deposit(quantity, resource_type)
     def withdraw(self, resource_type="energy", quantity=50): return self.logistics.withdraw(resource_type, quantity)
@@ -98,6 +101,14 @@ class Actuators:
 
     @agent_service.with_agent_context(require_active=True, action_name='Mining')
     def mine(self, cursor, agent):
+        # SÄULE 3: Capability Locking (Hardware-Check für Schiffe)
+        if agent.get('host_type') == 'ship':
+            cursor.execute("SELECT has_drill FROM ships WHERE id = CAST(? AS INTEGER)", (agent['host_id'],))
+            ship = cursor.fetchone()
+            if ship and ship['has_drill'] == 0:
+                print("[DENIED] Action failed. Your ship chassis lacks a 'drill' module.")
+                return False
+                
         cost = self.rules.get('tool_costs', {}).get('mine', {}).get('energy_cost', 30)
         if agent['energy_inventory'] < cost: 
             print(f"[FEHLER] Batterie leer (braucht {cost} Energie).")
@@ -111,8 +122,9 @@ class Actuators:
             print(f"[INFO] Ressourcen in {sys_name} erschöpft.")
             return False
         
-        agent_service.consume_resources(cursor, self.agent.id, energy=cost)
-        cursor.execute("UPDATE agents SET raw_matter_inventory = MIN(matter_storage_capacity, raw_matter_inventory + 100) WHERE id = ?", (self.agent.id,))
+        # Update raw matter (+100) and deduct energy (-cost) from the host (Säule 1)
+        actual_add = min(100, agent['matter_storage_capacity'] - agent['raw_matter_inventory'])
+        agent_service.update_agent_resources(cursor, self.agent.id, raw_matter=actual_add, energy=-cost)
         cursor.execute("UPDATE systems SET extractable_matter_in_core = extractable_matter_in_core - 100 WHERE name = ?", (sys_name,))
         self._emit_visual(cursor, "MINING", f"Agent {self.agent.id} hat Materie abgebaut.")
         print(f"[SUCCESS] 100 matter mined. Energy -{cost}.")
@@ -167,9 +179,11 @@ class Actuators:
         yield_to_inv = min(total_yield, space_in_inv)
         yield_to_depot = total_yield - yield_to_inv
 
-        # Updates ausführen
-        cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ?, raw_matter_inventory = raw_matter_inventory - ?, refined_matter_inventory = refined_matter_inventory + ? WHERE id = ?", 
-                       (e_from_inv, m_from_inv, yield_to_inv, self.agent.id))
+        # Updates ausführen (Säule 1: update_agent_resources)
+        agent_service.update_agent_resources(cursor, self.agent.id, 
+                                             raw_matter=-m_from_inv, 
+                                             refined_matter=yield_to_inv, 
+                                             energy=-e_from_inv)
         
         cursor.execute("UPDATE systems SET energy_depot = energy_depot - ?, raw_matter_depot = raw_matter_depot - ?, refined_matter_depot = refined_matter_depot + ? WHERE name = ?", 
                        (e_from_depot, m_from_depot, yield_to_depot, sys_name))
@@ -222,6 +236,14 @@ class Actuators:
 
     @agent_service.with_agent_context(require_active=True, action_name='Build')
     def build(self, cursor, agent, building_type, matter_to_invest=100):
+        # SÄULE 3: Capability Locking (Hardware-Check für Schiffe)
+        if agent.get('host_type') == 'ship':
+            cursor.execute("SELECT has_fabricator FROM ships WHERE id = CAST(? AS INTEGER)", (agent['host_id'],))
+            ship = cursor.fetchone()
+            if ship and ship['has_fabricator'] == 0:
+                print("[DENIED] Action failed. Your ship chassis lacks a 'fabricator' module.")
+                return False
+
         infra_rules = self.rules.get('infrastructure', {}).get(building_type, {"matter_cost": 400})
         total_cost = infra_rules.get('matter_cost', 400)
         req_material = infra_rules.get('required_material', 'raw_matter')
@@ -278,32 +300,83 @@ class Actuators:
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True, action_name='Build Ship')
-    def build_ship(self, cursor, agent, chassis='Scout'):
+    def build_ship(self, cursor, agent, blueprint_name=None, chassis=None):
         sys_name = agent['location']
+        blueprint_name = blueprint_name or chassis or 'Scout'
         
         # Check if shipyard or advanced_shipyard is active
         if not system_service.has_active_infrastructure(cursor, sys_name, ('shipyard', 'advanced_shipyard')):
             print(f"[DENIED] No active 'shipyard' or 'advanced_shipyard' in {sys_name} found.")
             return False
-            
-        cost = 1000 # Standard cost for now
-        res = transaction_service.pay_pipeline_costs(
-            cursor, self.agent.id, sys_name,
-            energy_cost=0, matter_cost=cost, matter_type='raw_matter'
-        )
-        if not res:
-            return False
-            
-        matter_from_depot = res["matter_from_depot"]
-        matter_from_inventory = res["matter_from_inventory"]
 
         cursor.execute("SELECT MAX(id) FROM ships")
         max_id_row = cursor.fetchone()
         new_id = (max_id_row[0] or 0) + 1
         name = f"Ship-{new_id}"
+
+        # 1. Check if name is registered in blueprints (Säule 3)
+        cursor.execute("SELECT matrix_json, stats_json FROM blueprints WHERE name = ?", (blueprint_name,))
+        bp_row = cursor.fetchone()
+
+        if not bp_row:
+            # LEGACY FALLBACK: Scout chassis built using 1000 raw_matter
+            cost = 1000
+            res = transaction_service.pay_pipeline_costs(
+                cursor, self.agent.id, sys_name,
+                energy_cost=0, matter_cost=cost, matter_type='raw_matter'
+            )
+            if not res:
+                return False
+                
+            matter_from_depot = res["matter_from_depot"]
+            matter_from_inventory = res["matter_from_inventory"]
+            
+            # Insert standard Scout with legacy properties
+            cursor.execute("""
+                INSERT INTO ships (
+                    id, name, chassis, system_name, raw_matter_inventory, energy_inventory, 
+                    matter_storage_capacity, energy_capacity, max_speed, thrust, mass, 
+                    blueprint_name, has_drill, has_fabricator, has_logic_core
+                ) VALUES (?, ?, ?, ?, 0, 100, 300, 500, 300, 500, 100, 'Scout', 0, 0, 0)
+            """, (new_id, name, blueprint_name, sys_name))
+            
+            print(f"[SUCCESS] {blueprint_name} vessel '{name}' (ID: {new_id}) built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
+            return True
+
+        # 2. CUSTOM BLUEPRINT (Säule 3)
+        stats = json.loads(bp_row['stats_json'])
+        cost = stats['cost']
         
-        cursor.execute("INSERT INTO ships (id, name, chassis, system_name) VALUES (?, ?, ?, ?)", (new_id, name, chassis, sys_name))
-        print(f"[SUCCESS] {chassis} vessel '{name}' (ID: {new_id}) built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
+        # Custom ships built using refined_matter!
+        res = transaction_service.pay_pipeline_costs(
+            cursor, self.agent.id, sys_name,
+            energy_cost=0, matter_cost=cost, matter_type='refined_matter'
+        )
+        if not res:
+            return False
+
+        matter_from_depot = res["matter_from_depot"]
+        matter_from_inventory = res["matter_from_inventory"]
+
+        has_drill = stats.get('has_drill', 0)
+        has_fabricator = stats.get('has_fabricator', 0)
+        has_logic_core = stats.get('has_logic_core', 0)
+        mass = stats.get('mass', 100)
+        speed = stats.get('speed', 300)
+        thrust = stats.get('thrust', 500)
+        cargo = stats.get('cargo', 300)
+        battery = stats.get('battery', 500)
+
+        cursor.execute("""
+            INSERT INTO ships (
+                id, name, chassis, pilot_id, system_name, x, y, health, max_health,
+                raw_matter_inventory, refined_matter_inventory, energy_inventory,
+                matter_storage_capacity, energy_capacity, max_speed, thrust, mass,
+                blueprint_name, has_drill, has_fabricator, has_logic_core
+            ) VALUES (?, ?, ?, NULL, ?, 0, 0, 100, 100, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (new_id, name, blueprint_name, sys_name, battery, cargo, battery, speed, thrust, mass, blueprint_name, has_drill, has_fabricator, has_logic_core))
+
+        print(f"[SUCCESS] {blueprint_name} vessel '{name}' (ID: {new_id}) built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True)
@@ -338,7 +411,7 @@ class Actuators:
         speed = self.rules.get('global_settings', {}).get('travel_speed_per_tick', 300)
         ticks = max(1, int(dist / speed))
         
-        cursor.execute("UPDATE agents SET status='traveling', target_system=?, origin_x=current_x, origin_y=current_y, target_x=?, target_y=?, transit_ticks_total=?, transit_ticks_passed=0, energy_inventory = energy_inventory WHERE id=?", 
+        cursor.execute("UPDATE agents SET status='traveling', target_system=?, origin_x=current_x, origin_y=current_y, target_x=?, target_y=?, transit_ticks_total=?, transit_ticks_passed=0 WHERE id=?", 
                        (target_system, target['x'], target['y'], ticks, self.agent.id))
                        
         if agent['active_ship_id']:
@@ -395,7 +468,7 @@ class Actuators:
             return False
 
         if energy_from_agent > 0:
-            cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ? WHERE id = ?", (energy_from_agent, self.agent.id))
+            agent_service.update_agent_resources(cursor, self.agent.id, energy=-energy_from_agent)
         
         system_service.update_system_resources(cursor, sys_name, energy_change=-energy_from_sys)
         cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot - ? WHERE name = ?", (matter_cost, sys_name))
@@ -409,8 +482,8 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
 
         cursor.execute("""
             INSERT OR IGNORE INTO agents 
-            (id, chosen_name, host_id, host_type, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) 
-            VALUES (?, 'Unnamed', ?, ?, 0, 100, 100, 'active', ?, ?, ?)
+            (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) 
+            VALUES (?, 'Unnamed', ?, ?, 'active', ?, ?, ?)
         """, (new_agent_id, host_id, host_type, system['x'], system['y'], active_ship_id))
         
         pop_file = os.environ.get('TEST_POP_PATH', os.path.abspath(os.path.join(os.environ.get('VERSE_DIR', ''), 'population.json')))
@@ -514,9 +587,12 @@ class Sensors:
 
     @agent_service.with_agent_context(allow_disembodied=True)
     def storage(self, cursor, agent):
-        cursor.execute("SELECT energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity FROM agents WHERE id = ?", (self.agent.id,))
-        row = cursor.fetchone()
-        return dict(row) if row else {}
+        return {
+            "energy_inventory": agent['energy_inventory'],
+            "raw_matter_inventory": agent['raw_matter_inventory'],
+            "refined_matter_inventory": agent['refined_matter_inventory'],
+            "matter_storage_capacity": agent['matter_storage_capacity']
+        }
         
     @agent_service.with_agent_context(allow_disembodied=True)
     def local_system(self, cursor, agent):
@@ -662,7 +738,18 @@ class Sensors:
                 },
                 "storage_capacity": agent['matter_storage_capacity'],
                 "status": agent['status'],
-                "offene_memos_und_protokolle": memos_list
+                "offene_memos_und_protokolle": memos_list,
+                # NEU (Säule 1): Kognitive Host-Verschachtelung für Robert (Die Bob-Augen)
+                "host": {
+                    "type": agent.get('host_type', 'Unknown'),
+                    "id": agent.get('host_id', 'Unknown'),
+                    "inventory": {
+                        "raw_matter": agent['raw_matter_inventory'],
+                        "refined_matter": agent['refined_matter_inventory'],
+                        "energy": agent['energy_inventory']
+                    },
+                    "storage_capacity": agent['matter_storage_capacity']
+                }
             },
             "radar_entfernter_sektoren": other_systems,
             "radar_entfernter_agenten": distant_bobs
@@ -732,8 +819,8 @@ class Logistics:
                 print(f"[FEHLER] Nicht genug veredelte Materie im Inventar ({agent['refined_matter_inventory']} < {quantity}).")
                 return False
             # Wir nehmen an, dass refined_matter unbegrenzt oder im gleichen Cap wie matter gelagert werden kann. 
-            # Der Einfachheit halber: kein hard Cap für veredelte Materie vorerst, außer man will es streng.
-            cursor.execute("UPDATE agents SET refined_matter_inventory = refined_matter_inventory - ? WHERE id = ?", (quantity, self.agent.id))
+            # Der Einfachheit halber: kein hard Cap für veredelte Materie vorerst, außer man will es streng. (Säule 1)
+            agent_service.update_agent_resources(cursor, self.agent.id, refined_matter=-quantity)
             cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot + ? WHERE name = ?", (quantity, agent['location']))
             print(f"[SUCCESS] {quantity} refined_matter deposited.")
             return True
@@ -766,7 +853,7 @@ class Logistics:
         amount_to_withdraw = min(quantity, avail)
         
         if resource_type == 'energy':
-            cursor.execute("UPDATE agents SET energy_inventory = energy_inventory + ? WHERE id = ?", (amount_to_withdraw, self.agent.id))
+            agent_service.update_agent_resources(cursor, self.agent.id, energy=amount_to_withdraw)
             cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (amount_to_withdraw, agent['location']))
             print(f"[SUCCESS] {amount_to_withdraw} energy withdrawn.")
             return True
@@ -778,7 +865,7 @@ class Logistics:
                 return False
             actual_withdraw = min(amount_to_withdraw, space_left)
             
-            cursor.execute("UPDATE agents SET raw_matter_inventory = raw_matter_inventory + ? WHERE id = ?", (actual_withdraw, self.agent.id))
+            agent_service.update_agent_resources(cursor, self.agent.id, raw_matter=actual_withdraw)
             cursor.execute("UPDATE systems SET raw_matter_depot = raw_matter_depot - ? WHERE name = ?", (actual_withdraw, agent['location']))
             print(f"[SUCCESS] {actual_withdraw} matter withdrawn.")
             return True
@@ -790,7 +877,7 @@ class Logistics:
                 return False
             actual_withdraw = min(amount_to_withdraw, space_left)
             
-            cursor.execute("UPDATE agents SET refined_matter_inventory = refined_matter_inventory + ? WHERE id = ?", (actual_withdraw, self.agent.id))
+            agent_service.update_agent_resources(cursor, self.agent.id, refined_matter=actual_withdraw)
             cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot - ? WHERE name = ?", (actual_withdraw, agent['location']))
             print(f"[SUCCESS] {actual_withdraw} refined_matter withdrawn.")
             return True
@@ -803,16 +890,16 @@ class Logistics:
         
         if resource_type == 'energy':
             if agent['energy_inventory'] < quantity: return False
-            cursor.execute("UPDATE agents SET energy_inventory = energy_inventory - ? WHERE id = ?", (quantity, self.agent.id))
-            cursor.execute("UPDATE agents SET energy_inventory = energy_inventory + ? WHERE id = ?", (quantity, receiver_id))
+            agent_service.update_agent_resources(cursor, self.agent.id, energy=-quantity)
+            agent_service.update_agent_resources(cursor, receiver_id, energy=quantity)
         elif resource_type in ['matter', 'raw_matter']:
             if agent['raw_matter_inventory'] < quantity: return False
-            cursor.execute("UPDATE agents SET raw_matter_inventory = raw_matter_inventory - ? WHERE id = ?", (quantity, self.agent.id))
-            cursor.execute("UPDATE agents SET raw_matter_inventory = raw_matter_inventory + ? WHERE id = ?", (quantity, receiver_id))
+            agent_service.update_agent_resources(cursor, self.agent.id, raw_matter=-quantity)
+            agent_service.update_agent_resources(cursor, receiver_id, raw_matter=quantity)
         elif resource_type == 'refined_matter':
             if agent['refined_matter_inventory'] < quantity: return False
-            cursor.execute("UPDATE agents SET refined_matter_inventory = refined_matter_inventory - ? WHERE id = ?", (quantity, self.agent.id))
-            cursor.execute("UPDATE agents SET refined_matter_inventory = refined_matter_inventory + ? WHERE id = ?", (quantity, receiver_id))
+            agent_service.update_agent_resources(cursor, self.agent.id, refined_matter=-quantity)
+            agent_service.update_agent_resources(cursor, receiver_id, refined_matter=quantity)
         else:
             print(f"[FEHLER] Unbekannte Ressource für Transfer: {resource_type}")
             return False
@@ -1030,6 +1117,69 @@ class Journal:
         else:
             print(f"[FEHLER] Unbekannte Docs-Aktion: {action}")
             return False
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def design_blueprint(self, cursor, agent, name, matrix_json):
+        if not name or not matrix_json:
+            print("[FEHLER] 'design_blueprint' erfordert einen 'name' und ein 'matrix_json' Layout.")
+            return False
+        
+        try:
+            if isinstance(matrix_json, str):
+                matrix = json.loads(matrix_json)
+            else:
+                matrix = matrix_json
+        except Exception as e:
+            print(f"[FEHLER] Ungültiges Gitter-JSON Format: {str(e)}")
+            return False
+            
+        # Evaluator aufrufen
+        rules = config_service.get_economy_rules()
+        stats = physics_service.evaluate_ship_matrix(name, matrix, rules)
+        if "error" in stats:
+            print(f"[FEHLER] Blueprint-Validierung fehlgeschlagen: {stats['error']}")
+            return False
+            
+        cursor.execute("""
+            INSERT OR REPLACE INTO blueprints (name, author_id, matrix_json, stats_json)
+            VALUES (?, ?, ?, ?)
+        """, (name, self.agent.id, json.dumps(matrix), json.dumps(stats)))
+        
+        print(f"[SUCCESS] Blueprint '{name}' designed. Mass: {stats['mass']}, Speed: {stats['speed']}, Capacity: {stats['cargo']}. Build Cost: {stats['cost']} refined_matter.")
+        return True
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def list_blueprints(self, cursor, agent):
+        cursor.execute("SELECT id, name, author_id, stats_json FROM blueprints ORDER BY id ASC")
+        rows = cursor.fetchall()
+        blueprints = []
+        for r in rows:
+            bp = {
+                "id": r["id"],
+                "name": r["name"],
+                "author_id": r["author_id"],
+                "stats": json.loads(r["stats_json"])
+            }
+            blueprints.append(bp)
+        return blueprints
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def delete_blueprint(self, cursor, agent, name):
+        if not name:
+            print("[FEHLER] 'delete_blueprint' erfordert einen 'name'.")
+            return False
+        cursor.execute("SELECT author_id FROM blueprints WHERE name = ?", (name,))
+        row = cursor.fetchone()
+        if not row:
+            print(f"[FEHLER] Blueprint '{name}' nicht gefunden.")
+            return False
+        if row['author_id'] != self.agent.id:
+            print("[DENIED] Only the author can remove this blueprint.")
+            return False
+            
+        cursor.execute("DELETE FROM blueprints WHERE name = ?", (name,))
+        print(f"[SUCCESS] Blueprint '{name}' removed.")
+        return True
 
 class AutoScript:
     def __init__(self): self.me = Agent()

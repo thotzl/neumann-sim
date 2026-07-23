@@ -41,7 +41,10 @@ DESCRIPTIONS = {
     "fs": "Listet die Dateien (Skripte) im eigenen Dateisystem auf.",
     "board": "Betritt ein Schiff am aktuellen Standort (ID nötig). Erlaubt physische Aktionen (mine, build, move).",
     "exit_ship": "Verlässt das aktuelle Schiff und kehrt in die SEM-Matrix zurück.",
-    "build_ship": "Baut ein neues Schiff in einer aktiven shipyard. (Kosten: 1000 Raw Matter).",
+    "build_ship": "Baut ein neues Schiff in einer aktiven shipyard anhand eines Blaupausen-Namens.",
+    "design_blueprint": "Entwirf eine neue Schiffsklasse anhand einer 2D-Gitter-Matrix (Argumente: name, matrix_json).",
+    "list_blueprints": "Listet alle registrierten Schiffs-Blaupausen im Sektor auf.",
+    "delete_blueprint": "Löscht einen Entwurf aus dem Blaupausen-Archiv (Argumente: name).",
     "memo": "Verwalte deine privaten Memos, Tagebucheinträge und Protokolle (Aktionen: add, check, uncheck, remove, list, find).",
     "docs": "Verwalte Sektor-Dokumente und öffentliche Relikte (Aktionen: add, list, find, remove).",
 }
@@ -129,7 +132,24 @@ def main():
         elif method == "fs": print(yaml.dump(clean_dict(agent.fs()), sort_keys=False, default_flow_style=False).strip())
         elif method == "board": agent.board(ship_id=safe_int(params.get('ship_id'), 'ship_id'))
         elif method == "exit_ship": agent.exit_ship()
-        elif method == "build_ship": agent.build_ship(chassis=params.get('chassis', 'Scout'))
+        elif method == "build_ship":
+            agent.build_ship(
+                blueprint_name=params.get('blueprint_name'),
+                chassis=params.get('chassis')
+            )
+        elif method == "design_blueprint":
+            agent.design_blueprint(
+                name=params.get('name'),
+                matrix_json=params.get('matrix_json')
+            )
+        elif method == "list_blueprints":
+            res = agent.list_blueprints()
+            if res:
+                print(yaml.dump([clean_dict(r) for r in res], sort_keys=False, default_flow_style=False).strip())
+        elif method == "delete_blueprint":
+            agent.delete_blueprint(
+                name=params.get('name')
+            )
         elif method == "memo":
             res = agent.memo(
                 action=params.get('action'),

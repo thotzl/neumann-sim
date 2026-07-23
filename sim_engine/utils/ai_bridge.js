@@ -14,8 +14,9 @@ class AIBridge {
         }
 
         switch (this.provider.toLowerCase()) {
-            case 'openai':
             case 'ollama':
+                return require('./ai_drivers/ollama_driver');
+            case 'openai':
             case 'lmstudio':
                 return require('./ai_drivers/openai_driver');
             case 'gemini':

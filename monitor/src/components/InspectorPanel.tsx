@@ -96,6 +96,16 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
         },
         storage_capacity: agent.sensors?.inventory?.matter_limit || 100,
         status: agent.status,
+        host: {
+          type: agent.host_type || 'Unknown',
+          id: agent.host_id || 'Unknown',
+          inventory: {
+            raw_matter: agent.sensors?.inventory?.raw_matter_inventory || 0,
+            refined_matter: agent.sensors?.inventory?.refined_matter_inventory || 0,
+            energy: agent.sensors?.inventory?.energy_inventory || 0
+          },
+          storage_capacity: agent.sensors?.inventory?.matter_limit || 100
+        },
         offene_memos_und_protokolle: agentMemos
       }
     };
@@ -171,6 +181,16 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
       },
       storage_capacity: agent.sensors?.inventory?.matter_limit || 100,
       status: agent.status,
+      host: {
+        type: agent.host_type || 'Unknown',
+        id: agent.host_id || 'Unknown',
+        inventory: {
+          raw_matter: agent.sensors?.inventory?.raw_matter_inventory || 0,
+          refined_matter: agent.sensors?.inventory?.refined_matter_inventory || 0,
+          energy: agent.sensors?.inventory?.energy_inventory || 0
+        },
+        storage_capacity: agent.sensors?.inventory?.matter_limit || 100
+      },
       offene_memos_und_protokolle: agentMemos
     },
     radar_entfernter_sektoren: otherSystems,
@@ -242,7 +262,28 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   <div className="mono-text" style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '15px', lineHeight: '1.8' }}>
                       STATUS: <span style={{ color: selectedAgent.status === 'active' ? '#10b981' : '#f59e0b' }}>{(selectedAgent.status || 'unknown').toUpperCase()}</span><br/>
                       LOCATION: {selectedAgent.location || 'DEEP SPACE'}<br/>
-                      HOST: {dashboardObj.dein_status.host_type.toUpperCase()} (ID: {dashboardObj.dein_status.host_id})
+                  </div>
+                  
+                  {/* Graphical Decoupled Host Box */}
+                  <div style={{ 
+                    background: dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.04)' : 'rgba(129,140,248,0.04)', 
+                    border: `1px solid ${dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.2)' : 'rgba(129,140,248,0.2)'}`, 
+                    borderRadius: '4px', 
+                    padding: '10px 14px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '4px',
+                    boxShadow: `inset 0 0 10px ${dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.05)' : 'rgba(129,140,248,0.05)'}`
+                  }}>
+                    <div className="mono-text" style={{ fontSize: '0.65rem', color: dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8', fontWeight: 700, letterSpacing: '1px' }}>
+                      {dashboardObj.dein_status.host.type === 'ship' ? '🚢 DECOUPLED_VESSEL_HOST' : '🖲️ DECOUPLED_MATRIX_HOST'} //
+                    </div>
+                    <div className="mono-text" style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 'bold' }}>
+                      HOST_TYPE: <span style={{ color: dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8' }}>{dashboardObj.dein_status.host.type.toUpperCase()}</span>
+                    </div>
+                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      HOST_ID: <span style={{ color: '#fff' }}>{dashboardObj.dein_status.host.id}</span>
+                    </div>
                   </div>
                 </div>
                 <div>

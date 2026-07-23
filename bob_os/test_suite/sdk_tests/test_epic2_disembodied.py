@@ -17,10 +17,10 @@ class TestEpic2Disembodied(unittest.TestCase):
         init_db.init()
         conn = db_config.get_connection()
         conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS-X0-Y0', 'sem_matrix', 'active')")
-        conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, active_ship_id, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES ('Instance-1', 'Pioneer', '100', 'matrix', 'active', NULL, 0, 100, 100)")
-        conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, active_ship_id, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES ('Instance-2', 'Clone', '100', 'matrix', 'active', NULL, 0, 100, 100)")
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (2, 'Fighter', 'Scout', NULL, 'SYS-X0-Y0')")
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core) VALUES ('SYS-X0-Y0', 0, 0, 10000)")
+        conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, active_ship_id) VALUES ('Instance-1', 'Pioneer', '100', 'matrix', 'active', NULL)")
+        conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, active_ship_id) VALUES ('Instance-2', 'Clone', '100', 'matrix', 'active', NULL)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity, has_drill, has_fabricator) VALUES (2, 'Fighter', 'Scout', NULL, 'SYS-X0-Y0', 0, 100, 100, 1, 1)")
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-X0-Y0', 0, 0, 10000, 0, 100)")
         conn.commit()
         conn.close()
         
@@ -51,7 +51,7 @@ class TestEpic2Disembodied(unittest.TestCase):
         # Now physical actions work
         # Setup basic energy so mine doesnt fail due to energy
         conn = db_config.get_connection()
-        conn.execute("UPDATE agents SET energy_inventory = 100 WHERE id = 'Instance-1'")
+        conn.execute("UPDATE ships SET energy_inventory = 100 WHERE id = 2")
         conn.commit()
         conn.close()
         self.assertTrue(self.agent.mine())

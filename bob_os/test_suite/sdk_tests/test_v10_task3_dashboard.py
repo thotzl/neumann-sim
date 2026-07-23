@@ -22,10 +22,10 @@ class TestV10Task3Dashboard(unittest.TestCase):
         conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 10000, 100, 100)")
         conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-B', 300, 400, 5000, 999, 999)") # x=300, y=400 (distance = 500)
         
-        # Pioneer ship in SYS-A
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-A')")
-        # Distant ship in SYS-B
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (2, 'Ship-2', 'Scout', 'Instance-2', 'SYS-B')")
+        # Pioneer ship in SYS-A (Säule 1)
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-A', 0, 500, 300)")
+        # Distant ship in SYS-B (Säule 1)
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (2, 'Ship-2', 'Scout', 'Instance-2', 'SYS-B', 0, 500, 300)")
         
         # Local matrix
         conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS-A', 'sem_matrix', 'active')")
@@ -33,8 +33,8 @@ class TestV10Task3Dashboard(unittest.TestCase):
         conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (101, 'SYS-B', 'sem_matrix', 'active')")
 
         # Agents
-        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id, last_seen_event_id) VALUES ('Instance-1', 'Pioneer-1', '1', 'ship', 0, 500, 300, 'active', 0, 0, 1, 0)")
-        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id, last_seen_event_id) VALUES ('Instance-2', 'Distant-Bob', '2', 'ship', 0, 500, 300, 'active', 300, 400, 2, 0)")
+        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id, last_seen_event_id) VALUES ('Instance-1', 'Pioneer-1', '1', 'ship', 'active', 0, 0, 1, 0)")
+        conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id, last_seen_event_id) VALUES ('Instance-2', 'Distant-Bob', '2', 'ship', 'active', 300, 400, 2, 0)")
         conn.commit()
         conn.close()
         

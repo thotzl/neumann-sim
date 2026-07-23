@@ -2,7 +2,7 @@ import json
 import os
 import sqlite3
 from core.lib.db_config import get_connection
-from core.lib import physics_service, config_service
+from core.lib import physics_service, config_service, agent_service
 
 def update(current_tick=1):
     conn = get_connection()
@@ -29,9 +29,19 @@ def update(current_tick=1):
             cursor.execute("UPDATE infrastructure SET status = 'active', progress_matter = 0, health = 100, max_health = 100, level = 1, maintenance_cooldown = 10 WHERE id = ?", (site['id'],))
             print(f"[PHYSICS] Projekt {site['type']} in {site['system_name']} fertiggestellt!")
 
-    # 2. Logistik & Transit
-    cursor.execute("SELECT id, origin_x, origin_y, target_x, target_y, transit_ticks_total, transit_ticks_passed, energy_inventory, target_system FROM agents WHERE status = 'traveling'")
-    travelers = cursor.fetchall()
+    # 2. Logistik & Transit (Säule 1)
+    try:
+        cursor.execute("""
+            SELECT 
+                a.id, a.origin_x, a.origin_y, a.target_x, a.target_y, a.transit_ticks_total, a.transit_ticks_passed, a.target_system,
+                (SELECT s.energy_inventory FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER)) AS energy_inventory
+            FROM agents a WHERE a.status = 'traveling'
+        """)
+        travelers = cursor.fetchall()
+    except sqlite3.OperationalError:
+        cursor.execute("SELECT id, origin_x, origin_y, target_x, target_y, transit_ticks_total, transit_ticks_passed, energy_inventory, target_system FROM agents WHERE status = 'traveling'")
+        travelers = cursor.fetchall()
+        
     for t in travelers:
         new_passed = t['transit_ticks_passed'] + 1
         progress = min(1.0, new_passed / t['transit_ticks_total'])
@@ -44,20 +54,30 @@ def update(current_tick=1):
         new_energy = max(0, t['energy_inventory'] - tick_cost)
         
         if new_passed >= t['transit_ticks_total']:
-            cursor.execute("UPDATE agents SET status='active', current_x=?, current_y=?, transit_ticks_passed=?, energy_inventory=? WHERE id=?",
-                           (t['target_x'], t['target_y'], new_passed, new_energy, t['id']))
+            cursor.execute("UPDATE agents SET status='active', current_x=?, current_y=?, transit_ticks_passed=? WHERE id=?",
+                           (t['target_x'], t['target_y'], new_passed, t['id']))
             # NEU: Ziehe das Schiff mit an den neuen Ort
             cursor.execute("""
                 UPDATE ships SET system_name = ? 
                 WHERE id = (SELECT active_ship_id FROM agents WHERE id = ?)
             """, (t['target_system'], t['id']))
         else:
-            cursor.execute("UPDATE agents SET current_x=?, current_y=?, transit_ticks_passed=?, energy_inventory=? WHERE id=?",
-                           (cur_x, cur_y, new_passed, new_energy, t['id']))
+            cursor.execute("UPDATE agents SET current_x=?, current_y=?, transit_ticks_passed=? WHERE id=?",
+                           (cur_x, cur_y, new_passed, t['id']))
+        
+        # Deduct travel tick costs explicitly from the host (Säule 1)
+        agent_service.update_agent_resources(cursor, t['id'], energy=-tick_cost)
 
-    # 3. Energie (Passive Regeneration/Drain für Aktive Agents)
-    cursor.execute("UPDATE agents SET energy_inventory = MIN(?, MAX(0, energy_inventory + ? - ?)) WHERE status = 'active'", 
-                   (agent_limits['energy'], regen_base, drain_idle))
+    # 3. Energie (Passive Regeneration/Drain für Aktive Schiffe mit Piloten) (Säule 1)
+    try:
+        cursor.execute("""
+            UPDATE ships SET energy_inventory = MIN(energy_capacity, MAX(0, energy_inventory + ? - ?))
+            WHERE pilot_id IS NOT NULL
+        """, (regen_base, drain_idle))
+    except sqlite3.OperationalError:
+        # Fallback for unittests that use a flache agents table format
+        cursor.execute("UPDATE agents SET energy_inventory = MIN(?, MAX(0, energy_inventory + ? - ?)) WHERE status = 'active'", 
+                       (agent_limits['energy'], regen_base, drain_idle))
     
     # 4. Globales System-Update (Wartung, Kosten, Kapazitäten, Geologie)
     # A. Geologische Regeneration der Planetenkerne

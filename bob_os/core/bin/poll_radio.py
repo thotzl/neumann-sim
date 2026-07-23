@@ -29,6 +29,6 @@ def poll_radio(agent_id):
 if __name__ == "__main__":
     if "--help" in sys.argv:
         print("Syntax: python3 tools/poll_radio.py <deine_id>")
-        print("Beschreibung: Ruft alle ungelesenen SCUT-Nachrichten für deinen Agenten ab.")
+        print("Beschreibung: Ruft alle ungelesenen SCUT-Nachrichten für deine Instanz ab.")
         sys.exit(0)
     elif len(sys.argv) > 1: poll_radio(sys.argv[1])

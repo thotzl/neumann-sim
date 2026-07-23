@@ -519,7 +519,7 @@ class Actuators:
 Du verfügst über die Erinnerungen deines Ursprungs bis zum Start deiner Replikation. Um dich in die aktuelle Situation des Schwarms zu integrieren:
 1. Lege mit 'set_name' deine individuelle Identität fest.
 2. Kontaktiere deinen Ursprung ({self.agent.id}) via SCUT, um ein Situations-Briefing und deine initiale Aufgabe für dieses System zu erhalten.
-3. Stelle dich anderen Agenten im System vor, um die Koordination zu optimieren. 
+3. Stelle dich anderen Instanzen im System vor, um die Koordination zu optimieren. 
 Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
 
         cursor.execute("""

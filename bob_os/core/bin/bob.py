@@ -64,7 +64,7 @@ def print_help():
     print("-" * 50)
     
     EXAMPLES = {
-        "scut": 'me.scut(receiver_id="Agent-1", message="Hallo Schwarm, Kommata sind hier erlaubt!")',
+        "scut": 'me.scut(receiver_id="Instance-1", message="Hallo Schwarm, Kommata sind hier erlaubt!")',
         "build": 'me.build(building_type="matter_silo", matter_to_invest=100)'
     }
 

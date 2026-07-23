@@ -163,8 +163,11 @@ def main():
             )
         elif method == "list_blueprints":
             res = agent.list_blueprints()
-            if res:
-                print(yaml.dump([clean_dict(r) for r in res], sort_keys=False, default_flow_style=False).strip())
+            if isinstance(res, list):
+                if len(res) > 0:
+                    print(yaml.dump([clean_dict(r) for r in res], sort_keys=False, default_flow_style=False).strip())
+                else:
+                    print("[INFO] Keine Blaupausen im Sektor-Archiv registriert. Entwirf und speichere eine neue Schiffsklasse mit me.save_blueprint(name, matrix_json)!")
         elif method == "delete_blueprint":
             agent.delete_blueprint(
                 name=params.get('name')

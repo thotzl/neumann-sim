@@ -60,6 +60,18 @@ process.env.BOB_ID = 'Instance-1';
 process.env.PYTHONPATH = path.resolve('.');
 
 try {
+    // --- SCHRITT 0: PRÜFE LEERE BLAUPAUSEN-LISTE (list_blueprints empty info feedback) ---
+    const emptyListInput = `
+AKTION:
+[RUN: me list_blueprints]
+`;
+    console.log("  0. Führe me.list_blueprints (Leeres Archiv) aus...");
+    const feedbackEmptyList = processActions(emptyListInput, absMockDir, "Instance-1", mockState);
+    if (!feedbackEmptyList.includes("[INFO] Keine Blaupausen im Sektor-Archiv registriert")) {
+        throw new Error("SCHRITT 0 FAILED: Leere Blaupausen-Meldung wurde nicht ausgegeben! Feedback: " + feedbackEmptyList);
+    }
+    console.log("    ✅ Schritt 0 (Leeres Archiv: Info-Meldung) erfolgreich.");
+
     // --- SCHRITT A: BLUEPRINT SIMULATION (design_blueprint) ---
     const designInput = `
 AKTION:

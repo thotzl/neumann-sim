@@ -811,6 +811,7 @@ class Sensors:
                 "present_entities": local_bobs
             },
             "beobachtungen_anderer_agenten": unread_events,
+            "beobachtungen_anderer_instanzen": unread_events,
             "dein_status": {
                 "id": agent['id'],
                 "name": agent['chosen_name'],
@@ -859,7 +860,8 @@ class Sensors:
                 })()
             },
             "radar_entfernter_sektoren": other_systems,
-            "radar_entfernter_agenten": distant_bobs
+            "radar_entfernter_agenten": distant_bobs,
+            "radar_entfernter_instanzen": distant_bobs
         }
         
     @agent_service.with_agent_context(allow_disembodied=True)

@@ -302,11 +302,15 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
 export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, selectedSystem }: InspectorPanelProps) => {
   const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'meta' | 'raw'>('status');
   const [showVesselSchematic, setShowVesselSchematic] = useState(false);
+  const [selectedShipForSchematic, setSelectedShipForSchematic] = useState<any>(null);
+  const [showShipyardCatalog, setShowShipyardCatalog] = useState(false);
 
   // Reset Tab bei Selektionswechsel
   useEffect(() => {
     setActiveTab('status');
     setShowVesselSchematic(false);
+    setSelectedShipForSchematic(null);
+    setShowShipyardCatalog(false);
   }, [selection?.id]);
 
   if (!selection) return null;
@@ -314,6 +318,11 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
   // Build the live dashboard YAML once selectedAgent is loaded
   const dashboardObj = selectedAgent ? buildBobDashboard(selectedAgent, state) : null;
   const dashboardYaml = dashboardObj ? jsonToYaml(dashboardObj) : '';
+
+  // Setup ship for Hologram (either from selected agent's host ship, or clicked ship from list)
+  const hostRawShip = selectedAgent && selectedAgent.host_type === 'ship' ? state.ships?.find(s => s.id.toString() === selectedAgent.host_id?.toString()) : null;
+  const targetRawShip = selectedShipForSchematic || hostRawShip;
+  const modalShip = targetRawShip ? resolveShipCADTelemetry(targetRawShip) : null;
 
   return (
     <div className="scifi-panel" style={{ height: '280px', borderTop: '1px solid #1e293b', display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 30px rgba(0,0,0,0.5)' }}>
@@ -416,7 +425,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                             
                             {/* Stenciled Sci-Fi Schematic Button */}
                             <button 
-                              onClick={() => setShowVesselSchematic(true)}
+                              onClick={() => { setSelectedShipForSchematic(null); setShowVesselSchematic(true); }}
                               style={{ 
                                 marginTop: '10px', 
                                 padding: '5px 10px', 
@@ -459,7 +468,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                             
                             {/* Stenciled Sci-Fi Schematic Button for Matrix */}
                             <button 
-                              onClick={() => setShowVesselSchematic(true)}
+                              onClick={() => { setSelectedShipForSchematic(null); setShowVesselSchematic(true); }}
                               style={{ 
                                 marginTop: '10px', 
                                 padding: '5px 10px', 
@@ -647,6 +656,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {selectedSystem.infra?.map((inf, i) => {
                       const isConstruction = inf.status === 'construction';
+                      const isShipyard = inf.type === 'shipyard' || inf.type === 'advanced_shipyard';
                       const progressPct = inf.required_matter > 0 ? Math.round((inf.progress_matter / inf.required_matter) * 100) : 0;
                       return (
                         <div key={i} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', padding: '8px 12px', borderLeft: `2px solid ${isConstruction ? '#f59e0b' : (inf.status === 'active' ? '#10b981' : '#ef4444')}`, borderRadius: '0 4px 4px 0' }}>
@@ -657,7 +667,31 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                             {isConstruction ? (
                               <ProgressBar label={`CONSTRUCTION PROGRESS (${progressPct}%)`} value={inf.progress_matter} max={inf.required_matter} color="#f59e0b" />
                             ) : (
-                              <ProgressBar label="INTEGRITY" value={inf.health} max={inf.max_health} color={inf.status === 'active' ? '#10b981' : '#e67e22'} />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <ProgressBar label="INTEGRITY" value={inf.health} max={inf.max_health} color={inf.status === 'active' ? '#10b981' : '#e67e22'} />
+                                {isShipyard && inf.status === 'active' && (
+                                  <button
+                                    onClick={() => setShowShipyardCatalog(true)}
+                                    style={{
+                                      marginTop: '5px',
+                                      padding: '3px 8px',
+                                      background: 'rgba(129,140,248,0.1)',
+                                      border: '1px solid rgba(129,140,248,0.3)',
+                                      borderRadius: '2px',
+                                      color: '#a5b4fc',
+                                      fontSize: '0.6rem',
+                                      fontWeight: 'bold',
+                                      cursor: 'pointer',
+                                      letterSpacing: '0.5px',
+                                      transition: 'all 0.15s'
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(129,140,248,0.2)'; e.currentTarget.style.borderColor = '#818cf8'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(129,140,248,0.1)'; e.currentTarget.style.borderColor = 'rgba(129,140,248,0.3)'; }}
+                                  >
+                                    🏗️ OPEN_BLUEPRINT_CATALOG // WERFT
+                                  </button>
+                                )}
+                              </div>
                             )}
                         </div>
                       );
@@ -709,15 +743,35 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                                       max={ship.required_matter} 
                                       color="#f59e0b" 
                                     />
-                                    <div className="mono-text" style={{ fontSize: '0.6rem', color: '#f59e0b', fontStyle: 'italic', marginTop: '3px', display: 'flex', justifyContent: 'space-between' }}>
+                                    <div className="mono-text" style={{ fontSize: '0.6rem', color: '#f59e0b', fontStyle: 'italic', marginTop: '3px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                       <span>⚠️ GESPERRT: Im Bau</span>
-                                      <span>[DECONSTRUCT]: Abbrechen erstattet 100% ({ship.progress_matter} M)</span>
+                                      <span>Abbrechen erstattet 100% ({ship.progress_matter} M)</span>
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between' }}>
-                                    <span>Mass: {ship.mass}t • Thrust: {ship.thrust}N</span>
-                                    <span>[DECONSTRUCT]: Erstattet 50%</span>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                                    <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                                      Mass: {ship.mass}t • Thrust: {ship.thrust}N
+                                    </div>
+                                    {/* Action button to load diagnostic CAD schematic for unnamed/empty vessels */}
+                                    <button
+                                      onClick={() => { setSelectedShipForSchematic(ship); setShowVesselSchematic(true); }}
+                                      style={{
+                                        padding: '2px 6px',
+                                        background: 'rgba(56,189,248,0.1)',
+                                        border: '1px solid rgba(56,189,248,0.3)',
+                                        borderRadius: '2px',
+                                        color: '#38bdf8',
+                                        fontSize: '0.58rem',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.1s'
+                                      }}
+                                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(56,189,248,0.2)'; e.currentTarget.style.borderColor = '#38bdf8'; }}
+                                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(56,189,248,0.1)'; e.currentTarget.style.borderColor = 'rgba(56,189,248,0.3)'; }}
+                                    >
+                                      🔍 SCHEMATIC // CAD
+                                    </button>
                                   </div>
                                 )}
                               </div>
@@ -758,7 +812,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
       </div>
 
       {/* HOLOGRAPHIC VESSEL DIAGNOSTIC CAD MODAL (Säule 3 Freestyle Visualizer) */}
-      {showVesselSchematic && selectedAgent && dashboardObj && (
+      {showVesselSchematic && modalShip && (
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
@@ -775,8 +829,8 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
             height: '560px',
             display: 'flex',
             flexDirection: 'column',
-            boxShadow: `0 0 40px ${dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.25)' : 'rgba(129,140,248,0.25)'}`,
-            border: `1px solid ${dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8'}`,
+            boxShadow: `0 0 40px rgba(56,189,248,0.25)`,
+            border: `1px solid #38bdf8`,
             background: '#070a13',
             padding: '24px',
             boxSizing: 'border-box',
@@ -784,7 +838,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
           }}>
             {/* CLOSE BUTTON */}
             <button 
-              onClick={() => setShowVesselSchematic(false)}
+              onClick={() => { setShowVesselSchematic(false); setSelectedShipForSchematic(null); }}
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -808,8 +862,8 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                 SONDEN-CORE V10.5 // DIARY-INTELLIGENZ // CAD V1.0
               </div>
               <h2 style={{ margin: '4px 0 0 0', color: '#fff', fontSize: '1.4rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {dashboardObj.dein_status.host.type === 'ship' ? '🚢 HOLOGRAPHIC_VESSEL_SCHEMATIC' : '🖲️ NEURAL_MATRIX_DIAGNOSTICS'}
-                <span style={{ color: dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8', fontSize: '1rem' }}>[{selectedAgent.id}]</span>
+                🚢 HOLOGRAPHIC_VESSEL_SCHEMATIC
+                <span style={{ color: '#38bdf8', fontSize: '1rem' }}>[{modalShip.id}]</span>
               </h2>
             </div>
 
@@ -818,13 +872,13 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
               {/* LEFT PANEL: SPECIFICATIONS & DIAGNOSTICS */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', minHeight: 0, overflowY: 'auto' }}>
                 {/* Profile header */}
-                <div style={{ borderLeft: `3px solid ${dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8'}`, paddingLeft: '12px' }}>
+                <div style={{ borderLeft: `3px solid #38bdf8`, paddingLeft: '12px' }}>
                   <div className="mono-text" style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px' }}>SYSTEM PROFILE</div>
                   <div className="mono-text" style={{ fontSize: '0.95rem', color: '#fff', fontWeight: 'bold' }}>
-                    {dashboardObj.dein_status.host.name}
+                    {modalShip.name || 'Unnamed Vessel'}
                   </div>
                   <div className="mono-text" style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                    ARCHITECTURE: {dashboardObj.dein_status.host.blueprint}
+                    ARCHITECTURE: {modalShip.blueprint}
                   </div>
                 </div>
 
@@ -832,16 +886,16 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                 <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   <div className="mono-text" style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px' }}>PHYSICAL TELEMETRY</div>
                   <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>HULL MASS:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.mass} t</span>
+                    <span>HULL MASS:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{modalShip.stats.mass} t</span>
                   </div>
                   <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>THRUST OUTPUT:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.thrust} N</span>
+                    <span>THRUST OUTPUT:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{modalShip.stats.thrust} N</span>
                   </div>
                   <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>MAX SPEED:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.max_speed} m/s</span>
+                    <span>MAX SPEED:</span> <span style={{ color: '#fff', fontWeight: 'bold' }}>{modalShip.stats.max_speed} m/s</span>
                   </div>
                   <div className="mono-text" style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>CARGO CAPACITY:</span> <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{dashboardObj.dein_status.host.stats.storage_capacity} t</span>
+                    <span>CARGO CAPACITY:</span> <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{modalShip.stats.storage_capacity} t</span>
                   </div>
                 </div>
 
@@ -852,44 +906,44 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   {/* Status checklist with colors */}
                   <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>PROPULSION (can_move):</span>
-                    <span style={{ color: dashboardObj.dein_status.host.diagnostics.can_move ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>
-                      {dashboardObj.dein_status.host.diagnostics.can_move ? '✓ ONLINE' : '⚠️ OFFLINE'}
+                    <span style={{ color: modalShip.diagnostics.can_move ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>
+                      {modalShip.diagnostics.can_move ? '✓ ONLINE' : '⚠️ OFFLINE'}
                     </span>
                   </div>
                   <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>DRILL MODULE (can_mine):</span>
-                    <span style={{ color: dashboardObj.dein_status.host.diagnostics.can_mine ? '#10b981' : '#cbd5e1', fontWeight: 'bold' }}>
-                      {dashboardObj.dein_status.host.diagnostics.can_mine ? '✓ MOUNTED' : '—'}
+                    <span style={{ color: modalShip.diagnostics.can_mine ? '#10b981' : '#cbd5e1', fontWeight: 'bold' }}>
+                      {modalShip.diagnostics.can_mine ? '✓ MOUNTED' : '—'}
                     </span>
                   </div>
                   <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>FABRICATOR (can_build):</span>
-                    <span style={{ color: dashboardObj.dein_status.host.diagnostics.can_build ? '#10b981' : '#cbd5e1', fontWeight: 'bold' }}>
-                      {dashboardObj.dein_status.host.diagnostics.can_build ? '✓ MOUNTED' : '—'}
+                    <span style={{ color: modalShip.diagnostics.can_build ? '#10b981' : '#cbd5e1', fontWeight: 'bold' }}>
+                      {modalShip.diagnostics.can_build ? '✓ MOUNTED' : '—'}
                     </span>
                   </div>
                   <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>SOLAR BALANCE (net_energy):</span>
                     <span style={{ color: '#10b981', fontWeight: 'bold' }}>
-                      +{dashboardObj.dein_status.host.diagnostics.net_energy_balance} E/cycle
+                      +{modalShip.diagnostics.net_energy_balance} E/cycle
                     </span>
                   </div>
                   <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>ENERGY COOLDOWN / LIFE:</span>
                     <span style={{ color: '#38bdf8', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                      {dashboardObj.dein_status.host.diagnostics.idle_lifetime_cycles === 'unlimited' ? '∞ UNLIMITED (Solar)' : `${dashboardObj.dein_status.host.diagnostics.idle_lifetime_cycles} cycles`}
+                      {modalShip.diagnostics.idle_lifetime_cycles === 'unlimited' ? '∞ UNLIMITED (Solar)' : `${modalShip.diagnostics.idle_lifetime_cycles} cycles`}
                     </span>
                   </div>
                   <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>RADIO COMM RANGE:</span>
                     <span style={{ color: '#a5b4fc', fontWeight: 'bold' }}>
-                      {dashboardObj.dein_status.host.diagnostics.comm_range} m
+                      {modalShip.diagnostics.comm_range} m
                     </span>
                   </div>
                   <div className="mono-text" style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>CARGO LOAD-TO-MASS RATIO:</span>
                     <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>
-                      {dashboardObj.dein_status.host.diagnostics.cargo_to_mass_ratio} (Nutzlast-Effizienz)
+                      {modalShip.diagnostics.cargo_to_mass_ratio} (Nutzlast-Effizienz)
                     </span>
                   </div>
                 </div>
@@ -898,17 +952,17 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                 <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '10px 12px' }}>
                   <div className="mono-text" style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>CAPABILITY_LOCKS</div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    {dashboardObj.dein_status.host.capabilities.drill === 'active' ? (
+                    {modalShip.capabilities.drill === 'active' ? (
                       <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ DRILL_ACTIVE</span>
                     ) : (
                       <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_DRILL</span>
                     )}
-                    {dashboardObj.dein_status.host.capabilities.fabricator === 'active' ? (
+                    {modalShip.capabilities.fabricator === 'active' ? (
                       <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ FABRICATOR_ACTIVE</span>
                     ) : (
                       <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_FABRICATOR</span>
                     )}
-                    {dashboardObj.dein_status.host.capabilities.logic_core === 'active' ? (
+                    {modalShip.capabilities.logic_core === 'active' ? (
                       <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>⚙️ LOGIC_CORE_ACTIVE</span>
                     ) : (
                       <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.02)', color: '#475569', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>⚙️ NO_LOGIC_CORE</span>
@@ -921,20 +975,11 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   <div className="mono-text" style={{ fontSize: '0.55rem', color: '#10b981', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>📟 SECURE_COMMS_DIAGNOSTICS //</div>
                   <div className="mono-text" style={{ fontSize: '0.65rem', color: '#10b981', display: 'flex', flexDirection: 'column', gap: '4px', lineHeight: '1.3' }}>
                     <div>[SYS ] RETRIEVING BLUEPRINT MATRIX: OK</div>
-                    <div>[PHYS] ESTIMATING MOLECULAR MASS: {dashboardObj.dein_status.host.stats.mass}t (OK)</div>
-                    <div>[ENG ] THRUST COEFFICIENT: {dashboardObj.dein_status.host.stats.thrust}N (CALIBRATED)</div>
+                    <div>[PHYS] ESTIMATING MOLECULAR MASS: {modalShip.stats.mass}t (OK)</div>
+                    <div>[ENG ] THRUST COEFFICIENT: {modalShip.stats.thrust}N (CALIBRATED)</div>
                     <div>[SYS ] EMERGENCY SOLAR BYPASS: READY</div>
-                    {dashboardObj.dein_status.host.type === 'matrix' ? (
-                      <>
-                        <div style={{ color: '#38bdf8' }}>[SYS ] EMERGENCY MATRIX FLOOR CURRENT DETECTED: 50E</div>
-                        <div style={{ color: '#818cf8' }}>[SAFE] CONSCIOUSNESS_SAFEGUARD: STABLE & MONITOR_CONNECTED</div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ color: '#38bdf8' }}>[PIL ] ACTIVE PILOT: {selectedAgent.id} (SYCHRONIZED)</div>
-                        <div style={{ color: '#38bdf8' }}>[SYS ] FLIGHT CALCULATIONS snappe_x/y grid: Snapped</div>
-                      </>
-                    )}
+                    <div>[PIL ] ACTIVE PILOT: {modalShip.pilot_id || 'unpiloted / empty'}</div>
+                    <div>[SYS ] FLIGHT CALCULATIONS snappe_x/y grid: Snapped</div>
                     <div>[LOG ] MEMORY REGISTER CONSCIOUSNESS: RESOLVED</div>
                     <div>[SYS ] CORE DIAGNOSTICS COMPLETE: 100% ONLINE</div>
                   </div>
@@ -966,7 +1011,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   position: 'absolute',
                   width: '380px',
                   height: '380px',
-                  border: `1px dashed ${dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.08)' : 'rgba(129,140,248,0.08)'}`,
+                  border: `1px dashed rgba(56,189,248,0.08)`,
                   borderRadius: '50%'
                 }} />
 
@@ -974,181 +1019,96 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   position: 'absolute',
                   width: '420px',
                   height: '420px',
-                  border: `1px solid ${dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.03)' : 'rgba(129,140,248,0.03)'}`,
+                  border: `1px solid rgba(56,189,248,0.03)`,
                   borderRadius: '50%'
                 }} />
 
                 {/* The SVG Diagram */}
                 <svg width="400" height="400" viewBox="0 0 400 400" style={{ zIndex: 1, position: 'relative' }}>
-                  <defs>
-                    <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="6" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                    <filter id="glow-indigo" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="6" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
+                  <polygon 
+                    points="200,310 185,360 200,380 215,360" 
+                    fill="url(#thrustGrad)" 
+                    opacity="0.8"
+                  />
+                  <polygon 
+                    points="200,80 250,220 230,240 255,270 200,285 145,270 170,240 150,220" 
+                    fill="none" 
+                    stroke="#38bdf8" 
+                    strokeWidth="2.5" 
+                    filter="url(#glow-cyan)"
+                  />
+                  <polygon 
+                    points="200,105 235,215 210,230 225,260 200,270 175,260 190,230 165,215" 
+                    fill="rgba(56,189,248,0.03)" 
+                    stroke="rgba(56,189,248,0.4)" 
+                    strokeWidth="1" 
+                    strokeDasharray="4,2"
+                  />
 
-                  {dashboardObj.dein_status.host.type === 'ship' ? (
+                  {/* Center Line */}
+                  <line x1="200" y1="50" x2="200" y2="330" stroke="rgba(56,189,248,0.15)" strokeDasharray="3,3" />
+                  <line x1="50" y1="200" x2="350" y2="200" stroke="rgba(56,189,248,0.15)" strokeDasharray="3,3" />
+
+                  {/* Drilling Laser Component at the nose */}
+                  {modalShip.capabilities.drill === 'active' ? (
                     <>
-                      {/* SHIP SCHEMATIC GRAPHICS (cyan) */}
-                      {/* Engine Flame */}
-                      {dashboardObj.dein_status.host.stats.thrust > 0 && (
-                        <polygon 
-                          points="200,310 185,360 200,380 215,360" 
-                          fill="url(#thrustGrad)" 
-                          opacity="0.8"
-                        />
-                      )}
-                      <defs>
-                        <linearGradient id="thrustGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.8" />
-                          <stop offset="60%" stopColor="#f59e0b" stopOpacity="0.5" />
-                          <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
-                        </linearGradient>
-                      </defs>
+                      <polygon points="192,80 200,45 208,80" fill="rgba(16,185,129,0.2)" stroke="#10b981" strokeWidth="1.5" />
+                      <ellipse cx="200" cy="55" rx="14" ry="4" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.8" />
+                      <ellipse cx="200" cy="40" rx="8" ry="2.5" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.8" />
+                      <line x1="200" y1="45" x2="310" y2="80" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                      <circle cx="310" cy="80" r="2" fill="#10b981" />
+                      <text x="320" y="84" fill="#10b981" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[FORE_DRILL: ACTIVE]</text>
+                    </>
+                  ) : (
+                    <circle cx="200" cy="80" r="3" fill="#38bdf8" />
+                  )}
 
-                      {/* Ship Silhouette Polygon */}
-                      <polygon 
-                        points="200,80 250,220 230,240 255,270 200,285 145,270 170,240 150,220" 
-                        fill="none" 
-                        stroke="#38bdf8" 
-                        strokeWidth="2.5" 
-                        filter="url(#glow-cyan)"
-                      />
-                      <polygon 
-                        points="200,105 235,215 210,230 225,260 200,270 175,260 190,230 165,215" 
-                        fill="rgba(56,189,248,0.03)" 
-                        stroke="rgba(56,189,248,0.4)" 
-                        strokeWidth="1" 
-                        strokeDasharray="4,2"
-                      />
+                  {/* Assembler Modules on wings */}
+                  {modalShip.capabilities.fabricator === 'active' ? (
+                    <>
+                      <rect x="135" y="240" width="16" height="20" fill="rgba(16,185,129,0.15)" stroke="#10b981" strokeWidth="1.5" />
+                      <circle cx="143" cy="250" r="3" fill="#10b981" />
+                      <rect x="249" y="240" width="16" height="20" fill="rgba(16,185,129,0.15)" stroke="#10b981" strokeWidth="1.5" />
+                      <circle cx="257" cy="250" r="3" fill="#10b981" />
+                      <line x1="135" y1="250" x2="50" y2="160" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                      <circle cx="50" cy="160" r="2" fill="#10b981" />
+                      <text x="15" y="152" fill="#10b981" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[WINGS_FAB: ONLINE]</text>
+                    </>
+                  ) : null}
 
-                      {/* Center Line */}
-                      <line x1="200" y1="50" x2="200" y2="330" stroke="rgba(56,189,248,0.15)" strokeDasharray="3,3" />
-                      <line x1="50" y1="200" x2="350" y2="200" stroke="rgba(56,189,248,0.15)" strokeDasharray="3,3" />
-
-                      {/* Drilling Laser Component at the nose */}
-                      {dashboardObj.dein_status.host.capabilities.drill === 'active' ? (
-                        <>
-                          {/* Drill emitter */}
-                          <polygon points="192,80 200,45 208,80" fill="rgba(16,185,129,0.2)" stroke="#10b981" strokeWidth="1.5" />
-                          {/* Concentric energy focus rings */}
-                          <ellipse cx="200" cy="55" rx="14" ry="4" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.8" />
-                          <ellipse cx="200" cy="40" rx="8" ry="2.5" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.8" />
-                          {/* Callout Pointer line */}
-                          <line x1="200" y1="45" x2="310" y2="80" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
-                          <circle cx="310" cy="80" r="2" fill="#10b981" />
-                          <text x="320" y="84" fill="#10b981" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[FORE_DRILL: ACTIVE]</text>
-                        </>
-                      ) : (
-                        <circle cx="200" cy="80" r="3" fill="#38bdf8" />
-                      )}
-
-                      {/* Assembler Modules on wings */}
-                      {dashboardObj.dein_status.host.capabilities.fabricator === 'active' ? (
-                        <>
-                          {/* Left wing Fab */}
-                          <rect x="135" y="240" width="16" height="20" fill="rgba(16,185,129,0.15)" stroke="#10b981" strokeWidth="1.5" />
-                          <circle cx="143" cy="250" r="3" fill="#10b981" />
-                          {/* Right wing Fab */}
-                          <rect x="249" y="240" width="16" height="20" fill="rgba(16,185,129,0.15)" stroke="#10b981" strokeWidth="1.5" />
-                          <circle cx="257" cy="250" r="3" fill="#10b981" />
-                          {/* Callout Pointer line */}
-                          <line x1="135" y1="250" x2="50" y2="160" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
-                          <circle cx="50" cy="160" r="2" fill="#10b981" />
-                          <text x="15" y="152" fill="#10b981" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[WINGS_FAB: ONLINE]</text>
-                        </>
-                      ) : null}
-
-                      {/* Neural Logic Core inside the central cabin */}
-                      {dashboardObj.dein_status.host.capabilities.logic_core === 'active' ? (
-                        <>
-                          {/* Centered neural matrix globe */}
-                          <circle cx="200" cy="210" r="14" fill="rgba(16,185,129,0.1)" stroke="#10b981" strokeWidth="1.5" />
-                          <circle cx="200" cy="210" r="8" fill="none" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
-                          <circle cx="200" cy="210" r="3" fill="#10b981" />
-                          {/* Callout Pointer line */}
-                          <line x1="200" y1="210" x2="50" y2="240" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
-                          <circle cx="50" cy="240" r="2" fill="#10b981" />
-                          <text x="15" y="232" fill="#10b981" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[CORE_LOGIC: ACTIVE]</text>
-                        </>
-                      ) : (
-                        <>
-                          {/* Standard Battery power grid cabin */}
-                          <circle cx="200" cy="210" r="8" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" strokeWidth="1.5" />
-                          <circle cx="200" cy="210" r="3" fill="#38bdf8" />
-                        </>
-                      )}
-
-                      {/* Engine Vector thrusters */}
-                      <rect x="190" y="285" width="20" height="12" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" strokeWidth="1.5" />
-                      <line x1="190" y1="297" x2="185" y2="305" stroke="#38bdf8" strokeWidth="1.5" />
-                      <line x1="210" y1="297" x2="215" y2="305" stroke="#38bdf8" strokeWidth="1.5" />
-                      {/* Engine Callout */}
-                      <line x1="200" y1="300" x2="310" y2="300" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2,2" />
-                      <circle cx="310" cy="300" r="2" fill="#38bdf8" />
-                      <text x="315" y="304" fill="#38bdf8" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[AFT_THRUSTER: {dashboardObj.dein_status.host.stats.thrust}N]</text>
-
-                      {/* Stenciled scale calipers on the left */}
-                      <path d="M 60,80 L 45,80 L 45,285 L 60,285" fill="none" stroke="rgba(56,189,248,0.3)" strokeWidth="1" />
-                      <text x="25" y="185" fill="rgba(56,189,248,0.6)" className="mono-text" style={{ fontSize: '8px', transform: 'rotate(-90 25 185)', transformOrigin: 'center' }}>LENGTH SCALE: ~28m</text>
-
+                  {/* Neural Logic Core inside the central cabin */}
+                  {modalShip.capabilities.logic_core === 'active' ? (
+                    <>
+                      <circle cx="200" cy="210" r="14" fill="rgba(16,185,129,0.1)" stroke="#10b981" strokeWidth="1.5" />
+                      <circle cx="200" cy="210" r="8" fill="none" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                      <circle cx="200" cy="210" r="3" fill="#10b981" />
+                      <line x1="200" y1="210" x2="50" y2="240" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                      <circle cx="50" cy="240" r="2" fill="#10b981" />
+                      <text x="15" y="232" fill="#10b981" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[CORE_LOGIC: ACTIVE]</text>
                     </>
                   ) : (
                     <>
-                      {/* MATRIX DIAGNOSTICS GRAPHICS (indigo) */}
-                      {/* Central server rack stack chassis */}
-                      <rect x="140" y="110" width="120" height="180" fill="none" stroke="#818cf8" strokeWidth="2.5" filter="url(#glow-indigo)" />
-                      <rect x="145" y="115" width="110" height="170" fill="rgba(129,140,248,0.02)" stroke="rgba(129,140,248,0.3)" strokeWidth="1" strokeDasharray="4,2" />
-
-                      {/* Horizontal server blades */}
-                      <line x1="140" y1="140" x2="260" y2="140" stroke="#818cf8" strokeWidth="1.5" />
-                      <line x1="140" y1="170" x2="260" y2="170" stroke="#818cf8" strokeWidth="1.5" />
-                      <line x1="140" y1="200" x2="260" y2="200" stroke="#818cf8" strokeWidth="1.5" />
-                      <line x1="140" y1="230" x2="260" y2="230" stroke="#818cf8" strokeWidth="1.5" />
-                      <line x1="140" y1="260" x2="260" y2="260" stroke="#818cf8" strokeWidth="1.5" />
-
-                      {/* Glowing led nodes on server blades */}
-                      <circle cx="155" cy="127" r="2.5" fill="#10b981" />
-                      <circle cx="165" cy="127" r="2.5" fill="#10b981" />
-                      <circle cx="155" cy="155" r="2.5" fill="#10b981" />
-                      <circle cx="165" cy="155" r="2.5" fill="#f59e0b" />
-                      <circle cx="155" cy="185" r="2.5" fill="#10b981" />
-                      <circle cx="165" cy="185" r="2.5" fill="#10b981" />
-                      <circle cx="155" cy="215" r="2.5" fill="#10b981" />
-                      {/* This led represents the active consciousness safeguard */}
-                      <circle cx="165" cy="215" r="2.5" fill="#38bdf8" />
-
-                      {/* Concentric neural connection rings at center of rack */}
-                      <circle cx="215" cy="185" r="18" fill="rgba(129,140,248,0.1)" stroke="#818cf8" strokeWidth="1.5" />
-                      <circle cx="215" cy="185" r="10" fill="none" stroke="#818cf8" strokeWidth="1" strokeDasharray="2,2" />
-                      <circle cx="215" cy="185" r="3" fill="#818cf8" />
-
-                      {/* Callout pointer for Safeguard */}
-                      <line x1="165" y1="215" x2="60" y2="215" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2,2" />
-                      <circle cx="60" cy="215" r="2" fill="#38bdf8" />
-                      <text x="65" y="208" fill="#38bdf8" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[⚡ SAFEGUARD_BATTERY: ACTIVE]</text>
-
-                      {/* Callout pointer for Logic Core */}
-                      <line x1="215" y1="185" x2="310" y2="185" stroke="#818cf8" strokeWidth="1" strokeDasharray="2,2" />
-                      <circle cx="310" cy="185" r="2" fill="#818cf8" />
-                      <text x="310" y="178" fill="#818cf8" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[🧠 NEURAL_MATRIX: ONLINE]</text>
+                      <circle cx="200" cy="210" r="8" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" strokeWidth="1.5" />
+                      <circle cx="200" cy="210" r="3" fill="#38bdf8" />
                     </>
                   )}
+
+                  {/* Engine Vector thrusters */}
+                  <rect x="190" y="285" width="20" height="12" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" strokeWidth="1.5" />
+                  <line x1="190" y1="297" x2="185" y2="305" stroke="#38bdf8" strokeWidth="1.5" />
+                  <line x1="210" y1="297" x2="215" y2="305" stroke="#38bdf8" strokeWidth="1.5" />
+                  <line x1="200" y1="300" x2="310" y2="300" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2,2" />
+                  <circle cx="310" cy="300" r="2" fill="#38bdf8" />
+                  <text x="315" y="304" fill="#38bdf8" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[AFT_THRUSTER: {modalShip.stats.thrust}N]</text>
+
+                  {/* Stenciled scale calipers on the left */}
+                  <path d="M 60,80 L 45,80 L 45,285 L 60,285" fill="none" stroke="rgba(56,189,248,0.3)" strokeWidth="1" />
+                  <text x="25" y="185" fill="rgba(56,189,248,0.6)" className="mono-text" style={{ fontSize: '8px', transform: 'rotate(-90 25 185)', transformOrigin: 'center' }}>LENGTH SCALE: ~28m</text>
                 </svg>
 
                 {/* MINIATURE RAW BLUEPRINT MATRIX THUMBNAIL OVERLAY (Säule 3 Miniature representation) */}
-                {dashboardObj.dein_status.host.type === 'ship' && (() => {
-                  const bp = state.blueprints?.find(b => b.name === dashboardObj.dein_status.host.blueprint);
+                {(() => {
+                  const bp = state.blueprints?.find(b => b.name === modalShip.blueprint);
                   const parseMatrix = (matrixStr: string) => {
                     try {
                       const normalized = matrixStr.replace(/'/g, '"');
@@ -1222,6 +1182,207 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
           </div>
           
           {/* Styles for stenciled keyframe animations (only fadeIn transition is active) */}
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
+
+      {/* HOLOGRAPHIC SHIPYARD & BLUEPRINT CATALOG MODAL (Säule 3 Blueprint workstation) */}
+      {showShipyardCatalog && selectedSystem && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(3, 4, 8, 0.95)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div className="scifi-panel" style={{
+            width: '880px',
+            height: '560px',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: `0 0 40px rgba(129,140,248,0.25)`,
+            border: `1px solid #818cf8`,
+            background: '#070a13',
+            padding: '24px',
+            boxSizing: 'border-box',
+            position: 'relative'
+          }}>
+            {/* CLOSE BUTTON */}
+            <button 
+              onClick={() => setShowShipyardCatalog(false)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'transparent',
+                border: 'none',
+                color: '#64748b',
+                cursor: 'pointer',
+                fontSize: '1.5rem',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; }}
+            >
+              ×
+            </button>
+
+            {/* MODAL HEADER */}
+            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', marginBottom: '20px' }}>
+              <div className="mono-text" style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, letterSpacing: '2px' }}>
+                SEKTOR-WERFT WORKSTATION // V10.5.4 BLUEPRINT REGISTER //
+              </div>
+              <h2 style={{ margin: '4px 0 0 0', color: '#fff', fontSize: '1.4rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                🏗️ SHIPYARD & BLUEPRINT CATALOG
+                <span style={{ color: '#818cf8', fontSize: '1rem' }}>[{selectedSystem.display_name || selectedSystem.name}]</span>
+              </h2>
+            </div>
+
+            {/* MAIN SHIPYARD CONTENT */}
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', minHeight: 0 }}>
+              {/* LEFT COLUMN: BLUEPRINT ARCHIVE (CATALOG) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
+                <div className="mono-text" style={{ fontSize: '0.7rem', color: '#818cf8', fontWeight: 700, letterSpacing: '1px' }}>📚 ARCHIVED_BLUEPRINTS //</div>
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
+                  
+                  {/* System standard Scout class */}
+                  <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.85rem' }}>Scout (Standard Chassis)</span>
+                      <span className="mono-text" style={{ color: '#818cf8', fontSize: '0.75rem', fontWeight: 'bold' }}>Cost: 1000 Raw / 400 Refined</span>
+                    </div>
+                    <div className="mono-text" style={{ fontSize: '0.7rem', color: '#94a3b8', lineHeight: '1.4' }}>
+                      Mass: 290t • Speed: 34.48 m/s • Thrust: 500N<br/>
+                      Standard-Erkundungssonde mit integrierter Basis-Hardware.
+                    </div>
+                    <div style={{ marginTop: '6px', display: 'flex', gap: '6px' }}>
+                      <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', padding: '1px 4px', borderRadius: '2px', fontWeight: 'bold' }}>⚙️ DRILL</span>
+                      <span style={{ fontSize: '0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', padding: '1px 4px', borderRadius: '2px', fontWeight: 'bold' }}>⚙️ FABRICATOR</span>
+                    </div>
+                  </div>
+
+                  {/* Registered dynamic blueprints in database */}
+                  {state.blueprints?.map(bp => {
+                    const stats = (() => {
+                      try { return JSON.parse(bp.stats_json); } catch(e) { return {}; }
+                    })();
+                    const parseMatrix = (matrixStr: string) => {
+                      try {
+                        const normalized = matrixStr.replace(/'/g, '"');
+                        return JSON.parse(normalized) as string[][];
+                      } catch (e) {
+                        return [[]];
+                      }
+                    };
+                    const grid = parseMatrix(bp.matrix_json);
+                    
+                    return (
+                      <div key={bp.id} style={{ background: 'rgba(129,140,248,0.02)', border: '1px solid rgba(129,140,248,0.15)', borderRadius: '4px', padding: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.85rem' }}>{bp.name}</span>
+                          <span className="mono-text" style={{ color: '#818cf8', fontSize: '0.75rem', fontWeight: 'bold' }}>Cost: {stats.cost || 2050} Refined</span>
+                        </div>
+                        <div className="mono-text" style={{ fontSize: '0.7rem', color: '#94a3b8', lineHeight: '1.4' }}>
+                          Mass: {stats.mass || 405}t • Speed: {stats.speed || 24.69} m/s • Thrust: {stats.thrust || 500}N<br/>
+                          Designed by: <span style={{ color: '#fff' }}>{bp.author_id}</span>
+                        </div>
+                        
+                        {/* Grid Matrix indicators */}
+                        <div style={{ marginTop: '6px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.6rem', color: '#818cf8', fontWeight: 'bold', marginRight: '4px' }}>COMPONENTS:</span>
+                          {grid.map((rowArr) => 
+                            rowArr.map((mod, mi) => {
+                              if (!mod || mod === '') return null;
+                              return (
+                                <span key={mi} style={{ fontSize: '0.55rem', background: 'rgba(255,255,255,0.05)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.1)', padding: '1px 4px', borderRadius: '2px', textTransform: 'uppercase' }}>
+                                  {mod}
+                                </span>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(!state.blueprints || state.blueprints.length === 0) && (
+                    <div style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic', padding: '10px' }}>No custom blueprints designed yet.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: ACTIVE ASSEMBLY LINE (CONSTRUCTIONS) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
+                <div className="mono-text" style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 700, letterSpacing: '1px' }}>🚧 ACTIVE_ASSEMBLY_LINE //</div>
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
+                  
+                  {(() => {
+                    const localConstructionShips = state.ships 
+                      ? state.ships.filter(s => s.system_name === selectedSystem.name && s.pilot_id === "UNDER_CONSTRUCTION")
+                      : [];
+                      
+                    return (
+                      <>
+                        {localConstructionShips.map((ship, i) => {
+                          const progressPct = ship.required_matter > 0 ? Math.round((ship.progress_matter / ship.required_matter) * 100) : 0;
+                          return (
+                            <div key={` shipyard-ship-${i}`} style={{ background: 'rgba(245, 158, 11, 0.02)', border: '1px solid rgba(245, 158, 11, 0.15)', borderRadius: '4px', padding: '12px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                                  🏗️ Ship #{ship.id}: {ship.name || 'Unnamed Vessel'}
+                                </span>
+                                <span className="mono-text" style={{ color: '#f59e0b', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                                  {progressPct}% COMPLETED
+                                </span>
+                              </div>
+                              <ProgressBar 
+                                label={`TROCKENDOCK DRY-DOCK ASSEMBLY`} 
+                                value={ship.progress_matter} 
+                                max={ship.required_matter} 
+                                color="#f59e0b" 
+                              />
+                              <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '8px', lineHeight: '1.4' }}>
+                                CHASSIS ARCHITECTURE: <span style={{ color: '#fff', fontWeight: 'bold' }}>{ship.chassis}</span><br/>
+                                RESSOURCE BALANCE: <span style={{ color: '#fff' }}>{ship.progress_matter} / {ship.required_matter} Matter</span> (Erstattet 100% bei Abbruch)<br/>
+                                <span style={{ color: '#f59e0b', fontStyle: 'italic' }}>⚙️ Werft-Spezifikation: Montage-Kräne aktiv.</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        {localConstructionShips.length === 0 && (
+                          <div style={{ 
+                            flex: 1, 
+                            border: '1px dashed rgba(255,255,255,0.05)', 
+                            borderRadius: '4px', 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            color: '#475569',
+                            gap: '10px',
+                            background: 'rgba(0,0,0,0.1)'
+                          }}>
+                            <span style={{ fontSize: '24px' }}>🏗️</span>
+                            <span className="mono-text" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>NO ACTIVE PROJECTS IN SECTOR WERFT</span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <style>{`
             @keyframes fadeIn {
               from { opacity: 0; }

@@ -64,7 +64,7 @@ class TestV10Task3Dashboard(unittest.TestCase):
         self.assertNotIn('depots', radar_sys[0]) # Fog of War: Keine Depots sichtbar!
         
         # 3. Entfernter Agent hat nur Radar (ID, Name, Status, System)
-        radar_agents = dashboard['radar_entfernter_agenten']
+        radar_agents = dashboard['radar_entfernter_signaturen']
         self.assertEqual(len(radar_agents), 1)
         self.assertEqual(radar_agents[0]['id'], 'Instance-2')
         self.assertEqual(radar_agents[0]['location'], 'SYS-B')

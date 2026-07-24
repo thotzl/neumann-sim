@@ -434,8 +434,7 @@ class Sensors:
                 }
             },
             "radar_entfernter_sektoren": other_systems,
-            "radar_entfernter_agenten": distant_bobs,
-            "radar_entfernter_instanzen": distant_bobs
+            "radar_entfernter_signaturen": distant_bobs
         }
         
     @agent_service.with_agent_context(allow_disembodied=True)

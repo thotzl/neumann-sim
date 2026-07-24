@@ -406,8 +406,7 @@ class Sensors:
                 "ships": local_ships,
                 "present_entities": local_bobs
             },
-            "beobachtungen_anderer_agenten": unread_events,
-            "beobachtungen_anderer_instanzen": unread_events,
+            "letzte_system_wahrnehmungen": unread_events,
             "dein_status": {
                 "id": agent['id'],
                 "name": get_display_name(agent),

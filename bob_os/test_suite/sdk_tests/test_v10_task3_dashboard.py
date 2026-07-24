@@ -79,13 +79,13 @@ class TestV10Task3Dashboard(unittest.TestCase):
         
         # First dashboard call - should fetch the event
         dashboard = self.agent.sensors.local_system()
-        obs = dashboard['beobachtungen_anderer_agenten']
+        obs = dashboard['letzte_system_wahrnehmungen']
         self.assertEqual(len(obs), 1)
         self.assertIn('Geologische Erschütterung', obs[0])
         
         # Second dashboard call - event is now marked read, should be empty!
         dashboard2 = self.agent.sensors.local_system()
-        obs2 = dashboard2['beobachtungen_anderer_agenten']
+        obs2 = dashboard2['letzte_system_wahrnehmungen']
         self.assertEqual(len(obs2), 0)
 
     def test_hybrid_dashboard_access(self):
@@ -113,7 +113,7 @@ class TestV10Task3Dashboard(unittest.TestCase):
 
         # 2. Frage das Sektordashboard ab
         dashboard = self.agent.sensors.local_system()
-        obs = dashboard['beobachtungen_anderer_agenten']
+        obs = dashboard['letzte_system_wahrnehmungen']
 
         # 3. VERIFIZIERE DIE TOKENSCHONENDE AGGREGATION & ANONYMISIERUNG
         # Erwartetes Ergebnis: Nur 2 hochkonsolidierte Einträge statt 5 separate Zeilen!

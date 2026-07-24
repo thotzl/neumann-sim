@@ -44,8 +44,8 @@ class TestInfoBuffering(unittest.TestCase):
         # 3. Abrufen des Live-Dashboards
         dashboard = self.agent.sensors.local_system()
         
-        # 4. Überprüfe, dass beobachtungen_anderer_agenten im Dashboard leer ist (da eigene Aktionen herausgefiltert werden)
-        self.assertEqual(len(dashboard['beobachtungen_anderer_agenten']), 0)
+        # 4. Überprüfe, dass letzte_system_wahrnehmungen im Dashboard leer ist (da eigene Aktionen herausgefiltert werden)
+        self.assertEqual(len(dashboard['letzte_system_wahrnehmungen']), 0)
 
 if __name__ == '__main__':
     unittest.main()

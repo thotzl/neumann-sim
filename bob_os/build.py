@@ -116,6 +116,14 @@ def build_experiment(args):
         print(f"[FEHLER] Build fehlgeschlagen. Fehlende Dateien: {missing}")
         sys.exit(1)
 
+    # Sandbox-Reinheit verifizieren (Säule 3): Keine systemfremden Rückstände im User-Skripte-Ordner
+    active_scripts_dir = os.path.join(target_verse, 'scripts', 'active')
+    forbidden_files = ['me.py', 'sitecustomize.py']
+    for forbidden in forbidden_files:
+        if os.path.exists(os.path.join(active_scripts_dir, forbidden)):
+            print(f"[FEHLER] Build-Sicherheitsverletzung: Systemdatei {forbidden} leckt im User-Verzeichnis {active_scripts_dir}!")
+            sys.exit(1)
+
     print(f"[ERFOLG] Experiment {args.version} bereit.")
     print(f"Befehl: npm run sim {args.version}")
 

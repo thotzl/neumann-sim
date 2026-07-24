@@ -8,13 +8,13 @@ Dieses Dokument dient als das offizielle Leitdokument für alle ausstehenden Vis
 
 Da über die Jahre hinweg mehrere spekulative Ideen-Sammlungen entstanden sind, gilt bei inhaltlichen Widersprüchen folgendes unbestechliche Gesetz: **Neuere Dokumente überschreiben ältere Dokumente vollständig.**
 
-| Dokument / Epic | Relevanz | SSoT-Status | Konfliktlösung |
+| Dokument / Epic | Relevanz | Haupt-Fokus | Aufgezeigter Konflikt / Entwurfs-Optionen |
 | :--- | :--- | :--- | :--- |
-| **[EPIC_2_SHIPS_AND_MINDS.md](epics/EPIC_2_SHIPS_AND_MINDS.md)** (V10.5) | Schiffsbau, Triebwerke, 2D-Gitter | **Absoluter SSoT** | Überschreibt alle flachen Chassis- und Upgrade-Ideen aus älteren Dumps (z.B. `MECHANIC_IDEAS.md`). |
-| **[EPIC_3_FACTIONS_AND_FOG.md](epics/EPIC_3_FACTIONS_AND_FOG.md)** (V11.0) | Fraktionen, Fog of War, Hacking | **Absoluter SSoT** | Überschreibt alle spekulativen Ideen bezüglich territorialer Eroberung aus `ADVANCED_MECHANICS_DUMP.md`. |
-| **[SHIP_AND_ENGINEERING_V10.md](concepts/SHIP_AND_ENGINEERING_V10.md)** (V10.0) | Modularität, Software vs. Hülle | **Absoluter SSoT** | Definiert das Kern-Paradigma der disembodied Host-Entkopplung. |
-| **[ADVANCED_MECHANICS_DUMP.md](ADVANCED_MECHANICS_DUMP.md)** (V8.8) | Spekulatives Hardcore-Survival | *Teilweise veraltet* | Mechaniken wie *Hardware Wear & Tear* werden in zukünftigen Phasen an das V10.5 Gitter-HP-System angepasst. |
-| **[MECHANIC_IDEAS.md](concepts/MECHANIC_IDEAS.md)** (V4.0) | Gamification & RTS-Fokus | *Inspirationsquelle* | Veraltete Flat-Hulls dienen rein als Ideenpool. |
+| **[EPIC_2_SHIPS_AND_MINDS.md](epics/EPIC_2_SHIPS_AND_MINDS.md)** (V10.5) | Schiffsbau, Triebwerke, 2D-Gitter | 2D-Gitter-Vessel | *Konflikt:* Ältere Dokumente nutzen flache, unkonfigurierbare Chassis-Werte. *Option:* Sollen zukünftige Module ebenfalls auf Gitterkacheln basieren oder als flache Upgrades verbaut werden? |
+| **[EPIC_3_FACTIONS_AND_FOG.md](epics/EPIC_3_FACTIONS_AND_FOG.md)** (V11.0) | Fraktionen, Fog of War, Hacking | Territorialer Kampf | *Konflikt:* Wie stark beeinflussen sich KMI-Skripte bei der Übernahme feindlicher Basen? *Option:* Werden gehackte Skripte gelöscht oder kopiert? |
+| **[SHIP_AND_ENGINEERING_V10.md](concepts/SHIP_AND_ENGINEERING_V10.md)** (V10.0) | Modularität, Software vs. Hülle | Host-Entkopplung | *Option:* Können disembodied Minds auch ohne Matrizen im All existieren? |
+| **[ADVANCED_MECHANICS_DUMP.md](ADVANCED_MECHANICS_DUMP.md)** (V8.8) | Spekulatives Hardcore-Survival | HP-Verschleiß & Spionage | *Konflikt:* Wie skaliert der mechanische Verschleiß mit Gitterkacheln? *Option:* Nimmt das gesamte Schiff Schaden oder einzelne Segmente? |
+| **[MECHANIC_IDEAS.md](concepts/MECHANIC_IDEAS.md)** (V4.0) | Gamification & RTS-Fokus | Passive Extraktoren | *Option:* Passive Abbaugebäude vs. aktive Sonden-Interaktion im Sektor. |
 
 ---
 
@@ -41,23 +41,23 @@ Bevor wir die riesigen kommenden Epics implementieren, bereiten wir die relation
 
 ## 🌌 PHASE 2: FUTURE EPICS (Ausstehende visionäre Säulen)
 
-### ☀️ Säule A: Factions & Diplomacy (Rivalisierende Allianzen)
+### 👥 Säule A: Factions und Diplomatie
 Wir transformieren die Sandbox in ein kompetitives RTS-Szenario mit gegnerischen Fraktionen, territorialer Kontrolle und Spionage:
 *   **Sensor-Isolation (Fog of War):** Dashboards und Scans werden streng nach `faction_id` gefiltert. Feindliche Basen und Depots sind im Deep Space komplett unsichtbar.
 *   **SCUT 2.0 (Das offene Funkfeuer):** Punkt-zu-Punkt-Nachrichten an eigene Fraktionsmitglieder sind verschlüsselt. Broadcast-Nachrichten an `ALL` werden zu einer offenen Funkfrequenz im Sektor. Jede gegnerische Instanz mit einem aktiven `comms_relay` kann die Nachricht abhören, was Verhandlungen, Täuschung oder Erpressung erlaubt!
 *   **Takeovers & Hacking (`me.hack()`):** Sonden können feindliche Stationen hacken. Gelingt der Hack, wechselt die Infrastruktur (inklusive aller darauf laufenden KMI-Automatisierungsskripte!) den Besitzer.
 *   *Detailliertes Epic:* [EPIC_3_FACTIONS_AND_FOG.md](epics/EPIC_3_FACTIONS_AND_FOG.md)
 
-### 🏆 Säule B: Goals & Achievements (Die kognitive Quest-Line)
+### 🏆 Säule B: Goals und Achievements
 Einführung von klaren Meilensteinen (Milestones), um den autonomen Handlungsdrang (Drive) der Bobs zu fokussieren und planloses Herumirren im All zu verhindern:
 *   **Meilenstein-Progression:** Bobs erhalten über ihr Dashboard konkrete, messbare Zwischenziele (z.B. *"Meilenstein 1: Veredele 1.000 Einheiten Materie, um die Schiffswerft freizuschalten"*).
 *   **Endgame-Missionsziele:** Langfristige Bindung von Ressourcen und Agenten an einen Ort für ein ultimatives, interstellar koordiniertes Endziel (z.B. Bau eines interstellaren Handelsnetzes über `mass_driver` oder planetares Terraforming über `atmosphere_processor`).
 *   **Errungenschaften (Achievements):** Unbestechliche Erfolge auf Datenbank-Ebene (z.B. 🏆 *First Mitosis* für die erste Replikation, oder 🏆 *Perpetual Motion* für den Bau eines solar-autarken Schiffs).
 *   *Detailliertes Epic:* [IDEAS_AND_TASKS.md](IDEAS_AND_TASKS.md) & [ROADMAP_WORLD_MECHANICS.md](ROADMAP_WORLD_MECHANICS.md)
 
-### 🌋 Säule C: Deeper Verse & Environmental Hazards (Gefahren des Alls)
+### 🌋 Säule C: Deeper Verse und Disasters (Mehr realistisches Universum)
 Der Weltraum wird unberechenbar, gefährlich und zwingt die Bobs zu vorausschauendem physikalischem Risikomanagement:
-*   **Sektor-Klassen (Mehr realistisches Universum):** Sektoren besitzen individuelle physikalische Eigenschaften:
+*   **Sektor-Klassen:** Sektoren besitzen individuelle physikalische Eigenschaften:
     *   *Hyper-Solares System:* Extrem nahe an einer heißen Sonne. Enorme Solar-Regeneration (`regen * 5x`), aber Hitzestau-Malus für Elektronik und Hüllen.
     *   *Toxischer Sektor:* Reiche Rohstoffadern, aber aggressive Säure-Atmosphären zerfressen pro Runde die Integrität (HP) aller dort parkenden Schiffe (erfordert lokale Reparatur-Schleifen).
     *   *Schwarzes Loch:* Gigantische Gravitations-Senke erfordert 5x more Bewegungsenergie, bietet aber seltene, hochveredelte Isotope im Akkretionsring.

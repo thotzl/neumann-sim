@@ -39,6 +39,7 @@ export type System = {
   x: number; 
   y: number;
   extractable_matter_in_core: number; 
+  max_extractable_matter?: number;
   raw_matter_depot: number; 
   depot_matter_capacity: number;
   energy_depot: number; 

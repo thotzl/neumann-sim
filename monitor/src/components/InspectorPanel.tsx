@@ -499,7 +499,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                 <div>
                   <ProgressBar label="ENERGY_CORE" value={dashboardObj.dein_status.inventory.energy} max={Math.max(selectedAgent.sensors?.inventory?.energy_limit || 200, dashboardObj.dein_status.inventory.energy)} color="#38bdf8" />
                   <ProgressBar label="RAW_MATTER" value={dashboardObj.dein_status.inventory.raw_matter} max={dashboardObj.dein_status.storage_capacity} color="#f59e0b" />
-                  <ProgressBar label="REFINED_MATTER" value={dashboardObj.dein_status.inventory.refined_matter} max={1000} color="#8b5cf6" />
+                  <ProgressBar label="REFINED_MATTER" value={dashboardObj.dein_status.inventory.refined_matter} max={dashboardObj.dein_status.storage_capacity} color="#8b5cf6" />
                 </div>
               </>
             )}
@@ -640,11 +640,11 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   <div className="mono-text" style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '15px' }}>
                     COORDINATES: {selectedSystem.x}, {selectedSystem.y}
                   </div>
-                  <ProgressBar label="CORE_EXTRACTABLE" value={selectedSystem.extractable_matter_in_core} max={10000} color="#ef4444" />
+                  <ProgressBar label="CORE_EXTRACTABLE" value={selectedSystem.extractable_matter_in_core} max={selectedSystem.max_extractable_matter || Math.max(100000, selectedSystem.extractable_matter_in_core)} color="#ef4444" />
                 </div>
                 <div>
-                  <ProgressBar label="DEPOT_MATTER" value={selectedSystem.raw_matter_depot} max={selectedSystem.depot_matter_capacity || 1} color="#f59e0b" />
-                  <ProgressBar label="DEPOT_ENERGY" value={selectedSystem.energy_depot} max={selectedSystem.depot_energy_capacity || 1} color="#38bdf8" />
+                  <ProgressBar label="DEPOT_MATTER" value={selectedSystem.raw_matter_depot} max={selectedSystem.depot_matter_capacity || Math.max(5000, selectedSystem.raw_matter_depot)} color="#f59e0b" />
+                  <ProgressBar label="DEPOT_ENERGY" value={selectedSystem.energy_depot} max={selectedSystem.depot_energy_capacity || Math.max(5000, selectedSystem.energy_depot)} color="#38bdf8" />
                 </div>
               </>
             )}

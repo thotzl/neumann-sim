@@ -230,6 +230,18 @@ def run_balance_check():
         errors.append(f"UNBALANCED: Heavy Miner ist {round(heavy_eff/miner_eff, 1)}x effizienter als der standard Miner! Erdrückt standard Schiffsauswahlen.")
 
     # -------------------------------------------------------------
+    # 🏢 CHECK 6: SHIP VS INFRASTRUCTURE COST RATIO
+    # -------------------------------------------------------------
+    print("\n[CHECK 6] Ship vs. Planetary Factory Price Proportionality...")
+    shipyard_cost = infra.get('shipyard', {}).get('matter_cost', 1800)
+    miner_cost = efficiencies["Miner"][1]
+    
+    if miner_cost > shipyard_cost:
+        errors.append(f"UNBALANCED: Ein modularer standard Miner ({miner_cost} RM) ist teurer als eine planetare Schiffswerft ({shipyard_cost} RM)! Das entwertet Schiffe im Vergleich zu Gebäuden.")
+    else:
+        print(f"  ✅ Schiffs-zu-Fabrik Proportionalität optimal. Standard-Miner ({miner_cost} RM) kostet {round((miner_cost/shipyard_cost)*100, 1)}% einer Werft ({shipyard_cost} RM).")
+
+    # -------------------------------------------------------------
     # 🏆 BALANCING ZUSAMMENFASSUNG
     # -------------------------------------------------------------
     print("\n==========================================")

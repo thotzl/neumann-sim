@@ -66,7 +66,7 @@ async function runE2ETest() {
             db.get("SELECT extractable_matter_in_core FROM systems WHERE name='Alpha_Centauri'", (err, sysRow) => {
                 if (err) throw err;
                 console.log(`  System Ressourcen: ${sysRow.extractable_matter_in_core}`);
-                if (sysRow.extractable_matter_in_core >= 10000) throw new Error("Kern-Ressourcen wurden nicht abgebaut!");
+                if (sysRow.extractable_matter_in_core >= 100000) throw new Error("Kern-Ressourcen wurden nicht abgebaut!");
                 
                 console.log("✅ E2E Mock-Loop, Boot-Sequenz und Memory-Management erfolgreich abgeschlossen.");
                 db.close();

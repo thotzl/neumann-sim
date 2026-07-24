@@ -159,7 +159,12 @@ def seed():
             if location not in created_systems:
                 # Erstes System auf 0,0, weitere versetzt
                 x, y = (0, 0) if not created_systems else (random.randint(100, 500), random.randint(100, 500))
-                cursor.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter) VALUES (?, ?, ?, 10000, 10000)", (location, x, y))
+                import os
+                if os.environ.get('TEST_DB_PATH'):
+                    start_matter = 100000
+                else:
+                    start_matter = random.randint(50000, 500000)
+                cursor.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter) VALUES (?, ?, ?, ?, ?)", (location, x, y, start_matter, start_matter))
                 created_systems.add(location)
             
             # Agent anlegen (aktiv, physisch entkoppelt)

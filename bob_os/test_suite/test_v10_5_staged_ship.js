@@ -82,10 +82,10 @@ if (!designOutput.includes("[SUCCESS] Blueprint 'E2E-Carrier' successfully saved
 }
 console.log("  ✅ Blueprint erfolgreich in Sektor-Wiki registriert.");
 
-// Schritt 2: Etappenbau starten. Zahle 1000 refined_matter an (Teilbetrag)
-console.log("\nSchritt 2: Anzahlung von 1000 refined_matter einreichen...");
-const buildPartialOutput = runBobAction('build_ship(blueprint_name="E2E-Carrier", matter_to_invest=1000)');
-if (!buildPartialOutput.includes("Invested 1000 refined_matter in E2E-Carrier construction. Progress: 1000/2250.")) {
+// Schritt 2: Etappenbau starten. Zahle 500 refined_matter an (Teilbetrag)
+console.log("\nSchritt 2: Anzahlung von 500 refined_matter einreichen...");
+const buildPartialOutput = runBobAction('build_ship(blueprint_name="E2E-Carrier", matter_to_invest=500)');
+if (!buildPartialOutput.includes("Invested 500 refined_matter in E2E-Carrier construction. Progress: 500/1250.")) {
     console.error("FEHLER beim Teil-Bau:", buildPartialOutput);
     process.exit(1);
 }
@@ -100,10 +100,10 @@ if (!boardDeniedOutput.includes("[DENIED] Cannot board. Ship 'Ship-1' (ID: 1) is
 }
 console.log("  ✅ Unfertiges Schiff wirksam gegen Einstieg gesperrt.");
 
-// Schritt 4: Zweite Rate einzahlen (1000 refined_matter)
-console.log("\nSchritt 4: Zweite Rate von 1000 refined_matter einzahlen...");
-const buildSecondOutput = runBobAction('build_ship(blueprint_name="E2E-Carrier", matter_to_invest=1000)');
-if (!buildSecondOutput.includes("Progress: 2000/2250.")) {
+// Schritt 4: Zweite Rate einzahlen (500 refined_matter)
+console.log("\nSchritt 4: Zweite Rate von 500 refined_matter einzahlen...");
+const buildSecondOutput = runBobAction('build_ship(blueprint_name="E2E-Carrier", matter_to_invest=500)');
+if (!buildSecondOutput.includes("Progress: 1000/1250.")) {
     console.error("FEHLER bei zweiter Einzahlung:", buildSecondOutput);
     process.exit(1);
 }

@@ -67,7 +67,7 @@ def init():
         max_speed REAL DEFAULT 300,
         thrust INTEGER DEFAULT 500,
         mass INTEGER DEFAULT 100,
-        blueprint_name TEXT DEFAULT 'Scout',
+        blueprint_name TEXT DEFAULT 'unclassified',
         has_drill INTEGER DEFAULT 0,
         has_fabricator INTEGER DEFAULT 0,
         has_logic_core INTEGER DEFAULT 0,
@@ -179,8 +179,8 @@ def seed():
             # Schiff mit den physischen Ressourcen anlegen (Säule 1)
             cursor.execute("""
                 INSERT OR REPLACE INTO ships 
-                (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity, has_drill, has_fabricator) 
-                VALUES (?, ?, 'Scout', ?, ?, 0, ?, ?, 1, 1)
+                (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity, has_drill, has_fabricator, blueprint_name) 
+                VALUES (?, ?, 'Proto-Neumann', ?, ?, 0, ?, ?, 1, 1, 'Proto-Neumann')
             """, (ship_id, f"Pioneer-{ship_id}", agent_id, location, agent_limits['energy'], agent_limits['matter']))
                           
             # In Population eintragen (Das ist das Bindeglied zum Node-Runner)

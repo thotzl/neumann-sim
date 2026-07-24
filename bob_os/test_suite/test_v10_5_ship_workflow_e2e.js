@@ -116,10 +116,10 @@ AKTION:
 `;
     console.log("  3. Führe me.build_ship (Bauphase) aus...");
     const feedbackBuild = processActions(buildInput, absMockDir, "Instance-1", mockState);
-    if (!feedbackBuild.includes("built successfully") || !feedbackBuild.includes("Cost: 1000 Depot")) {
-        throw new Error("SCHRITT C FAILED: Schiffsbau fehlgeschlagen oder falsche Kosten! Feedback: " + feedbackBuild);
+    if (!feedbackBuild.includes("built successfully") || !feedbackBuild.includes("Cost: 1000 Depot") || !feedbackBuild.includes("ERRECHNETE HARDWARE-SPEZIFIKATIONEN") || !feedbackBuild.includes("blueprint_specs")) {
+        throw new Error("SCHRITT C FAILED: Schiffsbau fehlgeschlagen, falsche Kosten oder fehlender CAD-Spezifikations-Report! Feedback: " + feedbackBuild);
     }
-    console.log("    ✅ Schritt C (Bauphase: built with cost: 1000 refined_matter) erfolgreich.");
+    console.log("    ✅ Schritt C (Bauphase: built with cost: 1000 refined_matter & CAD specs printed) erfolgreich.");
 
     // --- SCHRITT C-VERIFY: PRÜFE SPECS & DEPOT-ABZUG (inspect) ---
     const inspectInput = `
@@ -141,10 +141,10 @@ AKTION:
 `;
     console.log("  4. Führe me.deconstruct_ship (Recyclingphase) aus...");
     const feedbackDec = processActions(deconstructInput, absMockDir, "Instance-1", mockState);
-    if (!feedbackDec.includes("deconstructed successfully") || !feedbackDec.includes("Refunded 500 refined_matter")) {
+    if (!feedbackDec.includes("deconstructed successfully") || !feedbackDec.includes("Refunded 750 refined_matter")) {
         throw new Error("SCHRITT D FAILED: Recycling oder Erstattung fehlgeschlagen! Feedback: " + feedbackDec);
     }
-    console.log("    ✅ Schritt D (Recyclingphase: deconstructed & 50% refunded) erfolgreich.");
+    console.log("    ✅ Schritt D (Recyclingphase: deconstructed & 75% refunded) erfolgreich.");
 
     // --- SCHRITT D-VERIFY: PRÜFE ERSTATTETES DEPOT (inspect) ---
     const inspectFinalInput = `
@@ -153,8 +153,8 @@ AKTION:
 `;
     console.log("  4-Verify. Inspiziere Sektor-Depots nach Rückerstattung...");
     const feedbackInspectFinal = processActions(inspectFinalInput, absMockDir, "Instance-1", mockState);
-    if (!feedbackInspectFinal.includes("refined_matter_depot: 4500")) {
-        throw new Error("SCHRITT D-VERIFY FAILED: Rückerstattung von 500 refined_matter wurde nicht gutgeschrieben! Feedback: " + feedbackInspectFinal);
+    if (!feedbackInspectFinal.includes("refined_matter_depot: 4750")) {
+        throw new Error("SCHRITT D-VERIFY FAILED: Rückerstattung von 750 refined_matter wurde nicht gutgeschrieben! Feedback: " + feedbackInspectFinal);
     }
     console.log("    ✅ Schritt D-Verify (Depot-Rückerstattung verifiziert) erfolgreich.");
 

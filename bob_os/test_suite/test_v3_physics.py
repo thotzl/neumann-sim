@@ -87,7 +87,7 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         conn = sqlite3.connect(self.test_db)
         conn.row_factory = sqlite3.Row
         sys_data = conn.execute("SELECT raw_matter_depot FROM systems WHERE name='SYS-X0-Y0'").fetchone()
-        self.assertEqual(sys_data['raw_matter_depot'], 200) # 50% of 400
+        self.assertEqual(sys_data['raw_matter_depot'], 300) # 75% of 400
         conn.close()
 
 if __name__ == '__main__':

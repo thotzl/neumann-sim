@@ -9,11 +9,22 @@ function runSystemAutomations(vDir, universeDir, state) {
 
     if (!fs.existsSync(activeScriptsDir)) return "";
 
-    // Dynamisch generierte me.py injizieren, um NameErrors bei Bobs Automatisierungs-Skripten zu verhindern (Säule 3)
-    const mePyPath = path.join(activeScriptsDir, "me.py");
+    // Cleanup-Logik: Alte, ungeschützte Dateien aus der Bob-Sandbox restlos tilgen
+    const oldMePy = path.join(activeScriptsDir, "me.py");
+    const oldSitePy = path.join(activeScriptsDir, "sitecustomize.py");
+    if (fs.existsSync(oldMePy)) {
+        try { fs.unlinkSync(oldMePy); } catch (e) {}
+    }
+    if (fs.existsSync(oldSitePy)) {
+        try { fs.unlinkSync(oldSitePy); } catch (e) {}
+    }
+
+    // Dynamisch generierte me.py im geschützten core/lib Ordner ablegen (Säule 3)
+    const coreLibDir = path.join(vDir, "core", "lib");
+    const mePyPath = path.join(coreLibDir, "me.py");
     const mePyContent = `import os
 import sys
-from bob_os.core.lib.bob_sdk import Agent
+from core.lib.bob_sdk import Agent
 
 class ResourceDict(dict):
     def __getattr__(self, name): return self.get(name, 0)
@@ -66,7 +77,7 @@ for _name in dir(_agent):
     fs.writeFileSync(mePyPath, mePyContent);
 
     // sitecustomize.py für permanenten, importfreien Bootstrapping-Support schreiben
-    const sitePyPath = path.join(activeScriptsDir, "sitecustomize.py");
+    const sitePyPath = path.join(coreLibDir, "sitecustomize.py");
     const sitePyContent = `import builtins
 import me
 builtins.me = me

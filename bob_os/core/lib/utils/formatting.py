@@ -64,7 +64,7 @@ def aggregate_ship_telemetry(ship_row, blueprint_stats=None):
     if not isinstance(ship_row, dict):
         ship_row = dict(ship_row)
         
-    blueprint_name = ship_row.get('blueprint_name') or ship_row.get('chassis') or 'Scout'
+    blueprint_name = ship_row.get('blueprint_name') or ship_row.get('chassis') or 'unclassified'
     
     stats_dict = {
         "mass": int(ship_row.get('mass', 100)),

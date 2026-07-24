@@ -89,7 +89,11 @@ if (!buildPartialOutput.includes("Invested 500 refined_matter in E2E-Carrier con
     console.error("FEHLER beim Teil-Bau:", buildPartialOutput);
     process.exit(1);
 }
-console.log("  ✅ Anzahlung fehlerfrei verbucht.");
+if (!buildPartialOutput.includes("ERRECHNETE HARDWARE-SPEZIFIKATIONEN") || !buildPartialOutput.includes("blueprint_specs")) {
+    console.error("FEHLER: CAD Hardware-Spezifikationen wurden auf Auftrag (Teil-Anzahlung) nicht ausgegeben!");
+    process.exit(1);
+}
+console.log("  ✅ Anzahlung & CAD-Spezifikations-Report erfolgreich verifiziert.");
 
 // Schritt 3: Einstiegs-Schutz prüfen (me.board() muss fehlschlagen!)
 console.log("\nSchritt 3: Boarding-Blockade während der Konstruktion verifizieren...");

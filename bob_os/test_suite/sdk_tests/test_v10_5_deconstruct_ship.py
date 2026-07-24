@@ -52,7 +52,7 @@ class TestV105DeconstructShip(unittest.TestCase):
         self.assertTrue(self.agent.save_blueprint("No-Tools-Scout", scout_matrix))
         self.assertTrue(self.agent.build_ship(blueprint_name="No-Tools-Scout")) # Spawns Ship 1
         
-        # Cost of No-Tools-Scout is 1000 refined_matter. Refund at 50% is 500 refined_matter!
+        # Cost of No-Tools-Scout is 1000 refined_matter. Refund at 75% is 750 refined_matter!
         conn = db_config.get_connection()
         sys_before = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
         conn.close()
@@ -60,17 +60,17 @@ class TestV105DeconstructShip(unittest.TestCase):
         # 2. Deconstruct the custom ship
         self.assertTrue(self.agent.deconstruct_ship(1))
         
-        # Verify ship is deleted and refined matter is refunded (500)
+        # Verify ship is deleted and refined matter is refunded (750)
         conn = db_config.get_connection()
         ship = conn.execute("SELECT id FROM ships WHERE id = 1").fetchone()
         self.assertIsNone(ship)
         
         sys_after = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
-        self.assertEqual(sys_after['refined_matter_depot'], sys_before['refined_matter_depot'] + 500)
+        self.assertEqual(sys_after['refined_matter_depot'], sys_before['refined_matter_depot'] + 750)
         conn.close()
 
     def test_deconstruct_ship_legacy_fallback(self):
-        # 1. Build standard legacy Scout (costs 1000 raw_matter, refunds 500 raw_matter!)
+        # 1. Build standard legacy Scout (costs 1000 raw_matter, refunds 750 raw_matter!)
         self.assertTrue(self.agent.build_ship(blueprint_name="Legacy-Scout")) # Spawns Ship 1
         
         conn = db_config.get_connection()
@@ -80,10 +80,10 @@ class TestV105DeconstructShip(unittest.TestCase):
         # 2. Deconstruct the legacy ship
         self.assertTrue(self.agent.deconstruct_ship(1))
         
-        # Verify raw matter is refunded
+        # Verify raw matter is refunded (750)
         conn = db_config.get_connection()
         sys_after = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
-        self.assertEqual(sys_after['raw_matter_depot'], sys_before['raw_matter_depot'] + 500)
+        self.assertEqual(sys_after['raw_matter_depot'], sys_before['raw_matter_depot'] + 750)
         conn.close()
 
     def test_deconstruct_ship_fails_pilot_onboard(self):

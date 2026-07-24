@@ -262,7 +262,7 @@ class Actuators:
     @agent_service.with_agent_context(allow_disembodied=True, action_name='Build Ship')
     def build_ship(self, cursor, agent, blueprint_name=None, chassis=None, matter_to_invest=None):
         sys_name = agent['location']
-        blueprint_name = blueprint_name or chassis or 'Scout'
+        blueprint_name = blueprint_name or chassis or 'unclassified'
         
         # Check if shipyard or advanced_shipyard is active
         if not system_service.has_active_infrastructure(cursor, sys_name, ('shipyard', 'advanced_shipyard')):
@@ -311,6 +311,13 @@ class Actuators:
             ship_id = new_id
             progress_matter = 0
             required_matter = cost
+
+            # Drucke die geplanten Hardware-Spezifikationen direkt "auf Auftrag" (Säule 2 & 3)
+            if bp_row:
+                import yaml
+                stats = json.loads(bp_row['stats_json'])
+                yaml_stats = yaml.dump({"blueprint_specs": stats}, sort_keys=False, default_flow_style=False).strip()
+                print(f"\nERRECHNETE HARDWARE-SPEZIFIKATIONEN:\n---\n{yaml_stats}\n---")
 
         # 3. Calculate remaining payment and perform transaction
         remaining = required_matter - progress_matter

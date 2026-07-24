@@ -207,7 +207,7 @@ class Sensors:
         for r in local_ships_raw:
             ship_dict = dict(r)
             if r['pilot_id'] == 'UNDER_CONSTRUCTION':
-                bp_name = r['blueprint_name'] or r['chassis'] or 'Scout'
+                bp_name = r['blueprint_name'] or r['chassis'] or 'unclassified'
                 # Check blueprint to see material type
                 cursor.execute("SELECT stats_json FROM blueprints WHERE name = ?", (bp_name,))
                 bp_row = cursor.fetchone()

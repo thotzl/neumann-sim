@@ -18,13 +18,13 @@ class TestV105InventoryDecoupling(unittest.TestCase):
         init_db.init()
         
         conn = db_config.get_connection()
-        # Seed local system (SYS-A) with depot
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 10000, 100, 100)")
+        # Seed local system (SYS_A) with depot
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS_A', 0, 0, 10000, 100, 100)")
         # Seed ship with starting inventories
         conn.execute("""
             INSERT OR REPLACE INTO ships 
             (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) 
-            VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-A', 25, 200, 300)
+            VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_A', 25, 200, 300)
         """)
         # Seed agent with host as ship
         conn.execute("""
@@ -80,11 +80,11 @@ class TestV105InventoryDecoupling(unittest.TestCase):
         cursor = conn.cursor()
         
         # Make agent disembodied inside matrix host
-        conn.execute("INSERT OR REPLACE INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS-A', 'sem_matrix', 'active')")
+        conn.execute("INSERT OR REPLACE INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS_A', 'sem_matrix', 'active')")
         conn.execute("UPDATE agents SET host_type = 'matrix', host_id = '100', active_ship_id = NULL WHERE id = 'Instance-1'")
         conn.commit()
         
-        # Verify read: raw matter matches SYS-A system depot (which is 100)
+        # Verify read: raw matter matches SYS_A system depot (which is 100)
         agent_data = agent_service.get_agent_or_fail(cursor, 'Instance-1')
         self.assertEqual(agent_data['raw_matter_inventory'], 100) # matches raw_matter_depot from systems table
         
@@ -93,7 +93,7 @@ class TestV105InventoryDecoupling(unittest.TestCase):
         conn.commit()
         
         # Verify system table has been updated
-        cursor.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS-A'")
+        cursor.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS_A'")
         sys_row = cursor.fetchone()
         self.assertEqual(sys_row['raw_matter_depot'], 120) # 100 + 20
         conn.close()

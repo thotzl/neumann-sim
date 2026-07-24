@@ -41,7 +41,7 @@ fs.writeFileSync(testScriptPath, testScriptContent);
 // Prepare the simulation state
 const state = {
     agents: [
-        { id: "Instance-1", alive: true, location: "SYS-A" }
+        { id: "Instance-1", alive: true, location: "SYS_A" }
     ],
     global_inbox: {},
     security: {

@@ -20,9 +20,9 @@ class TestBlackoutCapacity(unittest.TestCase):
         c.execute("""CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1, maintenance_cooldown INTEGER DEFAULT 0)""")
         
         # Setup System with Silo (Capacity +1000), but an expensive building (mind_forge, 10 energy upkeep) and 0 energy in depot
-        c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-A', 1000, 500, 0)")
-        c.execute("INSERT INTO infrastructure (system_name, type, status, level) VALUES ('SYS-A', 'matter_silo', 'active', 1)")
-        c.execute("INSERT INTO infrastructure (system_name, type, status, level) VALUES ('SYS-A', 'mind_forge', 'active', 1)")
+        c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS_A', 1000, 500, 0)")
+        c.execute("INSERT INTO infrastructure (system_name, type, status, level) VALUES ('SYS_A', 'matter_silo', 'active', 1)")
+        c.execute("INSERT INTO infrastructure (system_name, type, status, level) VALUES ('SYS_A', 'mind_forge', 'active', 1)")
         conn.commit()
         conn.close()
 
@@ -34,7 +34,7 @@ class TestBlackoutCapacity(unittest.TestCase):
         physics_update.update()
         
         conn = sqlite3.connect(self.test_db)
-        sys_data = conn.execute("SELECT raw_matter_depot, depot_matter_capacity FROM systems WHERE name='SYS-A'").fetchone()
+        sys_data = conn.execute("SELECT raw_matter_depot, depot_matter_capacity FROM systems WHERE name='SYS_A'").fetchone()
         
         # Capacity should be 1000 (from the silo) despite blackout
         self.assertEqual(sys_data[1], 1000)

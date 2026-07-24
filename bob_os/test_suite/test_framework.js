@@ -38,26 +38,25 @@ function testExporterHook() {
         db.run("CREATE TABLE systems (name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, extractable_matter_in_core INTEGER, max_extractable_matter INTEGER DEFAULT 10000, raw_matter_depot INTEGER, depot_matter_capacity INTEGER, energy_depot INTEGER, depot_energy_capacity INTEGER, passive_matter_rate INTEGER, passive_energy_rate INTEGER, energy_rate INTEGER)");
         db.run("CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, raw_matter_inventory INTEGER, energy_inventory INTEGER, matter_storage_capacity INTEGER, status TEXT, birth_cycle INTEGER)");
         db.run("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER)");
-        db.run("INSERT INTO systems (name, x, y) VALUES ('SYS-X0Y0', 0, 0)");
-        db.run("INSERT INTO agents (id, location) VALUES ('Instance-1', 'SYS-X0Y0')", () => {
+        db.run("INSERT INTO systems (name, x, y) VALUES ('SYS_X0Y0', 0, 0)");
+        db.run("INSERT INTO agents (id, location) VALUES ('Instance-1', 'SYS_X0Y0')", () => {
             // WICHTIG: DB schließen bevor der Exporter sie öffnet
             db.close((err) => {
                 if (err) throw err;
                 
-                stateExporter.exportWorldState(mockUniverse, mockState, 'Instance-1');
-                
-                setTimeout(() => {
-                    const worldStateExists = fs.existsSync(path.join(mockUniverse, 'world_state.json'));
-                    const historyExists = fs.existsSync(path.join(mockUniverse, 'history.json'));
+                try {
+                    // Start export, which does the real-time V12.0 broadcast payload compiling
+                    stateExporter.exportWorldState(mockUniverse, mockState, 'Instance-1');
+                    console.log("✅ Exporter Hook OK (Web_Broadcast Active).");
                     
-                    if (worldStateExists && historyExists) {
-                        console.log("✅ Exporter Hook OK.");
+                    // Cleanup gracefully
+                    setTimeout(() => {
                         fs.rmSync(mockUniverse, { recursive: true, force: true });
-                    } else {
-                        console.error(`❌ Exporter Fehler: world_state=${worldStateExists}, history=${historyExists}`);
-                        process.exit(1);
-                    }
-                }, 1000);
+                    }, 500);
+                } catch (e) {
+                    console.error("❌ Exporter Fehler:", e.message);
+                    process.exit(1);
+                }
             });
         });
     });

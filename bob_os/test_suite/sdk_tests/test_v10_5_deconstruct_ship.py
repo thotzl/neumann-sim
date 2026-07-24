@@ -18,11 +18,11 @@ class TestV105DeconstructShip(unittest.TestCase):
         init_db.init()
         
         conn = db_config.get_connection()
-        # Seed local system (SYS-A) and distant system (SYS-B)
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 10000, 1000, 5000, 1000)")
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS-B', 500, 500, 5000, 100, 0, 0)")
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS-A', 'shipyard', 'active', 1, 100)")
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS-A', 'sem_matrix', 'active', 1, 100)")
+        # Seed local system (SYS_A) and distant system (SYS_B)
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS_A', 0, 0, 10000, 1000, 5000, 1000)")
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS_B', 500, 500, 5000, 100, 0, 0)")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS_A', 'shipyard', 'active', 1, 100)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS_A', 'sem_matrix', 'active', 1, 100)")
         
         # Seed disembodied agent
         conn.execute("""
@@ -54,7 +54,7 @@ class TestV105DeconstructShip(unittest.TestCase):
         
         # Cost of No-Tools-Scout is 1000 refined_matter. Refund at 75% is 750 refined_matter!
         conn = db_config.get_connection()
-        sys_before = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
+        sys_before = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
         conn.close()
 
         # 2. Deconstruct the custom ship
@@ -65,7 +65,7 @@ class TestV105DeconstructShip(unittest.TestCase):
         ship = conn.execute("SELECT id FROM ships WHERE id = 1").fetchone()
         self.assertIsNone(ship)
         
-        sys_after = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
+        sys_after = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
         self.assertEqual(sys_after['refined_matter_depot'], sys_before['refined_matter_depot'] + 750)
         conn.close()
 
@@ -74,7 +74,7 @@ class TestV105DeconstructShip(unittest.TestCase):
         self.assertTrue(self.agent.build_ship(blueprint_name="Legacy-Scout")) # Spawns Ship 1
         
         conn = db_config.get_connection()
-        sys_before = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
+        sys_before = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
         conn.close()
 
         # 2. Deconstruct the legacy ship
@@ -82,7 +82,7 @@ class TestV105DeconstructShip(unittest.TestCase):
         
         # Verify raw matter is refunded (750)
         conn = db_config.get_connection()
-        sys_after = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
+        sys_after = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
         self.assertEqual(sys_after['raw_matter_depot'], sys_before['raw_matter_depot'] + 750)
         conn.close()
 
@@ -97,13 +97,13 @@ class TestV105DeconstructShip(unittest.TestCase):
         self.assertFalse(self.agent.deconstruct_ship(1))
 
     def test_deconstruct_ship_fails_location_mismatch(self):
-        # Seed a ship in distant SYS-B
+        # Seed a ship in distant SYS_B
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (5, 'Ship-Remote', 'Scout', NULL, 'SYS-B')")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (5, 'Ship-Remote', 'Scout', NULL, 'SYS_B')")
         conn.commit()
         conn.close()
         
-        # Attempt to deconstruct a ship in SYS-B while agent is in SYS-A (Should FAIL!)
+        # Attempt to deconstruct a ship in SYS_B while agent is in SYS_A (Should FAIL!)
         self.assertFalse(self.agent.deconstruct_ship(5))
 
 if __name__ == '__main__':

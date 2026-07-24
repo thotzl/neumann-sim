@@ -19,10 +19,10 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
         init_db.init()
         
         conn = db_config.get_connection()
-        # Seed local system (SYS-A) with a Mind Forge, shipyard, and starting matter depots
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 10000, 2000, 5000, 1000)")
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS-A', 'shipyard', 'active', 1, 100)")
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS-A', 'sem_matrix', 'active', 1, 100)")
+        # Seed local system (SYS_A) with a Mind Forge, shipyard, and starting matter depots
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS_A', 0, 0, 10000, 2000, 5000, 1000)")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS_A', 'shipyard', 'active', 1, 100)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS_A', 'sem_matrix', 'active', 1, 100)")
         
         # Seed disembodied agent
         conn.execute("""
@@ -76,7 +76,7 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
         
         # 4. Build ship from this custom blueprint
         conn = db_config.get_connection()
-        sys_before = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
+        sys_before = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
         # Build cost is dynamically calculated under new 10.5.4 pricing to be 1075 refined_matter
         self.assertEqual(blueprints[0]['stats']['cost'], 1075)
         conn.close()
@@ -87,7 +87,7 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
         conn = db_config.get_connection()
         conn.row_factory = sqlite3.Row
 
-        sys_after = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
+        sys_after = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
         self.assertEqual(sys_after['refined_matter_depot'], sys_before['refined_matter_depot'] - 1075)
         
         ship = conn.execute("SELECT * FROM ships WHERE blueprint_name = 'Mini-Miner'").fetchone()
@@ -106,7 +106,7 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
     def test_legacy_fallback_scout_build(self):
         # Build a ship with a non-existent blueprint name (should fallback gracefully to legacy Scout)
         conn = db_config.get_connection()
-        sys_before = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
+        sys_before = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
         conn.close()
 
         self.assertTrue(self.agent.build_ship(blueprint_name="Scout-Legacy"))
@@ -114,7 +114,7 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
         # Legacy Scout costs 1000 RAW matter (instead of refined)
         conn = db_config.get_connection()
         conn.row_factory = sqlite3.Row
-        sys_after = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
+        sys_after = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
         # Verify standard legacy Scout ship spawned
         ship = conn.execute("SELECT * FROM ships WHERE chassis = 'Scout-Legacy'").fetchone()
         self.assertIsNotNone(ship)

@@ -39,9 +39,9 @@ async function runIndustrialE2E() {
         execSync(`python3 bob_os/build.py ${version} --mission "Industrial Test" --skip-tests`, { stdio: 'inherit' });
 
         // Setup DB: Empty core, some refined matter, and a slightly damaged Tier-2 structure
-        await runSql(dbPath, "UPDATE systems SET extractable_matter_in_core = 0 WHERE name = 'SYS-X0-Y0'");
-        await runSql(dbPath, "INSERT OR REPLACE INTO agents (id, chosen_name, location, refined_matter_inventory, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, active_ship_id) VALUES ('Instance-1', 'Instance-1', 'SYS-X0-Y0', 200, 300, 500, 500, 'active', 1)");
-        await runSql(dbPath, "INSERT INTO infrastructure (id, system_name, type, status, progress_matter, required_matter, health, max_health, level, maintenance_cooldown) VALUES (99, 'SYS-X0-Y0', 'advanced_shipyard', 'active', 0, 1000, 90, 100, 1, 0)");
+        await runSql(dbPath, "UPDATE systems SET extractable_matter_in_core = 0 WHERE name = 'SYS_X0_Y0'");
+        await runSql(dbPath, "INSERT OR REPLACE INTO agents (id, chosen_name, location, refined_matter_inventory, raw_matter_inventory, energy_inventory, matter_storage_capacity, status, active_ship_id) VALUES ('Instance-1', 'Instance-1', 'SYS_X0_Y0', 200, 300, 500, 500, 'active', 1)");
+        await runSql(dbPath, "INSERT INTO infrastructure (id, system_name, type, status, progress_matter, required_matter, health, max_health, level, maintenance_cooldown) VALUES (99, 'SYS_X0_Y0', 'advanced_shipyard', 'active', 0, 1000, 90, 100, 1, 0)");
 
         // Tick 1: Instance-1 repairs the advanced shipyard (needs refined matter) and builds a comms_relay
         console.log("- Tick 1: Instance-1 repariert Tier-2 und baut Tier-1...");
@@ -74,7 +74,7 @@ AKTION:
         console.log("- Validierung der Daten...");
         
         // 1. Verify Core Regen
-        const sys = await getSql(dbPath, "SELECT extractable_matter_in_core FROM systems WHERE name = 'SYS-X0-Y0'");
+        const sys = await getSql(dbPath, "SELECT extractable_matter_in_core FROM systems WHERE name = 'SYS_X0_Y0'");
         if (sys.extractable_matter_in_core <= 0) {
             throw new Error(`Core Regeneration fehlgeschlagen. Wert ist: ${sys.extractable_matter_in_core}`);
         }

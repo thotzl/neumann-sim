@@ -21,8 +21,8 @@ class TestEpic2BuildShip(unittest.TestCase):
         
         init_db.init()
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO systems (name, x, y, raw_matter_depot) VALUES ('SYS-A', 0, 0, 1500)")
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS-A', 'sem_matrix', 'active')")
+        conn.execute("INSERT INTO systems (name, x, y, raw_matter_depot) VALUES ('SYS_A', 0, 0, 1500)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS_A', 'sem_matrix', 'active')")
         conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status) VALUES ('Instance-1', 'Bob', '100', 'matrix', 'active')")
         conn.commit()
         conn.close()
@@ -40,7 +40,7 @@ class TestEpic2BuildShip(unittest.TestCase):
 
     def test_sdk_build_ship_success(self):
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS-A', 'shipyard', 'active', 1, 100)")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS_A', 'shipyard', 'active', 1, 100)")
         conn.commit()
         conn.close()
 
@@ -52,10 +52,10 @@ class TestEpic2BuildShip(unittest.TestCase):
         ships = conn.execute("SELECT * FROM ships").fetchall()
         self.assertEqual(len(ships), 1)
         self.assertEqual(ships[0]['chassis'], 'Scout')
-        self.assertEqual(ships[0]['system_name'], 'SYS-A')
+        self.assertEqual(ships[0]['system_name'], 'SYS_A')
         
         # Check resources
-        sys_data = conn.execute("SELECT raw_matter_depot FROM systems WHERE name='SYS-A'").fetchone()
+        sys_data = conn.execute("SELECT raw_matter_depot FROM systems WHERE name='SYS_A'").fetchone()
         self.assertEqual(sys_data[0], 500) # 1500 - 1000
         conn.close()
 
@@ -63,7 +63,7 @@ class TestEpic2BuildShip(unittest.TestCase):
     @patch('sys.stdout', new_callable=StringIO)
     def test_cli_build_ship(self, mock_stdout):
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS-A', 'shipyard', 'active', 1, 100)")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS_A', 'shipyard', 'active', 1, 100)")
         conn.commit()
         conn.close()
         

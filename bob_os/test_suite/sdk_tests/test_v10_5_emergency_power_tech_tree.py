@@ -18,16 +18,16 @@ class TestV105EmergencyPowerTechTree(unittest.TestCase):
         init_db.init()
         
         conn = db_config.get_connection()
-        # Seed local system (SYS-A) with depleted energy depot (0) and plenty of raw matter
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot, depot_energy_capacity) VALUES ('SYS-A', 0, 0, 10000, 2000, 0, 1000)")
+        # Seed local system (SYS_A) with depleted energy depot (0) and plenty of raw matter
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot, depot_energy_capacity) VALUES ('SYS_A', 0, 0, 10000, 2000, 0, 1000)")
         
         # Seed disembodied matrix host
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health, maintenance_cooldown) VALUES (100, 'SYS-A', 'sem_matrix', 'active', 1, 100, 0)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health, maintenance_cooldown) VALUES (100, 'SYS_A', 'sem_matrix', 'active', 1, 100, 0)")
         
         # Seed physical builder ship (Ship 1) with fabricator module
         conn.execute("""
             INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity, has_fabricator) 
-            VALUES (1, 'Builder-1', 'Scout', NULL, 'SYS-A', 0, 500, 300, 1)
+            VALUES (1, 'Builder-1', 'Scout', NULL, 'SYS_A', 0, 500, 300, 1)
         """)
         
         # Seed agent starting inside sem_matrix
@@ -55,7 +55,7 @@ class TestV105EmergencyPowerTechTree(unittest.TestCase):
         self.assertEqual(agent_data['energy_inventory'], 50) # Emergency floor is 50!
         
         # Verify system depot actually has 0
-        system = system_service.get_system_or_fail(cursor, 'SYS-A')
+        system = system_service.get_system_or_fail(cursor, 'SYS_A')
         self.assertEqual(system['energy_depot'], 0)
         conn.close()
 
@@ -66,11 +66,11 @@ class TestV105EmergencyPowerTechTree(unittest.TestCase):
         # 1. Attempt to build comms_relay (which has maintenance_energy_cost = 3) without active solar_collector (Should FAIL!)
         self.assertFalse(self.agent.build('comms_relay', 300))
         
-        # 2. Add/build an active solar_collector in SYS-A
+        # 2. Add/build an active solar_collector in SYS_A
         conn = db_config.get_connection()
         # Seeding energy so that building costs can be paid
-        conn.execute("UPDATE systems SET energy_depot = 500 WHERE name = 'SYS-A'")
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health, maintenance_cooldown) VALUES (200, 'SYS-A', 'solar_collector', 'active', 1, 100, 0)")
+        conn.execute("UPDATE systems SET energy_depot = 500 WHERE name = 'SYS_A'")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health, maintenance_cooldown) VALUES (200, 'SYS_A', 'solar_collector', 'active', 1, 100, 0)")
         conn.commit()
         conn.close()
         
@@ -80,7 +80,7 @@ class TestV105EmergencyPowerTechTree(unittest.TestCase):
     def test_03_blackout_solar_survival_regen(self):
         # 1. System has 0 energy, total maintenance cost > 0, and there is an active solar collector.
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health, maintenance_cooldown) VALUES (200, 'SYS-A', 'solar_collector', 'active', 1, 100, 0)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health, maintenance_cooldown) VALUES (200, 'SYS_A', 'solar_collector', 'active', 1, 100, 0)")
         conn.commit()
         conn.close()
         
@@ -91,7 +91,7 @@ class TestV105EmergencyPowerTechTree(unittest.TestCase):
         conn = db_config.get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        system = system_service.get_system_or_fail(cursor, 'SYS-A')
+        system = system_service.get_system_or_fail(cursor, 'SYS_A')
         self.assertEqual(system['energy_depot'], 5) # Blackout solar bypass active!
         conn.close()
 

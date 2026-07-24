@@ -22,20 +22,20 @@ class TestV105RSNSReplication(unittest.TestCase):
         
         init_db.init()
         
-        # 1. Seede ein System (SYS-X500-Y1000) an den Koordinaten (500, 1000)
+        # 1. Seede ein System (SYS_X500_Y1000) an den Koordinaten (500, 1000)
         # Dies muss sich im L-Segment des Replikanten als 'X5Y10' niederschlagen!
         conn = db_config.get_connection()
         conn.execute("""
             INSERT OR IGNORE INTO systems 
             (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) 
-            VALUES ('SYS-X500-Y1000', 500, 1000, 10000, 1000, 5000, 1000)
+            VALUES ('SYS_X500_Y1000', 500, 1000, 10000, 1000, 5000, 1000)
         """)
-        conn.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS-X500-Y1000', 'mind_forge', 'active')")
-        conn.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS-X500-Y1000', 'sem_matrix', 'active')")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_X500_Y1000', 'mind_forge', 'active')")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_X500_Y1000', 'sem_matrix', 'active')")
         
         # Seed physical ships: Ship 1 (for Pioneer) and Ship 2 (free host for Clone)
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-Pioneer', 'Scout', 'Instance-1', 'SYS-X500-Y1000', 0, 100, 300)")
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (2, 'FreeShip', 'Scout', NULL, 'SYS-X500-Y1000', 0, 0, 300)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-Pioneer', 'Scout', 'Instance-1', 'SYS_X500_Y1000', 0, 100, 300)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (2, 'FreeShip', 'Scout', NULL, 'SYS_X500_Y1000', 0, 0, 300)")
         
         # Seed starting agent in Ship 1
         conn.execute("""

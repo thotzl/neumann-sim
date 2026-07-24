@@ -41,9 +41,9 @@ async function runIndustrialE2E() {
 
         // 1. Setup Infra
         console.log("- Phase 1: Setup...");
-        await runSql(dbPath, "INSERT INTO infrastructure (system_name, type, status, health, max_health, level, required_matter, progress_matter) VALUES ('SYS-X0-Y0', 'matter_silo', 'active', 100, 100, 1, 400, 0)");
-        await runSql(dbPath, "INSERT INTO infrastructure (system_name, type, status, health, max_health, level, required_matter, progress_matter) VALUES ('SYS-X0-Y0', 'solar_collector', 'active', 100, 100, 1, 400, 0)");
-        await runSql(dbPath, "UPDATE systems SET energy_depot = 500 WHERE name = 'SYS-X0-Y0'");
+        await runSql(dbPath, "INSERT INTO infrastructure (system_name, type, status, health, max_health, level, required_matter, progress_matter) VALUES ('SYS_X0_Y0', 'matter_silo', 'active', 100, 100, 1, 400, 0)");
+        await runSql(dbPath, "INSERT INTO infrastructure (system_name, type, status, health, max_health, level, required_matter, progress_matter) VALUES ('SYS_X0_Y0', 'solar_collector', 'active', 100, 100, 1, 400, 0)");
+        await runSql(dbPath, "UPDATE systems SET energy_depot = 500 WHERE name = 'SYS_X0_Y0'");
 
         // 2. Physics Update 1 (Decay & Regen)
         console.log("- Phase 2: Simulation Tick 1...");
@@ -53,17 +53,17 @@ async function runIndustrialE2E() {
         console.log(`  Health nach 1 Tick: ${row1.health}/100`);
         if (row1.health >= 100) throw new Error("Kein Decay!");
 
-        const sys1 = await getSql(dbPath, "SELECT depot_matter_capacity, energy_depot FROM systems WHERE name='SYS-X0-Y0'");
+        const sys1 = await getSql(dbPath, "SELECT depot_matter_capacity, energy_depot FROM systems WHERE name='SYS_X0_Y0'");
         console.log(`  System: Cap=${sys1.depot_matter_capacity}, Energy=${sys1.energy_depot}`);
         if (sys1.depot_matter_capacity !== 1000) throw new Error("Cap Bonus fehlt!");
         if (sys1.energy_depot <= 500) throw new Error("Keine Energie-Regeneration festgestellt!");
 
         // 3. Blackout Test
         console.log("- Phase 3: Blackout Simulation...");
-        await runSql(dbPath, "UPDATE systems SET energy_depot = 0 WHERE name = 'SYS-X0-Y0'");
+        await runSql(dbPath, "UPDATE systems SET energy_depot = 0 WHERE name = 'SYS_X0_Y0'");
         execSync(`PYTHONPATH=bob_os TEST_DB_PATH=${dbPath} python3 bob_os/core/bin/physics_update.py`);
 
-        const sys2 = await getSql(dbPath, "SELECT depot_matter_capacity FROM systems WHERE name='SYS-X0-Y0'");
+        const sys2 = await getSql(dbPath, "SELECT depot_matter_capacity FROM systems WHERE name='SYS_X0_Y0'");
         console.log(`  Blackout Cap: ${sys2.depot_matter_capacity}`);
         if (sys2.depot_matter_capacity !== 0) throw new Error("Blackout-Deaktivierung fehlgeschlagen!");
 

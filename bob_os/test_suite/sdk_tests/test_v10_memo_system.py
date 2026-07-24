@@ -18,12 +18,12 @@ class TestV10MemoDocsSystem(unittest.TestCase):
         init_db.init()
         
         conn = db_config.get_connection()
-        # Seed local system (SYS-A) and distant system (SYS-B)
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 10000, 100, 100)")
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-B', 300, 400, 5000, 500, 500)")
+        # Seed local system (SYS_A) and distant system (SYS_B)
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS_A', 0, 0, 10000, 100, 100)")
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS_B', 300, 400, 5000, 500, 500)")
         
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-A', 0, 500, 300)")
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (2, 'Ship-2', 'Scout', 'Instance-2', 'SYS-A', 0, 500, 300)") # Both in SYS-A
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_A', 0, 500, 300)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (2, 'Ship-2', 'Scout', 'Instance-2', 'SYS_A', 0, 500, 300)") # Both in SYS_A
         
         conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Pioneer-1', '1', 'ship', 'active', 0, 0, 1)")
         conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) VALUES ('Instance-2', 'Pioneer-2', '2', 'ship', 'active', 0, 0, 2)")
@@ -69,7 +69,7 @@ class TestV10MemoDocsSystem(unittest.TestCase):
         self.assertEqual(len(docs), 1)
         self.assertEqual(docs[0]['title'], title)
         
-        # Agent 2 is also in SYS-A, so they can list/read it too!
+        # Agent 2 is also in SYS_A, so they can list/read it too!
         agent2_docs = self.agent2.docs('list')
         self.assertEqual(len(agent2_docs), 1)
         self.assertEqual(agent2_docs[0]['title'], title)

@@ -37,8 +37,8 @@ class TestV8_8Industrial(unittest.TestCase):
         c.execute("CREATE TABLE messages (sender TEXT, receiver TEXT, content TEXT)")
         c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
         
-        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-1', 'Industrialist', 'SYS-A', ?, ?, 0, 2000, 'active', 0, 0)", (self.start_energy, self.start_matter))
-        c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, x, y) VALUES ('SYS-A', 1000, 100, 1000, 500, 2500, 0, 0)")
+        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-1', 'Industrialist', 'SYS_A', ?, ?, 0, 2000, 'active', 0, 0)", (self.start_energy, self.start_matter))
+        c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, x, y) VALUES ('SYS_A', 1000, 100, 1000, 500, 2500, 0, 0)")
         conn.commit()
         conn.close()
         
@@ -54,8 +54,8 @@ class TestV8_8Industrial(unittest.TestCase):
         
         # 2. Raffinerie und Ressourcen im Depot hinzufügen, Agent auf 0 setzen
         conn = sqlite3.connect(self.test_db)
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS-A', 'matter_refinery', 'active', 1, 100)")
-        conn.execute("UPDATE systems SET raw_matter_depot = 500, energy_depot = 250 WHERE name='SYS-A'")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS_A', 'matter_refinery', 'active', 1, 100)")
+        conn.execute("UPDATE systems SET raw_matter_depot = 500, energy_depot = 250 WHERE name='SYS_A'")
         conn.execute("UPDATE agents SET raw_matter_inventory = 0, energy_inventory = 0 WHERE id='Instance-1'")
         conn.commit()
         conn.close()
@@ -68,7 +68,7 @@ class TestV8_8Industrial(unittest.TestCase):
         conn = sqlite3.connect(self.test_db)
         conn.row_factory = sqlite3.Row
         agent_data = conn.execute("SELECT * FROM agents WHERE id='Instance-1'").fetchone()
-        sys_data = conn.execute("SELECT * FROM systems WHERE name='SYS-A'").fetchone()
+        sys_data = conn.execute("SELECT * FROM systems WHERE name='SYS_A'").fetchone()
         conn.close()
         
         # System Depot sollte leer sein, Output in Inv (da Kapazität 2000 ist, passt alles rein)
@@ -80,7 +80,7 @@ class TestV8_8Industrial(unittest.TestCase):
         
         # 5. Überlauf-Test: Kapazität vollmachen
         conn = sqlite3.connect(self.test_db)
-        conn.execute("UPDATE systems SET raw_matter_depot = 2000, energy_depot = 1000 WHERE name='SYS-A'")
+        conn.execute("UPDATE systems SET raw_matter_depot = 2000, energy_depot = 1000 WHERE name='SYS_A'")
         conn.execute("UPDATE agents SET matter_storage_capacity = 500 WHERE id='Instance-1'")
         conn.commit()
         conn.close()
@@ -92,7 +92,7 @@ class TestV8_8Industrial(unittest.TestCase):
         conn = sqlite3.connect(self.test_db)
         conn.row_factory = sqlite3.Row
         agent_data = conn.execute("SELECT * FROM agents WHERE id='Instance-1'").fetchone()
-        sys_data = conn.execute("SELECT * FROM systems WHERE name='SYS-A'").fetchone()
+        sys_data = conn.execute("SELECT * FROM systems WHERE name='SYS_A'").fetchone()
         conn.close()
         
         self.assertEqual(agent_data['refined_matter_inventory'], 500)
@@ -101,7 +101,7 @@ class TestV8_8Industrial(unittest.TestCase):
     def test_repair_infrastructure(self):
         # 1. Kaputtes Gebäude einfügen
         conn = sqlite3.connect(self.test_db)
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health) VALUES (99, 'SYS-A', 'matter_silo', 'offline', 10, 100)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health) VALUES (99, 'SYS_A', 'matter_silo', 'offline', 10, 100)")
         conn.commit()
         conn.close()
         
@@ -123,7 +123,7 @@ class TestV8_8Industrial(unittest.TestCase):
         self.assertEqual(status['raw_matter_inventory'], self.start_matter) # Inventar unangetastet, da Depot reichte
         self.assertEqual(status['energy_inventory'], self.start_energy) # Energie ebenfalls unangetastet, da Depot reichte
 
-        sys_data = conn.execute("SELECT raw_matter_depot, energy_depot FROM systems WHERE name='SYS-A'").fetchone()
+        sys_data = conn.execute("SELECT raw_matter_depot, energy_depot FROM systems WHERE name='SYS_A'").fetchone()
         self.assertEqual(sys_data[0], 100 - cost_m) # 100 war der Startwert des Depots
         self.assertEqual(sys_data[1], 500 - cost_e) # 500 war Startwert
         conn.close()
@@ -131,8 +131,8 @@ class TestV8_8Industrial(unittest.TestCase):
     def test_repair_infrastructure_empty_depot(self):
         # 1. Kaputtes Gebäude einfügen, Depot leeren
         conn = sqlite3.connect(self.test_db)
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health) VALUES (100, 'SYS-A', 'solar_collector', 'active', 50, 100)")
-        conn.execute("UPDATE systems SET raw_matter_depot = 0, energy_depot = 0 WHERE name='SYS-A'")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health) VALUES (100, 'SYS_A', 'solar_collector', 'active', 50, 100)")
+        conn.execute("UPDATE systems SET raw_matter_depot = 0, energy_depot = 0 WHERE name='SYS_A'")
         conn.commit()
         conn.close()
         
@@ -151,7 +151,7 @@ class TestV8_8Industrial(unittest.TestCase):
         self.assertEqual(status['energy_inventory'], self.start_energy - cost_e)
         
         conn = sqlite3.connect(self.test_db)
-        sys_data = conn.execute("SELECT raw_matter_depot, energy_depot FROM systems WHERE name='SYS-A'").fetchone()
+        sys_data = conn.execute("SELECT raw_matter_depot, energy_depot FROM systems WHERE name='SYS_A'").fetchone()
         self.assertEqual(sys_data[0], 0)
         self.assertEqual(sys_data[1], 0)
         conn.close()
@@ -196,7 +196,7 @@ class TestV8_8Industrial(unittest.TestCase):
         
         # 2. Sat-Link hinzufügen
         conn = sqlite3.connect(self.test_db)
-        conn.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS-A', 'sat_link', 'active')")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_A', 'sat_link', 'active')")
         conn.commit()
         conn.close()
         
@@ -209,8 +209,8 @@ class TestV8_8Industrial(unittest.TestCase):
     def test_comms_relay_range(self):
         conn = sqlite3.connect(self.test_db)
         # Agent weit weg platzieren (Distanz 2000)
-        conn.execute("INSERT INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, matter_generation_per_cycle, energy_generation_per_cycle) VALUES ('SYS-FAR', 2000, 0, 1000, 0, 0, 0, 0, 0, 0)")
-        conn.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Bob-Far', 'Far', 'SYS-FAR', 100, 0, 100, 'active', 2000, 0)")
+        conn.execute("INSERT INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, matter_generation_per_cycle, energy_generation_per_cycle) VALUES ('SYS_FAR', 2000, 0, 1000, 0, 0, 0, 0, 0, 0)")
+        conn.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Bob-Far', 'Far', 'SYS_FAR', 100, 0, 100, 'active', 2000, 0)")
         conn.commit()
         
         # 1. Versuch: Ohne Relais (sollte fehlschlagen, da Distanz 2000 > 1000)
@@ -222,7 +222,7 @@ class TestV8_8Industrial(unittest.TestCase):
         self.assertFalse(success)
         
         # 3. Relais im Sender-System bauen
-        conn.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS-A', 'comms_relay', 'active')")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_A', 'comms_relay', 'active')")
         conn.commit()
         conn.close()
         

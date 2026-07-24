@@ -32,9 +32,9 @@ import sqlite3
 
 db_path = os.environ.get('TEST_DB_PATH', 'test_env_ship_workflow_e2e/_verse/universe.db')
 conn = sqlite3.connect(db_path)
-conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 10000, 1000, 5000, 1000)")
-conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (1, 'SYS-A', 'shipyard', 'active', 1, 100)")
-conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (2, 'SYS-A', 'sem_matrix', 'active', 1, 100)")
+conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS_A', 0, 0, 10000, 1000, 5000, 1000)")
+conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (1, 'SYS_A', 'shipyard', 'active', 1, 100)")
+conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (2, 'SYS_A', 'sem_matrix', 'active', 1, 100)")
 conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Robert', '2', 'matrix', 'active', 0, 0, NULL)")
 conn.commit()
 conn.close()
@@ -125,9 +125,9 @@ AKTION:
     const inspectInput = `
 AKTION:
 [RUN: me inspect(ship_id=1)]
-[RUN: me inspect(system_name="SYS-A")]
+[RUN: me inspect(system_name="SYS_A")]
 `;
-    console.log("  3-Verify. Inspiziere das neue Schiff und Sektor SYS-A depots...");
+    console.log("  3-Verify. Inspiziere das neue Schiff und Sektor SYS_A depots...");
     const feedbackInspect = processActions(inspectInput, absMockDir, "Instance-1", mockState);
     if (!feedbackInspect.includes("logic_core: active") || !feedbackInspect.includes("refined_matter_depot: 4000")) {
         throw new Error("SCHRITT C-VERIFY FAILED: Falsche Gitter-Specs oder Depot-Ressourcen nicht abgezogen! Feedback: " + feedbackInspect);
@@ -149,7 +149,7 @@ AKTION:
     // --- SCHRITT D-VERIFY: PRÜFE ERSTATTETES DEPOT (inspect) ---
     const inspectFinalInput = `
 AKTION:
-[RUN: me inspect(system_name="SYS-A")]
+[RUN: me inspect(system_name="SYS_A")]
 `;
     console.log("  4-Verify. Inspiziere Sektor-Depots nach Rückerstattung...");
     const feedbackInspectFinal = processActions(inspectFinalInput, absMockDir, "Instance-1", mockState);

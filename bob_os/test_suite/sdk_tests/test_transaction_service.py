@@ -38,7 +38,7 @@ class TestTransactionService(unittest.TestCase):
             INSERT INTO agents VALUES ('agent-1', 'agent-1', 100, 50, 100, 300)
         """)
         self.cursor.execute("""
-            INSERT INTO systems VALUES ('SYS-A', 400, 200, 100)
+            INSERT INTO systems VALUES ('SYS_A', 400, 200, 100)
         """)
         self.conn.commit()
 
@@ -47,7 +47,7 @@ class TestTransactionService(unittest.TestCase):
 
     def test_missing_agent_or_system(self):
         # Fehler bei ungültigem Agent oder System
-        res = transaction_service.pay_pipeline_costs(self.cursor, 'invalid-agent', 'SYS-A', 10, 10)
+        res = transaction_service.pay_pipeline_costs(self.cursor, 'invalid-agent', 'SYS_A', 10, 10)
         self.assertFalse(res)
         
         res = transaction_service.pay_pipeline_costs(self.cursor, 'agent-1', 'invalid-sys', 10, 10)
@@ -55,17 +55,17 @@ class TestTransactionService(unittest.TestCase):
 
     def test_insufficient_matter(self):
         # Fehlschlag bei ungenügend Materie
-        res = transaction_service.pay_pipeline_costs(self.cursor, 'agent-1', 'SYS-A', energy_cost=10, matter_cost=600, matter_type="raw_matter")
+        res = transaction_service.pay_pipeline_costs(self.cursor, 'agent-1', 'SYS_A', energy_cost=10, matter_cost=600, matter_type="raw_matter")
         self.assertFalse(res)
 
     def test_insufficient_energy(self):
         # Fehlschlag bei ungenügend Energie
-        res = transaction_service.pay_pipeline_costs(self.cursor, 'agent-1', 'SYS-A', energy_cost=300, matter_cost=10, matter_type="raw_matter")
+        res = transaction_service.pay_pipeline_costs(self.cursor, 'agent-1', 'SYS_A', energy_cost=300, matter_cost=10, matter_type="raw_matter")
         self.assertFalse(res)
 
     def test_cost_splitting_and_db_updates(self):
         # Erfolgreicher Abzug und Splitting
-        res = transaction_service.pay_pipeline_costs(self.cursor, 'agent-1', 'SYS-A', energy_cost=150, matter_cost=450, matter_type="raw_matter")
+        res = transaction_service.pay_pipeline_costs(self.cursor, 'agent-1', 'SYS_A', energy_cost=150, matter_cost=450, matter_type="raw_matter")
         
         self.assertIsNotNone(res)
         self.assertEqual(res["matter_from_depot"], 400)
@@ -79,7 +79,7 @@ class TestTransactionService(unittest.TestCase):
         self.assertEqual(agent["raw_matter_inventory"], 50)
         self.assertEqual(agent["energy_inventory"], 50)
         
-        self.cursor.execute("SELECT raw_matter_depot, energy_depot FROM systems WHERE name='SYS-A'")
+        self.cursor.execute("SELECT raw_matter_depot, energy_depot FROM systems WHERE name='SYS_A'")
         sys_data = self.cursor.fetchone()
         self.assertEqual(sys_data["raw_matter_depot"], 0)
         self.assertEqual(sys_data["energy_depot"], 0)

@@ -15,7 +15,7 @@ const configPath = path.join(vDir, 'config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 config.agents.push({
     id: "Instance-2",
-    location: "SYS-X0-Y0",
+    location: "SYS_X0_Y0",
     system_prompt: "Receiver",
     chosen_name: "Bob-2"
 });

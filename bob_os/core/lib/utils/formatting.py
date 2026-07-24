@@ -141,7 +141,7 @@ def get_ship_display_name(ship_row):
 
 def get_system_display_name(system_row):
     """
-    Formatiert den Sektornamen kollisionsfrei (z.B. "'HomeBase' (ID: SYS-X0-Y0)" oder einfach "SYS-X0-Y0").
+    Formatiert den Sektornamen kollisionsfrei (z.B. "'HomeBase' (ID: SYS_X0_Y0)" oder einfach "SYS_X0_Y0").
     """
     if not system_row:
         return "Unknown Sector"

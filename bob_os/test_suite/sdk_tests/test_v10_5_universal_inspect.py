@@ -18,14 +18,14 @@ class TestV105UniversalInspect(unittest.TestCase):
         init_db.init()
         
         conn = db_config.get_connection()
-        # Seed local system (SYS-A) with shipyard and matrix
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 10000, 1000, 5000, 1000)")
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS-A', 'shipyard', 'active', 1, 100)")
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS-A', 'sem_matrix', 'active', 1, 100)")
+        # Seed local system (SYS_A) with shipyard and matrix
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS_A', 0, 0, 10000, 1000, 5000, 1000)")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS_A', 'shipyard', 'active', 1, 100)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS_A', 'sem_matrix', 'active', 1, 100)")
         
-        # Seed distant system (SYS-B) with geology and a logged document
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS-B', 500, 500, 4500, 50, 0, 0)")
-        conn.execute("INSERT INTO docs (id, author_id, system_name, title, content) VALUES (1, 'Instance-2', 'SYS-B', 'Sektor-Tagebuch', 'Bohrversuch war erfolgreich.')")
+        # Seed distant system (SYS_B) with geology and a logged document
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS_B', 500, 500, 4500, 50, 0, 0)")
+        conn.execute("INSERT INTO docs (id, author_id, system_name, title, content) VALUES (1, 'Instance-2', 'SYS_B', 'Sektor-Tagebuch', 'Bohrversuch war erfolgreich.')")
         
         # Seed disembodied agent
         conn.execute("""
@@ -70,7 +70,7 @@ class TestV105UniversalInspect(unittest.TestCase):
     def test_inspect_structure_specifications(self):
         # 1. Seed a custom under-construction silo with 150/400 matter progress
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, progress_matter, required_matter, health, level) VALUES (5, 'SYS-A', 'matter_silo', 'construction', 150, 400, 100, 1)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, progress_matter, required_matter, health, level) VALUES (5, 'SYS_A', 'matter_silo', 'construction', 150, 400, 100, 1)")
         conn.commit()
         conn.close()
         
@@ -87,17 +87,17 @@ class TestV105UniversalInspect(unittest.TestCase):
         self.assertEqual(infra_data['specifications']['matter_capacity_bonus'], 1000) # 1000 * Lvl 1
 
     def test_inspect_sector_espionage_locks(self):
-        # 1. Try to inspect distant SYS-B without any antenna relay (Should be BLOCKED!)
-        self.assertFalse(self.agent.inspect(system_name="SYS-B"))
+        # 1. Try to inspect distant SYS_B without any antenna relay (Should be BLOCKED!)
+        self.assertFalse(self.agent.inspect(system_name="SYS_B"))
         
-        # 2. Seed a comms_relay in SYS-A to enable range extension
+        # 2. Seed a comms_relay in SYS_A to enable range extension
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS-A', 'comms_relay', 'active', 1, 100)")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS_A', 'comms_relay', 'active', 1, 100)")
         conn.commit()
         conn.close()
         
-        # 3. Try to inspect SYS-B again (Should now SUCCEED!)
-        sys_data = self.agent.inspect(system_name="SYS-B")
+        # 3. Try to inspect SYS_B again (Should now SUCCEED!)
+        sys_data = self.agent.inspect(system_name="SYS_B")
         self.assertIsNotNone(sys_data)
         self.assertEqual(sys_dict := sys_data, sys_data)
         self.assertEqual(sys_dict['extractable_matter_in_core'], 4500)

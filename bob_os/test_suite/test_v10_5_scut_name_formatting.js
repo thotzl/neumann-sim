@@ -38,10 +38,10 @@ c.execute("""
         rowid INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT, receiver TEXT, content TEXT
     )
 """)
-c.execute("INSERT INTO agents (id, chosen_name, location, status) VALUES ('Instance-1', 'Robert', 'SYS-A', 'active')")
-c.execute("INSERT INTO agents (id, chosen_name, location, status) VALUES ('Instance-2', 'Xyla', 'SYS-A', 'active')")
-c.execute("INSERT INTO agents (id, chosen_name, location, status) VALUES ('Instance-3', 'Unnamed', 'SYS-A', 'active')")
-c.execute("INSERT INTO systems (name, x, y) VALUES ('SYS-A', 0, 0)")
+c.execute("INSERT INTO agents (id, chosen_name, location, status) VALUES ('Instance-1', 'Robert', 'SYS_A', 'active')")
+c.execute("INSERT INTO agents (id, chosen_name, location, status) VALUES ('Instance-2', 'Xyla', 'SYS_A', 'active')")
+c.execute("INSERT INTO agents (id, chosen_name, location, status) VALUES ('Instance-3', 'Unnamed', 'SYS_A', 'active')")
+c.execute("INSERT INTO systems (name, x, y) VALUES ('SYS_A', 0, 0)")
 conn.commit()
 conn.close()`;
 
@@ -65,9 +65,9 @@ function runVerification() {
     const mockState = {
         round: 1,
         agents: [
-            { id: "Instance-1", location: "SYS-A", alive: true },
-            { id: "Instance-2", location: "SYS-A", alive: true },
-            { id: "Instance-3", location: "SYS-A", alive: true }
+            { id: "Instance-1", location: "SYS_A", alive: true },
+            { id: "Instance-2", location: "SYS_A", alive: true },
+            { id: "Instance-3", location: "SYS_A", alive: true }
         ],
         global_inbox: {
             "Instance-1": [

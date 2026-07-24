@@ -18,19 +18,19 @@ class TestV10Task3Dashboard(unittest.TestCase):
         init_db.init()
         
         conn = db_config.get_connection()
-        # Seed two systems: SYS-A (local) and SYS-B (distant)
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 10000, 100, 100)")
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS-B', 300, 400, 5000, 999, 999)") # x=300, y=400 (distance = 500)
+        # Seed two systems: SYS_A (local) and SYS_B (distant)
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS_A', 0, 0, 10000, 100, 100)")
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS_B', 300, 400, 5000, 999, 999)") # x=300, y=400 (distance = 500)
         
-        # Pioneer ship in SYS-A (Säule 1)
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-A', 0, 500, 300)")
-        # Distant ship in SYS-B (Säule 1)
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (2, 'Ship-2', 'Scout', 'Instance-2', 'SYS-B', 0, 500, 300)")
+        # Pioneer ship in SYS_A (Säule 1)
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_A', 0, 500, 300)")
+        # Distant ship in SYS_B (Säule 1)
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (2, 'Ship-2', 'Scout', 'Instance-2', 'SYS_B', 0, 500, 300)")
         
         # Local matrix
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS-A', 'sem_matrix', 'active')")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS_A', 'sem_matrix', 'active')")
         # Distant matrix
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (101, 'SYS-B', 'sem_matrix', 'active')")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (101, 'SYS_B', 'sem_matrix', 'active')")
 
         # Agents
         conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id, last_seen_event_id) VALUES ('Instance-1', 'Pioneer-1', '1', 'ship', 'active', 0, 0, 1, 0)")
@@ -49,7 +49,7 @@ class TestV10Task3Dashboard(unittest.TestCase):
         
         # 1. Lokales System hat volle Sichtbarkeit
         local = dashboard['lokales_system']
-        self.assertEqual(local['name'], 'SYS-A')
+        self.assertEqual(local['name'], 'SYS_A')
         self.assertEqual(local['depots']['raw_matter'], 100)
         self.assertEqual(len(local['infrastructure']), 1)
         self.assertEqual(local['infrastructure'][0]['id'], 100)
@@ -59,7 +59,7 @@ class TestV10Task3Dashboard(unittest.TestCase):
         # 2. Entfernter Sektor hat nur Radar (Name, Koordinaten, Distanz)
         radar_sys = dashboard['radar_entfernter_sektoren']
         self.assertEqual(len(radar_sys), 1)
-        self.assertEqual(radar_sys[0]['name'], 'SYS-B')
+        self.assertEqual(radar_sys[0]['name'], 'SYS_B')
         self.assertEqual(radar_sys[0]['distance'], 500) # Calc_distance(0,0, 300,400) = 500
         self.assertNotIn('depots', radar_sys[0]) # Fog of War: Keine Depots sichtbar!
         
@@ -67,13 +67,13 @@ class TestV10Task3Dashboard(unittest.TestCase):
         radar_agents = dashboard['radar_entfernter_signaturen']
         self.assertEqual(len(radar_agents), 1)
         self.assertEqual(radar_agents[0]['id'], 'Instance-2')
-        self.assertEqual(radar_agents[0]['location'], 'SYS-B')
+        self.assertEqual(radar_agents[0]['location'], 'SYS_B')
         self.assertNotIn('host_id', radar_agents[0]) # Fog of War: Keine Host-Details!
 
     def test_unread_observations_timeline(self):
         # Trigger an event from another agent in local system
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'MINING', 'Instance-2 hat abgebaut.')")
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS_A', 'Instance-2', 'MINING', 'Instance-2 hat abgebaut.')")
         conn.commit()
         conn.close()
         
@@ -92,7 +92,7 @@ class TestV10Task3Dashboard(unittest.TestCase):
         # 1. Python-SDK-Zugriff (für automatisierte Hintergrund-Skripte) MUSS funktionieren
         dashboard = self.agent.dashboard()
         self.assertIsNotNone(dashboard)
-        self.assertEqual(dashboard['lokales_system']['name'], 'SYS-A')
+        self.assertEqual(dashboard['lokales_system']['name'], 'SYS_A')
         
         # 2. CLI-Prompt-Befehle (über den funktionalen Parser) müssen als internal markiert sein (Sperre für Bobs)
         from bob_os.core.lib import functional_parser
@@ -101,13 +101,13 @@ class TestV10Task3Dashboard(unittest.TestCase):
         self.assertTrue(meta.get("internal"))
 
     def test_visual_events_anonymization_and_aggregation(self):
-        # 1. Seede 5 Events von Instance-2 im Sektor SYS-A (3x Mining, 2x Deposit)
+        # 1. Seede 5 Events von Instance-2 im Sektor SYS_A (3x Mining, 2x Deposit)
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'MINING', 'Instance-2 hat 100 abgebaut.')")
-        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'MINING', 'Instance-2 hat 250 abgebaut.')")
-        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'MINING', 'Instance-2 hat 50 abgebaut.')")
-        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'DEPOSIT', 'Instance-2 hat Materie deponiert.')")
-        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'DEPOSIT', 'Instance-2 hat Energie deponiert.')")
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS_A', 'Instance-2', 'MINING', 'Instance-2 hat 100 abgebaut.')")
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS_A', 'Instance-2', 'MINING', 'Instance-2 hat 250 abgebaut.')")
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS_A', 'Instance-2', 'MINING', 'Instance-2 hat 50 abgebaut.')")
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS_A', 'Instance-2', 'DEPOSIT', 'Instance-2 hat Materie deponiert.')")
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS_A', 'Instance-2', 'DEPOSIT', 'Instance-2 hat Energie deponiert.')")
         conn.commit()
         conn.close()
 

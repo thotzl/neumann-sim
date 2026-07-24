@@ -25,8 +25,8 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         with open(TEST_POP, 'w') as f: json.dump({"version": 1, "agents": []}, f)
         init_db.init()
         conn = db_config.get_connection()
-        conn.execute("INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS-X0-Y0', 10000, 10000)")
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-X0-Y0', 0, 500, 300)")
+        conn.execute("INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS_X0_Y0', 10000, 10000)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_X0_Y0', 0, 500, 300)")
         conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Pioneer', '1', 'ship', 'active', 0, 0, 1)")
         conn.commit()
         conn.close()
@@ -39,20 +39,20 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
     def test_01_transit_initiation(self):
-        # Reise von SYS-X0-Y0 nach SYS-X400-Y400
+        # Reise von SYS_X0_Y0 nach SYS_X400_Y400
         conn = db_config.get_connection()
-        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core) VALUES ('SYS-X400-Y400', 400, 400, 5000)")
+        conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core) VALUES ('SYS_X400_Y400', 400, 400, 5000)")
         conn.commit()
         conn.close()
 
         # Nutze die SDK!
-        success = self.agent.move('SYS-X400-Y400')
+        success = self.agent.move('SYS_X400_Y400')
         self.assertTrue(success)
         
         conn = db_config.get_connection()
         res = conn.execute("SELECT status, target_system FROM agents WHERE id='Instance-1'").fetchone()
         self.assertEqual(res['status'], 'traveling')
-        self.assertEqual(res['target_system'], 'SYS-X400-Y400')
+        self.assertEqual(res['target_system'], 'SYS_X400_Y400')
         conn.close()
 
     def test_02_blocked_actions_during_transit(self):
@@ -72,7 +72,7 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         from core.lib import agent_service
         res = agent_service.get_agent_or_fail(cursor, 'Instance-1')
         self.assertEqual(res['status'], 'active')
-        self.assertEqual(res['location'], 'SYS-X400-Y400')
+        self.assertEqual(res['location'], 'SYS_X400_Y400')
         conn.close()
 
 if __name__ == '__main__':

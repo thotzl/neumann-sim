@@ -152,7 +152,7 @@ def seed():
         for idx, agent_cfg in enumerate(agents_data):
             agent_id = agent_cfg.get('id', f'Instance-{idx+1}')
             chosen_name = agent_cfg.get('chosen_name', agent_id)
-            location = agent_cfg.get('location', 'SYS-X0-Y0')
+            location = agent_cfg.get('location', 'SYS_X0_Y0')
             prompt = agent_cfg.get('system_prompt', '')
             
             # Stelle sicher, dass das Start-System existiert

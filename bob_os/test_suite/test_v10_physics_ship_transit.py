@@ -18,12 +18,12 @@ class TestPhysicsShipTransit(unittest.TestCase):
         conn = sqlite3.connect(self.db_path)
         
         # Setup Start & Ziel
-        conn.execute("INSERT INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS-START', 0, 0, 1000, 1000)")
-        conn.execute("INSERT INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS-ZIEL', 1000, 0, 1000, 1000)")
+        conn.execute("INSERT INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS_START', 0, 0, 1000, 1000)")
+        conn.execute("INSERT INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS_ZIEL', 1000, 0, 1000, 1000)")
         
         # Setup Agent & Schiff
-        conn.execute("INSERT INTO agents (id, chosen_name, location, status, active_ship_id, target_system, target_x, target_y, origin_x, origin_y, transit_ticks_total, transit_ticks_passed, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity) VALUES ('Bob-1', 'Bob-1', 'SYS-START', 'traveling', 99, 'SYS-ZIEL', 1000, 0, 0, 0, 1, 0, 500, 0, 0, 0)")
-        conn.execute("INSERT INTO ships (id, name, chassis, system_name) VALUES (99, 'MyShip', 'Scout', 'SYS-START')")
+        conn.execute("INSERT INTO agents (id, chosen_name, location, status, active_ship_id, target_system, target_x, target_y, origin_x, origin_y, transit_ticks_total, transit_ticks_passed, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity) VALUES ('Bob-1', 'Bob-1', 'SYS_START', 'traveling', 99, 'SYS_ZIEL', 1000, 0, 0, 0, 1, 0, 500, 0, 0, 0)")
+        conn.execute("INSERT INTO ships (id, name, chassis, system_name) VALUES (99, 'MyShip', 'Scout', 'SYS_START')")
         
         conn.commit()
         conn.close()
@@ -43,10 +43,10 @@ class TestPhysicsShipTransit(unittest.TestCase):
         ship = conn.execute("SELECT system_name FROM ships WHERE id=99").fetchone()
         
         self.assertEqual(agent['status'], 'active')
-        self.assertEqual(agent['location'], 'SYS-ZIEL')
+        self.assertEqual(agent['location'], 'SYS_ZIEL')
         
         # This is the fix we just applied
-        self.assertEqual(ship['system_name'], 'SYS-ZIEL')
+        self.assertEqual(ship['system_name'], 'SYS_ZIEL')
         
         conn.close()
 

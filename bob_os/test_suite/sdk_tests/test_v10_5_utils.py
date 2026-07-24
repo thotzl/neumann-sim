@@ -161,12 +161,12 @@ class TestV105Utils(unittest.TestCase):
 
     def test_get_system_display_name(self):
         # 1. Sektor mit vergebenem Namen
-        system_row = {"name": "SYS-A", "display_name": "HomeBase"}
-        self.assertEqual(formatting.get_system_display_name(system_row), "'HomeBase' (ID: SYS-A)")
+        system_row = {"name": "SYS_A", "display_name": "HomeBase"}
+        self.assertEqual(formatting.get_system_display_name(system_row), "'HomeBase' (ID: SYS_A)")
         
         # 2. Unbenannter Sektor / Standardname
-        system_default = {"name": "SYS-A", "display_name": None}
-        self.assertEqual(formatting.get_system_display_name(system_default), "SYS-A")
+        system_default = {"name": "SYS_A", "display_name": None}
+        self.assertEqual(formatting.get_system_display_name(system_default), "SYS_A")
 
 if __name__ == '__main__':
     unittest.main()

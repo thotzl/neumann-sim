@@ -42,7 +42,7 @@ class Sensors:
         angle = random.uniform(0, 360)
         
         snap_x, snap_y = physics_service.calculate_scan_coordinates(system['x'], system['y'], dist, angle, grid_size)
-        sys_id = f"SYS-X{snap_x}-Y{snap_y}"
+        sys_id = f"SYS_X{snap_x}_Y{snap_y}"
 
         try:
             core_val = random.randint(50000, 500000)

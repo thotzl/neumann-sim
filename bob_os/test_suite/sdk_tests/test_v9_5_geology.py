@@ -43,28 +43,28 @@ class TestGeologicalRegen(unittest.TestCase):
     def test_core_regenerates_matter(self):
         conn = sqlite3.connect(self.test_db)
         # Empty core
-        conn.execute("INSERT INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS-A', 0, 1000)")
+        conn.execute("INSERT INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS_A', 0, 1000)")
         conn.commit()
         
         physics_update.update()
         
-        sys = conn.execute("SELECT extractable_matter_in_core FROM systems WHERE name='SYS-A'").fetchone()
+        sys = conn.execute("SELECT extractable_matter_in_core FROM systems WHERE name='SYS_A'").fetchone()
         self.assertEqual(sys[0], 5) # Default 5 regen
         
         physics_update.update()
-        sys = conn.execute("SELECT extractable_matter_in_core FROM systems WHERE name='SYS-A'").fetchone()
+        sys = conn.execute("SELECT extractable_matter_in_core FROM systems WHERE name='SYS_A'").fetchone()
         self.assertEqual(sys[0], 10) 
         conn.close()
 
     def test_core_regen_caps_at_max(self):
         conn = sqlite3.connect(self.test_db)
         # Almost full core
-        conn.execute("INSERT INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS-A', 998, 1000)")
+        conn.execute("INSERT INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS_A', 998, 1000)")
         conn.commit()
         
         physics_update.update()
         
-        sys = conn.execute("SELECT extractable_matter_in_core FROM systems WHERE name='SYS-A'").fetchone()
+        sys = conn.execute("SELECT extractable_matter_in_core FROM systems WHERE name='SYS_A'").fetchone()
         self.assertEqual(sys[0], 1000) # Capped at 1000, not 1003
         conn.close()
 

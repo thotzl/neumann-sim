@@ -25,8 +25,8 @@ class TestBobOS_v3_Naming(unittest.TestCase):
         with open(TEST_POP, 'w') as f: json.dump({"version": 1, "agents": []}, f)
         init_db.init()
         conn = db_config.get_connection()
-        conn.execute("INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS-X0-Y0', 10000, 10000)")
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-X0-Y0', 0, 500, 300)")
+        conn.execute("INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, max_extractable_matter) VALUES ('SYS_X0_Y0', 10000, 10000)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_X0_Y0', 0, 500, 300)")
         conn.execute("INSERT OR REPLACE INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Pioneer', '1', 'ship', 'active', 0, 0, 1)")
         conn.commit()
         conn.close()
@@ -41,7 +41,7 @@ class TestBobOS_v3_Naming(unittest.TestCase):
     def test_01_rename_success(self):
         self.agent.rename_system('Heimat')
         conn = db_config.get_connection()
-        sys_name = conn.execute("SELECT display_name FROM systems WHERE name='SYS-X0-Y0'").fetchone()[0]
+        sys_name = conn.execute("SELECT display_name FROM systems WHERE name='SYS_X0_Y0'").fetchone()[0]
         self.assertEqual(sys_name, 'Heimat')
         conn.close()
 

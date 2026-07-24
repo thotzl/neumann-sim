@@ -24,13 +24,13 @@ class TestSystemService(unittest.TestCase):
         
         # Seed Test-Daten
         self.cursor.execute("""
-            INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS-A', 'shipyard', 'active')
+            INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_A', 'shipyard', 'active')
         """)
         self.cursor.execute("""
-            INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS-A', 'matter_refinery', 'construction')
+            INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_A', 'matter_refinery', 'construction')
         """)
         self.cursor.execute("""
-            INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS-B', 'comms_relay', 'active')
+            INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_B', 'comms_relay', 'active')
         """)
         self.conn.commit()
 
@@ -38,26 +38,26 @@ class TestSystemService(unittest.TestCase):
         self.conn.close()
 
     def test_has_active_infrastructure_single_active(self):
-        # Shipyard ist aktiv in SYS-A
-        res = system_service.has_active_infrastructure(self.cursor, 'SYS-A', 'shipyard')
+        # Shipyard ist aktiv in SYS_A
+        res = system_service.has_active_infrastructure(self.cursor, 'SYS_A', 'shipyard')
         self.assertTrue(res)
 
     def test_has_active_infrastructure_single_construction(self):
-        # Refinery ist in construction in SYS-A, also nicht aktiv
-        res = system_service.has_active_infrastructure(self.cursor, 'SYS-A', 'matter_refinery')
+        # Refinery ist in construction in SYS_A, also nicht aktiv
+        res = system_service.has_active_infrastructure(self.cursor, 'SYS_A', 'matter_refinery')
         self.assertFalse(res)
 
     def test_has_active_infrastructure_missing(self):
-        # Comms relay existiert nicht in SYS-A
-        res = system_service.has_active_infrastructure(self.cursor, 'SYS-A', 'comms_relay')
+        # Comms relay existiert nicht in SYS_A
+        res = system_service.has_active_infrastructure(self.cursor, 'SYS_A', 'comms_relay')
         self.assertFalse(res)
 
     def test_has_active_infrastructure_multiple_types(self):
         # Prüfe mehrere Typen gleichzeitig (z.B. shipyard oder advanced_shipyard)
-        res = system_service.has_active_infrastructure(self.cursor, 'SYS-A', ('advanced_shipyard', 'shipyard'))
+        res = system_service.has_active_infrastructure(self.cursor, 'SYS_A', ('advanced_shipyard', 'shipyard'))
         self.assertTrue(res)
         
-        res = system_service.has_active_infrastructure(self.cursor, 'SYS-A', ('advanced_shipyard', 'sat_link'))
+        res = system_service.has_active_infrastructure(self.cursor, 'SYS_A', ('advanced_shipyard', 'sat_link'))
         self.assertFalse(res)
 
 if __name__ == '__main__':

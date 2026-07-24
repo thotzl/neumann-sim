@@ -64,15 +64,15 @@ class TestV105RenameShip(unittest.TestCase):
         """)
 
         # Seed data
-        conn.execute("INSERT INTO agents (id, chosen_name, location, status, host_type, host_id, active_ship_id) VALUES ('Instance-1', 'Robert', 'SYS-A', 'active', 'ship', '1', 1)")
-        conn.execute("INSERT INTO systems (name, x, y) VALUES ('SYS-A', 0, 0)")
-        conn.execute("INSERT INTO systems (name, x, y) VALUES ('SYS-B', 1000, 1000)")
+        conn.execute("INSERT INTO agents (id, chosen_name, location, status, host_type, host_id, active_ship_id) VALUES ('Instance-1', 'Robert', 'SYS_A', 'active', 'ship', '1', 1)")
+        conn.execute("INSERT INTO systems (name, x, y) VALUES ('SYS_A', 0, 0)")
+        conn.execute("INSERT INTO systems (name, x, y) VALUES ('SYS_B', 1000, 1000)")
         
-        # Schiff 1 (SYS-A, Robert's Schiff)
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, mass, max_speed, thrust, energy_capacity, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-A', 100, 300, 500, 500, 300)")
+        # Schiff 1 (SYS_A, Robert's Schiff)
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, mass, max_speed, thrust, energy_capacity, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_A', 100, 300, 500, 500, 300)")
         
-        # Schiff 2 (SYS-B, Außer Sektor-Reichweite)
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, mass, max_speed, thrust, energy_capacity, matter_storage_capacity) VALUES (2, 'Ship-2', 'Miner', NULL, 'SYS-B', 100, 300, 500, 500, 300)")
+        # Schiff 2 (SYS_B, Außer Sektor-Reichweite)
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, mass, max_speed, thrust, energy_capacity, matter_storage_capacity) VALUES (2, 'Ship-2', 'Miner', NULL, 'SYS_B', 100, 300, 500, 500, 300)")
 
         conn.commit()
         conn.close()
@@ -90,7 +90,7 @@ class TestV105RenameShip(unittest.TestCase):
         if 'TEST_POP_PATH' in os.environ: del os.environ['TEST_POP_PATH']
 
     def test_rename_ship_success(self):
-        # Happy Path: Umbenennung im eigenen Sektor (SYS-A)
+        # Happy Path: Umbenennung im eigenen Sektor (SYS_A)
         self.assertTrue(self.agent.rename_ship(ship_id=1, new_name="SovereignPrime"))
         
         # Datenbank-Verifikation
@@ -100,7 +100,7 @@ class TestV105RenameShip(unittest.TestCase):
         conn.close()
 
     def test_rename_ship_different_sector_fails(self):
-        # Schiff 2 befindet sich in SYS-B, wir sind in SYS-A -> Muss abgewiesen werden!
+        # Schiff 2 befindet sich in SYS_B, wir sind in SYS_A -> Muss abgewiesen werden!
         self.assertFalse(self.agent.rename_ship(ship_id=2, new_name="HaulerAlpha"))
         
         # Name darf sich nicht geändert haben

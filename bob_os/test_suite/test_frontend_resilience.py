@@ -17,10 +17,10 @@ base_state = {
     "last_agent": "Instance-1",
     "timestamp": int(time.time()),
     "systems": [
-        {"name": "SYS-X0-Y0", "display_name": "Home", "x": 0, "y": 0, "extractable_matter_in_core": 5000, "energy_rate": 10, "infra": []}
+        {"name": "SYS_X0_Y0", "display_name": "Home", "x": 0, "y": 0, "extractable_matter_in_core": 5000, "energy_rate": 10, "infra": []}
     ],
     "agents": [
-        {"id": "Instance-1", "chosen_name": "Pioneer", "location": "SYS-X0-Y0", "raw_matter_inventory": 50, "energy_inventory": 120, "matter_storage_capacity": 100, "status": "active", "last_manifestation": "Stable state."}
+        {"id": "Instance-1", "chosen_name": "Pioneer", "location": "SYS_X0_Y0", "raw_matter_inventory": 50, "energy_inventory": 120, "matter_storage_capacity": 100, "status": "active", "last_manifestation": "Stable state."}
     ],
     "events": []
 }
@@ -41,8 +41,8 @@ def write_corrupt(path='experiments/v48/_verse/world_state.json'):
 # 3. System Discovery & Movement (v3.0 coordinates)
 s2 = base_state.copy()
 s2["tick"] = 44
-s2["systems"].append({"name": "SYS-X500Y500", "display_name": "New World", "x": 500, "y": 500, "extractable_matter_in_core": 3000, "energy_rate": 5, "infra": []})
-s2["agents"][0]["location"] = "SYS-X500Y500"
+s2["systems"].append({"name": "SYS_X500Y500", "display_name": "New World", "x": 500, "y": 500, "extractable_matter_in_core": 3000, "energy_rate": 5, "infra": []})
+s2["agents"][0]["location"] = "SYS_X500Y500"
 s2["agents"][0]["last_manifestation"] = "Traveling to New World."
 
 if __name__ == "__main__":

@@ -26,8 +26,8 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         c.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1, maintenance_cooldown INTEGER DEFAULT 0)")
         c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
 
-        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'SYS-X0-Y0', 500, 0, 300, 'active', 0, 0, 1)")
-        c.execute("INSERT INTO systems (name, extractable_matter_in_core, depot_matter_capacity, x, y) VALUES ('SYS-X0-Y0', 10000, 1000, 0, 0)")
+        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'SYS_X0_Y0', 500, 0, 300, 'active', 0, 0, 1)")
+        c.execute("INSERT INTO systems (name, extractable_matter_in_core, depot_matter_capacity, x, y) VALUES ('SYS_X0_Y0', 10000, 1000, 0, 0)")
         conn.commit()
         conn.close()
         self.agent = bob_sdk.Agent()
@@ -44,7 +44,7 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         start_energy = 500
         mine_cost = self.rules['tool_costs']['mine']['energy_cost']
         
-        self.assertEqual(res['location'], 'SYS-X0-Y0')
+        self.assertEqual(res['location'], 'SYS_X0_Y0')
         self.assertEqual(res['energy_inventory'], start_energy - mine_cost)
         self.assertEqual(res['raw_matter_inventory'], 250)
         conn.close()
@@ -60,7 +60,7 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         
         conn = sqlite3.connect(self.test_db)
         conn.row_factory = sqlite3.Row
-        infra = conn.execute("SELECT progress_matter, status FROM infrastructure WHERE system_name='SYS-X0-Y0' AND type='matter_silo'").fetchone()
+        infra = conn.execute("SELECT progress_matter, status FROM infrastructure WHERE system_name='SYS_X0_Y0' AND type='matter_silo'").fetchone()
         self.assertIsNotNone(infra)
         self.assertEqual(infra['progress_matter'], 100)
         self.assertEqual(infra['status'], 'construction')
@@ -71,14 +71,14 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         
         conn = sqlite3.connect(self.test_db)
         conn.row_factory = sqlite3.Row
-        infra_done = conn.execute("SELECT progress_matter, status FROM infrastructure WHERE system_name='SYS-X0-Y0' AND type='matter_silo'").fetchone()
+        infra_done = conn.execute("SELECT progress_matter, status FROM infrastructure WHERE system_name='SYS_X0_Y0' AND type='matter_silo'").fetchone()
         self.assertEqual(infra_done['status'], 'active')
         self.assertEqual(infra_done['progress_matter'], 0)
         conn.close()
 
     def test_04_deconstruct_in_grid(self):
         conn = sqlite3.connect(self.test_db)
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level) VALUES (2, 'SYS-X0-Y0', 'matter_silo', 'active', 1)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level) VALUES (2, 'SYS_X0_Y0', 'matter_silo', 'active', 1)")
         conn.commit()
         conn.close()
         
@@ -86,7 +86,7 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         
         conn = sqlite3.connect(self.test_db)
         conn.row_factory = sqlite3.Row
-        sys_data = conn.execute("SELECT raw_matter_depot FROM systems WHERE name='SYS-X0-Y0'").fetchone()
+        sys_data = conn.execute("SELECT raw_matter_depot FROM systems WHERE name='SYS_X0_Y0'").fetchone()
         self.assertEqual(sys_data['raw_matter_depot'], 300) # 75% of 400
         conn.close()
 

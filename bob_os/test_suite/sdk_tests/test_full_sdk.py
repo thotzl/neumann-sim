@@ -24,9 +24,9 @@ class TestFullSDK(unittest.TestCase):
         c.execute("CREATE TABLE messages (sender TEXT, receiver TEXT, content TEXT)")
         c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
         
-        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-1', 'Pioneer', 'SYS-A', 100, 50, 0, 300, 'active', 0, 0)")
-        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-2', 'Klon', 'SYS-A', 50, 0, 0, 100, 'active', 0, 0)")
-        c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, x, y) VALUES ('SYS-A', 1000, 100, 2000, 500, 2500, 0, 0)")
+        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-1', 'Pioneer', 'SYS_A', 100, 50, 0, 300, 'active', 0, 0)")
+        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-2', 'Klon', 'SYS_A', 50, 0, 0, 100, 'active', 0, 0)")
+        c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, x, y) VALUES ('SYS_A', 1000, 100, 2000, 500, 2500, 0, 0)")
         conn.commit()
         conn.close()
         self.agent = bob_sdk.Agent()
@@ -52,7 +52,7 @@ class TestFullSDK(unittest.TestCase):
 
     def test_deposit_no_silo_fails(self):
         conn = db_config.get_connection()
-        conn.execute("UPDATE systems SET depot_matter_capacity = 0 WHERE name = 'SYS-A'")
+        conn.execute("UPDATE systems SET depot_matter_capacity = 0 WHERE name = 'SYS_A'")
         conn.commit()
         conn.close()
         
@@ -79,14 +79,14 @@ class TestFullSDK(unittest.TestCase):
         self.assertEqual(status['refined_matter_inventory'], 0)
         
         conn = db_config.get_connection()
-        sys_data = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS-A'").fetchone()
+        sys_data = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
         self.assertEqual(sys_data['refined_matter_depot'], 50)
         conn.close()
 
     def test_withdraw_refined_matter(self):
         # Lege etwas refined matter in das System-Depot
         conn = db_config.get_connection()
-        conn.execute("UPDATE systems SET refined_matter_depot = 100 WHERE name = 'SYS-A'")
+        conn.execute("UPDATE systems SET refined_matter_depot = 100 WHERE name = 'SYS_A'")
         conn.commit()
         conn.close()
         

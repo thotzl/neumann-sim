@@ -42,9 +42,9 @@ import sqlite3
 db_path = os.environ.get('TEST_DB_PATH', 'test_env_staged_ship/_verse/universe.db')
 conn = sqlite3.connect(db_path)
 # Seede ein System mit ausreichend veredelter Materie im Depot
-conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 10000, 1000, 5000, 1000)")
-conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (1, 'SYS-A', 'shipyard', 'active', 1, 100)")
-conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (2, 'SYS-A', 'sem_matrix', 'active', 1, 100)")
+conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS_A', 0, 0, 10000, 1000, 5000, 1000)")
+conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (1, 'SYS_A', 'shipyard', 'active', 1, 100)")
+conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (2, 'SYS_A', 'sem_matrix', 'active', 1, 100)")
 conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Robert', '2', 'matrix', 'active', 0, 0, NULL)")
 conn.commit()
 conn.close()
@@ -139,7 +139,7 @@ console.log("\nSchritt 7: 100%-Rückerstattung bei unfertigem Abbau prüfen...")
 // Starte neues Schiff im Etappenbau (Scout mit 400 raw_matter Anzahlung)
 runBobAction('build_ship(blueprint_name="Scout", matter_to_invest=400)');
 // Prüfe Depot-Inhalt vor Abbau via synchroner Python-Abfrage
-const beforeDeconstructDb = execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); print(conn.execute(\\"SELECT raw_matter_depot FROM systems WHERE name='SYS-A'\\").fetchone()[0])"`).toString().trim();
+const beforeDeconstructDb = execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); print(conn.execute(\\"SELECT raw_matter_depot FROM systems WHERE name='SYS_A'\\").fetchone()[0])"`).toString().trim();
 
 // Führe Abbau durch
 const deconstructOutput = runBobAction('deconstruct_ship(ship_id=2)');
@@ -149,7 +149,7 @@ if (!deconstructOutput.includes("Refunded 400 raw_matter (100% of progress) to S
 }
 
 // Prüfe Depot-Inhalt nach Abbau via synchroner Python-Abfrage
-const afterDeconstructDb = execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); print(conn.execute(\\"SELECT raw_matter_depot FROM systems WHERE name='SYS-A'\\").fetchone()[0])"`).toString().trim();
+const afterDeconstructDb = execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); print(conn.execute(\\"SELECT raw_matter_depot FROM systems WHERE name='SYS_A'\\").fetchone()[0])"`).toString().trim();
 const refundDelta = parseInt(afterDeconstructDb) - parseInt(beforeDeconstructDb);
 if (refundDelta !== 400) {
     console.error(`FEHLER: Physische Rückerstattung in DB stimmt nicht überein! Erwartet: 400, Erhalten: ${refundDelta}`);

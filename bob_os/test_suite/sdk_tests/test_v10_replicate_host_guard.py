@@ -18,10 +18,10 @@ class TestReplicateHostGuard(unittest.TestCase):
         
         init_db.init()
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO systems (name, x, y, refined_matter_depot, energy_depot) VALUES ('SYS-A', 0, 0, 2000, 1000)")
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS-A', 0, 500, 300)")
+        conn.execute("INSERT INTO systems (name, x, y, refined_matter_depot, energy_depot) VALUES ('SYS_A', 0, 0, 2000, 1000)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_A', 0, 500, 300)")
         conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, active_ship_id) VALUES ('Instance-1', 'Bob', '1', 'ship', 'active', 1)")
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS-A', 'mind_forge', 'active', 1, 100)")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS_A', 'mind_forge', 'active', 1, 100)")
         conn.commit()
         conn.close()
 
@@ -37,7 +37,7 @@ class TestReplicateHostGuard(unittest.TestCase):
 
     def test_replicate_success_with_sem_matrix(self):
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS-A', 'sem_matrix', 'active', 1, 100)")
+        conn.execute("INSERT INTO infrastructure (system_name, type, status, level, health) VALUES ('SYS_A', 'sem_matrix', 'active', 1, 100)")
         conn.commit()
         conn.close()
         
@@ -53,7 +53,7 @@ class TestReplicateHostGuard(unittest.TestCase):
 
     def test_replicate_success_with_free_ship(self):
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO ships (id, name, chassis, system_name, pilot_id) VALUES (10, 'FreeShip', 'Scout', 'SYS-A', NULL)")
+        conn.execute("INSERT INTO ships (id, name, chassis, system_name, pilot_id) VALUES (10, 'FreeShip', 'Scout', 'SYS_A', NULL)")
         conn.commit()
         conn.close()
         

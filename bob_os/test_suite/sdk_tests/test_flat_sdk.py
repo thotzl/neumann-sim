@@ -24,10 +24,10 @@ class TestFlatSDK(unittest.TestCase):
         c.execute("CREATE TABLE messages (sender TEXT, receiver TEXT, content TEXT)")
         c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
         
-        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-1', 'Pioneer', 'SYS-A', 100, 500, 0, 1000, 'active', 0, 0)")
-        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-2', 'Klon', 'SYS-A', 100, 50, 0, 100, 'active', 0, 0)")
-        c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, x, y) VALUES ('SYS-A', 1000, 100, 1000, 500, 2500, 0, 0)")
-        c.execute("INSERT INTO infrastructure (system_name, type, status, progress_matter, required_matter) VALUES ('SYS-A', 'solar_collector', 'active', 400, 400)")
+        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-1', 'Pioneer', 'SYS_A', 100, 500, 0, 1000, 'active', 0, 0)")
+        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Instance-2', 'Klon', 'SYS_A', 100, 50, 0, 100, 'active', 0, 0)")
+        c.execute("INSERT INTO systems (name, extractable_matter_in_core, raw_matter_depot, depot_matter_capacity, energy_depot, depot_energy_capacity, x, y) VALUES ('SYS_A', 1000, 100, 1000, 500, 2500, 0, 0)")
+        c.execute("INSERT INTO infrastructure (system_name, type, status, progress_matter, required_matter) VALUES ('SYS_A', 'solar_collector', 'active', 400, 400)")
         conn.commit()
         conn.close()
         
@@ -59,7 +59,7 @@ class TestFlatSDK(unittest.TestCase):
         self.assertTrue(success)
         
         conn = db_config.get_connection()
-        infra = conn.execute("SELECT type, progress_matter FROM infrastructure WHERE system_name='SYS-A' AND type='shipyard'").fetchone()
+        infra = conn.execute("SELECT type, progress_matter FROM infrastructure WHERE system_name='SYS_A' AND type='shipyard'").fetchone()
         self.assertEqual(infra['type'], 'shipyard')
         self.assertEqual(infra['progress_matter'], 100)
         conn.close()

@@ -35,9 +35,9 @@ class TestMaintenanceCooldown(unittest.TestCase):
             health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1,
             maintenance_cooldown INTEGER DEFAULT 0)""")
             
-        c.execute("INSERT INTO systems (name, extractable_matter_in_core) VALUES ('SYS-A', 1000)")
-        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, status) VALUES ('Instance-1', 'SYS-A', 1000, 1000, 'active')")
-        c.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS-A', 'solar_collector', 'active', 1, 100)")
+        c.execute("INSERT INTO systems (name, extractable_matter_in_core) VALUES ('SYS_A', 1000)")
+        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, status) VALUES ('Instance-1', 'SYS_A', 1000, 1000, 'active')")
+        c.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS_A', 'solar_collector', 'active', 1, 100)")
         conn.commit()
         
         self.agent = bob_sdk.Agent()
@@ -47,7 +47,7 @@ class TestMaintenanceCooldown(unittest.TestCase):
 
     def test_repair_sets_cooldown(self):
         conn = sqlite3.connect(self.test_db)
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health, maintenance_cooldown) VALUES (1, 'SYS-A', 'matter_silo', 'active', 90, 100, 0)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health, maintenance_cooldown) VALUES (1, 'SYS_A', 'matter_silo', 'active', 90, 100, 0)")
         conn.commit()
         
         # Repair the structure
@@ -61,7 +61,7 @@ class TestMaintenanceCooldown(unittest.TestCase):
 
     def test_physics_decays_cooldown_first(self):
         conn = sqlite3.connect(self.test_db)
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health, maintenance_cooldown) VALUES (1, 'SYS-A', 'matter_silo', 'active', 100, 100, 2)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health, maintenance_cooldown) VALUES (1, 'SYS_A', 'matter_silo', 'active', 100, 100, 2)")
         conn.commit()
         conn.close()
         

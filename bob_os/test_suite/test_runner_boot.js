@@ -20,7 +20,7 @@ try {
     // 2. Erzeuge Dummy config
     fs.writeFileSync(path.join(expDir, 'config.json'), JSON.stringify({
         rounds: 2, config_override: { max_turns: 10, model: "gemini-2.5-flash" },
-        agents: [{ id: "Instance-1", location: "SYS-X0-Y0", system_prompt: "Vater" }]
+        agents: [{ id: "Instance-1", location: "SYS_X0_Y0", system_prompt: "Vater" }]
     }));
 
     // 3. Kopiere Blueprints (Nur core, da tools weg sind)
@@ -37,8 +37,8 @@ try {
     fs.writeFileSync(path.join(verseDir, 'population.json'), JSON.stringify({
         version: 1,
         agents: [
-            { id: "Instance-1", location: "SYS-X0-Y0", status: "active", system_prompt: "Vater" },
-            { id: "Instance-2", parent_id: "Instance-1", location: "SYS-X0-Y0", status: "active", system_prompt: "Kind" }
+            { id: "Instance-1", location: "SYS_X0_Y0", status: "active", system_prompt: "Vater" },
+            { id: "Instance-2", parent_id: "Instance-1", location: "SYS_X0_Y0", status: "active", system_prompt: "Kind" }
         ]
     }));
 
@@ -64,7 +64,7 @@ try {
     fs.mkdirSync(path.join(expDir, 'scripts', 'active'), { recursive: true });
     fs.writeFileSync(path.join(expDir, 'config.json'), JSON.stringify({
         rounds: 1, config_override: { max_turns: 10, model: "gemini-2.5-flash" },
-        agents: [{ id: "Instance-1", location: "SYS-X0-Y0", system_prompt: "Vater" }]
+        agents: [{ id: "Instance-1", location: "SYS_X0_Y0", system_prompt: "Vater" }]
     }));
     execSync(`cp -r bob_os/core/* ${coreDir}/`);
     
@@ -75,7 +75,7 @@ try {
     
     fs.writeFileSync(path.join(verseDir, 'population.json'), JSON.stringify({
         version: 1,
-        agents: [ { id: "Instance-1", location: "SYS-X0-Y0", status: "active", system_prompt: "Vater" } ]
+        agents: [ { id: "Instance-1", location: "SYS_X0_Y0", status: "active", system_prompt: "Vater" } ]
     }));
 
     execSync(`node sim_engine/runner.js ${expName}`, { stdio: 'inherit' });

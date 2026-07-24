@@ -38,7 +38,7 @@ class TestV105GeologyBalance(unittest.TestCase):
         
         # Simuliere 100 geologische Kernseeding-Eintragungen
         for i in range(100):
-            sys_name = f"START-SYS-{i}"
+            sys_name = f"START-SYS_{i}"
             
             # Dies ist die exakte geologische Formel aus init_db.py
             start_matter = random.randint(50000, 500000)
@@ -72,7 +72,7 @@ class TestV105GeologyBalance(unittest.TestCase):
         
         # Simuliere 100 tiefe Scanner-Eintragungen
         for i in range(100):
-            sys_name = f"SCANNED-SYS-{i}"
+            sys_name = f"SCANNED-SYS_{i}"
             
             # Dies ist die exakte geologische Scan-Formel aus sensors.py (V10.5.4 Patch)
             core_val = random.randint(50000, 500000)

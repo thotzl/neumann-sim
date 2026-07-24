@@ -64,9 +64,9 @@ async function runE2E() {
         const system = await getSql(db, "SELECT * FROM systems WHERE name = 'Alpha_Centauri'");
         if (!system) throw new Error("System 'Alpha_Centauri' wurde nicht angelegt!");
         
-        // Prüfe ob SYS-X0-Y0 exisitiert
-        const defaultSys = await getSql(db, "SELECT * FROM systems WHERE name = 'SYS-X0-Y0'");
-        if (defaultSys) throw new Error("SYS-X0-Y0 wurde fälschlicherweise als Fallback angelegt!");
+        // Prüfe ob SYS_X0_Y0 exisitiert
+        const defaultSys = await getSql(db, "SELECT * FROM systems WHERE name = 'SYS_X0_Y0'");
+        if (defaultSys) throw new Error("SYS_X0_Y0 wurde fälschlicherweise als Fallback angelegt!");
 
         console.log("- DB Validation OK.");
 

@@ -35,10 +35,10 @@ class TestRefinedEconomy(unittest.TestCase):
             health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1,
             maintenance_cooldown INTEGER DEFAULT 0)""")
             
-        c.execute("INSERT INTO systems (name, extractable_matter_in_core) VALUES ('SYS-A', 1000)")
+        c.execute("INSERT INTO systems (name, extractable_matter_in_core) VALUES ('SYS_A', 1000)")
         # Start with 0 refined
-        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, status) VALUES ('Instance-1', 'SYS-A', 1000, 1000, 0, 'active')")
-        c.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS-A', 'solar_collector', 'active', 1, 100)")
+        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, status) VALUES ('Instance-1', 'SYS_A', 1000, 1000, 0, 'active')")
+        c.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS_A', 'solar_collector', 'active', 1, 100)")
         conn.commit()
         
         self.agent = bob_sdk.Agent()
@@ -70,7 +70,7 @@ class TestRefinedEconomy(unittest.TestCase):
     def test_repair_tier2_requires_refined_matter(self):
         conn = sqlite3.connect(self.test_db)
         # Add a damaged Tier-2 structure
-        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health) VALUES (2, 'SYS-A', 'advanced_shipyard', 'active', 80, 100)")
+        conn.execute("INSERT INTO infrastructure (id, system_name, type, status, health, max_health) VALUES (2, 'SYS_A', 'advanced_shipyard', 'active', 80, 100)")
         conn.commit()
         
         # Try to repair with raw matter (fails because Tier-2 needs refined)
@@ -78,7 +78,7 @@ class TestRefinedEconomy(unittest.TestCase):
         self.assertFalse(success)
         
         # Add refined matter to depot
-        conn.execute("UPDATE systems SET refined_matter_depot = 10 WHERE name='SYS-A'")
+        conn.execute("UPDATE systems SET refined_matter_depot = 10 WHERE name='SYS_A'")
         conn.commit()
         
         # Now it should work
@@ -90,7 +90,7 @@ class TestRefinedEconomy(unittest.TestCase):
         self.assertEqual(data[0], 90)
         self.assertEqual(data[1], 10) # Cooldown applied
         
-        sys_data = conn.execute("SELECT refined_matter_depot, raw_matter_depot FROM systems WHERE name='SYS-A'").fetchone()
+        sys_data = conn.execute("SELECT refined_matter_depot, raw_matter_depot FROM systems WHERE name='SYS_A'").fetchone()
         self.assertEqual(sys_data[0], 0) # Refined consumed
         self.assertEqual(sys_data[1], 0) # Raw untouched
         conn.close()
@@ -99,7 +99,7 @@ class TestRefinedEconomy(unittest.TestCase):
         # Setup: Set agent matter storage capacity to 100
         conn = sqlite3.connect(self.test_db)
         conn.execute("UPDATE agents SET raw_matter_inventory = 50, refined_matter_inventory = 10, matter_storage_capacity = 100 WHERE id='Instance-1'")
-        conn.execute("UPDATE systems SET refined_matter_depot = 100 WHERE name='SYS-A'")
+        conn.execute("UPDATE systems SET refined_matter_depot = 100 WHERE name='SYS_A'")
         conn.commit()
         
         # Space left: 100 - (50 + 10) = 40.

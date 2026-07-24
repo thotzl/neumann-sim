@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { WorldState, LogEntry, LogCategory, Selection } from './types';
+import { LogEntry, LogCategory, Selection } from './types';
 import { LogPanel } from './components/LogPanel';
 import { ExplorerPanel } from './components/ExplorerPanel';
 import { InspectorPanel } from './components/InspectorPanel';
+import { useC2Store } from './store/stateStore';
 
 const SCALE = 0.5;
 
@@ -21,8 +22,15 @@ const getColorForId = (id: string) => {
 };
 
 export default function App() {
-  const [state, setState] = useState<WorldState | null>(null);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const state = useC2Store((store) => store.state);
+  const logs = useC2Store((store) => store.logs);
+  const selection = useC2Store((store) => store.selection);
+  const setSelection = useC2Store((store) => store.setSelection);
+  const isReady = useC2Store((store) => store.isReady);
+  const setReady = useC2Store((store) => store.setReady);
+  const initializeLogs = useC2Store((store) => store.initializeLogs);
+  const updateState = useC2Store((store) => store.updateState);
+
   const [filters, setFilters] = useState<Record<LogCategory, boolean>>({ thought: true, action: true, system: true, scut: true });
   
   const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
@@ -30,10 +38,7 @@ export default function App() {
   const dragStart = useRef({ x: 0, y: 0 });
   const mapRef = useRef<HTMLDivElement>(null);
   
-  const lastProcessedTick = useRef<number>(-1);
-  const lastProcessedEventId = useRef<number>(-1);
   const [vogMsg, setVogMsg] = useState("");
-  const [selection, setSelection] = useState<Selection | null>(null);
 
   const focusBounds = (coords: {x: number, y: number}[]) => {
     if (!mapRef.current || coords.length === 0) return;
@@ -70,166 +75,71 @@ export default function App() {
   const focusHome = () => { setCamera({ x: 0, y: 0, zoom: 1 }); };
 
   useEffect(() => {
-     if (state && state.tick === Math.max(0, lastProcessedTick.current) && lastProcessedTick.current < 2) {
+     if (state && state.tick < 2) {
         focusHome();
      }
-  }, [state]);
+  }, [state?.tick]);
 
   useEffect(() => {
-    const loadHistory = async () => {
-      try {
-        const res = await fetch('/live_verse/history.json');
-        if (res.ok) {
-          const historyData = await res.json();
-          const parsedLogs: LogEntry[] = historyData.map((d: any, i: number) => {
-            const agentId = d.agent || d.agentId || 'System';
-            const isSystem = agentId === 'System' || agentId === 'Creator' || agentId === 'Observer';
-            const agentName = agentId === 'Bob' ? 'Robert' : agentId;
-            let type: LogCategory = isSystem ? 'system' : 'thought'; // HISTORIC LOGS ARE THOUGHTS ONLY!
-            return { id: `hist-${i}`, tick: d.tick === "?" ? 0 : d.tick, agentId: agentId, agentName: agentName, type, text: d.text.trim() };
-          });
-          setLogs(parsedLogs);
-          if (parsedLogs.length > 0) lastProcessedTick.current = Math.max(...parsedLogs.map(l => l.tick));
-        }
-      } catch (e) {}
-    };
-    loadHistory();
+    let socket: WebSocket | null = null;
+    let reconnectTimeout: any = null;
 
-    const poll = async () => {
-      try {
-        const res = await fetch('/live_verse/world_state.json');
-        if (!res.ok) return;
-        const data: WorldState = await res.json();
-        
-        // Self-healing: Resolve locations & parents dynamically in the frontend
-        if (data && Array.isArray(data.agents)) {
-          data.agents.forEach(a => {
-            // parent_id compatibility
-            if (a.parent_id === undefined && a.sensors?.parent_id) {
-              a.parent_id = a.sensors.parent_id;
+    const connectWS = () => {
+      const host = window.location.hostname || 'localhost';
+      console.log(`[C2-Websocket] Connecting to ws://${host}:3001`);
+      socket = new WebSocket(`ws://${host}:3001`);
+
+      socket.onopen = () => {
+        console.log('[C2-Websocket] Connection established with V12 server.');
+        setReady(true);
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          
+          if (msg.type === 'INIT') {
+            console.log('[C2-Websocket] Handshake completed. Initializing state...');
+            
+            // 1. Process and load full historical logs
+            if (msg.history && Array.isArray(msg.history)) {
+              initializeLogs(msg.history);
             }
             
-            // location resolution
-            if (a.status === 'traveling') {
-              a.location = 'Interstellar';
-            } else if (a.host_type === 'ship' && a.host_id) {
-              const ship = data.ships?.find(s => s.id.toString() === a.host_id?.toString());
-              a.location = ship ? ship.system_name : 'Unknown';
-            } else if (a.host_type === 'matrix' && a.host_id) {
-              let systemName = 'Unknown';
-              if (data.systems) {
-                for (const sys of data.systems) {
-                  if (sys.infra && sys.infra.some(inf => inf.id.toString() === a.host_id?.toString())) {
-                    systemName = sys.name;
-                    break;
-                  }
-                }
-              }
-              a.location = systemName;
-            } else if (!a.location) {
-              a.location = 'Unknown';
+            // 2. Load initial worldState
+            if (msg.state) {
+              updateState(msg.state);
             }
-          });
+          } 
+          else if (msg.type === 'LIVE_STATE_UPDATE') {
+            console.log(`[C2-Websocket] Received real-time live update for tick: ${msg.state?.tick}`);
+            if (msg.state) {
+              updateState(msg.state);
+            }
+          }
+        } catch (e) {
+          console.error('[C2-Websocket] Error processing frame:', e);
         }
+      };
 
-        setState(data);
-        
-        // 1. Process thoughts & actions (last_manifestation) per tick
-        if (data.tick >= lastProcessedTick.current) {
-           const newEntries: LogEntry[] = [];
-           data.agents.forEach(a => {
-               if (a.last_manifestation?.trim()) {
-                   const raw = a.last_manifestation.trim();
-                   
-                   // Robust Split for thoughts & actions
-                   const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?AKTION(?:EN)?\s*(?:Befehl|Buffer)?[：:]*(?:\*\*|\*)?/i;
-                   const match = raw.match(actionRegex);
-                   
-                   let thought = '';
-                   let action = '';
-                   if (match && match.index !== undefined) {
-                       thought = raw.substring(0, match.index).trim();
-                       action = raw.substring(match.index + match[0].length).trim();
-                   } else {
-                       const runMatch = raw.indexOf('[RUN:');
-                       if (runMatch !== -1) {
-                           thought = raw.substring(0, runMatch).trim();
-                           action = raw.substring(runMatch).trim();
-                       } else {
-                           thought = raw;
-                       }
-                   }
-                   
-                   thought = thought
-                       .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSE\s*[：:]*(?:\*\*|\*)?/i, '')
-                       .replace(/\[EIGENIMPULS\]:\s*/i, '')
-                       .trim();
-                       
-                   if (thought) {
-                       newEntries.push({ 
-                           id: `t-${data.tick}-${a.id}`, 
-                           tick: data.tick, 
-                           agentId: a.id, 
-                           agentName: a.chosen_name || a.id,
-                           type: 'thought', 
-                           text: thought 
-                       });
-                   }
-                   
-                   if (action) {
-                       const isScut = action.includes('scut(') || action.includes('scut') || action.includes('SCUT');
-                       newEntries.push({ 
-                           id: `a-${data.tick}-${a.id}`, 
-                           tick: data.tick, 
-                           agentId: a.id, 
-                           agentName: a.chosen_name || a.id,
-                           type: isScut ? 'scut' : 'action', 
-                           text: action 
-                       });
-                   }
-               }
-           });
-           if (newEntries.length > 0) {
-               setLogs(prev => {
-                   const filtered = newEntries.filter(ne => !prev.some(p => p.id === ne.id));
-                   return [...prev, ...filtered];
-               });
-           }
-           lastProcessedTick.current = data.tick;
-        }
+      socket.onclose = () => {
+        console.log('[C2-Websocket] Connection lost. Auto-reconnecting in 2 seconds...');
+        setReady(false);
+        socket = null;
+        reconnectTimeout = setTimeout(connectWS, 2000);
+      };
 
-        // 2. Process physical actions from visual_events
-        if (data.visual_events && Array.isArray(data.visual_events)) {
-           // We sort and filter by rowid to process oldest to newest
-           const sortedEvents = [...data.visual_events]
-               .filter(e => e.rowid > lastProcessedEventId.current)
-               .sort((a, b) => a.rowid - b.rowid);
-               
-           if (sortedEvents.length > 0) {
-               const eventEntries: LogEntry[] = sortedEvents.map(e => {
-                   const isScut = e.description.includes('scut(') || e.description.includes('gemeldet') || e.description.includes('nachricht') || e.description.includes('SCUT');
-                   const matchingAgent = data.agents?.find(ag => ag.id === e.actor_id);
-                   const agentName = matchingAgent ? (matchingAgent.chosen_name || matchingAgent.id) : e.actor_id;
-                   return {
-                       id: `ve-${e.rowid}`,
-                       tick: e.cycle,
-                       agentId: e.actor_id,
-                       agentName: agentName,
-                       type: isScut ? 'scut' : 'action',
-                       text: e.description
-                   };
-               });
-               setLogs(prev => {
-                   const filtered = eventEntries.filter(ne => !prev.some(p => p.id === ne.id));
-                   return [...prev, ...filtered];
-               });
-               lastProcessedEventId.current = Math.max(...sortedEvents.map(e => e.rowid));
-           }
-        }
-      } catch (err) {}
+      socket.onerror = (err) => {
+        console.error('[C2-Websocket] Socket error:', err);
+      };
     };
-    const interval = setInterval(poll, 1000);
-    return () => clearInterval(interval);
+
+    connectWS();
+
+    return () => {
+      if (socket) socket.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
   }, []);
 
   const handleWheel = (e: React.WheelEvent) => {

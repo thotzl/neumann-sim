@@ -183,8 +183,6 @@ function exportWorldState(universeDir, state, lastAgentId) {
             visual_events: visual_events,
             events: state.events || []
         };
-
-        fs.writeFileSync(outputPath, JSON.stringify(worldState, null, 2));
         
         const fullHistory = [];
         const seenTexts = new Set();
@@ -203,7 +201,40 @@ function exportWorldState(universeDir, state, lastAgentId) {
             });
         });
         fullHistory.sort((a, b) => (a.tick === "?" ? 0 : a.tick) - (b.tick === "?" ? 0 : b.tick));
-        fs.writeFileSync(historyPath, JSON.stringify(fullHistory, null, 2));
+
+        // ========================================================
+        // V12.0 AUGMENTED REAL-TIME WEB_BROADCAST (Silently Entkoppelt)
+        // ========================================================
+        try {
+            const http = require('http');
+            const payload = JSON.stringify({ type: 'LIVE_STATE_UPDATE', state: worldState, history: fullHistory });
+            const broadcastPort = process.env.C2_PORT || 3001;
+            const req = http.request({
+                hostname: 'localhost',
+                port: broadcastPort,
+                path: '/api/broadcast',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(payload)
+                }
+            }, () => {});
+
+            req.on('error', () => {
+                // Fail silently in less than 1ms.
+            });
+
+            // Sicherheits-Timeout gegen blockierende Sockets
+            req.setTimeout(500, () => {
+                req.destroy();
+            });
+
+            req.write(payload);
+            req.end();
+        } catch (e) {
+            // Garantierte Null-Interferenz bei Fehlern des Frontends
+        }
+
         db.close();
     }
 }

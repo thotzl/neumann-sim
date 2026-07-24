@@ -45,7 +45,12 @@ class Sensors:
         sys_id = f"SYS-X{snap_x}-Y{snap_y}"
 
         try:
-            cursor.execute("INSERT INTO systems (name, x, y, extractable_matter_in_core) VALUES (?, ?, ?, ?)", (sys_id, snap_x, snap_y, random.randint(50000, 500000)))
+            core_val = random.randint(50000, 500000)
+            cursor.execute("""
+                INSERT INTO systems 
+                (name, x, y, extractable_matter_in_core, max_extractable_matter) 
+                VALUES (?, ?, ?, ?, ?)
+            """, (sys_id, snap_x, snap_y, core_val, core_val))
             agent_service.consume_resources(cursor, agent['id'], energy=cost)
             print(f"[SCAN] Detected: {sys_id}. Cost: {cost}E")
             return True

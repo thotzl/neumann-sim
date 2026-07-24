@@ -160,7 +160,7 @@ def seed():
                 # Erstes System auf 0,0, weitere versetzt
                 x, y = (0, 0) if not created_systems else (random.randint(100, 500), random.randint(100, 500))
                 import os
-                if os.environ.get('TEST_DB_PATH'):
+                if os.environ.get('TEST_DB_PATH') and os.environ.get('TEST_FORCE_GEOLOGY_MOCK') != 'false':
                     start_matter = 100000
                 else:
                     start_matter = random.randint(50000, 500000)

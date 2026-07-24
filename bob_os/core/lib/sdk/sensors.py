@@ -252,8 +252,45 @@ class Sensors:
                 ORDER BY rowid ASC
             """, (sys_name, agent['last_seen_event_id'], self.agent.id))
             event_rows = cursor.fetchall()
+            
+            # 4a. Anonymisierungs-Mapping (SSoT-Muster)
+            anonym_map = {
+                "MINING": "[SENSORSIGNAL] Geologische Erschütterung: Rohmaterial-Minderwert im Sektor-Kern registriert.",
+                "REFINING": "[NETZ-SIGNAL] Industrielle Aktivität: Lokale Raffinerie hat Veredelungsprozess gestartet.",
+                "DEPOSIT": "[DEPOT-REGISTRIERUNG] Einzahlung erfasst: Materie/Energie im Sektor-Depot eingebucht.",
+                "WITHDRAW": "[DEPOT-REGISTRIERUNG] Abbuchung erfasst: Materie/Energie aus Sektor-Depot entnommen.",
+                "TRANSIT_BOARD": "[RADAR-SIGNAL] Cockpit-Kopplung: Ein Pilot hat ein Schiff betreten.",
+                "TRANSIT_EXIT": "[RADAR-SIGNAL] Cockpit-Entkopplung: Ein Pilot hat ein Schiff verlassen.",
+                "TRANSIT_DEPART": "[RADAR-ECHO] Hyperraum-Austritt: Ein Schiff hat den Sektor verlassen.",
+                "TRANSIT_ARRIVE": "[RADAR-ECHO] Hyperraum-Eintritt: Ein Schiff ist im Sektor eingetroffen.",
+                "CONSTRUCTION": "[WERFT-PROGNOSE] Trockendock-Aktivität: Ein neues Schiff/Gebäude wurde auf Kiel gelegt.",
+                "DECONSTRUCTION": "[ABBAU-MELDUNG] Sektor-Masseänderung: Eine unbemannte Hülle/Station wurde dekonstruiert.",
+                "RENAME": "[REGISTRY-UPDATE] Ein Schiff wurde registriert/umbenannt.",
+                "MITOSIS": "[SYSTEM-PROTOTYP] Replikations-Mitoseschleife: Neue Instanz initialisiert.",
+                "RELIC": "[SEKTOR-ARCHIV] Öffentliches Relikt im Sektor hinterlegt."
+            }
+
+            # 4b. Chronologische Aggregation / Kompression zur massiven Token-Ersparnis
+            aggregated_list = []
+            event_counts = {}  # Key: anonymisierte_description, Value: [count, first_rowid]
+            
             for r in event_rows:
-                unread_events.append(f"[Event #{r['rowid']}] {r['description']}")
+                event_type = r['event_type']
+                desc = anonym_map.get(event_type, r['description'])
+                
+                if desc in event_counts:
+                    event_counts[desc][0] += 1
+                else:
+                    event_counts[desc] = [1, r['rowid']]
+                    aggregated_list.append(desc)
+                    
+            for desc in aggregated_list:
+                count = event_counts[desc][0]
+                rowid = event_counts[desc][1]
+                if count == 1:
+                    unread_events.append(f"[Event #{rowid}] {desc}")
+                else:
+                    unread_events.append(f"[Event #{rowid}] ({count}x) {desc}")
             
             # Update last_seen_event_id auf das absolute Maximum
             cursor.execute("SELECT MAX(rowid) FROM visual_events")

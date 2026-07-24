@@ -81,7 +81,7 @@ class TestV10Task3Dashboard(unittest.TestCase):
         dashboard = self.agent.sensors.local_system()
         obs = dashboard['beobachtungen_anderer_agenten']
         self.assertEqual(len(obs), 1)
-        self.assertIn('Instance-2 hat abgebaut', obs[0])
+        self.assertIn('Geologische Erschütterung', obs[0])
         
         # Second dashboard call - event is now marked read, should be empty!
         dashboard2 = self.agent.sensors.local_system()
@@ -99,6 +99,31 @@ class TestV10Task3Dashboard(unittest.TestCase):
         meta = functional_parser.METHOD_META.get("dashboard")
         self.assertIsNotNone(meta)
         self.assertTrue(meta.get("internal"))
+
+    def test_visual_events_anonymization_and_aggregation(self):
+        # 1. Seede 5 Events von Instance-2 im Sektor SYS-A (3x Mining, 2x Deposit)
+        conn = db_config.get_connection()
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'MINING', 'Instance-2 hat 100 abgebaut.')")
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'MINING', 'Instance-2 hat 250 abgebaut.')")
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'MINING', 'Instance-2 hat 50 abgebaut.')")
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'DEPOSIT', 'Instance-2 hat Materie deponiert.')")
+        conn.execute("INSERT INTO visual_events (cycle, location, actor_id, event_type, description) VALUES (0, 'SYS-A', 'Instance-2', 'DEPOSIT', 'Instance-2 hat Energie deponiert.')")
+        conn.commit()
+        conn.close()
+
+        # 2. Frage das Sektordashboard ab
+        dashboard = self.agent.sensors.local_system()
+        obs = dashboard['beobachtungen_anderer_agenten']
+
+        # 3. VERIFIZIERE DIE TOKENSCHONENDE AGGREGATION & ANONYMISIERUNG
+        # Erwartetes Ergebnis: Nur 2 hochkonsolidierte Einträge statt 5 separate Zeilen!
+        self.assertEqual(len(obs), 2)
+        
+        # Check Mining-Kompression: (3x) [SENSORSIGNAL] ...
+        self.assertIn("(3x) [SENSORSIGNAL] Geologische Erschütterung: Rohmaterial-Minderwert im Sektor-Kern registriert.", obs[0])
+        
+        # Check Deposit-Kompression: (2x) [DEPOT-REGISTRIERUNG] ...
+        self.assertIn("(2x) [DEPOT-REGISTRIERUNG] Einzahlung erfasst: Materie/Energie im Sektor-Depot eingebucht.", obs[1])
 
 if __name__ == '__main__':
     unittest.main()

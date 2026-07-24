@@ -262,7 +262,7 @@ print(json.dumps({"messages": msgs, "names": names}))`;
             
             state.global_inbox[agent.id].push({
                 type: 'resonance',
-                text: `[DEINE LETZTE AKTION & RESONANZ (FLÜCHTIG - NUR ALS SENSORISCHES FEEDBACK)]:\n${actionPart.trim()}\n\nRESONANZ:\n${feedback.trim()}`
+                text: `[NEURONALES ECHO (LETZTE AKTION UND RESONANZ)]:\n${actionPart.trim()}\n\nRESONANZ:\n${feedback.trim()}`
             });
             
             logger.appendTurnLog(logFile, state.round, agent.id, state.totalTurns, state.histories[agent.id].length, responseText, feedback, false, preTurnEvents);

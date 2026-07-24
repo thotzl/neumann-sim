@@ -78,9 +78,41 @@ export const LogPanel = ({ logs, filters, setFilters, vogMsg, setVogMsg }: LogPa
                 </span>
                 <span className="mono-text" style={{ color: '#475569' }}>T_{entry.tick}</span>
               </div>
-              <div className={isCode ? "mono-text log-content" : "log-content"} style={{ whiteSpace: 'pre-wrap', color: textColor, lineHeight: '1.5' }}>
-                {entry.text}
-              </div>
+              {(() => {
+                // Parse out multiplier like (3x) or (2x) from entry.text (Point 26)
+                const multiplierRegex = /^\((\d+x)\)\s*/;
+                const match = entry.text.match(multiplierRegex);
+                let multiplierBadge = null;
+                let displayText = entry.text;
+
+                if (match) {
+                  multiplierBadge = (
+                    <span style={{
+                      background: 'rgba(245, 158, 11, 0.15)',
+                      border: '1px solid #f59e0b',
+                      color: '#f59e0b',
+                      borderRadius: '3px',
+                      padding: '1px 5px',
+                      fontSize: '0.65rem',
+                      fontWeight: 'bold',
+                      marginRight: '8px',
+                      textShadow: '0 0 5px rgba(245,158,11,0.5)',
+                      display: 'inline-block',
+                      verticalAlign: 'middle'
+                    }}>
+                      {match[1].toUpperCase()}
+                    </span>
+                  );
+                  displayText = entry.text.replace(multiplierRegex, '');
+                }
+
+                return (
+                  <div className={isCode ? "mono-text log-content" : "log-content"} style={{ whiteSpace: 'pre-wrap', color: textColor, lineHeight: '1.5' }}>
+                    {multiplierBadge}
+                    {displayText}
+                  </div>
+                );
+              })()}
             </div>
           )
         })}

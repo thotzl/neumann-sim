@@ -18,9 +18,15 @@ Da über die Jahre hinweg mehrere spekulative Ideen-Sammlungen entstanden sind, 
 
 ---
 
-## 🧱 PHASE 1: THE RUNWAY (Schnittstellen-Weichen)
+## 🧭 DER WEGWEISER (Die "Pick-and-Choose" Philosophie)
 
-Bevor wir die riesigen kommenden Epics implementieren, bereiten wir die relationalen SSoT-Weichen im Kernel und in der Datenbank absolut sauber vor:
+> **HINWEIS:** Diese Roadmap ist **explizit nicht-chronologisch**! Sie fungiert als dynamischer Baukasten an technologischen und physikalischen Optionen. Wir suchen uns in jeder Session frei, bedarfsgerecht und nach Lust heraus, welchen Zweig des Universums wir als nächstes erforschen, härten oder mit neuen Fähigkeiten ausstatten wollen.
+
+---
+
+## 🧱 THE RUNWAY (Schnittstellen-Weichen)
+
+Bevor wir die großen Visionen implementieren, bereiten wir bei Bedarf die relationalen SSoT-Weichen im Kernel und in der Datenbank vor:
 
 ### 🚩 1. "Ready for Factions" (Vorbereitung auf Epic 3)
 *   **Datenbank-Weichen:** Wir fügen den Tabellen `agents`, `ships` und `infrastructure` die Spalte `faction_id TEXT` (Standard-Fallback: `'Alliance'`) hinzu, um die territoriale Trennung vorzubereiten, ohne Alttests zu brechen. Erstellung der Tabelle `factions` (`id TEXT PRIMARY KEY, relationship TEXT DEFAULT 'Neutral'`).
@@ -39,7 +45,7 @@ Bevor wir die riesigen kommenden Epics implementieren, bereiten wir die relation
 
 ---
 
-## 🌌 PHASE 2: FUTURE EPICS (Ausstehende visionäre Säulen)
+## 🌌 FUTURE EPICS (Ausstehende visionäre Säulen)
 
 ### 👥 Säule A: Factions und Diplomatie
 Wir transformieren die Sandbox in ein kompetitives RTS-Szenario mit gegnerischen Fraktionen, territorialer Kontrolle und Spionage:

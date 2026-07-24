@@ -225,6 +225,8 @@ const buildBobDashboard = (agent: Agent, state: WorldState) => {
       name: s?.name,
       chassis: s?.chassis,
       pilot_id: s?.pilot_id,
+      progress_matter: ship.progress_matter || null,
+      required_matter: ship.required_matter || null,
       stats: s?.stats,
       capabilities: s?.capabilities
     };
@@ -638,16 +640,19 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
               </>
             )}
             {activeTab === 'meta' && (
-              <div style={{ gridColumn: 'span 2' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+              <div style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', maxHeight: '185px', overflowY: 'auto' }}>
+                {/* Infrastructure list */}
+                <div>
+                  <div className="mono-text" style={{ fontSize: '0.65rem', color: '#818cf8', fontWeight: 700, marginBottom: '8px', letterSpacing: '1px' }}>🏢 INFRASTRUCTURE_DETECTION //</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {selectedSystem.infra?.map((inf, i) => {
                       const isConstruction = inf.status === 'construction';
                       const progressPct = inf.required_matter > 0 ? Math.round((inf.progress_matter / inf.required_matter) * 100) : 0;
                       return (
-                        <div key={i} style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 15px', borderLeft: `2px solid ${isConstruction ? '#f59e0b' : (inf.status === 'active' ? '#10b981' : '#ef4444')}`, borderRadius: '0 4px 4px 0' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px' }}>
-                              <span style={{ color: '#fff', fontWeight: 600 }}>{inf.type.toUpperCase()} <span className="mono-text" style={{ color: '#64748b', fontSize: '0.75rem' }}>L{inf.level}</span></span>
-                              <span className="mono-text" style={{ color: isConstruction ? '#f59e0b' : (inf.status === 'active' ? '#10b981' : '#ef4444'), fontSize: '0.7rem' }}>{(inf.status || 'unknown').toUpperCase()}</span>
+                        <div key={i} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', padding: '8px 12px', borderLeft: `2px solid ${isConstruction ? '#f59e0b' : (inf.status === 'active' ? '#10b981' : '#ef4444')}`, borderRadius: '0 4px 4px 0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '6px' }}>
+                              <span style={{ color: '#fff', fontWeight: 600 }}>{inf.type.toUpperCase()} <span className="mono-text" style={{ color: '#64748b', fontSize: '0.7rem' }}>L{inf.level}</span></span>
+                              <span className="mono-text" style={{ color: isConstruction ? '#f59e0b' : (inf.status === 'active' ? '#10b981' : '#ef4444'), fontSize: '0.65rem' }}>{(inf.status || 'unknown').toUpperCase()}</span>
                             </div>
                             {isConstruction ? (
                               <ProgressBar label={`CONSTRUCTION PROGRESS (${progressPct}%)`} value={inf.progress_matter} max={inf.required_matter} color="#f59e0b" />
@@ -657,7 +662,74 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                         </div>
                       );
                     })}
-                    {(!selectedSystem.infra || selectedSystem.infra.length === 0) && <div style={{ fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic', gridColumn: 'span 3' }}>No structures detected.</div>}
+                    {(!selectedSystem.infra || selectedSystem.infra.length === 0) && <div style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic', padding: '10px' }}>No structures detected.</div>}
+                  </div>
+                </div>
+
+                {/* Vessels present in sector (Point 5, 23) */}
+                <div>
+                  <div className="mono-text" style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: 700, marginBottom: '8px', letterSpacing: '1px' }}>🚢 SECTOR_VESSELS_DOCK //</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {(() => {
+                      const sectorShips = state.ships ? state.ships.filter(s => s.system_name === selectedSystem.name) : [];
+                      return (
+                        <>
+                          {sectorShips.map((ship, i) => {
+                            const isUnderConstruction = ship.pilot_id === "UNDER_CONSTRUCTION";
+                            const progressPct = ship.required_matter > 0 ? Math.round((ship.progress_matter / ship.required_matter) * 100) : 0;
+                            return (
+                              <div key={`sector-ship-${i}`} style={{ 
+                                background: isUnderConstruction ? 'rgba(245, 158, 11, 0.02)' : 'rgba(56, 189, 248, 0.02)', 
+                                border: `1px solid ${isUnderConstruction ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)'}`, 
+                                padding: '8px 12px', 
+                                borderLeft: `2px solid ${isUnderConstruction ? '#f59e0b' : '#38bdf8'}`, 
+                                borderRadius: '0 4px 4px 0',
+                                position: 'relative'
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '6px' }}>
+                                  <span style={{ color: '#fff', fontWeight: 600 }}>
+                                    {ship.name || 'Unnamed Vessel'} 
+                                    <span className="mono-text" style={{ color: '#64748b', fontSize: '0.7rem', marginLeft: '6px' }}>({ship.chassis})</span>
+                                  </span>
+                                  <span className="mono-text" style={{ 
+                                    color: isUnderConstruction ? '#f59e0b' : '#38bdf8', 
+                                    fontSize: '0.65rem',
+                                    fontWeight: 'bold',
+                                    letterSpacing: '0.5px'
+                                  }}>
+                                    {isUnderConstruction ? '🚧 TROCKENDOCK' : `Pilot: ${ship.pilot_id || 'unbemannt'}`}
+                                  </span>
+                                </div>
+
+                                {isUnderConstruction ? (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <ProgressBar 
+                                      label={`WERFT-ASSEMBLY PROGRESS (${progressPct}%)`} 
+                                      value={ship.progress_matter} 
+                                      max={ship.required_matter} 
+                                      color="#f59e0b" 
+                                    />
+                                    <div className="mono-text" style={{ fontSize: '0.6rem', color: '#f59e0b', fontStyle: 'italic', marginTop: '3px', display: 'flex', justifyContent: 'space-between' }}>
+                                      <span>⚠️ GESPERRT: Im Bau</span>
+                                      <span>[DECONSTRUCT]: Abbrechen erstattet 100% ({ship.progress_matter} M)</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Mass: {ship.mass}t • Thrust: {ship.thrust}N</span>
+                                    <span>[DECONSTRUCT]: Erstattet 50%</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {sectorShips.length === 0 && (
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic', padding: '10px' }}>No vessels present in sector.</div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             )}
@@ -843,6 +915,30 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                     )}
                   </div>
                 </div>
+
+                {/* Diagnostic Logs Block */}
+                <div style={{ background: '#03050a', border: '1px solid #1e293b', borderRadius: '4px', padding: '10px 14px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                  <div className="mono-text" style={{ fontSize: '0.55rem', color: '#10b981', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>📟 SECURE_COMMS_DIAGNOSTICS //</div>
+                  <div className="mono-text" style={{ fontSize: '0.65rem', color: '#10b981', display: 'flex', flexDirection: 'column', gap: '4px', lineHeight: '1.3' }}>
+                    <div>[SYS ] RETRIEVING BLUEPRINT MATRIX: OK</div>
+                    <div>[PHYS] ESTIMATING MOLECULAR MASS: {dashboardObj.dein_status.host.stats.mass}t (OK)</div>
+                    <div>[ENG ] THRUST COEFFICIENT: {dashboardObj.dein_status.host.stats.thrust}N (CALIBRATED)</div>
+                    <div>[SYS ] EMERGENCY SOLAR BYPASS: READY</div>
+                    {dashboardObj.dein_status.host.type === 'matrix' ? (
+                      <>
+                        <div style={{ color: '#38bdf8' }}>[SYS ] EMERGENCY MATRIX FLOOR CURRENT DETECTED: 50E</div>
+                        <div style={{ color: '#818cf8' }}>[SAFE] CONSCIOUSNESS_SAFEGUARD: STABLE & MONITOR_CONNECTED</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ color: '#38bdf8' }}>[PIL ] ACTIVE PILOT: {selectedAgent.id} (SYCHRONIZED)</div>
+                        <div style={{ color: '#38bdf8' }}>[SYS ] FLIGHT CALCULATIONS snappe_x/y grid: Snapped</div>
+                      </>
+                    )}
+                    <div>[LOG ] MEMORY REGISTER CONSCIOUSNESS: RESOLVED</div>
+                    <div>[SYS ] CORE DIAGNOSTICS COMPLETE: 100% ONLINE</div>
+                  </div>
+                </div>
               </div>
 
               {/* RIGHT PANEL: DYNAMIC SVG VECTOR BLUEPRINT */}
@@ -945,13 +1041,13 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                         <>
                           {/* Drill emitter */}
                           <polygon points="192,80 200,45 208,80" fill="rgba(16,185,129,0.2)" stroke="#10b981" strokeWidth="1.5" />
-                          {/* Concentric rotating energy focus rings */}
+                          {/* Concentric energy focus rings */}
                           <ellipse cx="200" cy="55" rx="14" ry="4" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.8" />
                           <ellipse cx="200" cy="40" rx="8" ry="2.5" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.8" />
                           {/* Callout Pointer line */}
-                          <line x1="200" y1="45" x2="290" y2="45" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
-                          <circle cx="290" cy="45" r="2" fill="#10b981" />
-                          <text x="300" y="49" fill="#10b981" className="mono-text" style={{ fontSize: '9px', fontWeight: 'bold' }}>[SYS_LASER_DRILL: ACTIVE]</text>
+                          <line x1="200" y1="45" x2="310" y2="80" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                          <circle cx="310" cy="80" r="2" fill="#10b981" />
+                          <text x="320" y="84" fill="#10b981" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[FORE_DRILL: ACTIVE]</text>
                         </>
                       ) : (
                         <circle cx="200" cy="80" r="3" fill="#38bdf8" />
@@ -967,9 +1063,9 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                           <rect x="249" y="240" width="16" height="20" fill="rgba(16,185,129,0.15)" stroke="#10b981" strokeWidth="1.5" />
                           <circle cx="257" cy="250" r="3" fill="#10b981" />
                           {/* Callout Pointer line */}
-                          <line x1="257" y1="250" x2="310" y2="250" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
-                          <circle cx="310" cy="250" r="2" fill="#10b981" />
-                          <text x="310" y="240" fill="#10b981" className="mono-text" style={{ fontSize: '9px', fontWeight: 'bold' }}>[SYS_MICRO_FAB: ONLINE]</text>
+                          <line x1="135" y1="250" x2="50" y2="160" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                          <circle cx="50" cy="160" r="2" fill="#10b981" />
+                          <text x="15" y="152" fill="#10b981" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[WINGS_FAB: ONLINE]</text>
                         </>
                       ) : null}
 
@@ -981,9 +1077,9 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                           <circle cx="200" cy="210" r="8" fill="none" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
                           <circle cx="200" cy="210" r="3" fill="#10b981" />
                           {/* Callout Pointer line */}
-                          <line x1="200" y1="210" x2="70" y2="210" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
-                          <circle cx="70" cy="210" r="2" fill="#10b981" />
-                          <text x="75" y="214" fill="#10b981" className="mono-text" style={{ fontSize: '9px', fontWeight: 'bold' }}>[QUANTUM_LOGIC_CORE: ONLINE]</text>
+                          <line x1="200" y1="210" x2="50" y2="240" stroke="#10b981" strokeWidth="1" strokeDasharray="2,2" />
+                          <circle cx="50" cy="240" r="2" fill="#10b981" />
+                          <text x="15" y="232" fill="#10b981" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[CORE_LOGIC: ACTIVE]</text>
                         </>
                       ) : (
                         <>
@@ -998,9 +1094,9 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                       <line x1="190" y1="297" x2="185" y2="305" stroke="#38bdf8" strokeWidth="1.5" />
                       <line x1="210" y1="297" x2="215" y2="305" stroke="#38bdf8" strokeWidth="1.5" />
                       {/* Engine Callout */}
-                      <line x1="185" y1="305" x2="95" y2="305" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2,2" />
-                      <circle cx="95" cy="305" r="2" fill="#38bdf8" />
-                      <text x="100" y="297" fill="#38bdf8" className="mono-text" style={{ fontSize: '9px', fontWeight: 'bold' }}>[THRUST_VECTOR: {dashboardObj.dein_status.host.stats.thrust}N]</text>
+                      <line x1="200" y1="300" x2="310" y2="300" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2,2" />
+                      <circle cx="310" cy="300" r="2" fill="#38bdf8" />
+                      <text x="315" y="304" fill="#38bdf8" className="mono-text" style={{ fontSize: '8px', fontWeight: 'bold' }}>[AFT_THRUSTER: {dashboardObj.dein_status.host.stats.thrust}N]</text>
 
                       {/* Stenciled scale calipers on the left */}
                       <path d="M 60,80 L 45,80 L 45,285 L 60,285" fill="none" stroke="rgba(56,189,248,0.3)" strokeWidth="1" />
@@ -1049,6 +1145,78 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                     </>
                   )}
                 </svg>
+
+                {/* MINIATURE RAW BLUEPRINT MATRIX THUMBNAIL OVERLAY (Säule 3 Miniature representation) */}
+                {dashboardObj.dein_status.host.type === 'ship' && (() => {
+                  const bp = state.blueprints?.find(b => b.name === dashboardObj.dein_status.host.blueprint);
+                  const parseMatrix = (matrixStr: string) => {
+                    try {
+                      const normalized = matrixStr.replace(/'/g, '"');
+                      return JSON.parse(normalized) as string[][];
+                    } catch (e) {
+                      return null;
+                    }
+                  };
+                  const grid = bp ? parseMatrix(bp.matrix_json) : [["engine", "battery"], ["cargo", "drill"]];
+                  if (!grid || grid.length === 0) return null;
+
+                  const rows = grid.length;
+                  const cols = grid[0].length;
+                  const cellS = 14;
+
+                  return (
+                    <div style={{
+                      position: 'absolute',
+                      right: '16px',
+                      bottom: '16px',
+                      background: 'rgba(7, 10, 19, 0.85)',
+                      border: '1px solid rgba(56, 189, 248, 0.25)',
+                      borderRadius: '4px',
+                      padding: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      boxShadow: '0 0 15px rgba(0,0,0,0.5)',
+                      zIndex: 10
+                    }}>
+                      <div className="mono-text" style={{ fontSize: '5.5px', color: '#64748b', fontWeight: 'bold', letterSpacing: '0.5px' }}>[RAW_BLUEPRINT_GRID]</div>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateRows: `repeat(${rows}, ${cellS}px)`,
+                        gridTemplateColumns: `repeat(${cols}, ${cellS}px)`,
+                        gap: '2px'
+                      }}>
+                        {grid.map((rowArr, r) => 
+                          rowArr.map((mod, c) => {
+                            let cellColor = 'rgba(56, 189, 248, 0.05)';
+                            let cellBorder = '1px dashed rgba(56, 189, 248, 0.2)';
+                            
+                            if (mod === 'engine') { cellColor = 'rgba(56, 189, 248, 0.4)'; cellBorder = '1px solid #38bdf8'; }
+                            else if (mod === 'battery') { cellColor = 'rgba(245, 158, 11, 0.4)'; cellBorder = '1px solid #f59e0b'; }
+                            else if (mod === 'drill') { cellColor = 'rgba(16, 185, 129, 0.4)'; cellBorder = '1px solid #10b981'; }
+                            else if (mod === 'fabricator') { cellColor = 'rgba(16, 185, 129, 0.4)'; cellBorder = '1px solid #10b981'; }
+                            else if (mod === 'logic_core') { cellColor = 'rgba(16, 185, 129, 0.4)'; cellBorder = '1px solid #10b981'; }
+                            else if (mod === 'cargo') { cellColor = 'rgba(56, 189, 248, 0.4)'; cellBorder = '1px solid #38bdf8'; }
+
+                            return (
+                              <div 
+                                key={`mini-${r}-${c}`} 
+                                title={mod || 'Empty Socket'}
+                                style={{
+                                  width: `${cellS}px`,
+                                  height: `${cellS}px`,
+                                  background: cellColor,
+                                  border: cellBorder,
+                                  borderRadius: '1px'
+                                }}
+                              />
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>

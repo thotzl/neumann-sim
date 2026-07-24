@@ -73,7 +73,9 @@ export const LogPanel = ({ logs, filters, setFilters, vogMsg, setVogMsg }: LogPa
           return (
             <div key={entry.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', borderLeft: `3px solid ${badgeColor}`, padding: '8px 0 10px 12px', fontSize: '0.85rem', background: 'rgba(255,255,255,0.01)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.65rem' }}>
-                <span style={{ fontWeight: 700, color: badgeColor, letterSpacing: '1px', textTransform: 'uppercase' }}>[{(entry.agentId || 'UNKNOWN')}]</span>
+                <span style={{ fontWeight: 700, color: badgeColor, letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  {entry.agentName && entry.agentName !== entry.agentId ? `${entry.agentName.toUpperCase()} (ID: ${entry.agentId})` : (entry.agentName || entry.agentId || 'UNKNOWN').toUpperCase()}
+                </span>
                 <span className="mono-text" style={{ color: '#475569' }}>T_{entry.tick}</span>
               </div>
               <div className={isCode ? "mono-text log-content" : "log-content"} style={{ whiteSpace: 'pre-wrap', color: textColor, lineHeight: '1.5' }}>

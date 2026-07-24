@@ -66,8 +66,10 @@ function exportWorldState(universeDir, state, lastAgentId) {
                             db.all("SELECT * FROM ships", (err, ships) => {
                                 db.all("SELECT * FROM memos", (errMemos, memos) => {
                                     db.all("SELECT * FROM docs", (errDocs, docs) => {
-                                        db.all("SELECT rowid, * FROM visual_events ORDER BY rowid DESC LIMIT 200", (errEv, visualEvents) => {
-                                            finish(systems, agentsList, ships || [], memos || [], docs || [], visualEvents || []);
+                                        db.all("SELECT * FROM blueprints", (errBp, blueprints) => {
+                                            db.all("SELECT rowid, * FROM visual_events ORDER BY rowid DESC LIMIT 200", (errEv, visualEvents) => {
+                                                finish(systems, agentsList, ships || [], memos || [], docs || [], visualEvents || [], blueprints || []);
+                                            });
                                         });
                                     });
                                 });
@@ -79,7 +81,7 @@ function exportWorldState(universeDir, state, lastAgentId) {
         });
     });
 
-    function finish(systems, agents, ships, memos = [], docs = [], visual_events = []) {
+    function finish(systems, agents, ships, memos = [], docs = [], visual_events = [], blueprints = []) {
         let popData = {};
         const popJson = safeReadJsonSync(path.join(universeDir, 'population.json'), null);
         if (popJson && Array.isArray(popJson.agents)) {
@@ -177,6 +179,7 @@ function exportWorldState(universeDir, state, lastAgentId) {
             ships: ships,
             memos: memos,
             docs: docs,
+            blueprints: blueprints,
             visual_events: visual_events,
             events: state.events || []
         };

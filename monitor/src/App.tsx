@@ -84,8 +84,9 @@ export default function App() {
           const parsedLogs: LogEntry[] = historyData.map((d: any, i: number) => {
             const agentId = d.agent || d.agentId || 'System';
             const isSystem = agentId === 'System' || agentId === 'Creator' || agentId === 'Observer';
+            const agentName = agentId === 'Bob' ? 'Robert' : agentId;
             let type: LogCategory = isSystem ? 'system' : 'thought'; // HISTORIC LOGS ARE THOUGHTS ONLY!
-            return { id: `hist-${i}`, tick: d.tick === "?" ? 0 : d.tick, agentId: agentId, type, text: d.text.trim() };
+            return { id: `hist-${i}`, tick: d.tick === "?" ? 0 : d.tick, agentId: agentId, agentName: agentName, type, text: d.text.trim() };
           });
           setLogs(parsedLogs);
           if (parsedLogs.length > 0) lastProcessedTick.current = Math.max(...parsedLogs.map(l => l.tick));
@@ -169,6 +170,7 @@ export default function App() {
                            id: `t-${data.tick}-${a.id}`, 
                            tick: data.tick, 
                            agentId: a.id, 
+                           agentName: a.chosen_name || a.id,
                            type: 'thought', 
                            text: thought 
                        });
@@ -180,6 +182,7 @@ export default function App() {
                            id: `a-${data.tick}-${a.id}`, 
                            tick: data.tick, 
                            agentId: a.id, 
+                           agentName: a.chosen_name || a.id,
                            type: isScut ? 'scut' : 'action', 
                            text: action 
                        });
@@ -205,10 +208,13 @@ export default function App() {
            if (sortedEvents.length > 0) {
                const eventEntries: LogEntry[] = sortedEvents.map(e => {
                    const isScut = e.description.includes('scut(') || e.description.includes('gemeldet') || e.description.includes('nachricht') || e.description.includes('SCUT');
+                   const matchingAgent = data.agents?.find(ag => ag.id === e.actor_id);
+                   const agentName = matchingAgent ? (matchingAgent.chosen_name || matchingAgent.id) : e.actor_id;
                    return {
                        id: `ve-${e.rowid}`,
                        tick: e.cycle,
                        agentId: e.actor_id,
+                       agentName: agentName,
                        type: isScut ? 'scut' : 'action',
                        text: e.description
                    };
@@ -340,11 +346,17 @@ export default function App() {
                       {shipsHere.length > 0 && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', alignContent: 'flex-start', gap: '6px', padding: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', width: '60px' }}>
                               {shipsHere.map(ship => {
+                                  const isUnderConstruction = ship.pilot_id === "UNDER_CONSTRUCTION";
                                   const pilot = bobsHere.find(a => a.active_ship_id === ship.id);
                                   const isASel = selection?.type === 'agent' && pilot && selection.id === pilot.id;
-                                  const shipColor = pilot ? (isASel ? '#fff' : '#0ea5e9') : '#64748b';
+                                  
+                                  const shipColor = isUnderConstruction ? '#f59e0b' : (pilot ? (isASel ? '#fff' : '#0ea5e9') : '#64748b');
+                                  const tooltip = isUnderConstruction 
+                                      ? `${ship.name || 'Unnamed Vessel'} [TROCKENDOCK: ${Math.round((ship.progress_matter / (ship.required_matter || 1)) * 100)}%]`
+                                      : `${ship.name} ${pilot ? '(Bemannt)' : '(Leer)'}`;
+
                                   return (
-                                      <div key={`ship-${ship.id}`} title={`${ship.name} ${pilot ? '(Bemannt)' : '(Leer)'}`} onClick={(e) => { e.stopPropagation(); if (pilot) setSelection({type: 'agent', id: pilot.id}); }} style={{ cursor: pilot ? 'pointer' : 'default', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <div key={`ship-${ship.id}`} title={tooltip} onClick={(e) => { e.stopPropagation(); if (pilot) setSelection({type: 'agent', id: pilot.id}); }} style={{ cursor: pilot ? 'pointer' : 'default', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                          <div style={{ width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderBottom: `12px solid ${shipColor}`, filter: `drop-shadow(0 0 4px ${shipColor})`, transition: 'all 0.2s', transform: isASel ? 'scale(1.2)' : 'scale(1)' }} />
                                       </div>
                                   );

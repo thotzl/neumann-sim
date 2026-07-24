@@ -95,6 +95,14 @@ export type VisualEvent = {
   description: string;
 };
 
+export type Blueprint = {
+  id: number;
+  name: string;
+  author_id: string;
+  matrix_json: string;
+  stats_json: string;
+};
+
 export type WorldState = {
   tick: number; 
   total_turns: number; 
@@ -105,6 +113,7 @@ export type WorldState = {
   ships: Ship[];
   memos?: Memo[];
   docs?: Doc[];
+  blueprints?: Blueprint[];
   visual_events?: VisualEvent[];
   events: string[];
 };
@@ -115,6 +124,7 @@ export interface LogEntry {
   id: string; 
   tick: number; 
   agentId: string; 
+  agentName?: string;
   type: LogCategory; 
   text: string; 
 }

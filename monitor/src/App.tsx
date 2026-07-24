@@ -270,6 +270,7 @@ export default function App() {
           style={{ flex: 1, background: '#020203', overflow: 'hidden', cursor: isDragging ? 'grabbing' : 'grab', position: 'relative' }}
           onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={() => setIsDragging(false)} onMouseLeave={() => setIsDragging(false)} onWheel={handleWheel}
         >
+          <div className="cosmic-stars" />
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: `translate(calc(-50% + ${camera.x}px), calc(-50% + ${camera.y}px)) scale(${camera.zoom})`, transformOrigin: 'center center', transition: isDragging ? 'none' : 'transform 0.15s ease-out' }}>
             <svg style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible', pointerEvents: 'none' }}>
                {/* Transit Lines */}

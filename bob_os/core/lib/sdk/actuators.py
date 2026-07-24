@@ -260,7 +260,7 @@ class Actuators:
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True, action_name='Build Ship')
-    def build_ship(self, cursor, agent, blueprint_name=None, chassis=None):
+    def build_ship(self, cursor, agent, blueprint_name=None, chassis=None, matter_to_invest=None):
         sys_name = agent['location']
         blueprint_name = blueprint_name or chassis or 'Scout'
         
@@ -269,50 +269,63 @@ class Actuators:
             print(f"[DENIED] No active 'shipyard' or 'advanced_shipyard' in {sys_name} found.")
             return False
 
-        cursor.execute("SELECT MAX(id) FROM ships")
-        max_id_row = cursor.fetchone()
-        new_id = (max_id_row[0] or 0) + 1
-        name = f"Ship-{new_id}"
-
-        # 1. Check if name is registered in blueprints (Säule 3)
+        # 1. Determine blueprint cost and material type
         cursor.execute("SELECT matrix_json, stats_json FROM blueprints WHERE name = ?", (blueprint_name,))
         bp_row = cursor.fetchone()
 
-        if not bp_row:
+        if bp_row:
+            stats = json.loads(bp_row['stats_json'])
+            cost = stats['cost']
+            material_type = 'refined_matter'
+        else:
             # LEGACY FALLBACK: Scout chassis built using 1000 raw_matter
             cost = 1000
-            res = transaction_service.pay_pipeline_costs(
-                cursor, self.agent.id, sys_name,
-                energy_cost=0, matter_cost=cost, matter_type='raw_matter'
-            )
-            if not res:
-                return False
-                
-            matter_from_depot = res["matter_from_depot"]
-            matter_from_inventory = res["matter_from_inventory"]
+            material_type = 'raw_matter'
+
+        # 2. Check for existing ship of this blueprint under construction in the current system
+        cursor.execute("SELECT * FROM ships WHERE system_name = ? AND pilot_id = 'UNDER_CONSTRUCTION' AND blueprint_name = ?", (sys_name, blueprint_name))
+        existing_ship = cursor.fetchone()
+
+        if existing_ship:
+            ship_id = existing_ship['id']
+            progress_matter = existing_ship['progress_matter'] or 0
+            required_matter = existing_ship['required_matter'] or cost
+            name = existing_ship['name']
+        else:
+            # Create a new ship row with 'UNDER_CONSTRUCTION' pilot ID
+            cursor.execute("SELECT MAX(id) FROM ships")
+            max_id_row = cursor.fetchone()
+            new_id = (max_id_row[0] or 0) + 1
+            name = f"Ship-{new_id}"
             
-            # Insert standard Scout with legacy properties
             cursor.execute("""
                 INSERT INTO ships (
-                    id, name, chassis, system_name, raw_matter_inventory, energy_inventory, 
-                    matter_storage_capacity, energy_capacity, max_speed, thrust, mass, 
-                    blueprint_name, has_drill, has_fabricator, has_logic_core
-                ) VALUES (?, ?, ?, ?, 0, 100, 300, 500, 300, 500, 100, 'Scout', 0, 0, 0)
-            """, (new_id, name, blueprint_name, sys_name))
+                    id, name, chassis, pilot_id, system_name, blueprint_name,
+                    progress_matter, required_matter, health, max_health,
+                    raw_matter_inventory, refined_matter_inventory, energy_inventory,
+                    matter_storage_capacity, energy_capacity, max_speed, thrust, mass,
+                    has_drill, has_fabricator, has_logic_core
+                ) VALUES (?, ?, ?, 'UNDER_CONSTRUCTION', ?, ?, 0, ?, 100, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+            """, (new_id, name, blueprint_name, sys_name, blueprint_name, cost))
             
-            cursor.execute("SELECT * FROM ships WHERE id = ?", (new_id,))
-            new_ship_row = cursor.fetchone()
-            print(f"[SUCCESS] {blueprint_name} vessel {get_ship_display_name(new_ship_row)} built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
-            return True
+            ship_id = new_id
+            progress_matter = 0
+            required_matter = cost
 
-        # 2. CUSTOM BLUEPRINT (Säule 3)
-        stats = json.loads(bp_row['stats_json'])
-        cost = stats['cost']
-        
-        # Custom ships built using refined_matter!
+        # 3. Calculate remaining payment and perform transaction
+        remaining = required_matter - progress_matter
+        if matter_to_invest is not None and matter_to_invest > 0:
+            payment = min(matter_to_invest, remaining)
+        else:
+            payment = remaining
+
+        if payment <= 0:
+            print(f"[ERROR] Ship construction is already fully funded.")
+            return False
+
         res = transaction_service.pay_pipeline_costs(
             cursor, self.agent.id, sys_name,
-            energy_cost=0, matter_cost=cost, matter_type='refined_matter'
+            energy_cost=0, matter_cost=payment, matter_type=material_type
         )
         if not res:
             return False
@@ -320,27 +333,43 @@ class Actuators:
         matter_from_depot = res["matter_from_depot"]
         matter_from_inventory = res["matter_from_inventory"]
 
-        has_drill = stats.get('has_drill', 0)
-        has_fabricator = stats.get('has_fabricator', 0)
-        has_logic_core = stats.get('has_logic_core', 0)
-        mass = stats.get('mass', 100)
-        speed = stats.get('speed', 300)
-        thrust = stats.get('thrust', 500)
-        cargo = stats.get('cargo', 300)
-        battery = stats.get('battery', 500)
+        # 4. Update ship progress
+        new_progress = progress_matter + payment
+        cursor.execute("UPDATE ships SET progress_matter = ? WHERE id = ?", (new_progress, ship_id))
 
-        cursor.execute("""
-            INSERT INTO ships (
-                id, name, chassis, pilot_id, system_name, x, y, health, max_health,
-                raw_matter_inventory, refined_matter_inventory, energy_inventory,
-                matter_storage_capacity, energy_capacity, max_speed, thrust, mass,
-                blueprint_name, has_drill, has_fabricator, has_logic_core
-            ) VALUES (?, ?, ?, NULL, ?, 0, 0, 100, 100, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (new_id, name, blueprint_name, sys_name, battery, cargo, battery, speed, thrust, mass, blueprint_name, has_drill, has_fabricator, has_logic_core))
+        # 5. Check if finished
+        if new_progress >= required_matter:
+            if bp_row:
+                stats = json.loads(bp_row['stats_json'])
+                has_drill = stats.get('has_drill', 0)
+                has_fabricator = stats.get('has_fabricator', 0)
+                has_logic_core = stats.get('has_logic_core', 0)
+                mass = stats.get('mass', 100)
+                speed = stats.get('speed', 300)
+                thrust = stats.get('thrust', 500)
+                cargo = stats.get('cargo', 300)
+                battery = stats.get('battery', 500)
+                
+                cursor.execute("""
+                    UPDATE ships SET 
+                        pilot_id = NULL, energy_inventory = ?, matter_storage_capacity = ?, energy_capacity = ?,
+                        max_speed = ?, thrust = ?, mass = ?, has_drill = ?, has_fabricator = ?, has_logic_core = ?
+                    WHERE id = ?
+                """, (battery, cargo, battery, speed, thrust, mass, has_drill, has_fabricator, has_logic_core, ship_id))
+            else:
+                # Standard legacy scout specs
+                cursor.execute("""
+                    UPDATE ships SET 
+                        pilot_id = NULL, raw_matter_inventory = 0, energy_inventory = 100, matter_storage_capacity = 300, 
+                        energy_capacity = 500, max_speed = 300, thrust = 500, mass = 100, has_drill = 0, has_fabricator = 0, has_logic_core = 0
+                    WHERE id = ?
+                """, (ship_id,))
 
-        cursor.execute("SELECT * FROM ships WHERE id = ?", (new_id,))
-        new_ship_row = cursor.fetchone()
-        print(f"[SUCCESS] {blueprint_name} vessel {get_ship_display_name(new_ship_row)} built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
+            cursor.execute("SELECT * FROM ships WHERE id = ?", (ship_id,))
+            new_ship_row = cursor.fetchone()
+            print(f"[SUCCESS] {blueprint_name} vessel {get_ship_display_name(new_ship_row)} built successfully! Cost: {matter_from_depot} Depot / {matter_from_inventory} Inv.")
+        else:
+            print(f"[SUCCESS] Invested {payment} {material_type} in {blueprint_name} construction. Progress: {new_progress}/{required_matter}.")
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True, action_name='Deconstruct Ship')
@@ -361,7 +390,24 @@ class Actuators:
             print(f"[DENIED] Ship {ship_id} is in {ship['system_name']}, but you are in {sys_name}.")
             return False
 
-        # 3. Mind-Orphan Guard (Safety Check)
+        # 3. Construction Scrapping vs. Mind-Orphan Guard
+        if ship['pilot_id'] == 'UNDER_CONSTRUCTION':
+            # Refund 100% of progress_matter
+            refund = ship['progress_matter'] or 0
+            cursor.execute("SELECT stats_json FROM blueprints WHERE name = ?", (ship['blueprint_name'],))
+            bp_row = cursor.fetchone()
+            material_type = 'refined_matter' if bp_row else 'raw_matter'
+            
+            if material_type == 'refined_matter':
+                cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot + ? WHERE name = ?", (refund, sys_name))
+            else:
+                cursor.execute("UPDATE systems SET raw_matter_depot = raw_matter_depot + ? WHERE name = ?", (refund, sys_name))
+                
+            ship_display = get_ship_display_name(ship)
+            cursor.execute("DELETE FROM ships WHERE id = ?", (ship_id,))
+            print(f"[SUCCESS] Ship {ship_display} under construction ({ship['chassis']}) deconstructed successfully. Refunded {refund} {material_type} (100% of progress) to Sektor Depot.")
+            return True
+
         if ship['pilot_id'] is not None:
             print(f"[DENIED] Cannot deconstruct ship {ship_id}. Pilot '{ship['pilot_id']}' is still onboard! Eject pilot first.")
             return False
@@ -565,6 +611,10 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
             
         if ship['system_name'] != agent['location']:
             print(f"[DENIED] Ship {ship_id} is in {ship['system_name']}, but you are in {agent['location']}.")
+            return False
+            
+        if ship['pilot_id'] == 'UNDER_CONSTRUCTION':
+            print(f"[DENIED] Cannot board. Ship {get_ship_display_name(ship)} is still under construction!")
             return False
             
         if ship['pilot_id'] is not None and ship['pilot_id'] != self.agent.id:

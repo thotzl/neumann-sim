@@ -40,6 +40,18 @@ def migrate():
         except sqlite3.OperationalError:
             pass # Column already exists
             
+    # 3. Add columns to ships table (for staged construction)
+    ship_cols = [
+        ("progress_matter", "INTEGER DEFAULT 0"),
+        ("required_matter", "INTEGER DEFAULT 0")
+    ]
+    for col_name, col_type in ship_cols:
+        try:
+            cursor.execute(f"ALTER TABLE ships ADD COLUMN {col_name} {col_type}")
+            print(f"[MIGRATION] Column '{col_name}' added to ships.")
+        except sqlite3.OperationalError:
+            pass # Column already exists
+            
     conn.commit()
     conn.close()
     print("[MIGRATION] Database schema migration successfully applied.")

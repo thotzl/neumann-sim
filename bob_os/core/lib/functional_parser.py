@@ -32,7 +32,7 @@ METHOD_META = {
     "view_blueprint": {"params": ["name"], "greedy": None},
     "list_blueprints": {"params": [], "greedy": None},
     "delete_blueprint": {"params": ["name"], "greedy": None},
-    "build_ship": {"params": ["blueprint_name"], "greedy": None},
+    "build_ship": {"params": ["blueprint_name", "matter_to_invest"], "greedy": None},
     "deconstruct_ship": {"params": ["ship_id"], "greedy": None},
     "rename_ship": {"params": ["ship_id", "new_name"], "greedy": "new_name"}
 }

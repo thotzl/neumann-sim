@@ -70,7 +70,9 @@ def init():
         blueprint_name TEXT DEFAULT 'Scout',
         has_drill INTEGER DEFAULT 0,
         has_fabricator INTEGER DEFAULT 0,
-        has_logic_core INTEGER DEFAULT 0
+        has_logic_core INTEGER DEFAULT 0,
+        progress_matter INTEGER DEFAULT 0,
+        required_matter INTEGER DEFAULT 0
     )''')
 
     # 2.6 Blueprints (Säule 3) - Konstruktions-Bibliothek

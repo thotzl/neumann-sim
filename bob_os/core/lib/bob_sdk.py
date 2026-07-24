@@ -47,7 +47,7 @@ class Agent:
     def rename_system(self, new_name): return self.actuators.rename_system(new_name)
     def board(self, ship_id): return self.actuators.board(ship_id)
     def exit_ship(self): return self.actuators.exit_ship()
-    def build_ship(self, blueprint_name=None, chassis=None): return self.actuators.build_ship(blueprint_name, chassis)
+    def build_ship(self, blueprint_name=None, chassis=None, matter_to_invest=None): return self.actuators.build_ship(blueprint_name, chassis, matter_to_invest)
     def deconstruct_ship(self, ship_id): return self.actuators.deconstruct_ship(ship_id)
     def rename_ship(self, ship_id, new_name): return self.actuators.rename_ship(ship_id, new_name)
 

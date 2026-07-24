@@ -41,7 +41,7 @@ DESCRIPTIONS = {
     "fs": "Listet die Dateien (Skripte) im eigenen Dateisystem auf.",
     "board": "Betritt ein Schiff am aktuellen Standort (ID nötig). Erlaubt physische Aktionen (mine, build, move).",
     "exit_ship": "Verlässt das aktuelle Schiff und kehrt in die SEM-Matrix zurück.",
-    "build_ship": "Baut ein neues Schiff in einer aktiven shipyard anhand eines Blaupausen-Namens.",
+    "build_ship": "Baut ein neues Schiff am Standort atomar oder in mehreren finanziellen Etappen (Argumente: blueprint_name, matter_to_invest).",
     "deconstruct_ship": "Baut ein unbemanntes Schiff am Standort ab und erstattet 50% der Baukosten an das Sektor-Depot (Argumente: ship_id).",
     "rename_ship": "Benennt ein physisches Schiff am aktuellen Standort um (Argumente: ship_id, new_name).",
     "design_blueprint": "Simuliere und plane eine neue Schiffsklasse anhand einer Gitter-Matrix (Argumente: name, matrix_json).",
@@ -65,7 +65,8 @@ def print_help():
     
     EXAMPLES = {
         "scut": 'me.scut(receiver_id="Instance-1", message="Hallo Schwarm, Kommata sind hier erlaubt!")',
-        "build": 'me.build(building_type="matter_silo", matter_to_invest=100)'
+        "build": 'me.build(building_type="matter_silo", matter_to_invest=100)',
+        "build_ship": 'me.build_ship(blueprint_name="Pioneer-Scout-MK3", matter_to_invest=500)'
     }
 
     for method, meta in METHOD_META.items():
@@ -142,7 +143,8 @@ def main():
         elif method == "build_ship":
             agent.build_ship(
                 blueprint_name=params.get('blueprint_name'),
-                chassis=params.get('chassis')
+                chassis=params.get('chassis'),
+                matter_to_invest=safe_int(params.get('matter_to_invest'), 'matter_to_invest')
             )
         elif method == "deconstruct_ship":
             agent.deconstruct_ship(

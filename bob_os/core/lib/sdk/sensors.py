@@ -194,9 +194,23 @@ class Sensors:
                 theoretical_max += stats.get('energy_regen_bonus', 0) * lvl
                 total_maint += stats.get('maintenance_energy_cost', 1)
 
-        # 2. Lokale Schiffe
-        cursor.execute("SELECT id, name, chassis, pilot_id FROM ships WHERE system_name = ?", (sys_name,))
-        local_ships = [dict(r) for r in cursor.fetchall()]
+        # 2. Lokale Schiffe (Inklusive progress_matter und required_matter für Etappenbau-Dashboard)
+        cursor.execute("SELECT id, name, chassis, pilot_id, progress_matter, required_matter, blueprint_name FROM ships WHERE system_name = ?", (sys_name,))
+        local_ships_raw = cursor.fetchall()
+        
+        local_ships = []
+        for r in local_ships_raw:
+            ship_dict = dict(r)
+            if r['pilot_id'] == 'UNDER_CONSTRUCTION':
+                bp_name = r['blueprint_name'] or r['chassis'] or 'Scout'
+                # Check blueprint to see material type
+                cursor.execute("SELECT stats_json FROM blueprints WHERE name = ?", (bp_name,))
+                bp_row = cursor.fetchone()
+                material = 'refined_matter' if bp_row else 'raw_matter'
+                prog = r['progress_matter'] or 0
+                req = r['required_matter'] or 1000
+                ship_dict['name'] = f"{r['name']} ({bp_name} Construction: {prog}/{req} {material})"
+            local_ships.append(ship_dict)
 
         # 3. Lokale andere Bobs (inkl. Host-Wissen)
         try:

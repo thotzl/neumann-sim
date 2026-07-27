@@ -9,7 +9,10 @@ def analyze(exp_name):
     db_file = os.path.join(exp_dir, "_verse", "universe.db")
 
     if not os.path.exists(state_file):
-        print("Keine state.json gefunden.")
+        print(f"Keine state.json unter {state_file} gefunden.")
+        return
+    if not os.path.exists(db_file):
+        print(f"Keine universe.db unter {db_file} gefunden.")
         return
 
     with open(state_file, 'r') as f:
@@ -19,27 +22,94 @@ def analyze(exp_name):
     print(f"Aktuelle Runde: {state.get('round')}")
     print("\n--- AGENTEN (state.json) ---")
     for agent in state.get('agents', []):
-        print(f"  ID: {agent['id']} | Alive: {agent['alive']} | System: {agent['location']}")
+        print(f"  ID: {agent['id']} | Alive: {agent.get('alive', True)} | System: {agent.get('location', 'SYS_X0_Y0')}")
 
     print("\n--- DATENBANK ---")
     conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     
-    agents = c.execute("SELECT * FROM agents").fetchall()
+    # 1. Agents (DB)
     print("Agenten (DB):")
-    for a in agents:
-        print(f"  {a['id']} (Name: {a['chosen_name']}) - Energy: {a['energy_inventory']}, Matter (Raw/Refined): {a['raw_matter_inventory']}/{a['refined_matter_inventory']}")
+    try:
+        agents = c.execute("SELECT * FROM agents").fetchall()
+        for a_row in agents:
+            a = dict(a_row)
+            ship_info = ""
+            if 'active_ship_id' in a.keys() and a['active_ship_id'] is not None:
+                ship_row = c.execute("SELECT * FROM ships WHERE id=?", (a['active_ship_id'],)).fetchone()
+                if ship_row:
+                    ship = dict(ship_row)
+                    ship_info = f" | Pilotiert: '{ship['name']}' ({ship.get('blueprint_name', 'unclassified')}) | Inventar M/RM/E: {ship['raw_matter_inventory']}/{ship['refined_matter_inventory']}/{ship['energy_inventory']}"
+                else:
+                    ship_info = f" | Pilotiert: Ship ID {a['active_ship_id']} (nicht in DB gefunden!)"
+            else:
+                host_type = a.get('host_type', 'unknown')
+                host_id = a.get('host_id', 'unknown')
+                ship_info = f" | Disembodied in Host: {host_type} (ID: {host_id})"
+            
+            print(f"  {a['id']} (Name: {a.get('chosen_name', 'Unnamed')}) - Status: {a.get('status', 'active')} | System: {a.get('target_system') or 'SYS_X0_Y0'}{ship_info}")
+    except sqlite3.Error as e:
+        print(f"  Fehler beim Lesen der Agenten-Tabelle: {e}")
+
+    # 2. Ships (DB)
+    print("\nSchiffe (DB):")
+    try:
+        table_exists = c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ships'").fetchone()
+        if table_exists:
+            ships = c.execute("SELECT * FROM ships").fetchall()
+            if ships:
+                for s_row in ships:
+                    s = dict(s_row)
+                    print(f"  ID {s['id']} [{s['system_name']}]: '{s['name']}' ({s.get('blueprint_name', 'unclassified')}) | Pilot: {s['pilot_id'] or 'None'} | HP: {s['health']}/{s['max_health']} | M/RM/E: {s['raw_matter_inventory']}/{s['refined_matter_inventory']}/{s['energy_inventory']}")
+            else:
+                print("  Keine Schiffe registriert.")
+        else:
+            print("  Tabelle 'ships' existiert in diesem DB-Schema nicht.")
+    except sqlite3.Error as e:
+        print(f"  Fehler beim Lesen der Schiffe-Tabelle: {e}")
         
-    systems = c.execute("SELECT * FROM systems").fetchall()
+    # 3. Systems (DB)
     print("\nSysteme (DB):")
-    for s in systems:
-        print(f"  {s['name']} - Core: {s['extractable_matter_in_core']} | Depot E: {s['energy_depot']}/{s['depot_energy_capacity']} | Depot M: {s['raw_matter_depot']}/{s['depot_matter_capacity']} | Depot RM: {s['refined_matter_depot']}")
+    try:
+        systems = c.execute("SELECT * FROM systems").fetchall()
+        for s_row in systems:
+            s = dict(s_row)
+            # Zeige nur Sektoren, die entweder bewohnt sind oder bereits Ressourcen/Infrastruktur besitzen
+            if s['extractable_matter_in_core'] is not None or s['raw_matter_depot'] > 0 or s['refined_matter_depot'] > 0 or s['energy_depot'] > 0:
+                print(f"  {s['name']} (x={s.get('x', 0)}, y={s.get('y', 0)}) - Core: {s['extractable_matter_in_core']} | Depot E: {s['energy_depot']}/{s['depot_energy_capacity']} | Depot M/RM: {s['raw_matter_depot']}/{s['depot_matter_capacity']} (Refined: {s['refined_matter_depot']})")
+    except sqlite3.Error as e:
+        print(f"  Fehler beim Lesen der Systeme-Tabelle: {e}")
         
-    infra = c.execute("SELECT * FROM infrastructure").fetchall()
+    # 4. Infrastructure (DB)
     print("\nInfrastruktur (DB):")
-    for i in infra:
-        print(f"  ID {i['id']} [{i['system_name']}]: {i['type']} Lvl {i['level']} ({i['health']} HP) - Status: {i['status']}")
+    try:
+        infra = c.execute("SELECT * FROM infrastructure").fetchall()
+        if infra:
+            for i_row in infra:
+                i = dict(i_row)
+                print(f"  ID {i['id']} [{i['system_name']}]: {i['type']} Lvl {i['level']} ({i['health']}/{i['max_health']} HP) - Status: {i['status']} | Progress: {i['progress_matter']}/{i['required_matter']}")
+        else:
+            print("  Keine Infrastruktur gebaut.")
+    except sqlite3.Error as e:
+        print(f"  Fehler beim Lesen der Infrastruktur-Tabelle: {e}")
+
+    # 5. Blueprints (DB)
+    print("\nBlaupausen (DB):")
+    try:
+        table_exists = c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='blueprints'").fetchone()
+        if table_exists:
+            blueprints = c.execute("SELECT * FROM blueprints").fetchall()
+            if blueprints:
+                for bp_row in blueprints:
+                    bp = dict(bp_row)
+                    print(f"  '{bp['name']}' (Autor: {bp['author_id']})")
+            else:
+                print("  Keine Blaupausen gespeichert.")
+        else:
+            print("  Tabelle 'blueprints' existiert nicht.")
+    except sqlite3.Error as e:
+        print(f"  Fehler beim Lesen der Blaupausen-Tabelle: {e}")
 
     conn.close()
 

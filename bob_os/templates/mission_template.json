@@ -6,12 +6,12 @@
   "reproduction": true,
   "roles": {
     "agent": {
-      "driver_path": "./sim_engine/utils/ai_drivers/groq_driver",
-      "model": "llama-3.3-70b-versatile"
+      "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
+      "model": "gemini-3.6-flash"
     },
     "compressor": {
-      "driver_path": "./sim_engine/utils/ai_drivers/groq_driver",
-      "model": "llama-3.3-70b-versatile"
+      "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
+      "model": "gemini-3.6-flash"
     }
   },
   "config_override": {

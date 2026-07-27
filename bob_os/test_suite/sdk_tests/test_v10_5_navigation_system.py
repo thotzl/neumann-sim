@@ -106,16 +106,21 @@ class TestNavigationSystem(unittest.TestCase):
         self.assertEqual(route['status'], 'routable')
         self.assertEqual(route['origin'], 'SYS_A')
         self.assertEqual(route['destination'], 'SYS_C')
+        self.assertEqual(route['total_route_eta'], '2 turns') # 1 turn per 500-unit leg (speed 300) -> 2 turns total!
         
         plan = route['flight_plan']
         self.assertEqual(len(plan), 2)
         self.assertEqual(plan[0]['leg'], 1)
         self.assertEqual(plan[0]['system_id'], 'SYS_B')
         self.assertEqual(plan[0]['segment_distance'], 500.0)
+        self.assertEqual(plan[0]['travel_time'], '1 turns')
+        self.assertEqual(plan[0]['cumulative_time'], '1 turns') # Cumulative elapsed turns at Leg 1
         
         self.assertEqual(plan[1]['leg'], 2)
         self.assertEqual(plan[1]['system_id'], 'SYS_C')
         self.assertEqual(plan[1]['segment_distance'], 500.0)
+        self.assertEqual(plan[1]['travel_time'], '1 turns')
+        self.assertEqual(plan[1]['cumulative_time'], '2 turns') # Cumulative elapsed turns at Leg 2 (Final Destination!)
 
     def test_network_comms_masking(self):
         # Option B GPS Realismus-Check

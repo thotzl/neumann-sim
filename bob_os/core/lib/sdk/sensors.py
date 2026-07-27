@@ -522,23 +522,27 @@ class Sensors:
             if current == dest_sys:
                 # Build beautiful, structured flight plan
                 flight_plan = []
+                cumulative_ticks = 0
                 for i in range(len(path) - 1):
                     s1 = all_systems[path[i]]
                     s2 = all_systems[path[i+1]]
                     seg_dist = physics_service.calc_distance(s1['x'], s1['y'], s2['x'], s2['y'])
                     seg_ticks = max(1, int(seg_dist / speed))
                     seg_cost = round(seg_dist * cost_per_dist, 2)
-                    
+
+                    cumulative_ticks += seg_ticks
+
                     # Check if target system has solar collectors for recharging
                     has_solar = system_service.has_active_infrastructure(cursor, s2['name'], 'solar_collector')
                     recharge_status = "Solar available for recharge." if has_solar else "No local solar generator."
-                    
+
                     flight_plan.append({
                         "leg": i + 1,
                         "system_id": s2['name'],
                         "name": s2['display_name'] if s2['display_name'] else "Unnamed",
                         "segment_distance": round(seg_dist, 1),
                         "travel_time": f"{seg_ticks} turns",
+                        "cumulative_time": f"{cumulative_ticks} turns",
                         "energy_cost": seg_cost,
                         "recharge_status": recharge_status
                     })
@@ -546,6 +550,7 @@ class Sensors:
                     "origin": start_sys,
                     "destination": dest_sys,
                     "status": "routable",
+                    "total_route_eta": f"{cumulative_ticks} turns",
                     "flight_plan": flight_plan
                 }
                 

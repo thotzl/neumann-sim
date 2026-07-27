@@ -17,7 +17,7 @@ class Journal:
         self.agent = agent
 
     @agent_service.with_agent_context(allow_disembodied=True)
-    def memo(self, cursor, agent, action, content=None, id=None, query=None):
+    def memo(self, cursor, agent, action, content=None, id=None, query=None, status=None):
         action = action.lower() if action else ""
         if action == 'add':
             if not content:
@@ -53,7 +53,10 @@ class Journal:
             if id is not None:
                 cursor.execute("SELECT id, content, status FROM memos WHERE agent_id = ? AND id = ?", (self.agent.id, id))
             else:
-                cursor.execute("SELECT id, content, status FROM memos WHERE agent_id = ? ORDER BY id ASC", (self.agent.id,))
+                if status == 'all':
+                    cursor.execute("SELECT id, content, status FROM memos WHERE agent_id = ? ORDER BY id ASC", (self.agent.id,))
+                else:
+                    cursor.execute("SELECT id, content, status FROM memos WHERE agent_id = ? AND status = 'open' ORDER BY id ASC", (self.agent.id,))
             return [dict(r) for r in cursor.fetchall()]
         elif action == 'find':
             if not query:

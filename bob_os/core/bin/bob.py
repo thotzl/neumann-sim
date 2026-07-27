@@ -50,7 +50,11 @@ DESCRIPTIONS = {
     "list_blueprints": "Lists all registered ship blueprints in the current sector.",
     "delete_blueprint": "Deletes a draft from the blueprint archive (Arguments: name).",
     "inspect": "Performs a detailed local or espionage inspection (Arguments: ship_id, structure_id, system_name).",
-    "memo": "Manage your private memos, diary entries, and logs (Actions: add, check, uncheck, remove, list, find).",
+    "map": "Active stellar map directory. Optional arguments: range (integer), query (string), system_id (string).",
+    "route": "Calculates the optimal Hop-by-Hop Dijkstra travel route to a destination (Arguments: destination).",
+    "eta": "Estimates direct flight travel duration (transit ticks) and energy costs to a destination (Arguments: destination).",
+    "network": "Queries active replicants. Masked as Unknown if out of range with no active comms_relay.",
+    "memo": "Manage your private memos, diary entries, and logs (Actions: add, check, uncheck, remove, list, find; Optional list filter: status='all').",
     "docs": "Manage sector documents and public relics (Actions: add, list, find, remove).",
 }
 
@@ -189,12 +193,37 @@ def main():
             )
             if res:
                 print(yaml.dump(clean_dict(res), sort_keys=False, default_flow_style=False).strip())
+        elif method == "map":
+            res = agent.map(
+                range=safe_int(params.get('range'), 'range'),
+                query=params.get('query'),
+                system_id=params.get('system_id')
+            )
+            if isinstance(res, list) and len(res) > 0:
+                print(yaml.dump([clean_dict(r) for r in res], sort_keys=False, default_flow_style=False).strip())
+        elif method == "route":
+            res = agent.route(
+                destination=params.get('destination')
+            )
+            if res:
+                print(yaml.dump(clean_dict(res), sort_keys=False, default_flow_style=False).strip())
+        elif method == "eta":
+            res = agent.eta(
+                destination=params.get('destination')
+            )
+            if res:
+                print(yaml.dump(clean_dict(res), sort_keys=False, default_flow_style=False).strip())
+        elif method == "network":
+            res = agent.network()
+            if isinstance(res, list) and len(res) > 0:
+                print(yaml.dump([clean_dict(r) for r in res], sort_keys=False, default_flow_style=False).strip())
         elif method == "memo":
             res = agent.memo(
                 action=params.get('action'),
                 content=params.get('content'),
                 id=safe_int(params.get('id'), 'id'),
-                query=params.get('query')
+                query=params.get('query'),
+                status=params.get('status')
             )
             if params.get('action') in ['list', 'find'] and res:
                 print(yaml.dump([clean_dict(r) for r in res], sort_keys=False, default_flow_style=False).strip())

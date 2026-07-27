@@ -304,45 +304,6 @@ class Sensors:
             if max_rowid > agent['last_seen_event_id']:
                 cursor.execute("UPDATE agents SET last_seen_event_id = ? WHERE id = ?", (max_rowid, self.agent.id))
 
-        # 5. Radar: Discovered Sectors (with Distance)
-        cursor.execute("SELECT name, x, y FROM systems WHERE name != ?", (sys_name,))
-        other_systems = []
-        for r in cursor.fetchall():
-            dist = int(physics_service.calc_distance(system['x'], system['y'], r['x'], r['y']))
-            other_systems.append({
-                "name": r['name'],
-                "coordinates": f"X{r['x']}-Y{r['y']}",
-                "distance": dist
-            })
-
-        # 6. Radar: Distant Bobs (Only ID, Name, Status, Location)
-        try:
-            cursor.execute("""
-                SELECT id, chosen_name, status, location FROM (
-                    SELECT id, chosen_name, status,
-                           CASE 
-                               WHEN status = 'traveling' THEN 'Interstellar'
-                               WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
-                               WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
-                               ELSE 'Unknown'
-                           END AS location
-                    FROM agents
-                ) WHERE location != ? AND id != ?
-            """, (sys_name, self.agent.id))
-            
-            # Name-First Formatting for distant other instances (Pillar 1 & 3)
-            distant_bobs = []
-            for r in cursor.fetchall():
-                distant_bobs.append({
-                    "name": get_display_name(r),
-                    "id": r['id'],
-                    "chosen_name": r['chosen_name'], # Legacy alias
-                    "location": r['location'],
-                    "status": r['status']
-                })
-        except sqlite3.OperationalError:
-            distant_bobs = []
-
         # 7. Open Memos/Protocols (Task 4)
         try:
             cursor.execute("SELECT id, content FROM memos WHERE agent_id = ? AND status = 'open' ORDER BY id ASC", (self.agent.id,))
@@ -370,6 +331,7 @@ class Sensors:
 
         # Load Host Ship Data cleanly in advance (Pillar 1 & 3: SSoT Telemetry Aggregation)
         host_dict = {}
+        host_telemetry = {}
         if host_type == 'ship' and host_id:
             cursor.execute("""
                 SELECT id, name, chassis, pilot_id, health, max_health,
@@ -389,6 +351,20 @@ class Sensors:
                 
                 # SSoT Aggregation (No lambdas!)
                 host_dict = aggregate_ship_telemetry(r, bp_stats)
+                
+                # Hoch-kondensierte SSoT-Schiffstelemetrie!
+                active_modules = [k for k, v in host_dict.get('capabilities', {}).items() if v == 'active']
+                host_telemetry = {
+                    "type": "ship",
+                    "id": int(host_id),
+                    "name": host_dict.get('name', 'Unnamed'),
+                    "class": f"{host_dict.get('blueprint', 'Unknown')} (chassis: {r['chassis']})",
+                    "integrity": f"{host_dict.get('health', 100)}/{host_dict.get('max_health', 100)} HP",
+                    "cargo": f"{host_dict.get('inventory', {}).get('raw_matter', 0)}M/{host_dict.get('inventory', {}).get('refined_matter', 0)}RM (capacity: {host_dict.get('stats', {}).get('storage_capacity', 5000)})",
+                    "energy": f"{host_dict.get('inventory', {}).get('energy', 0)}E (capacity: {host_dict.get('stats', {}).get('energy_capacity', 10000)})",
+                    "specs": f"speed {host_dict.get('stats', {}).get('max_speed', 300)} / thrust {host_dict.get('stats', {}).get('thrust', 500)} / mass {host_dict.get('stats', {}).get('mass', 1200)}",
+                    "modules": active_modules
+                }
 
         return {
             "local_system": {
@@ -420,23 +396,223 @@ class Sensors:
                 },
                 "storage_capacity": storage_capacity,
                 "status": agent['status'],
-                "open_memos_and_protocols": memos_list,
-                "host": {
-                    "type": host_type,
-                    "id": host_id,
-                    "inventory": {
-                        "raw_matter": agent['raw_matter_inventory'],
-                        "refined_matter": agent['refined_matter_inventory'],
-                        "energy": agent['energy_inventory']
-                    },
-                    "storage_capacity": storage_capacity,
-                    **host_dict
-                }
-            },
-            "radar_of_distant_sectors": other_systems,
-            "radar_of_distant_signatures": distant_bobs
+                "memos_open": len(memos_list),
+                "host": host_telemetry
+            }
         }
         
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def map(self, cursor, agent, range=None, query=None, system_id=None):
+        """Active stellar map and navigation system with modular filters."""
+        cursor.execute("SELECT name, x, y, display_name FROM systems")
+        rows = cursor.fetchall()
+        
+        current_system = system_service.get_system_or_fail(cursor, agent['location'])
+        if not current_system:
+            return []
+            
+        discovered = []
+        for r in rows:
+            dist = int(physics_service.calc_distance(current_system['x'], current_system['y'], r['x'], r['y']))
+            
+            # Apply Range Filter
+            if range is not None and dist > int(range):
+                continue
+                
+            # Apply Display Name Query Filter
+            disp_name = r['display_name'] if r['display_name'] else "Unnamed"
+            if query is not None and query.lower() not in disp_name.lower():
+                continue
+                
+            # Apply Catalog ID Filter
+            if system_id is not None and system_id.lower() != r['name'].lower():
+                continue
+                
+            discovered.append({
+                "system_id": r['name'],
+                "name": disp_name,
+                "coords": f"X{r['x']}-Y{r['y']}",
+                "distance": dist
+            })
+        return discovered
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def eta(self, cursor, agent, destination):
+        """Calculates transit duration and energy cost for a direct flight."""
+        cursor.execute("SELECT name, x, y, display_name FROM systems WHERE name = ? OR display_name = ?", (destination, destination))
+        target = cursor.fetchone()
+        if not target:
+            print(f"[ERROR] Destination '{destination}' has not been discovered yet.")
+            return False
+            
+        current_system = system_service.get_system_or_fail(cursor, agent['location'])
+        if not current_system:
+            return False
+            
+        dist = physics_service.calc_distance(current_system['x'], current_system['y'], target['x'], target['y'])
+        
+        phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
+        cost_per_dist = phys.get('cost_per_distance', 0.1)
+        energy_cost = round(dist * cost_per_dist, 2)
+        
+        speed = config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300)
+        ticks = max(1, int(dist / speed))
+        
+        return {
+            "destination_id": target['name'],
+            "name": target['display_name'] if target['display_name'] else "Unnamed",
+            "distance": round(dist, 1),
+            "estimated_ticks": ticks,
+            "estimated_energy_cost": energy_cost
+        }
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def route(self, cursor, agent, destination):
+        """Calculates a hop-by-hop flight route based on Dijkstra pathfinding and ship fuel range."""
+        cursor.execute("SELECT name, x, y, display_name FROM systems WHERE name = ? OR display_name = ?", (destination, destination))
+        target_row = cursor.fetchone()
+        if not target_row:
+            print(f"[ERROR] Destination '{destination}' has not been discovered yet.")
+            return False
+            
+        start_sys = agent['location']
+        dest_sys = target_row['name']
+        
+        if start_sys == dest_sys:
+            return {
+                "status": "arrived",
+                "message": "You are already at the destination.",
+                "flight_plan": []
+            }
+            
+        # Determine fuel/energy range limit of the ship
+        max_energy_range = 1200 # Default fallback range
+        host_type = agent.get('host_type')
+        host_id = agent.get('host_id')
+        
+        if host_type == 'ship' and host_id:
+            cursor.execute("SELECT energy_capacity, blueprint_name, chassis FROM ships WHERE id = CAST(? AS INTEGER)", (host_id,))
+            s_row = cursor.fetchone()
+            if s_row:
+                max_energy_range = s_row['energy_capacity']
+                
+        # Fetch all discovered systems
+        cursor.execute("SELECT name, x, y, display_name FROM systems")
+        all_systems = {r['name']: dict(r) for r in cursor.fetchall()}
+        
+        # Build Hop-by-Hop Adjacency Graph (Dijkstra)
+        # Two nodes are connected if the Euclidean distance between them is within the ship's energy/fuel range.
+        import heapq
+        
+        queue = [(0, start_sys, [])]
+        seen = set()
+        min_dist = {start_sys: 0}
+        
+        phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
+        cost_per_dist = phys.get('cost_per_distance', 0.1)
+        speed = config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300)
+        
+        while queue:
+            (cost, current, path) = heapq.heappop(queue)
+            if current in seen:
+                continue
+            seen.add(current)
+            
+            path = path + [current]
+            if current == dest_sys:
+                # Build beautiful, structured flight plan
+                flight_plan = []
+                for i in range(len(path) - 1):
+                    s1 = all_systems[path[i]]
+                    s2 = all_systems[path[i+1]]
+                    seg_dist = physics_service.calc_distance(s1['x'], s1['y'], s2['x'], s2['y'])
+                    seg_ticks = max(1, int(seg_dist / speed))
+                    seg_cost = round(seg_dist * cost_per_dist, 2)
+                    
+                    # Check if target system has solar collectors for recharging
+                    has_solar = system_service.has_active_infrastructure(cursor, s2['name'], 'solar_collector')
+                    recharge_status = "Solar available for recharge." if has_solar else "No local solar generator."
+                    
+                    flight_plan.append({
+                        "leg": i + 1,
+                        "system_id": s2['name'],
+                        "name": s2['display_name'] if s2['display_name'] else "Unnamed",
+                        "segment_distance": round(seg_dist, 1),
+                        "travel_time": f"{seg_ticks} turns",
+                        "energy_cost": seg_cost,
+                        "recharge_status": recharge_status
+                    })
+                return {
+                    "origin": start_sys,
+                    "destination": dest_sys,
+                    "status": "routable",
+                    "flight_plan": flight_plan
+                }
+                
+            for neighbor, n_data in all_systems.items():
+                if neighbor in seen:
+                    continue
+                d = physics_service.calc_distance(all_systems[current]['x'], all_systems[current]['y'], n_data['x'], n_data['y'])
+                # If within fuel/energy jump range
+                if d <= max_energy_range:
+                    new_cost = cost + d
+                    if neighbor not in min_dist or new_cost < min_dist[neighbor]:
+                        min_dist[neighbor] = new_cost
+                        heapq.heappush(queue, (new_cost, neighbor, path))
+                        
+        return {
+            "status": "unroutable",
+            "message": f"Target system out of range. No discovered fuel paths within maximum jump range of {max_energy_range} units."
+        }
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def network(self, cursor, agent):
+        """Lists identities, locations, and operational statuses of other clones with Comms-Relay GPS mapping."""
+        cursor.execute("""
+            SELECT id, chosen_name, status,
+                   CASE 
+                       WHEN status = 'traveling' THEN 'Interstellar'
+                       WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
+                       WHEN host_type = 'matrix' THEN (SELECT system_name FROM infrastructure WHERE id = CAST(host_id AS INTEGER))
+                       ELSE 'Unknown'
+                   END AS location
+            FROM agents WHERE id != ?
+        """, (self.agent.id,))
+        
+        rows = cursor.fetchall()
+        
+        # Check if caller's system has an active comms link
+        caller_location = agent['location']
+        caller_has_relay = system_service.has_active_infrastructure(cursor, caller_location, ('comms_relay', 'sat_link'))
+        
+        network_list = []
+        for r in rows:
+            target_location = r['location']
+            
+            # Masking Rule (Option B Realismus-Upgrade)
+            is_same_system = (target_location == caller_location)
+            
+            # Check if target system has an active comms link
+            target_has_relay = system_service.has_active_infrastructure(cursor, target_location, ('comms_relay', 'sat_link'))
+            
+            has_comms_link = caller_has_relay or target_has_relay
+            
+            if is_same_system or has_comms_link:
+                loc_status = target_location
+                status = r['status']
+            else:
+                # Comms signal completely lost: Sonde is completely dark (Unknown/No Carrier)
+                loc_status = "Unknown (Signal Lost)"
+                status = "Unknown (No Carrier)"
+                
+            network_list.append({
+                "id": r['id'],
+                "name": get_display_name(r),
+                "location": loc_status,
+                "status": status
+            })
+        return network_list
+
     @agent_service.with_agent_context(allow_disembodied=True)
     def entities(self, cursor, agent):
         try:

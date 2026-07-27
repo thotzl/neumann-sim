@@ -29,8 +29,8 @@ def init():
     # 2. Agents
     # 2. Agents (Control) - Physically decoupled (Pillar 1)
     cursor.execute('''CREATE TABLE IF NOT EXISTS agents (
-        id TEXT PRIMARY KEY, 
-        chosen_name TEXT, 
+        id TEXT PRIMARY KEY,
+        chosen_name TEXT,
         host_id TEXT DEFAULT NULL,
         host_type TEXT DEFAULT NULL,
         status TEXT,
@@ -45,7 +45,9 @@ def init():
         current_x REAL DEFAULT 0,
         current_y REAL DEFAULT 0,
         active_ship_id INTEGER DEFAULT NULL,
-        last_seen_event_id INTEGER DEFAULT 0
+        last_seen_event_id INTEGER DEFAULT 0,
+        sleep_state INTEGER DEFAULT 0,
+        sleep_until_round INTEGER DEFAULT 0
     )''')
     
     # 2.5 Ships (Epic 2) - Carries physical resources & performance tiles (Pillar 1 & 3)

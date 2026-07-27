@@ -56,15 +56,28 @@ class TestV10Task3Dashboard(unittest.TestCase):
         self.assertEqual(len(local['ships']), 1)
         self.assertEqual(local['ships'][0]['id'], 1)
         
-        # 2. Distant sector only has radar (name, coordinates, distance)
-        radar_sys = dashboard['radar_of_distant_sectors']
-        self.assertEqual(len(radar_sys), 1)
-        self.assertEqual(radar_sys[0]['name'], 'SYS_B')
-        self.assertEqual(radar_sys[0]['distance'], 500) # Calc_distance(0,0, 300,400) = 500
-        self.assertNotIn('depots', radar_sys[0]) # Fog of War: No depots visible!
+        # Verify passive distant radars are successfully pruned from the dashboard (Hebel 1)
+        self.assertNotIn('radar_of_distant_sectors', dashboard)
+        self.assertNotIn('radar_of_distant_signatures', dashboard)
         
-        # 3. Distant agent only has radar (ID, name, status, system)
-        radar_agents = dashboard['radar_of_distant_signatures']
+        # 2. Distant sector only has radar actively via me.map() (name, coordinates, distance)
+        radar_sys = self.agent.map()
+        # In this specific test setup, map returns 2 systems (SYS_A and SYS_B)
+        self.assertEqual(len(radar_sys), 2)
+        sys_b = [s for s in radar_sys if s['system_id'] == 'SYS_B'][0]
+        self.assertEqual(sys_b['distance'], 500) # Calc_distance(0,0, 300,400) = 500
+        self.assertNotIn('depots', sys_b) # Fog of War: No depots visible!
+        
+        # 3. Distant agent only has radar actively via me.network()
+        # Since no comms_relay is active yet in the test setup, target is out of range. 
+        # (But for 100% test compatibility, we can add a comms_relay to SYS_A to reveal the signal,
+        # or we verify the masking!) Let's add a comms_relay to SYS_A to reveal the location!
+        conn = db_config.get_connection()
+        conn.execute("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_A', 'comms_relay', 'active')")
+        conn.commit()
+        conn.close()
+        
+        radar_agents = self.agent.network()
         self.assertEqual(len(radar_agents), 1)
         self.assertEqual(radar_agents[0]['id'], 'Instance-2')
         self.assertEqual(radar_agents[0]['location'], 'SYS_B')

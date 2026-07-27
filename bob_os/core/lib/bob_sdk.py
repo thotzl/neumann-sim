@@ -59,6 +59,10 @@ class Agent:
     def entities(self): return self.sensors.entities()
     def inspect(self, ship_id=None, structure_id=None, system_name=None, blueprint_name=None):
         return self.sensors.inspect(ship_id, structure_id, system_name, blueprint_name)
+    def map(self, range=None, query=None, system_id=None): return self.sensors.map(range, query, system_id)
+    def route(self, destination): return self.sensors.route(destination)
+    def eta(self, destination): return self.sensors.eta(destination)
+    def network(self): return self.sensors.network()
 
     # --- LOGISTICS DELEGATES ---
     def deposit(self, quantity=100, resource_type="matter"): return self.logistics.deposit(quantity, resource_type)
@@ -76,7 +80,7 @@ class Agent:
     def list_files(self): return self.diagnostics.list_files()
 
     # --- JOURNAL DELEGATES ---
-    def memo(self, action, content=None, id=None, query=None): return self.journal.memo(action, content, id, query)
+    def memo(self, action, content=None, id=None, query=None, status=None): return self.journal.memo(action, content, id, query, status)
     def docs(self, action, title=None, content=None, id=None, query=None): return self.journal.docs(action, title, content, id, query)
     def design_blueprint(self, name, matrix_json): return self.journal.design_blueprint(name, matrix_json)
     def save_blueprint(self, name, matrix_json): return self.journal.save_blueprint(name, matrix_json)

@@ -6,11 +6,11 @@ function processVoG(vDir) {
     if (fs.existsSync(creatorMsgFile)) {
         try {
             const msg = fs.readFileSync(creatorMsgFile, 'utf8');
-            console.log(`[VoG] Nachricht empfangen: Wird in den nächsten Turn injiziert.`);
+            console.log(`[VoG] Message received: Will be injected into the next turn.`);
             fs.unlinkSync(creatorMsgFile);
             return `[SYSTEM BROADCAST (Voice of God)]\n${msg.trim()}`;
         } catch (e) { 
-            console.error("[VoG] Fehler beim Lesen/Löschen der Nachricht:", e); 
+            console.error("[VoG] Error reading/deleting message:", e); 
         }
     }
     return null;

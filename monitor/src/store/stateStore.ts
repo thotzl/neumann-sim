@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { WorldState, LogEntry, Selection, LogCategory } from '../types';
+import { WorldState, LogEntry, Selection, LogCategory, HistoryEntry } from '../types';
 
 interface C2Store {
   state: WorldState | null;
@@ -8,7 +8,7 @@ interface C2Store {
   isReady: boolean;
   setSelection: (sel: Selection | null) => void;
   setReady: (ready: boolean) => void;
-  initializeLogs: (history: any[]) => void;
+  initializeLogs: (history: HistoryEntry[]) => void;
   updateState: (data: WorldState) => void;
 }
 
@@ -23,12 +23,12 @@ export const useC2Store = create<C2Store>((set) => ({
   
   initializeLogs: (history) => {
     if (!history) return;
-    const parsedLogs: LogEntry[] = history.map((d: any, i: number) => {
+    const parsedLogs: LogEntry[] = history.map((d: HistoryEntry, i: number) => {
       const agentId = d.agent || d.agentId || 'System';
       const isSystem = agentId === 'System' || agentId === 'Creator' || agentId === 'Observer';
       const agentName = agentId === 'Bob' ? 'Robert' : agentId;
-      let type: LogCategory = isSystem ? 'system' : 'thought';
-      return { id: `hist-${i}`, tick: d.tick === "?" ? 0 : d.tick, agentId: agentId, agentName: agentName, type, text: d.text.trim() };
+      const type: LogCategory = isSystem ? 'system' : 'thought';
+      return { id: `hist-${i}`, tick: d.tick === "?" ? 0 : Number(d.tick), agentId: agentId, agentName: agentName, type, text: d.text.trim() };
     });
     set({ logs: parsedLogs });
   },
@@ -64,7 +64,6 @@ export const useC2Store = create<C2Store>((set) => ({
 
     // 2. Parse new thoughts and actions per tick
     const newEntries: LogEntry[] = [];
-    const lastProcessedTick = prev.state?.tick || 0;
     
     if (data && data.agents && Array.isArray(data.agents)) {
       data.agents.forEach(a => {
@@ -73,22 +72,22 @@ export const useC2Store = create<C2Store>((set) => ({
           const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?AKTION(?:EN)?\s*(?:Befehl|Buffer)?[：:]*(?:\*\*|\*)?/i;
           const match = raw.match(actionRegex);
           
-          let thought = '';
+          let rawThought: string;
           let action = '';
           if (match && match.index !== undefined) {
-            thought = raw.substring(0, match.index).trim();
+            rawThought = raw.substring(0, match.index).trim();
             action = raw.substring(match.index + match[0].length).trim();
           } else {
             const runMatch = raw.indexOf('[RUN:');
             if (runMatch !== -1) {
-              thought = raw.substring(0, runMatch).trim();
+              rawThought = raw.substring(0, runMatch).trim();
               action = raw.substring(runMatch).trim();
             } else {
-              thought = raw;
+              rawThought = raw;
             }
           }
           
-          thought = thought
+          const thought = rawThought
             .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSE\s*[：:]*(?:\*\*|\*)?/i, '')
             .replace(/\[EIGENIMPULS\]:\s*/i, '')
             .trim();

@@ -2,7 +2,7 @@ import unittest
 import os
 import sys
 
-# Pfad-Handling für Core-Lib
+# Path handling for Core-Lib
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, BASE_DIR)
 
@@ -10,7 +10,7 @@ from core.lib import bob_sdk
 
 class TestV105ComposedFacade(unittest.TestCase):
     def setUp(self):
-        # Wir setzen die BOB_ID in der Umgebung, um die Initialisierung zu erlauben
+        # We set the BOB_ID in the environment to allow initialization
         os.environ['BOB_ID'] = 'Test-Bob-ID'
         self.agent = bob_sdk.Agent()
 
@@ -19,7 +19,7 @@ class TestV105ComposedFacade(unittest.TestCase):
             del os.environ['BOB_ID']
 
     def test_facade_composition_submodules_exist(self):
-        # Verifiziert, dass alle Submodule sauber instanziiert wurden
+        # Verifies that all submodules have been cleanly instantiated
         self.assertIsNotNone(self.agent.actuators)
         self.assertIsNotNone(self.agent.sensors)
         self.assertIsNotNone(self.agent.logistics)
@@ -28,11 +28,11 @@ class TestV105ComposedFacade(unittest.TestCase):
         self.assertIsNotNone(self.agent.journal)
 
     def test_facade_representation_repr(self):
-        # Verifiziert, dass die __repr__ Repräsentation exakt dem Original entspricht
+        # Verifies that the __repr__ representation exactly matches the original
         self.assertEqual(repr(self.agent), "<BobAgent id='Test-Bob-ID'>")
 
     def test_facade_delegate_methods_exist(self):
-        # Verifiziert, dass alle delegierenden SSoT-Methoden auf der Facade deklariert sind
+        # Verifies that all delegating SSoT methods are declared on the facade
         expected_methods = [
             "mine", "build", "refine", "repair", "deconstruct", "move", "replicate",
             "set_name", "rename_system", "board", "exit_ship", "build_ship", "deconstruct_ship",

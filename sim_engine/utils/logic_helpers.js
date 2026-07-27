@@ -1,23 +1,23 @@
 const { TAGS } = require('./constants');
 
 /**
- * Zentrale Hilfsfunktionen für die Simulations-Logik.
+ * Central utility functions for the simulation logic.
  */
 
 function cleanSystemTags(text) {
     if (!text) return "";
     let cl = text;
     
-    // Entferne alle zentral definierten Tags
+    // Remove all centrally defined tags
     Object.values(TAGS).forEach(tag => {
-        // Regex muss Sonderzeichen im Tag maskieren
+        // Regex must escape special characters in the tag
         const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(`^(\\*\\*?)?${escapedTag}(\\*\\*?)?:\\s*`, 'gmi');
         cl = cl.replace(regex, "");
     });
 
-    // Entferne Identitäts-Header (Pioneer_1 (Zyklus X):)
-    const idTagRegex = /^(\*\*?)?\[[^\]\n]+ \((Zyklus|Schwingung) \d+\)\](\*\*?)?:\s*/gmi;
+    // Remove identity header (Pioneer_1 (Cycle X):)
+    const idTagRegex = /^(\*\*?)?\[[^\]\n]+ \((Cycle|Oscillation) \d+\)\](\*\*?)?:\s*/gmi;
     cl = cl.replace(idTagRegex, "");
 
     return cl;
@@ -30,7 +30,7 @@ function countTotalTurns(history) {
         if (item.role === "model") {
             turns++;
         } else {
-            // Zähle fremde Manifestationen, aber vermeide Doppelzählung des UR-IMPULS
+            // Count external manifestations, but avoid double-counting UR-IMPULS
             const matches = text.match(/^(\*\*?)?\[(?!UR-IMPULS)[^\]\n]+\](\*\*?)?:\s*/gm);
             if (matches) turns += matches.length;
             

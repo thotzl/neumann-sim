@@ -5,8 +5,8 @@ const GeminiDriver = {
     buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) {
         let context = [];
         if (globalInstr) context.push({ role: "user", parts: [{ text: globalInstr }] });
-        if (systemPrompt) context.push({ role: "user", parts: [{ text: `DEIN BRIEFING:\n${systemPrompt}` }] });
-        if (memory) context.push({ role: "user", parts: [{ text: `DEIN GEDÄCHTNIS:\n${memory}` }] });
+        if (systemPrompt) context.push({ role: "user", parts: [{ text: `YOUR BRIEFING:\n${systemPrompt}` }] });
+        if (memory) context.push({ role: "user", parts: [{ text: `YOUR MEMORY:\n${memory}` }] });
 
         histories.forEach(h => {
             context.push({
@@ -23,7 +23,7 @@ const GeminiDriver = {
     async generateText(payload, config, retries = 5) {
         const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
         if (!apiKey) {
-            throw new Error("API-Key fehlt (GEMINI_API_KEY oder API_KEY nicht gesetzt).");
+            throw new Error("API key is missing (GEMINI_API_KEY or API_KEY not set).");
         }
         
         const model = config.config_override?.model || config.model || "gemini-3.6-flash";
@@ -39,13 +39,13 @@ const GeminiDriver = {
 
                 const data = await response.json();
 
-                // 2. Selbstheilendes Rate-Limit Handling (HTTP 429 oder Quota Exceeded)
+                // 2. Self-healing rate limit handling (HTTP 429 or Quota Exceeded)
                 if (data.error) {
                     const errMsg = data.error.message || "";
                     if (response.status === 429 || errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("rate")) {
-                        console.warn(`\n[Gemini Rate-Limit] Rate-Limit oder Quota erreicht. Pausiere für 10 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                        console.warn(`\n[Gemini Rate-Limit] Rate limit or quota reached. Pausing for 10 seconds before attempt ${i + 1}/${retries}...`);
                         await new Promise(r => setTimeout(r, 10000));
-                        continue; // Schleife fortsetzen und erneut senden!
+                        continue; // Continue loop and send again!
                     }
                     throw new Error(errMsg);
                 }
@@ -61,10 +61,10 @@ const GeminiDriver = {
 
                 return candidate.content.parts[0].text;
             } catch (err) {
-                // Falls es der letzte Versuch war, werfen wir den Fehler
+                // If it was the last attempt, we throw the error
                 if (i === retries - 1) throw err;
                 
-                console.warn(`\n[Gemini Error] Verbindungsfehler: ${err.message}. Pausiere 3 Sekunden...`);
+                console.warn(`\n[Gemini Error] Connection error: ${err.message}. Pausing for 3 seconds...`);
                 await new Promise(r => setTimeout(r, 3000));
             }
         }

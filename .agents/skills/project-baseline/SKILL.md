@@ -9,7 +9,7 @@ This is the central nervous system for the Bob-OS simulation. It defines the cor
 
 ## 1. Project Philosophy
 - **Bob-OS** is a multi-agent survival simulation powered by LLMs (Gemini 2.5 Flash).
-- **Core Loop:** The Node.js engine (`sim_engine/runner.js`) queries the LLM. The LLM responds with `[ANALYSE]` and `[AKTION]`. The engine parses the actions, executes them in a Python sandbox, updates SQLite, and feeds the feedback into the next prompt.
+- **Core Loop:** The Node.js engine (`sim_engine/runner.js`) queries the LLM. The LLM responds with `[ANALYZE]` and `[ACTION]`. The engine parses the actions, executes them in a Python sandbox, updates SQLite, and feeds the feedback into the next prompt.
 - **V8.0 Unified Functional Logic:** No more raw bash commands. Agents use a functional syntax both in the Prompt CLI and the Python SDK.
 
 ## 2. Directory Structure

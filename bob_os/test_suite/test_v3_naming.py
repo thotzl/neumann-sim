@@ -4,7 +4,7 @@ import sqlite3
 import json
 import sys
 
-# Pfade für SDK hinzufügen
+# Add paths for SDK
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.bin import init_db
@@ -39,10 +39,10 @@ class TestBobOS_v3_Naming(unittest.TestCase):
         if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
     def test_01_rename_success(self):
-        self.agent.rename_system('Heimat')
+        self.agent.rename_system('Homeworld')
         conn = db_config.get_connection()
         sys_name = conn.execute("SELECT display_name FROM systems WHERE name='SYS_X0_Y0'").fetchone()[0]
-        self.assertEqual(sys_name, 'Heimat')
+        self.assertEqual(sys_name, 'Homeworld')
         conn.close()
 
     def test_02_set_agent_name(self):

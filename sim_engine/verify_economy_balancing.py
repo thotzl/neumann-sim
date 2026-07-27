@@ -34,10 +34,10 @@ def run_balance_check():
     default_agent_matter_limit = agent_limits.get('matter', 500)
     default_core_resources = global_set.get('default_sector_core_resources', 50000)
 
-    print(f"🔄 Geladene API-Version: {rules.get('api_version', 'v10.5')}")
-    print(f"📦 Standard Sektor-Depot Kapazität: {default_depot_limit} RM/Raw")
-    print(f"🧠 Standard Disembodied Agent Kapazität: {default_agent_matter_limit} RM/Raw")
-    print(f"🎨 Standard Sektor-Kern-Ressourcen (Menge): {default_core_resources} Raw")
+    print(f"🔄 Loaded API Version: {rules.get('api_version', 'v10.5')}")
+    print(f"📦 Default Sector Depot Capacity: {default_depot_limit} RM/Raw")
+    print(f"🧠 Default Disembodied Agent Capacity: {default_agent_matter_limit} RM/Raw")
+    print(f"🎨 Default Sector Core Resources (Amount): {default_core_resources} Raw")
     
     # -------------------------------------------------------------
     # 📊 CHECK 1: STORAGE VS COST DEADLOCK CHECK
@@ -50,62 +50,62 @@ def run_balance_check():
     basic_fleet_cost = 1750 + 2 * 2400 # 1 Scout (1750) + 2 Miners (2400) = 6550
     total_starting_cost = total_infra_cost + basic_fleet_cost
     
-    print(f"  - Gesamtkosten Basis-Kolonisation (Gebäude + Flotte): {total_starting_cost} RM/Raw")
+    print(f"  - Total Basic Colonization Cost (Buildings + Fleet): {total_starting_cost} RM/Raw")
     
     if default_core_resources < total_starting_cost * 2.0:
-        errors.append(f"DEADLOCK: Sektor-Kern-Ressourcen ({default_core_resources}) sind zu gering! Replikanten verbrauchen den Sektor ({total_starting_cost} RM benötigt x2.0 Sicherheits-Faktor = {total_starting_cost*2}) komplett, bevor eine stabile Kolonisation erreicht ist!")
+        errors.append(f"DEADLOCK: Sector core resources ({default_core_resources}) are too low! Replicants will deplete the sector ({total_starting_cost} RM needed x2.0 safety factor = {total_starting_cost*2}) completely before stable colonization is achieved!")
     else:
-        print(f"  ✅ Sektor-Kern-Ressourcen ({default_core_resources}) ausreichend für {round(default_core_resources/total_starting_cost, 1)}x vollständige Sektor-Kolonisationen (Sicherheits-Puffer optimal).")
+        print(f"  ✅ Sector core resources ({default_core_resources}) sufficient for {round(default_core_resources/total_starting_cost, 1)}x complete sector colonizations (optimal safety buffer).")
 
-    # 1. Kann man die ersten Silos bauen?
+    # 1. Can the first silos be built?
     if 'matter_silo' in infra:
         silo_cost = infra['matter_silo']['matter_cost']
         silo_req = infra['matter_silo']['required_material']
         
         if silo_req == 'raw_matter' and silo_cost > default_depot_limit:
-            errors.append(f"DEADLOCK: matter_silo kostet {silo_cost} raw_matter, übersteigt aber das Anfangs-Depot von {default_depot_limit}!")
+            errors.append(f"DEADLOCK: matter_silo costs {silo_cost} raw_matter, but exceeds the initial depot capacity of {default_depot_limit}!")
             
-    # 2. Kann man die matter_refinery bauen (benötigt für alle refined_matter Gebäude!)?
+    # 2. Can the matter_refinery be built (required for all refined_matter buildings!)?
     if 'matter_refinery' in infra:
         ref_cost = infra['matter_refinery']['matter_cost']
         ref_req = infra['matter_refinery']['required_material']
         
         if ref_req == 'raw_matter' and ref_cost > default_depot_limit:
-            errors.append(f"DEADLOCK: matter_refinery kostet {ref_cost} raw_matter, übersteigt aber das Anfangs-Depot von {default_depot_limit}! Veredelung für immer unmöglich.")
+            errors.append(f"DEADLOCK: matter_refinery costs {ref_cost} raw_matter, but exceeds the initial depot capacity of {default_depot_limit}! Refining forever impossible.")
 
-    # 3. Können die refined_matter Gebäude jemals gebaut werden?
+    # 3. Can refined_matter buildings ever be built?
     for name, specs in infra.items():
         cost = specs['matter_cost']
         req = specs['required_material']
         
-        # Wenn es refined_matter kostet, muss die maximale Kapazität von refined_matter im Depot (nach Silo-Upgrades) 
-        # oder im standard Depot ausreichen, um das Gebäude zu bezahlen!
+        # If it costs refined_matter, the maximum capacity of refined_matter in the depot (after silo upgrades) 
+        # or in the standard depot must be sufficient to pay for the building!
         if req == 'refined_matter':
-            # Ein standard-Silo erhöht das Depot-Volumen, aber wir prüfen, ob die standard Depot-Obergrenze ausreicht
+            # A standard silo increases depot volume, but we check if the standard depot limit is sufficient
             if cost > default_depot_limit:
-                warnings.append(f"WARNUNG: Veredeltes Gebäude '{name}' kostet {cost} refined_matter. Übersteigt das Standard-Depot von {default_depot_limit}. Silos zwingend vorab nötig!")
+                warnings.append(f"WARNING: Refined building '{name}' costs {cost} refined_matter. Exceeds standard depot capacity of {default_depot_limit}. Silos absolutely necessary beforehand!")
 
     # -------------------------------------------------------------
     # 🔋 CHECK 2: ENERGY LOOP & MAINTENANCE SUSTAINABILITY
     # -------------------------------------------------------------
-    print("\n[CHECK 2] Energy Loop & Sustainability Analysen...")
+    print("\n[CHECK 2] Energy Loop & Sustainability Analyses...")
     
-    # Solar-Kollektor muss mehr Energie erzeugen als seine eigene Instandhaltung kostet
+    # Solar collector must generate more energy than its own maintenance costs
     if 'solar_collector' in infra:
         solar = infra['solar_collector']
         regen = solar.get('energy_regen_bonus', 0)
         drain = solar.get('maintenance_energy_cost', 0)
         
-        netto = regen - drain
-        if netto <= 0:
-            errors.append(f"DEADLOCK: solar_collector Generierungs-Fehler! Regen (+{regen}E) <= Instandhaltung (-{drain}E).")
+        net_gain = regen - drain
+        if net_gain <= 0:
+            errors.append(f"DEADLOCK: solar_collector generation error! Regen (+{regen}E) <= Maintenance (-{drain}E).")
         else:
-            print(f"  ✅ solar_collector Netto-Ertrag: +{netto}E pro Runde.")
+            print(f"  ✅ solar_collector Net Gain: +{net_gain}E per round.")
 
     # -------------------------------------------------------------
     # ⚗ CHECK 3: CONVERSION RATIOS (Refining)
     # -------------------------------------------------------------
-    print("\n[CHECK 3] Veredelungs-Effizienz (Refining Ratios)...")
+    print("\n[CHECK 3] Refining Efficiency (Refining Ratios)...")
     
     if 'refine' in tool_costs:
         ref = tool_costs['refine']
@@ -114,17 +114,17 @@ def run_balance_check():
         energy_cost = ref.get('energy_cost', 50)
         
         if raw_cost <= 0 or yield_mat <= 0:
-            errors.append("DEADLOCK: Ungültiges Veredelungs-Verhältnis (Kosten/Ertrag <= 0).")
+            errors.append("DEADLOCK: Invalid refining ratio (Cost/Yield <= 0).")
         else:
             ratio = yield_mat / float(raw_cost)
-            print(f"  Veredelungs-Verhältnis: {raw_cost} Raw -> {yield_mat} Refined (Verhältnis: {ratio*100}%). Energie-Kosten: {energy_cost}E.")
+            print(f"  Refining Ratio: {raw_cost} Raw -> {yield_mat} Refined (Ratio: {ratio*100}%). Energy Cost: {energy_cost}E.")
             if ratio > 2.0:
-                warnings.append(f"WARNUNG: Extrem hohes Veredelungs-Verhältnis ({ratio*100}%). Exploit-Gefahr!")
+                warnings.append(f"WARNING: Extremely high refining ratio ({ratio*100}%). Exploit risk!")
 
     # -------------------------------------------------------------
-    # 🛸 CHECK 4: SHIPS PHYSICS COHERENCE (Säule 3)
+    # 🛸 CHECK 4: SHIPS PHYSICS COHERENCE (Pillar 3)
     # -------------------------------------------------------------
-    print("\n[CHECK 4] Physik-Symmetrie der Gitter-Module...")
+    print("\n[CHECK 4] Physics Symmetry of Grid Modules...")
     
     for name, specs in ship_phys.items():
         cost = specs.get('cost', 0)
@@ -139,14 +139,14 @@ def run_balance_check():
             mass = specs[mass_key]
             
         if cost <= 0 and name != 'chassis_tile':
-            warnings.append(f"WARNUNG: Modul '{name}' hat keine Baukosten!")
+            warnings.append(f"WARNING: Module '{name}' has no construction cost!")
         if mass <= 0:
-            warnings.append(f"WARNUNG: Modul '{name}' besitzt keine Trägheits-Masse!")
+            warnings.append(f"WARNING: Module '{name}' has no inertial mass!")
 
     # -------------------------------------------------------------
     # ⚖️ CHECK 5: UTILITY-TO-COST RATIO & BALANCING CHECK
     # -------------------------------------------------------------
-    print("\n[CHECK 5] Schiffskosten-zu-Gebrauchswert Verhältnismäßigkeit (Calibration)...")
+    print("\n[CHECK 5] Ship Cost-to-Utility Proportionality (Calibration)...")
     
     base_mass = ship_constants.get('base_mass', 50)
     base_speed = ship_constants.get('base_speed', 20)
@@ -154,7 +154,7 @@ def run_balance_check():
     mass_efficiency_divisor = ship_constants.get('mass_efficiency_divisor', 1000)
     shipyard_rate = ship_constants.get('shipyard_rate', 250)
 
-    # Simuliere repräsentative Standard-Klassen zur Verhältnis-Prüfung
+    # Simulate representative standard classes for ratio checking
     # A. Scout (1x logic_core, 1x engine, 1x battery)
     # B. Miner (1x logic_core, 1x engine, 1x drill, 1x cargo)
     # C. Heavy Miner (1x logic_core, 2x engine, 2x drill, 2x cargo)
@@ -167,7 +167,7 @@ def run_balance_check():
 
     efficiencies = {}
     for class_name, components in classes.items():
-        # Berechne Masse & Kosten analog zu physics_service.py (völlig code-unabhängig!)
+        # Calculate mass & cost analogous to physics_service.py (completely code-independent!)
         num_tiles = sum(count for c in components for count in [c[1]]) + 1 # +1 for center/chassis
         total_mass = base_mass + num_tiles * ship_phys['chassis_tile']['mass']
         total_cost = num_tiles * ship_phys['chassis_tile']['cost']
@@ -192,7 +192,7 @@ def run_balance_check():
                 if c_type == 'logic_core': has_logic_core = True
                 continue
                 
-            # Skalierbare Module
+            # Scalable modules
             val_key = comp[2]
             val = comp[3] * count
             max_per_tile = c_rule[f"max_{val_key}_per_tile"]
@@ -204,11 +204,11 @@ def run_balance_check():
             if c_type == 'cargo': cargo_capacity = val
             if c_type == 'battery': battery_capacity = val
 
-        # Reale Reise-Stats
+        # Actual Travel Stats
         speed = round((thrust / float(total_mass)) * base_speed, 2) if thrust > 0 else 0
         build_time = math.ceil(total_cost / float(shipyard_rate))
         
-        # UTILITY SCORE BERECHNUNG
+        # UTILITY SCORE CALCULATION
         u_mining = (1000 if has_drill else 0) * (cargo_capacity / 1000.0)
         u_logistics = (speed / 10.0) * (battery_capacity / 1000.0)
         u_autonomy = 1000 if has_logic_core else 0
@@ -217,17 +217,17 @@ def run_balance_check():
         efficiency = round(total_utility / float(total_cost), 4) if total_cost > 0 else 0
         efficiencies[class_name] = (total_utility, total_cost, efficiency)
         
-        print(f"  - {class_name:12} :: Utility: {total_utility:6.1f} | Cost: {total_cost:4} RM | Efficiency: {efficiency:6.4f} | Bauzeit: {build_time} Runden")
+        print(f"  - {class_name:12} :: Utility: {total_utility:6.1f} | Cost: {total_cost:4} RM | Efficiency: {efficiency:6.4f} | Build Time: {build_time} Rounds")
         
         if build_time > 50:
-            errors.append(f"DEADLOCK: Bauzeit für '{class_name}' beträgt unzumutbare {build_time} Runden! Passe shipyard_rate an.")
+            errors.append(f"DEADLOCK: Build time for '{class_name}' is an unreasonable {build_time} rounds! Adjust shipyard_rate.")
 
-    # Prüfe Verhältnismäßigkeit: Ist der Heavy Miner unschlagbar viel effizienter als der standard Miner?
+    # Check proportionality: Is the Heavy Miner unbeatably more efficient than the standard Miner?
     miner_eff = efficiencies["Miner"][2]
     heavy_eff = efficiencies["Heavy Miner"][2]
     
     if heavy_eff > miner_eff * 3.0:
-        errors.append(f"UNBALANCED: Heavy Miner ist {round(heavy_eff/miner_eff, 1)}x effizienter als der standard Miner! Erdrückt standard Schiffsauswahlen.")
+        errors.append(f"UNBALANCED: Heavy Miner is {round(heavy_eff/miner_eff, 1)}x more efficient than the standard Miner! It overshadows standard ship choices.")
 
     # -------------------------------------------------------------
     # 🏢 CHECK 6: SHIP VS INFRASTRUCTURE COST RATIO
@@ -237,32 +237,32 @@ def run_balance_check():
     miner_cost = efficiencies["Miner"][1]
     
     if miner_cost > shipyard_cost:
-        errors.append(f"UNBALANCED: Ein modularer standard Miner ({miner_cost} RM) ist teurer als eine planetare Schiffswerft ({shipyard_cost} RM)! Das entwertet Schiffe im Vergleich zu Gebäuden.")
+        errors.append(f"UNBALANCED: A modular standard Miner ({miner_cost} RM) is more expensive than a planetary shipyard ({shipyard_cost} RM)! This devalues ships compared to buildings.")
     else:
-        print(f"  ✅ Schiffs-zu-Fabrik Proportionalität optimal. Standard-Miner ({miner_cost} RM) kostet {round((miner_cost/shipyard_cost)*100, 1)}% einer Werft ({shipyard_cost} RM).")
+        print(f"  ✅ Ship-to-Factory proportionality optimal. Standard Miner ({miner_cost} RM) costs {round((miner_cost/shipyard_cost)*100, 1)}% of a shipyard ({shipyard_cost} RM).")
 
     # -------------------------------------------------------------
-    # 🏆 BALANCING ZUSAMMENFASSUNG
+    # 🏆 BALANCING SUMMARY
     # -------------------------------------------------------------
     print("\n==========================================")
-    print("   BALANCING-REPORT ZUSAMMENFASSUNG       ")
+    print("   BALANCING REPORT SUMMARY       ")
     print("==========================================")
     
     if warnings:
-        print(f"⚠️  {len(warnings)} Warnungen identifiziert:")
+        print(f"⚠️  {len(warnings)} Warnings identified:")
         for w in warnings:
             print(f"   - {w}")
     else:
-        print("  ✅ Keine Warnungen. Wirtschaft extrem harmonisch.")
+        print("  ✅ No warnings. Economy extremely harmonious.")
         
     if errors:
-        print(f"❌ {len(errors)} KRITISCHE BALANCING-FEHLER GEFUNDEN:")
+        print(f"❌ {len(errors)} CRITICAL BALANCING ERRORS FOUND:")
         for e in errors:
             print(f"   - {e}")
-        print("\nBalancing FAILED. Bitte korrigiere die ECONOMY_RULES.json!")
+        print("\nBalancing FAILED. Please correct ECONOMY_RULES.json!")
         sys.exit(1)
     else:
-        print("\n🎉 BALANCING ERFOLGREICH! Keine kritischen Deadlocks oder Loops gefunden.")
+        print("\n🎉 BALANCING SUCCESSFUL! No critical deadlocks or loops found.")
         sys.exit(0)
 
 if __name__ == '__main__':

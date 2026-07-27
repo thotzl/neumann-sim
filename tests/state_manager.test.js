@@ -23,25 +23,25 @@ describe('State Manager (Advanced Integration)', () => {
         if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true });
     });
 
-    test('saveState und loadState funktionieren mit echtem FS', () => {
+    test('saveState and loadState work with real FS', () => {
         const data = { val: 123 };
         sm.saveState(sFile, data);
         expect(sm.loadState(sFile)).toEqual(data);
     });
 
-    test('loadState sollte null bei ungültigem JSON liefern', () => {
+    test('loadState should return null for invalid JSON', () => {
         fs.writeFileSync(sFile, "DEFENITELY NOT JSON");
         expect(sm.loadState(sFile)).toBeNull();
     });
 
-    test('runDistillation schreibt Memory bei Erfolg', async () => {
+    test('runDistillation writes Memory on success', async () => {
         mockCallGemini.mockResolvedValue("Success");
         const success = await sm.runDistillation('http://mock', [], mFile);
         expect(success).toBe(true);
         expect(fs.readFileSync(mFile, 'utf8')).toBe("Success");
     });
 
-    test('runDistillation bewahrt Memory bei Fehler', async () => {
+    test('runDistillation preserves Memory on error', async () => {
         mockCallGemini.mockRejectedValue(new Error("Fail"));
         fs.writeFileSync(mFile, "Preserve");
         const success = await sm.runDistillation('http://mock', [], mFile);

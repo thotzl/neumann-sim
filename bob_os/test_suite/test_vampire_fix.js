@@ -3,43 +3,43 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Testet den Fix des O(N²) Vampir-Bugs.
- * Erwartung: Ein Skript darf nur 1x pro Runde laufen, egal wie viele Agenten existieren.
+ * Tests the fix for the O(N²) Vampire bug.
+ * Expectation: A script should only run once per round, regardless of how many agents exist.
  */
 async function testVampireFix() {
     const version = 'VAMP_TEST';
     const expDir = path.resolve(`experiments/${version}`);
     
-    console.log("🚀 Teste Vampir-Bug Fix (O(N²) Redundanz-Check)...\n");
+    console.log("🚀 Testing Vampire Bug Fix (O(N²) Redundancy Check)...\n");
 
     if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
 
-    // 1. Erstelle Experiment mit 2 Agenten
+    // 1. Create experiment with 2 agents
     execSync(`python3 bob_os/build.py ${version} --rounds 2 --mission 'Vampire Test' --skip-tests`, { stdio: 'ignore' });
     
     const configPath = path.join(expDir, 'config.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     
-    // Füge einen zweiten Agenten hinzu
+    // Add a second agent
     config.agents.push({
         id: "Instance-2",
         location: "Alpha_Centauri",
         initial_trigger: "System online.",
-        system_prompt: "Klon."
+        system_prompt: "Clone."
     });
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-    // 2. Erstelle ein Automatisierungs-Skript für Instance-1, das Materie zählt
+    // 2. Create an automation script for Instance-1 that counts matter
     const verseDir = path.join(expDir, '_verse');
     const scriptPath = path.join(verseDir, 'scripts', 'active', 'vampire_check.py');
     fs.mkdirSync(path.dirname(scriptPath), { recursive: true });
     
-    // Dieses Skript nutzt die alte print-Syntax (Status Quo), 
-    // wir prüfen ob der Runner es pro Runde öfter als 1x triggert.
+    // This script uses the old print syntax (status quo),
+    // we check if the runner triggers it more than once per round.
     fs.writeFileSync(scriptPath, `
 import sqlite3
 import os
-# Wir nutzen eine kleine Datei als Counter
+# We use a small file as a counter
 count_file = "vampire_hits.txt"
 if not os.path.exists(count_file): 
     count = 0
@@ -51,7 +51,7 @@ with open(count_file, "w") as f: f.write(str(count))
 print(f"[SDK DEBUG] Hit: {count}")
 `);
 
-    // 3. Setze ACL, damit Instance-1 das Skript besitzt
+    // 3. Set ACL so that Instance-1 owns the script
     const stateFile = path.join(expDir, 'state.json');
     const state = { 
         round: 0, 
@@ -61,20 +61,20 @@ print(f"[SDK DEBUG] Hit: {count}")
     };
     fs.writeFileSync(stateFile, JSON.stringify(state));
 
-    // 4. Starte Simulation für 1 Runde (mit 2 Agenten)
-    // Bei O(N²) würde das Skript 2x laufen. Bei System-Runde nur 1x.
+    // 4. Start simulation for 1 round (with 2 agents)
+    // With O(N²) the script would run 2 times. In a system round, only once.
     try {
         execSync(`node run.js ${version}`, { stdio: 'ignore', timeout: 30000 });
     } catch (e) {}
 
-    // 5. Validiere Counter
+    // 5. Validate counter
     const hits = parseInt(fs.readFileSync(path.join(expDir, 'vampire_hits.txt'), 'utf8'));
-    console.log(`Ergebnis: Skript wurde ${hits} mal ausgeführt.`);
+    console.log(`Result: Script was executed ${hits} times.`);
 
     if (hits === 1) {
-        console.log("✅ ERFOLG: Vampir-Bug ist behoben (Skript lief nur 1x).");
+        console.log("✅ SUCCESS: Vampire bug is fixed (script ran only 1 time).");
     } else {
-        console.error(`❌ FEHLER: Vampir-Bug aktiv! Skript lief ${hits} mal (erwartet: 1).`);
+        console.error(`❌ ERROR: Vampire bug active! Script ran ${hits} times (expected: 1).`);
         process.exit(1);
     }
 

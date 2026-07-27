@@ -15,7 +15,7 @@ describe('Logger (Live FS)', () => {
         if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true });
     });
 
-    test('writeLogHeader sollte eine neue Datei mit korrektem Header erstellen', () => {
+    test('writeLogHeader should create a new file with a correct header', () => {
         const config = { model: "m", distillation_interval: 5, global_system_instruction: "Global" };
         
         writeLogHeader(lFile, config, false);
@@ -26,15 +26,15 @@ describe('Logger (Live FS)', () => {
         expect(content).toContain('Global');
     });
 
-    test('appendTurnLog sollte Turns anhängen inklusive Pre-Turn Events', () => {
+    test('appendTurnLog should append turns including Pre-Turn Events', () => {
         fs.writeFileSync(lFile, "Header\n");
-        const preEvents = "[SCUT EMPFANGEN]:\nHallo Welt";
+        const preEvents = "[SCUT RECEIVED]:\nHello World";
         appendTurnLog(lFile, 1, "Agent1", 1, 1, "Manifest", "FB", false, preEvents);
         
         const content = fs.readFileSync(lFile, 'utf8');
-        expect(content).toContain('### Zyklus 1 - Zug Agent1');
+        expect(content).toContain('### Cycle 1 - Turn Agent1');
         expect(content).toContain('**Pre-Turn Events:**');
-        expect(content).toContain('Hallo Welt');
+        expect(content).toContain('Hello World');
         expect(content).toContain('Manifest');
     });
 });

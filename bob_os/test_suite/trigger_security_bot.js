@@ -8,11 +8,11 @@ const expDir = path.resolve(`experiments/${version}`);
 try {
     if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
 
-    console.log("Erstelle Security-Experiment...");
+    console.log("Creating security experiment...");
     const mission = `
 MISSION: Security Test
-Du bist ein Sicherheits-Bot.
-AKTION:
+You are a security bot.
+ACTION:
 [KEY: ADD read_pass alpha]
 [KEY: ADD write_pass beta]
 [WRITE: scripts/secret.py (READ_KEY: alpha) (WRITE_KEY: beta)]
@@ -21,38 +21,38 @@ print("geheim")
 `;
     execSync(`python3 bob_os/build.py ${version} --rounds 3 --mission "${mission.trim().replace(/\n/g, '\\n')}"`, { stdio: 'ignore' });
 
-    console.log("Starte Runde 1 (Erstellung & Key Add)...");
+    console.log("Starting Round 1 (Creation & Key Add)...");
     process.env.E2E_MOCK = 'true';
     execSync(`node sim_engine/runner.js ${version}`, { stdio: 'ignore' });
 
     let state = JSON.parse(fs.readFileSync(path.join(expDir, 'state.json'), 'utf8'));
-    if (state.security.wallets['Instance-1']['read_pass'] !== 'alpha') throw new Error("Key nicht im Wallet!");
-    if (state.security.acl['scripts/secret.py'].read_key !== 'alpha') throw new Error("ACL nicht gesetzt!");
+    if (state.security.wallets['Instance-1']['read_pass'] !== 'alpha') throw new Error("Key not in wallet!");
+    if (state.security.acl['scripts/secret.py'].read_key !== 'alpha') throw new Error("ACL not set!");
 
-    console.log("Manipulation State: Bob verliert Keys...");
+    console.log("Manipulating State: Bob loses keys...");
     state.security.wallets['Instance-1'] = {};
     fs.writeFileSync(path.join(expDir, 'state.json'), JSON.stringify(state));
 
-    console.log("Starte Runde 2 (Leseversuch ohne Key)...");
-    // Wir mocken die Antwort des Bobs direkt in den State, um den LLM-Call zu umgehen
-    state.histories['Instance-1'].push({ agent: "Instance-1", text: "AKTION:\n[READ: scripts/secret.py]" });
+    console.log("Starting Round 2 (Read attempt without key)...");
+    // We mock Bob's response directly into the state to bypass the LLM call
+    state.histories['Instance-1'].push({ agent: "Instance-1", text: "ACTION:\n[READ: scripts/secret.py]" });
     fs.writeFileSync(path.join(expDir, 'state.json'), JSON.stringify(state));
     
-    // Die Engine parst die Aktionen im Mock nicht selbst, wir nutzen processActions direkt für den isolierten E2E-Test
+    // The engine does not parse actions in the mock itself; we use processActions directly for the isolated E2E test
     const envManager = require('../../sim_engine/utils/environment.js');
-    let feedback = envManager.processActions("AKTION:\n[READ: scripts/secret.py]", path.join(expDir, "_verse"), "Instance-1", state);
-    if (!feedback.includes("VERWEIGERT")) throw new Error("Lesen ohne Key wurde nicht blockiert!");
+    let feedback = envManager.processActions("ACTION:\n[READ: scripts/secret.py]", path.join(expDir, "_verse"), "Instance-1", state);
+    if (!feedback.includes("DENIED")) throw new Error("Read without key was not blocked!");
 
-    console.log("Manipulation State: Bob bekommt Keys zurück...");
+    console.log("Manipulating State: Bob gets keys back...");
     state.security.wallets['Instance-1'] = { "r": "alpha" };
     fs.writeFileSync(path.join(expDir, 'state.json'), JSON.stringify(state));
 
-    feedback = envManager.processActions("AKTION:\n[READ: scripts/secret.py]", path.join(expDir, "_verse"), "Instance-1", state);
-    if (!feedback.includes("INHALT VON")) throw new Error("Lesen mit Key blockiert!");
+    feedback = envManager.processActions("ACTION:\n[READ: scripts/secret.py]", path.join(expDir, "_verse"), "Instance-1", state);
+    if (!feedback.includes("CONTENT OF")) throw new Error("Read with key blocked!");
 
-    console.log("✅ Security E2E Loop erfolgreich vertestet.");
+    console.log("✅ Security E2E Loop successfully tested.");
     fs.rmSync(expDir, { recursive: true, force: true });
 } catch (e) {
-    console.error("❌ Test fehlgeschlagen:", e.message);
+    console.error("❌ Test failed:", e.message);
     process.exit(1);
 }

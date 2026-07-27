@@ -4,7 +4,7 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 
 async function runSwarmE2E() {
-    console.log("🚀 Starte V9.0 Swarm E2E Test...");
+    console.log("🚀 Starting V9.0 Swarm E2E Test...");
     const version = 'swarm_e2e_test';
     const expDir = path.join(__dirname, '../experiments', version);
     const dbPath = path.join(expDir, '_verse', 'universe.db');
@@ -42,7 +42,7 @@ async function runSwarmE2E() {
         execSync(`node sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 
         const bob1 = await getSql(db, "SELECT s.raw_matter_inventory FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='Instance-1'");
-        if (bob1.raw_matter_inventory < 100) throw new Error("Automation fehlgeschlagen!");
+        if (bob1.raw_matter_inventory < 100) throw new Error("Automation failed!");
 
         const bob2 = await getSql(db, `
             SELECT 
@@ -55,21 +55,21 @@ async function runSwarmE2E() {
                 last_seen_event_id
             FROM agents WHERE id='Instance-2'
         `);
-        if (bob2.location !== 'SYS_B') throw new Error(`Ankunft fehlgeschlagen! Ist: ${bob2.location}`);
+        if (bob2.location !== 'SYS_B') throw new Error(`Arrival failed! Is: ${bob2.location}`);
         
-        // Test-Gaps schließen (Task 3)
-        // 1. last_seen_event_id muss inkrementiert sein (Visual Events wurden nicht vom Runner gelöscht)
-        if (bob2.last_seen_event_id === 0) throw new Error("last_seen_event_id wurde nicht inkrementiert! Visual Events wurden vermutlich gelöscht oder ignoriert.");
+        // Close test gaps (Task 3)
+        // 1. last_seen_event_id must be incremented (Visual Events were not deleted by the Runner)
+        if (bob2.last_seen_event_id === 0) throw new Error("last_seen_event_id was not incremented! Visual Events were likely deleted or ignored.");
 
-        // 2. JS State Location Desynchronisation prüfen
+        // 2. Check JS State Location Desynchronization
         const finalState = JSON.parse(fs.readFileSync(path.join(expDir, 'state.json'), 'utf8'));
         const jsBob2 = finalState.agents.find(a => a.id === 'Instance-2');
-        if (jsBob2.location !== 'SYS_B') throw new Error(`JS State Location Desynchronisation! Ist im JS State: ${jsBob2.location}, sollte aber SYS_B sein.`);
+        if (jsBob2.location !== 'SYS_B') throw new Error(`JS State Location Desynchronization! Is in JS State: ${jsBob2.location}, but should be SYS_B.`);
 
-        console.log("✅ Swarm E2E Test erfolgreich!");
+        console.log("✅ Swarm E2E Test successful!");
         db.close();
     } catch (error) {
-        console.error("❌ Swarm Test fehlgeschlagen:", error.message);
+        console.error("❌ Swarm Test failed:", error.message);
         process.exit(1);
     }
 }

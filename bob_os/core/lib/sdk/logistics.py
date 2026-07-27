@@ -21,11 +21,11 @@ class Logistics:
         quantity = int(quantity)
         if resource_type in ["matter", "raw_matter"]:
             if agent['raw_matter_inventory'] < quantity:
-                print(f"[FEHLER] Nicht genug Materie im Inventar ({agent['raw_matter_inventory']} < {quantity}).")
+                print(f"[ERROR] Not enough matter in inventory ({agent['raw_matter_inventory']} < {quantity}).")
                 return False
             space_left = system['depot_matter_capacity'] - system['raw_matter_depot']
             if space_left <= 0:
-                print(f"[ERROR] System-Depot ist voll ({system['raw_matter_depot']}/{system['depot_matter_capacity']}).")
+                print(f"[ERROR] System depot is full ({system['raw_matter_depot']}/{system['depot_matter_capacity']}).")
                 return False
             
             amount_to_deposit = min(quantity, space_left)
@@ -36,11 +36,11 @@ class Logistics:
             
         elif resource_type == "energy":
             if agent['energy_inventory'] < quantity:
-                print(f"[FEHLER] Nicht genug Energie im Inventar ({agent['energy_inventory']} < {quantity}).")
+                print(f"[ERROR] Not enough energy in inventory ({agent['energy_inventory']} < {quantity}).")
                 return False
             space_left = system['depot_energy_capacity'] - system['energy_depot']
             if space_left <= 0:
-                print(f"[ERROR] Energie-Depot ist voll ({system['energy_depot']}/{system['depot_energy_capacity']}).")
+                print(f"[ERROR] Energy depot is full ({system['energy_depot']}/{system['depot_energy_capacity']}).")
                 return False
                 
             amount_to_deposit = min(quantity, space_left)
@@ -51,17 +51,17 @@ class Logistics:
             
         elif resource_type == "refined_matter":
             if agent['refined_matter_inventory'] < quantity:
-                print(f"[FEHLER] Nicht genug veredelte Materie im Inventar ({agent['refined_matter_inventory']} < {quantity}).")
+                print(f"[ERROR] Not enough refined matter in inventory ({agent['refined_matter_inventory']} < {quantity}).")
                 return False
-            # Wir nehmen an, dass refined_matter unbegrenzt oder im gleichen Cap wie matter gelagert werden kann. 
-            # Der Einfachheit halber: kein hard Cap für veredelte Materie vorerst, außer man will es streng. (Säule 1)
+            # We assume that refined_matter can be stored indefinitely or with the same cap as matter. 
+            # For simplicity: no hard cap for refined matter for now, unless strictness is desired. (Pillar 1)
             agent_service.update_agent_resources(cursor, self.agent.id, refined_matter=-quantity)
             cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot + ? WHERE name = ?", (quantity, agent['location']))
             print(f"[SUCCESS] {quantity} refined_matter deposited.")
             return True
             
         else:
-            print(f"[FEHLER] Unbekannte Ressource: {resource_type}")
+            print(f"[ERROR] Unknown resource: {resource_type}")
             return False
 
     @agent_service.with_agent_context(require_active=False)
@@ -78,11 +78,11 @@ class Logistics:
         elif resource_type == 'refined_matter':
             avail = system['refined_matter_depot']
         else:
-            print(f"[FEHLER] Unbekannte Ressource: {resource_type}")
+            print(f"[ERROR] Unknown resource: {resource_type}")
             return False
 
         if avail <= 0:
-            print(f"[FEHLER] System-Depot ist leer für {resource_type}.")
+            print(f"[ERROR] System depot is empty for {resource_type}.")
             return False
             
         amount_to_withdraw = min(quantity, avail)
@@ -96,7 +96,7 @@ class Logistics:
             current_total = agent['raw_matter_inventory'] + agent['refined_matter_inventory']
             space_left = agent['matter_storage_capacity'] - current_total
             if space_left <= 0:
-                print(f"[FEHLER] Dein Speicher ist voll ({current_total}/{agent['matter_storage_capacity']}).")
+                print(f"[ERROR] Your storage is full ({current_total}/{agent['matter_storage_capacity']}).")
                 return False
             actual_withdraw = min(amount_to_withdraw, space_left)
             
@@ -108,7 +108,7 @@ class Logistics:
             current_total = agent['raw_matter_inventory'] + agent['refined_matter_inventory']
             space_left = agent['matter_storage_capacity'] - current_total
             if space_left <= 0:
-                print(f"[FEHLER] Dein Speicher ist voll ({current_total}/{agent['matter_storage_capacity']}).")
+                print(f"[ERROR] Your storage is full ({current_total}/{agent['matter_storage_capacity']}).")
                 return False
             actual_withdraw = min(amount_to_withdraw, space_left)
             
@@ -136,7 +136,7 @@ class Logistics:
             agent_service.update_agent_resources(cursor, self.agent.id, refined_matter=-quantity)
             agent_service.update_agent_resources(cursor, receiver_id, refined_matter=quantity)
         else:
-            print(f"[FEHLER] Unbekannte Ressource für Transfer: {resource_type}")
+            print(f"[ERROR] Unknown resource for transfer: {resource_type}")
             return False
             
         print(f"[SUCCESS] {quantity} {resource_type} transferred to {get_display_name_with_id(target)}.")

@@ -3,12 +3,12 @@ const fs = require('fs');
 const path = require('path');
 
 describe('System Validator', () => {
-    test('validateConfig sollte Fehler werfen, wenn Felder fehlen', () => {
+    test('validateConfig should throw an error if fields are missing', () => {
         const incomplete = { model: "m" };
-        expect(() => validateConfig(incomplete)).toThrow("BOOT-FEHLER");
+        expect(() => validateConfig(incomplete)).toThrow("BOOT-ERROR");
     });
 
-    test('validateConfig sollte bei vollständiger Config Erfolg haben', () => {
+    test('validateConfig should succeed with a complete config', () => {
         const full = { 
             model: "m", 
             distillation_interval: 5, 
@@ -31,14 +31,14 @@ describe('System Validator', () => {
             jest.unmock('fs');
         });
 
-        test('sollte Fehler werfen, wenn weder .env noch ENV_VAR existieren', () => {
+        test('should throw an error if neither .env nor ENV_VAR exist', () => {
             const fs = require('fs');
             fs.existsSync.mockReturnValue(false);
             
-            expect(() => validateEnvironment('dummy/path')).toThrow("BOOT-FEHLER: Keine API-Authentifizierung");
+            expect(() => validateEnvironment('dummy/path')).toThrow("BOOT-ERROR: No API authentication");
         });
 
-        test('sollte passieren, wenn ENV_VAR existiert', () => {
+        test('should pass if ENV_VAR exists', () => {
             const fs = require('fs');
             fs.existsSync.mockReturnValue(false);
             process.env.GEMINI_API_KEY = "test-key";
@@ -46,7 +46,7 @@ describe('System Validator', () => {
             expect(() => validateEnvironment('dummy/path')).not.toThrow();
         });
 
-        test('sollte passieren, wenn .env Datei existiert', () => {
+        test('should pass if .env file exists', () => {
             const fs = require('fs');
             fs.existsSync.mockReturnValue(true);
             

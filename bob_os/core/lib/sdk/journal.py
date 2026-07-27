@@ -21,7 +21,7 @@ class Journal:
         action = action.lower() if action else ""
         if action == 'add':
             if not content:
-                print("[FEHLER] 'add' erfordert 'content'.")
+                print("[ERROR] 'add' requires 'content'.")
                 return False
             cursor.execute("INSERT INTO memos (agent_id, content, status) VALUES (?, ?, 'open')", (self.agent.id, content))
             cursor.execute("SELECT last_insert_rowid()")
@@ -30,21 +30,21 @@ class Journal:
             return True
         elif action == 'check':
             if id is None:
-                print("[FEHLER] 'check' erfordert eine 'id'.")
+                print("[ERROR] 'check' requires an 'id'.")
                 return False
             cursor.execute("UPDATE memos SET status = 'completed' WHERE id = ? AND agent_id = ?", (id, self.agent.id))
             print(f"[SUCCESS] Memo #{id} completed.")
             return True
         elif action == 'uncheck':
             if id is None:
-                print("[FEHLER] 'uncheck' erfordert eine 'id'.")
+                print("[ERROR] 'uncheck' requires an 'id'.")
                 return False
             cursor.execute("UPDATE memos SET status = 'open' WHERE id = ? AND agent_id = ?", (id, self.agent.id))
             print(f"[SUCCESS] Memo #{id} opened.")
             return True
         elif action == 'remove':
             if id is None:
-                print("[FEHLER] 'remove' erfordert eine 'id'.")
+                print("[ERROR] 'remove' requires an 'id'.")
                 return False
             cursor.execute("DELETE FROM memos WHERE id = ? AND agent_id = ?", (id, self.agent.id))
             print(f"[SUCCESS] Memo #{id} removed.")
@@ -57,12 +57,12 @@ class Journal:
             return [dict(r) for r in cursor.fetchall()]
         elif action == 'find':
             if not query:
-                print("[FEHLER] 'find' erfordert einen 'query' Suchbegriff.")
+                print("[ERROR] 'find' requires a 'query' search term.")
                 return False
             cursor.execute("SELECT id, content, status FROM memos WHERE agent_id = ? AND content LIKE ? ORDER BY id ASC", (self.agent.id, f"%{query}%"))
             return [dict(r) for r in cursor.fetchall()]
         else:
-            print(f"[FEHLER] Unbekannte Memo-Aktion: {action}")
+            print(f"[ERROR] Unknown memo action: {action}")
             return False
 
     @agent_service.with_agent_context(allow_disembodied=True)
@@ -71,7 +71,7 @@ class Journal:
         sys_name = agent['location']
         if action == 'add':
             if not title or not content:
-                print("[FEHLER] 'add' erfordert 'title' und 'content'.")
+                print("[ERROR] 'add' requires 'title' and 'content'.")
                 return False
             cursor.execute("INSERT INTO docs (author_id, system_name, title, content) VALUES (?, ?, ?, ?)", (self.agent.id, sys_name, title, content))
             cursor.execute("SELECT last_insert_rowid()")
@@ -80,27 +80,27 @@ class Journal:
             return True
         elif action == 'list':
             if id is not None:
-                # Detailansicht (unabhängig vom Sektor, falls man gezielt sucht)
+                # Detailed view (independent of the sector, if searching specifically)
                 cursor.execute("SELECT id, author_id, system_name, title, content FROM docs WHERE id = ?", (id,))
             else:
-                # Sektor-Liste (Sicherheits-Schutz: nur lokales System)
+                # Sector list (security protection: local system only)
                 cursor.execute("SELECT id, author_id, title FROM docs WHERE system_name = ? ORDER BY id ASC", (sys_name,))
             return [dict(r) for r in cursor.fetchall()]
         elif action == 'find':
             if not query:
-                print("[FEHLER] 'find' erfordert einen 'query' Suchbegriff.")
+                print("[ERROR] 'find' requires a 'query' search term.")
                 return False
             cursor.execute("SELECT id, author_id, title, content FROM docs WHERE system_name = ? AND (title LIKE ? OR content LIKE ?) ORDER BY id ASC", 
                            (sys_name, f"%{query}%", f"%{query}%"))
             return [dict(r) for r in cursor.fetchall()]
         elif action == 'remove':
             if id is None:
-                print("[FEHLER] 'remove' erfordert eine 'id'.")
+                print("[ERROR] 'remove' requires an 'id'.")
                 return False
             cursor.execute("SELECT author_id FROM docs WHERE id = ?", (id,))
             row = cursor.fetchone()
             if not row:
-                print(f"[FEHLER] Dokument #{id} nicht gefunden.")
+                print(f"[ERROR] Document #{id} not found.")
                 return False
             if row['author_id'] != self.agent.id:
                 print(f"[DENIED] Only the author of this document can remove it.")
@@ -109,13 +109,13 @@ class Journal:
             print(f"[SUCCESS] Document #{id} removed.")
             return True
         else:
-            print(f"[FEHLER] Unbekannte Docs-Aktion: {action}")
+            print(f"[ERROR] Unknown docs action: {action}")
             return False
 
     @agent_service.with_agent_context(allow_disembodied=True)
     def design_blueprint(self, cursor, agent, name, matrix_json):
         if not name or not matrix_json:
-            print("[FEHLER] 'design_blueprint' erfordert einen 'name' und ein 'matrix_json' Layout.")
+            print("[ERROR] 'design_blueprint' requires a 'name' and a 'matrix_json' layout.")
             return False
         
         try:
@@ -124,26 +124,26 @@ class Journal:
             else:
                 matrix = matrix_json
         except Exception as e:
-            print(f"[FEHLER] Ungültiges Gitter-JSON Format: {str(e)}")
+            print(f"[ERROR] Invalid grid JSON format: {str(e)}")
             return False
             
-        # Evaluator aufrufen
+        # Call evaluator
         rules = config_service.get_economy_rules()
         stats = physics_service.evaluate_ship_matrix(name, matrix, rules)
         if "error" in stats:
-            print(f"[FEHLER] Blueprint-Planung fehlgeschlagen: {stats['error']}")
+            print(f"[ERROR] Blueprint planning failed: {stats['error']}")
             return False
             
         yaml_stats = yaml.dump({"blueprint_specs": stats}, sort_keys=False, default_flow_style=False).strip()
         print(f"[SUCCESS] Blueprint '{name}' successfully simulated/planned (NOT SAVED)!")
-        print(f"\nERRECHNETE HARDWARE-SPEZIFIKATIONEN:\n---\n{yaml_stats}\n---")
-        print(f"[HINWEIS]: Dieser Befehl dient rein der risikofreien Simulation. Um diesen Entwurf dauerhaft im Sektor-Wiki zu speichern, führe 'me.save_blueprint(name, matrix)' aus!")
+        print(f"\nCALCULATED HARDWARE SPECIFICATIONS:\n---\n{yaml_stats}\n---")
+        print(f"[NOTE]: This command is for risk-free simulation only. To save this blueprint permanently inside the sector database, run 'me.save_blueprint(name, matrix)'!")
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True)
     def save_blueprint(self, cursor, agent, name, matrix_json):
         if not name or not matrix_json:
-            print("[FEHLER] 'save_blueprint' erfordert einen 'name' und ein 'matrix_json' Layout.")
+            print("[ERROR] 'save_blueprint' requires a 'name' and a 'matrix_json' layout.")
             return False
         
         try:
@@ -152,14 +152,14 @@ class Journal:
             else:
                 matrix = matrix_json
         except Exception as e:
-            print(f"[FEHLER] Ungültiges Gitter-JSON Format: {str(e)}")
+            print(f"[ERROR] Invalid grid JSON format: {str(e)}")
             return False
             
-        # Evaluator aufrufen
+        # Call evaluator
         rules = config_service.get_economy_rules()
         stats = physics_service.evaluate_ship_matrix(name, matrix, rules)
         if "error" in stats:
-            print(f"[FEHLER] Blueprint-Speicherung fehlgeschlagen: {stats['error']}")
+            print(f"[ERROR] Blueprint saving failed: {stats['error']}")
             return False
             
         cursor.execute("""
@@ -169,7 +169,7 @@ class Journal:
         
         yaml_stats = yaml.dump({"blueprint_specs": stats}, sort_keys=False, default_flow_style=False).strip()
         print(f"[SUCCESS] Blueprint '{name}' successfully saved to sector database!")
-        print(f"\nERRECHNETE HARDWARE-SPEZIFIKATIONEN:\n---\n{yaml_stats}\n---")
+        print(f"\nCALCULATED HARDWARE SPECIFICATIONS:\n---\n{yaml_stats}\n---")
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True)
@@ -190,12 +190,12 @@ class Journal:
     @agent_service.with_agent_context(allow_disembodied=True)
     def delete_blueprint(self, cursor, agent, name):
         if not name:
-            print("[FEHLER] 'delete_blueprint' erfordert einen 'name'.")
+            print("[ERROR] 'delete_blueprint' requires a 'name'.")
             return False
         cursor.execute("SELECT author_id FROM blueprints WHERE name = ?", (name,))
         row = cursor.fetchone()
         if not row:
-            print(f"[FEHLER] Blueprint '{name}' nicht gefunden.")
+            print(f"[ERROR] Blueprint '{name}' not found.")
             return False
         if row['author_id'] != self.agent.id:
             print("[DENIED] Only the author can remove this blueprint.")

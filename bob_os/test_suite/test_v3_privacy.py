@@ -4,7 +4,7 @@ import sqlite3
 import json
 import sys
 
-# Pfade für SDK hinzufügen
+# Add paths for SDK
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.lib import bob_sdk, db_config
@@ -40,7 +40,7 @@ class TestBobOS_v3_Privacy(unittest.TestCase):
 
     def test_01_entity_privacy(self):
         conn = db_config.get_connection()
-        # Instance-2 hat viel Energie und Materie
+        # Instance-2 has a lot of energy and matter
         conn.execute("INSERT OR REPLACE INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS_X0_Y0', 'sem_matrix', 'active')")
         conn.execute("INSERT OR REPLACE INTO agents (id, host_id, host_type, status) VALUES ('Instance-2', '100', 'matrix', 'active')")
         conn.execute("UPDATE systems SET energy_depot = 500, raw_matter_depot = 300 WHERE name = 'SYS_X0_Y0'")
@@ -50,12 +50,12 @@ class TestBobOS_v3_Privacy(unittest.TestCase):
         entities = self.agent.sensors.entities()
         bob2 = next(e for e in entities if e['id'] == 'Instance-2')
         
-        # Diese Felder dürfen NICHT im Output sein
+        # These fields must NOT be in the output
         self.assertNotIn('energy_inventory', bob2)
         self.assertNotIn('raw_matter_inventory', bob2)
         self.assertNotIn('matter_storage_capacity', bob2)
         
-        # Diese Felder sind öffentliche Metadaten
+        # These fields are public metadata
         self.assertIn('id', bob2)
         self.assertIn('chosen_name', bob2)
         self.assertIn('status', bob2)

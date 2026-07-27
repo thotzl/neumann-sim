@@ -1,54 +1,54 @@
 const assert = require('assert');
 
-console.log("Teste 'Diary-Only' Semantisches Memory Model...");
+console.log("Testing 'Diary-Only' Semantic Memory Model...");
 
-// 1. Simuliere die Regex-Matching Logik aus runner.js
+// 1. Simulate the Regex-Matching Logic from runner.js (English)
 function extractThoughts(responseText) {
-    const analyseMatch = responseText.match(/1\.\s*ANALYSE:([\s\S]*?)(?=2\.\s*AKTION:|$)/i) 
-                         || responseText.match(/ANALYSE:([\s\S]*?)(?=AKTION:|$)/i);
-    return analyseMatch ? "1. ANALYSE:\n" + analyseMatch[1].trim() : responseText;
+    const analyseMatch = responseText.match(/1\.\s*ANALYSIS:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
+                         || responseText.match(/ANALYSIS:([\s\S]*?)(?=ACTION:|$)/i);
+    return analyseMatch ? "1. ANALYSIS:\n" + analyseMatch[1].trim() : responseText;
 }
 
 function extractAction(responseText) {
-    const actionPart = responseText.match(/2\.\s*AKTION:[\s\S]*/i) 
-                       ? responseText.match(/2\.\s*AKTION:[\s\S]*/i)[0] 
-                       : (responseText.match(/AKTION:[\s\S]*/i) ? responseText.match(/AKTION:[\s\S]*/i)[0] : "Keine Aktion.");
+    const actionPart = responseText.match(/2\.\s*ACTION:[\s\S]*/i) 
+                       ? responseText.match(/2\.\s*ACTION:[\s\S]*/i)[0] 
+                       : (responseText.match(/ACTION:[\s\S]*/i) ? responseText.match(/ACTION:[\s\S]*/i)[0] : "No action.");
     return actionPart.trim();
 }
 
-// Test Fall 1: Standard V10 Protokoll Format
-const response1 = `1. ANALYSE:
-Ich plane im Heimatsystem Mine zu bauen, um Rohstoffe anzuhäufen.
-2. AKTION:
+// Test Case 1: Standard V10 Protocol Format
+const response1 = `1. ANALYSIS:
+I plan to build a mine in the home system to accumulate raw resources.
+2. ACTION:
 [RUN: me mine()]`;
 
 const thoughts1 = extractThoughts(response1);
 const action1 = extractAction(response1);
 
-assert.strictEqual(thoughts1, "1. ANALYSE:\nIch plane im Heimatsystem Mine zu bauen, um Rohstoffe anzuhäufen.");
-assert.strictEqual(action1, "2. AKTION:\n[RUN: me mine()]");
-console.log("  ✅ Test 1 (Standard V10 Format) erfolgreich.");
+assert.strictEqual(thoughts1, "1. ANALYSIS:\nI plan to build a mine in the home system to accumulate raw resources.");
+assert.strictEqual(action1, "2. ACTION:\n[RUN: me mine()]");
+console.log("  ✅ Test 1 (Standard Format) successful.");
 
-// Test Fall 2: Robustheit bei Abweichungen (ohne Ziffern)
-const response2 = `ANALYSE:
-Flaschenhals erkannt. Errichte Solar Collector.
-AKTION:
+// Test Case 2: Robustness with deviations (without digits)
+const response2 = `ANALYSIS:
+Bottleneck identified. Erecting solar collector.
+ACTION:
 [RUN: me build(building_type=solar_collector)]`;
 
 const thoughts2 = extractThoughts(response2);
 const action2 = extractAction(response2);
 
-assert.strictEqual(thoughts2, "1. ANALYSE:\nFlaschenhals erkannt. Errichte Solar Collector.");
-assert.strictEqual(action2, "AKTION:\n[RUN: me build(building_type=solar_collector)]");
-console.log("  ✅ Test 2 (Abweichungen ohne Ziffern) erfolgreich.");
+assert.strictEqual(thoughts2, "1. ANALYSIS:\nBottleneck identified. Erecting solar collector.");
+assert.strictEqual(action2, "ACTION:\n[RUN: me build(building_type=solar_collector)]");
+console.log("  ✅ Test 2 (Deviations without digits) successful.");
 
-// Test Fall 3: Fallback bei unstrukturiertem Text
-const response3 = "Einfacher Text ohne Protokoll.";
+// Test Case 3: Fallback for unstructured text
+const response3 = "Simple text without protocol.";
 const thoughts3 = extractThoughts(response3);
 const action3 = extractAction(response3);
 
-assert.strictEqual(thoughts3, "Einfacher Text ohne Protokoll.");
-assert.strictEqual(action3, "Keine Aktion.");
-console.log("  ✅ Test 3 (Fallback auf Volltext) erfolgreich.");
+assert.strictEqual(thoughts3, "Simple text without protocol.");
+assert.strictEqual(action3, "No action.");
+console.log("  ✅ Test 3 (Fallback to full text) successful.");
 
-console.log("🎉 'Diary-Only' Memory Tests erfolgreich abgeschlossen!");
+console.log("🎉 'Diary-Only' Memory Tests successfully completed!");

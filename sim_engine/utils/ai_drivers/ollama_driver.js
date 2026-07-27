@@ -6,7 +6,7 @@ function logInference(messages, responseText, duration, model) {
         const expName = process.argv[2] || "unknown";
         const logDir = expName !== "unknown" ? path.join(process.cwd(), 'experiments', expName) : process.cwd();
         
-        // Erzeuge den Ordner falls er noch nicht existiert (z.B. vor dem ersten Schreiben)
+        // Create the folder if it doesn't exist yet (e.g., before the first write)
         if (!fs.existsSync(logDir)) {
             fs.mkdirSync(logDir, { recursive: true });
         }
@@ -41,8 +41,8 @@ const OllamaDriver = {
     buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) {
         let systemContent = "";
         if (globalInstr) systemContent += `${globalInstr}\n\n`;
-        if (systemPrompt) systemContent += `DEIN BRIEFING:\n${systemPrompt}\n\n`;
-        if (memory) systemContent += `DEIN GEDÄCHTNIS:\n${memory}\n\n`;
+        if (systemPrompt) systemContent += `YOUR BRIEFING:\n${systemPrompt}\n\n`;
+        if (memory) systemContent += `YOUR MEMORY:\n${memory}\n\n`;
 
         let messages = [];
         if (systemContent.trim()) {
@@ -73,7 +73,7 @@ const OllamaDriver = {
             stream: false,
             options: {
                 temperature: 0.2,
-                num_predict: 250 // Verhindert unendliche Generierungs-Schleifen auf lokalen Modellen
+                num_predict: 250 // Prevents infinite generation loops on local models
             }
         };
 
@@ -96,7 +96,7 @@ const OllamaDriver = {
                 const content = data.message.content;
                 const duration = Date.now() - startTime;
                 
-                // Schreibe das detaillierte Inferenz-Log
+                // Write the detailed inference log
                 logInference(payload.messages, content, duration, model);
                 
                 return content;

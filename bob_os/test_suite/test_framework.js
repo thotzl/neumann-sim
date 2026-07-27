@@ -7,12 +7,12 @@ const path = require('path');
 async function testFeedbackLogic() {
     console.log("Testing API Client Feedback Logic...");
     const history = [
-        { agent: 'Instance-1', text: '[RUN: python3 tools/mine.py Instance-1]', feedback: '[ERFOLG] 100 Materie.' }
+        { agent: 'Instance-1', text: '[RUN: python3 tools/mine.py Instance-1]', feedback: '[SUCCESS] 100 Matter.' }
     ];
     const context = apiClient.buildAgentContext('Instance-1', history, '', '', 'GLOBAL', 'INDIVIDUAL', true);
     const lastMessage = context.contents[context.contents.length - 1];
     assert.strictEqual(lastMessage.role, 'user');
-    assert.ok(lastMessage.parts[0].text.includes('[AUSWIRKUNG]:\n[ERFOLG] 100 Materie.'), "Feedback fehlt im nächsten Turn!");
+    assert.ok(lastMessage.parts[0].text.includes('[IMPACT]:\n[SUCCESS] 100 Matter.'), "Feedback missing in next turn!");
     console.log("✅ Feedback Logic OK.");
 }
 
@@ -40,7 +40,7 @@ function testExporterHook() {
         db.run("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER)");
         db.run("INSERT INTO systems (name, x, y) VALUES ('SYS_X0Y0', 0, 0)");
         db.run("INSERT INTO agents (id, location) VALUES ('Instance-1', 'SYS_X0Y0')", () => {
-            // WICHTIG: DB schließen bevor der Exporter sie öffnet
+            // IMPORTANT: Close DB before the exporter opens it
             db.close((err) => {
                 if (err) throw err;
                 
@@ -54,7 +54,7 @@ function testExporterHook() {
                         fs.rmSync(mockUniverse, { recursive: true, force: true });
                     }, 500);
                 } catch (e) {
-                    console.error("❌ Exporter Fehler:", e.message);
+                    console.error("❌ Exporter Error:", e.message);
                     process.exit(1);
                 }
             });

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// Mock api_client auf Modulebene für den gesamten Test
+// Mock api_client at module level for the entire test
 jest.mock('../sim_engine/utils/api_client', () => ({
     callGemini: jest.fn()
 }));
@@ -25,25 +25,25 @@ describe('Finalize Simulation (Integration)', () => {
         if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true });
     });
 
-    test('finalizeSimulation sollte bei Erfolg destillieren und Log ergänzen', async () => {
+    test('finalizeSimulation should distill and append to log on success', async () => {
         callGemini.mockResolvedValue("Final Summary");
         const state = { globalHistory: [{ agent: 'A', text: 'Ende' }] };
         
         await finalizeSimulation('http://mock', state, mFile, lFile, false);
         
         const logContent = fs.readFileSync(lFile, 'utf8');
-        expect(logContent).toContain('[SYSTEM]: ABSCHLUSS-ROUTINE EINGELEITET');
-        expect(logContent).toContain('Letzte Impulse erfolgreich destilliert');
+        expect(logContent).toContain('[SYSTEM]: FINALIZATION ROUTINE INITIATED');
+        expect(logContent).toContain('Last impulses successfully distilled');
         expect(fs.readFileSync(mFile, 'utf8')).toBe("Final Summary");
     });
 
-    test('finalizeSimulation sollte Fehler im Log vermerken, wenn errorOccurred wahr ist', async () => {
+    test('finalizeSimulation should log errors if errorOccurred is true', async () => {
         callGemini.mockResolvedValue("Summary");
         const state = { globalHistory: [{ agent: 'A', text: 'Ende' }] };
         
         await finalizeSimulation('http://mock', state, mFile, lFile, new Error("Crash"));
         
         const logContent = fs.readFileSync(lFile, 'utf8');
-        expect(logContent).toContain('(Grund: Fehler)');
+        expect(logContent).toContain('(Reason: Error)');
     });
 });

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 
-// Manueller .env Parser
+// Manual .env Parser
 let envPath = path.join(__dirname, '.env');
 let currentDir = __dirname;
 while (!fs.existsSync(envPath) && currentDir !== path.parse(currentDir).root) {
@@ -45,7 +45,7 @@ async function run() {
     }
 
     if (!fs.existsSync(vDir)) {
-        console.error(`Experiment-Verzeichnis nicht gefunden: ${vDir}`);
+        console.error(`Experiment directory not found: ${vDir}`);
         process.exit(1);
     }
 
@@ -66,8 +66,8 @@ async function run() {
 
     let state = stateManager.loadState(stateFile);
     if (!state) {
-        // [PRERUN] Seeding: DB aus Config befüllen bevor State gebaut wird
-        console.log(`\n[PRERUN] Initialisiere Welt aus config.json...`);
+        // [PRERUN] Seeding: Populate DB from Config before State is built
+        console.log(`\n[PRERUN] Initializing world from config.json...`);
         try {
             require('child_process').execSync(`python3 ${path.join(vDir, 'core', 'bin', 'init_db.py')} --seed`, { 
                 cwd: vDir, 
@@ -75,7 +75,7 @@ async function run() {
                 stdio: 'inherit'
             });
         } catch (e) {
-            console.error("[PRERUN ERROR] Seeding fehlgeschlagen:", e.message);
+            console.error("[PRERUN ERROR] Seeding failed:", e.message);
         }
 
         state = {
@@ -123,7 +123,7 @@ async function run() {
 
         if (state.currentTurnIndex === 0) {
             state.round++;
-            console.log(`\nZyklus ${state.round}/${config.rounds}...`);
+            console.log(`\nCycle ${state.round}/${config.rounds}...`);
             
             bootstrapper.syncPopulation(populationFile, universeDir, vDir, state, logger, logFile, state.round);
             stateManager.saveState(stateFile, state);
@@ -189,24 +189,24 @@ print(json.dumps({"messages": msgs, "names": names}))`;
             return true;
         }
 
-        console.log(`  Zug: ${agent.id}`);
+        console.log(`  Turn: ${agent.id}`);
         const envState = envManager.getEnvState(universeDir);
         const globalInstr = config.global_system_instruction || "";
 
         await memoryCtrl.handleDistillation(agent.id, state, config, compressorBridge);
 
-        // Vorbereiten der Payload (Inbox Extraction)
+        // Prepare Payload (Inbox Extraction)
         let promptText = "";
         const myInbox = state.global_inbox[agent.id] || [];
         let inboxText = "";
         if (myInbox.length > 0) {
-            inboxText += "\n[POSTEINGANG (Ereignisse des letzten Zyklus)]:\n";
+            inboxText += "\n[INBOX (Events of the last cycle)]:\n";
             myInbox.forEach(item => {
                 if (item.type === 'vog') inboxText += `[VOICE OF GOD]: ${item.text}\n`;
                 if (item.type === 'scut') {
                     const chosenName = (state.agentNames && state.agentNames[item.sender]) || "Unnamed";
                     const senderName = `${chosenName} (ID: ${item.sender})`;
-                    inboxText += `[SCUT] Von ${senderName}: ${item.content}\n`;
+                    inboxText += `[SCUT] From ${senderName}: ${item.content}\n`;
                 }
                 if (item.type === 'visual') inboxText += `[OBSERVER] ${item.description}\n`;
                 if (item.type === 'automation') inboxText += `[SYSTEM-AUTOMATION]: ${item.text}\n`;
@@ -219,7 +219,7 @@ print(json.dumps({"messages": msgs, "names": names}))`;
         let contextArray = [...state.histories[agent.id]];
 
         if (agent.needsResumeNotify) {
-            promptText += `\n[SYSTEM NOTIFICATION]: Raumzeitliche Interferenzen wurden stabilisiert. Sensorströme reaktiviert.\n`;
+            promptText += `\n[SYSTEM NOTIFICATION]: Spacetime interferences stabilized. Sensor feeds reactivated.\n`;
             agent.needsResumeNotify = false;
         }
 
@@ -227,14 +227,14 @@ print(json.dumps({"messages": msgs, "names": names}))`;
         try {
             const dashboardOut = runPython(vDir, `core/bin/bob.py`, ['dashboard()'], { bobId: agent.id, aclState: state.security?.acl || {} });
             if (dashboardOut && dashboardOut.trim()) {
-                promptText += `\n[AKTUELLE UMGEBUNG (ECHTZEIT)]:\n${dashboardOut.trim()}\n`;
+                promptText += `\n[CURRENT ENVIRONMENT (REALTIME)]:\n${dashboardOut.trim()}\n`;
             }
-        } catch (e) { console.error(`[SENSOR-ERROR] bei Agent ${agent.id}:`, e.message); }
+        } catch (e) { console.error(`[SENSOR-ERROR] for Agent ${agent.id}:`, e.message); }
 
         const myWallet = state.security.wallets[agent.id] || {};
-        promptText += `\n[DEIN SCHLÜSSELBUND]: ${Object.keys(myWallet).length > 0 ? JSON.stringify(myWallet) : "Leer."}\n`;
-        promptText += `\nAktuelle Umgebung:\n${envState}\n`;
-        promptText += `\nAntworte strikt im Protokoll-Format (ANALYSE, gefolgt von AKTION).`;
+        promptText += `\n[YOUR KEYRING]: ${Object.keys(myWallet).length > 0 ? JSON.stringify(myWallet) : "Empty."}\n`;
+        promptText += `\nCurrent Environment:\n${envState}\n`;
+        promptText += `\nRespond strictly in protocol format (1. ANALYSIS followed by 2. ACTION).\n`;
         
         contextArray.push({ agent: "System", text: promptText });
 
@@ -247,22 +247,22 @@ print(json.dumps({"messages": msgs, "names": names}))`;
         if (responseText) {
             let feedback = envManager.processActions(responseText, universeDir, agent.id, state);
             
-            // Extract ONLY the thoughts (1. ANALYSE) for the permanent diary history (Step 2)
-            const analyseMatch = responseText.match(/1\.\s*ANALYSE:([\s\S]*?)(?=2\.\s*AKTION:|$)/i) 
-                                 || responseText.match(/ANALYSE:([\s\S]*?)(?=AKTION:|$)/i);
-            const thoughts = analyseMatch ? "1. ANALYSE:\n" + analyseMatch[1].trim() : responseText;
+            // Extract ONLY the thoughts (1. ANALYSIS) for the permanent diary history (Step 2)
+            const analyseMatch = responseText.match(/1\.\s*ANALYSIS:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
+                                 || responseText.match(/ANALYSIS:([\s\S]*?)(?=ACTION:|$)/i);
+            const thoughts = analyseMatch ? "1. ANALYSIS:\n" + analyseMatch[1].trim() : responseText;
             state.histories[agent.id].push({ agent: agent.id, text: thoughts });
             
             // Store the raw action and engine resonance transiently in the global inbox for the next turn
             if (!state.global_inbox[agent.id]) state.global_inbox[agent.id] = [];
             
-            const actionPart = responseText.match(/2\.\s*AKTION:[\s\S]*/i) 
-                               ? responseText.match(/2\.\s*AKTION:[\s\S]*/i)[0] 
-                               : (responseText.match(/AKTION:[\s\S]*/i) ? responseText.match(/AKTION:[\s\S]*/i)[0] : "Keine Aktion.");
+            const actionPart = responseText.match(/2\.\s*ACTION:[\s\S]*/i) 
+                               ? responseText.match(/2\.\s*ACTION:[\s\S]*/i)[0] 
+                               : (responseText.match(/ACTION:[\s\S]*/i) ? responseText.match(/ACTION:[\s\S]*/i)[0] : "No action.");
             
             state.global_inbox[agent.id].push({
                 type: 'resonance',
-                text: `[NEURONALES ECHO (LETZTE AKTION UND RESONANZ)]:\n${actionPart.trim()}\n\nRESONANZ:\n${feedback.trim()}`
+                text: `[NEURAL ECHO (LAST ACTION AND RESONANCE)]:\n${actionPart.trim()}\n\nRESONANCE:\n${feedback.trim()}`
             });
             
             logger.appendTurnLog(logFile, state.round, agent.id, state.totalTurns, state.histories[agent.id].length, responseText, feedback, false, preTurnEvents);
@@ -270,28 +270,28 @@ print(json.dumps({"messages": msgs, "names": names}))`;
             stateManager.saveState(stateFile, state);
             state.totalTurns++;
         } else {
-            console.log(`Fehler bei Agent ${agent.id}: Leere Antwort.`);
+            console.log(`Error for Agent ${agent.id}: Empty response.`);
             return false;
         }
 
         state.currentTurnIndex++;
         if (state.currentTurnIndex >= state.turnSequence.length) {
             state.currentTurnIndex = 0;
-            console.log(`  System-Runde (Automatisierung & Physik)...`);
+            console.log(`  System Round (Automation & Physics)...`);
             const systemAutoOutput = automation.runSystemAutomations(vDir, universeDir, state);
             if (systemAutoOutput) {
                 logger.appendTurnLog(logFile, state.round, "System", 0, 0, "[SYSTEM AUTOMATION RUN]", systemAutoOutput, true, "");
             }
             try { 
                 runPython(vDir, `core/bin/physics_update.py`, [state.round.toString()]);
-            } catch (e) { console.error("[PHYSICS-ERROR] Update fehlgeschlagen:", e.message); }
+            } catch (e) { console.error("[PHYSICS-ERROR] Update failed:", e.message); }
             stateManager.saveState(stateFile, state);
         }
         return true;
     }
 
     while (await turn()) {}
-    console.log("Simulation beendet.");
+    console.log("Simulation finished.");
 }
 
 run();

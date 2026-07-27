@@ -2,18 +2,18 @@ import json
 
 def safe_int(val, param_name, default=None):
     """
-    Konvertiert einen Parameter sicher in ein Int mit deskriptivem NameError bei Fehlschlag.
+    Safely converts a parameter to an int with a descriptive ValueError on failure.
     """
     if val is None or val == '': 
         return default
     try: 
         return int(val)
     except ValueError: 
-        raise ValueError(f"Parameter '{param_name}' erwartet eine Ganzzahl, erhielt aber '{val}'.")
+        raise ValueError(f"Parameter '{param_name}' expects an integer, but received '{val}'.")
 
 def parse_json_matrix(matrix_json):
     """
-    Parst Gitter-Matrizen flexibel (akzeptiert rohe Listen oder JSON-Strings).
+    Flexibly parses grid matrices (accepts raw lists or JSON strings).
     """
     if not matrix_json:
         return []
@@ -22,4 +22,4 @@ def parse_json_matrix(matrix_json):
             return json.loads(matrix_json)
         return matrix_json
     except Exception as e:
-        raise ValueError(f"Ungültiges Gitter-JSON Format: {str(e)}")
+        raise ValueError(f"Invalid grid JSON format: {str(e)}")

@@ -3,7 +3,7 @@ import os
 import sys
 import sqlite3
 
-# Pfad-Handling für Core-Lib
+# Path handling for Core-Lib
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, BASE_DIR)
 
@@ -19,7 +19,7 @@ class TestV105RenameShip(unittest.TestCase):
         os.environ['TEST_DB_PATH'] = TEST_DB
         os.environ['TEST_POP_PATH'] = TEST_POP
         
-        # Lokale Test-Datenbank initialisieren
+        # Initialize local test database
         conn = sqlite3.connect(TEST_DB)
         conn.row_factory = sqlite3.Row
         
@@ -68,10 +68,10 @@ class TestV105RenameShip(unittest.TestCase):
         conn.execute("INSERT INTO systems (name, x, y) VALUES ('SYS_A', 0, 0)")
         conn.execute("INSERT INTO systems (name, x, y) VALUES ('SYS_B', 1000, 1000)")
         
-        # Schiff 1 (SYS_A, Robert's Schiff)
+        # Ship 1 (SYS_A, Robert's Ship)
         conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, mass, max_speed, thrust, energy_capacity, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_A', 100, 300, 500, 500, 300)")
         
-        # Schiff 2 (SYS_B, Außer Sektor-Reichweite)
+        # Ship 2 (SYS_B, Out of sector range)
         conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, mass, max_speed, thrust, energy_capacity, matter_storage_capacity) VALUES (2, 'Ship-2', 'Miner', NULL, 'SYS_B', 100, 300, 500, 500, 300)")
 
         conn.commit()
@@ -90,31 +90,31 @@ class TestV105RenameShip(unittest.TestCase):
         if 'TEST_POP_PATH' in os.environ: del os.environ['TEST_POP_PATH']
 
     def test_rename_ship_success(self):
-        # Happy Path: Umbenennung im eigenen Sektor (SYS_A)
+        # Happy Path: Renaming in own sector (SYS_A)
         self.assertTrue(self.agent.rename_ship(ship_id=1, new_name="SovereignPrime"))
         
-        # Datenbank-Verifikation
+        # Database verification
         conn = db_config.get_connection()
         row = conn.execute("SELECT name FROM ships WHERE id = 1").fetchone()
         self.assertEqual(row['name'], "SovereignPrime")
         conn.close()
 
     def test_rename_ship_different_sector_fails(self):
-        # Schiff 2 befindet sich in SYS_B, wir sind in SYS_A -> Muss abgewiesen werden!
+        # Ship 2 is in SYS_B, we are in SYS_A -> Must be rejected!
         self.assertFalse(self.agent.rename_ship(ship_id=2, new_name="HaulerAlpha"))
         
-        # Name darf sich nicht geändert haben
+        # Name must not have changed
         conn = db_config.get_connection()
         row = conn.execute("SELECT name FROM ships WHERE id = 2").fetchone()
         self.assertEqual(row['name'], "Ship-2")
         conn.close()
 
     def test_rename_ship_edge_cases(self):
-        # Fehlerhafte Name-Eingaben
+        # Invalid name inputs
         self.assertFalse(self.agent.rename_ship(ship_id=1, new_name=""))
         self.assertFalse(self.agent.rename_ship(ship_id=1, new_name=None))
         
-        # Nicht-existente Schiff-ID
+        # Non-existent ship ID
         self.assertFalse(self.agent.rename_ship(ship_id=999, new_name="Phantom"))
 
 if __name__ == '__main__':

@@ -115,20 +115,20 @@ function exportWorldState(universeDir, state, lastAgentId) {
 
             const history = state.histories[a.id] || [];
             
-            // Suche den letzten echten Gedankengang des Agenten (rückwärts)
-            let lastBobTurn = null;
+            // Find the last actual thought process of the agent (backwards)
+            let lastThoughtEntry = null;
             for (let i = history.length - 1; i >= 0; i--) {
                 if (history[i].agent === a.id) {
-                    lastBobTurn = history[i];
+                    lastThoughtEntry = history[i];
                     break;
                 }
             }
             
-            if (lastBobTurn) {
-                a.last_manifestation = lastBobTurn.text;
+            if (lastThoughtEntry) {
+                a.last_manifestation = lastThoughtEntry.text;
             }
             
-            // Sensordaten für JEDEN Agenten exportieren (Omni-Format)
+            // Export sensor data for EVERY agent (Omni-Format)
             const previews = [];
             if (a.status !== 'traveling') {
                 systems.forEach(s => {
@@ -203,7 +203,7 @@ function exportWorldState(universeDir, state, lastAgentId) {
         fullHistory.sort((a, b) => (a.tick === "?" ? 0 : a.tick) - (b.tick === "?" ? 0 : b.tick));
 
         // ========================================================
-        // V12.0 AUGMENTED REAL-TIME WEB_BROADCAST (Silently Entkoppelt)
+        // V12.0 AUGMENTED REAL-TIME WEB_BROADCAST (Silently Decoupled)
         // ========================================================
         try {
             const http = require('http');
@@ -224,7 +224,7 @@ function exportWorldState(universeDir, state, lastAgentId) {
                 // Fail silently in less than 1ms.
             });
 
-            // Sicherheits-Timeout gegen blockierende Sockets
+            // Security timeout against blocking sockets
             req.setTimeout(500, () => {
                 req.destroy();
             });
@@ -232,7 +232,7 @@ function exportWorldState(universeDir, state, lastAgentId) {
             req.write(payload);
             req.end();
         } catch (e) {
-            // Garantierte Null-Interferenz bei Fehlern des Frontends
+            // Guaranteed zero interference in case of frontend errors
         }
 
         db.close();

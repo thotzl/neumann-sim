@@ -22,4 +22,4 @@ def migrate():
     
     conn.commit()
     conn.close()
-    print("[MIGRATION] V8.8 Schema-Update erfolgreich.")
+    print("[MIGRATION] V8.8 Schema-Update successful.")

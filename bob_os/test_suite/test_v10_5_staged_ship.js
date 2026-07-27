@@ -11,29 +11,29 @@ if (fs.existsSync(rootMockDir)) fs.rmSync(rootMockDir, { recursive: true, force:
 fs.mkdirSync(rootMockDir, { recursive: true });
 fs.mkdirSync(mockDir, { recursive: true });
 
-// Symlink zur Core-Engine erstellen
+// Create symlink to the core engine
 fs.symlinkSync(path.resolve('bob_os/core'), path.resolve(rootMockDir, 'core'), 'dir');
 
-console.log("Starte unbestechlichen E2E-Workflow-Test für Etappen-Schiffsbau...");
+console.log("Starting incorruptible E2E workflow test for staged ship construction...");
 
-// 1. Initialisiere eine frische Test-Datenbank per init_db.py
+// 1. Initialize a fresh test database via init_db.py
 try {
     execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=bob_os python3 bob_os/core/bin/init_db.py`, { stdio: 'pipe' });
 } catch (e) {
-    console.error("Datenbank-Initialisierung fehlgeschlagen:", e.stderr ? e.stderr.toString() : e.message);
+    console.error("Database initialization failed:", e.stderr ? e.stderr.toString() : e.message);
     process.exit(1);
 }
 
-// 2. Führe die Migrationslogik aus, um die Spalten für das Etappenbau-System zu verifizieren
+// 2. Execute migration logic to verify columns for the staged construction system
 try {
     execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=bob_os python3 -m core.lib.migrations`, { stdio: 'pipe' });
-    console.log("[SUCCESS] Datenbank-Migration fehlerfrei angewendet.");
+    console.log("[SUCCESS] Database migration applied without errors.");
 } catch (e) {
-    console.error("Datenbank-Migration fehlgeschlagen:", e.stderr ? e.stderr.toString() : e.message);
+    console.error("Database migration failed:", e.stderr ? e.stderr.toString() : e.message);
     process.exit(1);
 }
 
-// 3. Seede die Testdaten
+// 3. Seed the test data
 const seedScriptPath = path.join(rootMockDir, 'seed_staged_db.py');
 const seedScriptContent = `
 import os
@@ -41,14 +41,14 @@ import sqlite3
 
 db_path = os.environ.get('TEST_DB_PATH', 'test_env_staged_ship/_verse/universe.db')
 conn = sqlite3.connect(db_path)
-# Seede ein System mit ausreichend veredelter Materie im Depot
+# Seed a system with sufficient refined matter in the depot
 conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS_A', 0, 0, 10000, 1000, 5000, 1000)")
 conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (1, 'SYS_A', 'shipyard', 'active', 1, 100)")
 conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (2, 'SYS_A', 'sem_matrix', 'active', 1, 100)")
 conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Robert', '2', 'matrix', 'active', 0, 0, NULL)")
 conn.commit()
 conn.close()
-print("[SEED SUCCESS] Testdaten injiziert.")
+print("[SEED SUCCESS] Test data injected.")
 `;
 
 try {
@@ -56,11 +56,11 @@ try {
     execSync(`TEST_DB_PATH=${dbPath} python3 ${seedScriptPath}`, { stdio: 'pipe' });
     fs.unlinkSync(seedScriptPath);
 } catch (e) {
-    console.error("Datenbank-Seeding fehlgeschlagen:", e.stderr ? e.stderr.toString() : e.message);
+    console.error("Database seeding failed:", e.stderr ? e.stderr.toString() : e.message);
     process.exit(1);
 }
 
-// Hilfsfunktion zum Abfeuern von Bob-Befehlen
+// Helper function to fire Bob commands
 function runBobAction(actionString) {
     const pythonCmd = `TEST_DB_PATH=${dbPath} PYTHONPATH=bob_os:test_env_staged_ship/core VERSE_DIR=test_env_staged_ship BOB_CYCLE=1 BOB_ID=Instance-1 python3 -m core.bin.bob "${actionString}"`;
     try {
@@ -71,94 +71,94 @@ function runBobAction(actionString) {
     }
 }
 
-// VERIFIKATIONS-WORKFLOW
+// VERIFICATION WORKFLOW
 
-// Schritt 1: Speichere einen neuen Gitter-Blueprint namens "E2E-Carrier" (Kosten: 3800 refined_matter)
-console.log("\nSchritt 1: Blueprint erstellen...");
+// Step 1: Save a new grid blueprint named "E2E-Carrier" (Cost: 3800 refined_matter)
+console.log("\nStep 1: Create blueprint...");
 const designOutput = runBobAction('save_blueprint(name="E2E-Carrier", matrix_json="[[\\"engine\\", \\"cargo\\"], [\\"logic_core\\", \\"battery\\"]]")');
 if (!designOutput.includes("[SUCCESS] Blueprint 'E2E-Carrier' successfully saved")) {
-    console.error("FEHLER beim Speichern des Blueprints:", designOutput);
+    console.error("ERROR saving blueprint:", designOutput);
     process.exit(1);
 }
-console.log("  ✅ Blueprint erfolgreich in Sektor-Wiki registriert.");
+console.log("  ✅ Blueprint successfully registered in Sector Wiki.");
 
-// Schritt 2: Etappenbau starten. Zahle 500 refined_matter an (Teilbetrag)
-console.log("\nSchritt 2: Anzahlung von 500 refined_matter einreichen...");
+// Step 2: Start staged construction. Pay 500 refined_matter (partial amount)
+console.log("\nStep 2: Submit down payment of 500 refined_matter...");
 const buildPartialOutput = runBobAction('build_ship(blueprint_name="E2E-Carrier", matter_to_invest=500)');
 if (!buildPartialOutput.includes("Invested 500 refined_matter in E2E-Carrier construction. Progress: 500/1250.")) {
-    console.error("FEHLER beim Teil-Bau:", buildPartialOutput);
+    console.error("ERROR during partial construction:", buildPartialOutput);
     process.exit(1);
 }
-if (!buildPartialOutput.includes("ERRECHNETE HARDWARE-SPEZIFIKATIONEN") || !buildPartialOutput.includes("blueprint_specs")) {
-    console.error("FEHLER: CAD Hardware-Spezifikationen wurden auf Auftrag (Teil-Anzahlung) nicht ausgegeben!");
+if (!buildPartialOutput.includes("CALCULATED HARDWARE SPECIFICATIONS") || !buildPartialOutput.includes("blueprint_specs")) {
+    console.error("ERROR: CAD hardware specifications were not output for the order (partial payment)!");
     process.exit(1);
 }
-console.log("  ✅ Anzahlung & CAD-Spezifikations-Report erfolgreich verifiziert.");
+console.log("  ✅ Down payment & CAD specification report successfully verified.");
 
-// Schritt 3: Einstiegs-Schutz prüfen (me.board() muss fehlschlagen!)
-console.log("\nSchritt 3: Boarding-Blockade während der Konstruktion verifizieren...");
+// Step 3: Check entry protection (me.board() must fail!)
+console.log("\nStep 3: Verify boarding blockade during construction...");
 const boardDeniedOutput = runBobAction('board(ship_id=1)');
 if (!boardDeniedOutput.includes("[DENIED] Cannot board. Ship 'Ship-1' (ID: 1) is still under construction!")) {
-    console.error("FEHLER: Bordschutz hat unfertiges Schiff fälschlicherweise freigegeben!", boardDeniedOutput);
+    console.error("ERROR: Boarding protection incorrectly released unfinished ship!", boardDeniedOutput);
     process.exit(1);
 }
-console.log("  ✅ Unfertiges Schiff wirksam gegen Einstieg gesperrt.");
+console.log("  ✅ Unfinished ship effectively blocked from boarding.");
 
-// Schritt 4: Zweite Rate einzahlen (500 refined_matter)
-console.log("\nSchritt 4: Zweite Rate von 500 refined_matter einzahlen...");
+// Step 4: Pay second installment (500 refined_matter)
+console.log("\nStep 4: Pay second installment of 500 refined_matter...");
 const buildSecondOutput = runBobAction('build_ship(blueprint_name="E2E-Carrier", matter_to_invest=500)');
 if (!buildSecondOutput.includes("Progress: 1000/1250.")) {
-    console.error("FEHLER bei zweiter Einzahlung:", buildSecondOutput);
+    console.error("ERROR with second payment:", buildSecondOutput);
     process.exit(1);
 }
-console.log("  ✅ Zweite Rate erfolgreich verbucht.");
+console.log("  ✅ Second installment successfully recorded.");
 
-// Schritt 5: Restzahlung bis zur Fertigstellung (250 refined_matter)
-console.log("\nSchritt 5: Restliche 250 refined_matter einzahlen und fertigstellen...");
+// Step 5: Remaining payment until completion (250 refined_matter)
+console.log("\nStep 5: Pay remaining 250 refined_matter and complete construction...");
 const buildCompleteOutput = runBobAction('build_ship(blueprint_name="E2E-Carrier", matter_to_invest=250)');
 if (!buildCompleteOutput.includes("built successfully!")) {
-    console.error("FEHLER bei Fertigstellung:", buildCompleteOutput);
+    console.error("ERROR during completion:", buildCompleteOutput);
     process.exit(1);
 }
-console.log("  ✅ Schiff erfolgreich im Trockendock vollendet.");
+console.log("  ✅ Ship successfully completed in dry dock.");
 
-// Schritt 6: Einstieg nach Fertigstellung verifizieren (me.board() muss klappen!)
-console.log("\nSchritt 6: Boarding nach vollendetem Bau verifizieren...");
+// Step 6: Verify boarding after completion (me.board() must succeed!)
+console.log("\nStep 6: Verify boarding after completed construction...");
 const boardSuccessOutput = runBobAction('board(ship_id=1)');
 if (!boardSuccessOutput.includes("[SUCCESS] Boarded ship 'Ship-1' (ID: 1).")) {
-    console.error("FEHLER: Boarding schlug nach Fertigstellung fehl!", boardSuccessOutput);
+    console.error("ERROR: Boarding failed after completion!", boardSuccessOutput);
     process.exit(1);
 }
-console.log("  ✅ Boarding glückte fehlerfrei. Klon Robert hat das Steuer übernommen.");
+console.log("  ✅ Boarding succeeded without errors. Clone Robert has taken the helm.");
 
-// Schritt 7: Aussteigen
+// Step 7: Exit ship
 runBobAction('exit_ship()');
 
-// Schritt 8: Etappenbau-Recycling & 100%-Refunding verifizieren
-console.log("\nSchritt 7: 100%-Rückerstattung bei unfertigem Abbau prüfen...");
-// Starte neues Schiff im Etappenbau (Scout mit 400 raw_matter Anzahlung)
+// Step 7: Verify staged construction recycling & 100% refunding
+console.log("\nStep 7: Check 100% refund for incomplete deconstruction...");
+// Start new ship in staged construction (Scout with 400 raw_matter down payment)
 runBobAction('build_ship(blueprint_name="Scout", matter_to_invest=400)');
-// Prüfe Depot-Inhalt vor Abbau via synchroner Python-Abfrage
+// Check depot content before deconstruction via synchronous Python query
 const beforeDeconstructDb = execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); print(conn.execute(\\"SELECT raw_matter_depot FROM systems WHERE name='SYS_A'\\").fetchone()[0])"`).toString().trim();
 
-// Führe Abbau durch
+// Perform deconstruction
 const deconstructOutput = runBobAction('deconstruct_ship(ship_id=2)');
-if (!deconstructOutput.includes("Refunded 400 raw_matter (100% of progress) to Sektor Depot.")) {
-    console.error("FEHLER bei 100%-Rückerstattung des unfertigen Schiffs:", deconstructOutput);
+if (!deconstructOutput.includes("Refunded 400 raw_matter (100% of progress) to Sector Depot.")) {
+    console.error("ERROR with 100% refund of incomplete ship:", deconstructOutput);
     process.exit(1);
 }
 
-// Prüfe Depot-Inhalt nach Abbau via synchroner Python-Abfrage
+// Check depot content after deconstruction via synchronous Python query
 const afterDeconstructDb = execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); print(conn.execute(\\"SELECT raw_matter_depot FROM systems WHERE name='SYS_A'\\").fetchone()[0])"`).toString().trim();
 const refundDelta = parseInt(afterDeconstructDb) - parseInt(beforeDeconstructDb);
 if (refundDelta !== 400) {
-    console.error(`FEHLER: Physische Rückerstattung in DB stimmt nicht überein! Erwartet: 400, Erhalten: ${refundDelta}`);
+    console.error(`ERROR: Physical refund in DB does not match! Expected: 400, Received: ${refundDelta}`);
     process.exit(1);
 }
-console.log("  ✅ 100%-Salvage-Refundierung bei unfertigem Abbau verifiziert (400 raw_matter erstattet).");
+console.log("  ✅ 100% salvage refund for incomplete deconstruction verified (400 raw_matter refunded).");
 
 console.log("\n🎉 ALL TESTS IN STAGED CONSTRUCTION TEST SUITE PASSED SUCCESSFULLY!");
 
-// Müllabfuhr
+// Cleanup
 if (fs.existsSync(rootMockDir)) fs.rmSync(rootMockDir, { recursive: true, force: true });
 process.exit(0);

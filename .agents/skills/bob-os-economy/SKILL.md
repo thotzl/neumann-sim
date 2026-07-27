@@ -17,7 +17,7 @@ In V4.1, all local logistics are energy-free to prevent micro-management loops:
 
 ## 3. Resource Flow
 - **Mining:** Consumes 30E, yields up to 100M.
-- **Replication:** High entry barrier: 1000 Materie (from System Silo) and 180 Energy (from Agent).
+- **Replication:** High entry barrier: 1000 Matter (from System Silo) and 180 Energy (from Agent).
 - **Passive Regen:** Agents get +5E net per tick. Solar Collectors add +100E/tick to the system depot.
 
 ## 4. Infrastructure Scaling

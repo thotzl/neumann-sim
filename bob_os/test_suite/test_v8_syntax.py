@@ -2,13 +2,13 @@ import unittest
 import sys
 import os
 
-# Importiere den Parser (TDD: Wird ggf. noch modifiziert, um Tests zu bestehen)
+# Import the parser (TDD: May be modified to pass tests)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.lib.functional_parser import parse_functional_string
 
 class TestV8FunctionalParser(unittest.TestCase):
     """
-    Testet die Robustheit des Functional Parsers für LLM-Inputs.
+    Tests the robustness of the functional parser for LLM inputs.
     """
 
     # --- HAPPY PATHS ---
@@ -60,41 +60,41 @@ class TestV8FunctionalParser(unittest.TestCase):
         self.assertEqual(res['params']['matter_to_invest'], '200')
 
     def test_greedy_out_of_order(self):
-        # Falls msg zuerst kommt, muss der Parser klug genug sein,
-        # 'receiver_id=' als Stopp-Signal für msg zu erkennen, oder er erzwingt, dass Greedy immer am Ende steht.
-        # Erwartung: msg endet VOR ", receiver_id="
+        # If msg comes first, the parser must be smart enough
+        # to recognize 'receiver_id=' as a stop signal for msg, or it enforces that greedy arguments are always at the end.
+        # Expectation: msg ends BEFORE ", receiver_id="
         res = parse_functional_string("scut(message=Hallo Bruder, receiver_id=Instance-2)")
         self.assertEqual(res['params']['receiver_id'], 'Instance-2')
         self.assertEqual(res['params']['message'], 'Hallo Bruder')
 
-    # --- FALLBACKS (LLM vergisst Keys) ---
+    # --- FALLBACKS (LLM forgets Keys) ---
 
     def test_positional_fallback(self):
-        # Wenn das LLM die Keyword-Syntax vergisst und wie in Python positional schreibt
+        # If the LLM forgets the keyword syntax and writes positionally like in Python
         res = parse_functional_string("build(matter_silo, 100)")
         self.assertEqual(res['params']['building_type'], 'matter_silo')
         self.assertEqual(res['params']['matter_to_invest'], '100')
 
     def test_mixed_positional_and_kwargs_fails_gracefully(self):
-        # Wenn das LLM mischt (sehr unsauber). 
-        # Erwartung: Im besten Fall füllt es Parameter, im schlimmsten Fall gibt es keinen Crash.
+        # If the LLM mixes (very messy).
+        # Expectation: In the best case, it fills parameters; in the worst case, there is no crash.
         res = parse_functional_string("build(matter_silo, matter_to_invest=100)")
         self.assertIsNotNone(res)
 
-    # --- ERROR CASES (Syntax Bruch) ---
+    # --- ERROR CASES (Syntax Break) ---
 
     def test_missing_closing_paren(self):
-        # Syntaktisch invalide, sollte None zurückgeben
+        # Syntactically invalid, should return None
         res = parse_functional_string("scut(receiver_id=Instance-2, message=Hallo")
         self.assertIsNone(res)
 
     def test_missing_opening_paren(self):
-        # Kein Funktionsaufruf erkannt
+        # No function call recognized
         res = parse_functional_string("scut receiver_id=Instance-2 message=Hallo")
         self.assertIsNone(res)
 
     def test_unknown_method(self):
-        # Unbekannte Methode. Parser sollte Methode erkennen, aber Params nicht sauber mappen (oder leer)
+        # Unknown method. Parser should recognize the method, but not map params cleanly (or leave them empty)
         res = parse_functional_string("halluziniere(foo=bar)")
         self.assertIsNotNone(res)
         self.assertEqual(res['method'], 'halluziniere')

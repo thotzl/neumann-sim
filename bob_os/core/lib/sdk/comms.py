@@ -27,10 +27,10 @@ class Comms:
 
         if receiver_id.upper() == 'ALL':
             if not sender_has_relay:
-                print(f"[DENIED] Broadcast 'ALL' erfordert ein aktives 'comms_relay' in deinem System.")
+                print(f"[DENIED] Broadcast 'ALL' requires an active 'comms_relay' in your system.")
                 return False
             
-            # Zähle erreichbare Empfänger für das Feedback
+            # Count reachable receivers for feedback
             try:
                 cursor.execute("""
                     SELECT id, current_x, current_y,
@@ -78,7 +78,7 @@ class Comms:
                 
             target_agent = cursor.fetchone()
             if not target_agent:
-                print(f"[ERROR] Agent '{receiver_id}' nicht gefunden oder offline.")
+                print(f"[ERROR] Agent '{receiver_id}' not found or offline.")
                 return False
             
             real_target_id = target_agent['id']
@@ -88,7 +88,7 @@ class Comms:
                 if dist > base_range:
                     target_has_relay = system_service.has_active_infrastructure(cursor, target_agent['location'], 'comms_relay')
                     if not sender_has_relay and not target_has_relay:
-                        print(f"[DENIED] Agent '{receiver_id}' ist außer Reichweite ({int(dist)} > {base_range}). Signalverlust. Baue ein 'comms_relay' zur Verstärkung.")
+                        print(f"[DENIED] Agent '{receiver_id}' is out of range ({int(dist)} > {base_range}). Signal loss. Construct a 'comms_relay' to boost the signal.")
                         return False
 
             cursor.execute("INSERT INTO messages (sender, receiver, content) VALUES (?, ?, ?)", (self.agent.id, real_target_id, message))

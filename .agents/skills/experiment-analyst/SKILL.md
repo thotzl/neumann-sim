@@ -42,7 +42,7 @@ Do NOT read the full `log.md` if it exceeds 50 turns. Use surgical tools.
 
 ### Extraction Patterns:
 - **Last Actions:** `tail -n 100 experiments/<EXP>/log.md`
-- **Error Search:** `grep -E "\[ERROR\]|\[DENIED\]|\[FEHLER\]" experiments/<EXP>/log.md | tail -n 20`
+- **Error Search:** `grep -E "\[ERROR\]|\[DENIED\]|\[ERROR\]" experiments/<EXP>/log.md | tail -n 20`
 - **Manifestation Snapshot:** Use `node -e` to extract only the last 2-3 history entries from `state.json` (faster than reading full Markdown).
 - **VoG Impact:** `grep -C 5 "VOICE OF GOD" experiments/<EXP>/log.md` to see if the agent adjusted its behavior after an intervention.
 

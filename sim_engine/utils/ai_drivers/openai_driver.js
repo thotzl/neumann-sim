@@ -5,8 +5,8 @@ const OpenAIDriver = {
     buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) {
         let messages = [];
         if (globalInstr) messages.push({ role: "system", content: globalInstr });
-        if (systemPrompt) messages.push({ role: "user", content: `DEIN BRIEFING:\n${systemPrompt}` });
-        if (memory) messages.push({ role: "user", content: `DEIN GEDÄCHTNIS:\n${memory}` });
+        if (systemPrompt) messages.push({ role: "user", content: `YOUR BRIEFING:\n${systemPrompt}` });
+        if (memory) messages.push({ role: "user", content: `YOUR MEMORY:\n${memory}` });
 
         histories.forEach(h => {
             messages.push({

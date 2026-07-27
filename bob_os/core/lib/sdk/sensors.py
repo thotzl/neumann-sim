@@ -30,7 +30,7 @@ class Sensors:
         cost = base_cost * 0.5 if has_sat else base_cost
         
         if agent['energy_inventory'] < cost:
-            print(f"[ERROR] Nicht genug Energie für diesen Scan. Benötigt: {cost}, Vorhanden: {agent['energy_inventory']}")
+            print(f"[ERROR] Not enough energy for this scan. Required: {cost}, Available: {agent['energy_inventory']}")
             return False
 
         global_settings = rules.get('global_settings', {})
@@ -71,7 +71,7 @@ class Sensors:
     def inspect(self, cursor, agent, ship_id=None, structure_id=None, system_name=None, blueprint_name=None):
         rules = config_service.get_economy_rules()
         
-        # 1. Target A: Ship Inspection (Gitter, Inventare, Capabilities, Diagnostics)
+        # 1. Target A: Ship Inspection (Grid, Inventories, Capabilities, Diagnostics)
         if ship_id is not None:
             cursor.execute("""
                 SELECT id, name, chassis, pilot_id, health, max_health,
@@ -82,20 +82,20 @@ class Sensors:
             """, (ship_id,))
             row = cursor.fetchone()
             if not row:
-                print(f"[FEHLER] Schiff #{ship_id} nicht gefunden.")
+                print(f"[ERROR] Ship #{ship_id} not found.")
                 return False
                 
-            # Blueprint-Daten für Diagnostics (SSoT) laden
+            # Load Blueprint data for Diagnostics (SSoT)
             bp_name = row['blueprint_name'] or row['chassis']
             cursor.execute("SELECT stats_json, matrix_json FROM blueprints WHERE name = ?", (bp_name,))
             bp = cursor.fetchone()
             
             bp_stats = json.loads(bp['stats_json']) if bp else None
             
-            # Zentrales Aggregieren (Säule 1 & 3)
+            # Central Aggregation (Pillar 1 & 3)
             ship_dict = aggregate_ship_telemetry(row, bp_stats)
             
-            # Matrix-Layout anheften, falls verknüpft
+            # Attach Matrix layout, if linked
             if bp:
                 ship_dict['matrix'] = json.loads(bp['matrix_json'])
                 
@@ -109,7 +109,7 @@ class Sensors:
             """, (structure_id,))
             row = cursor.fetchone()
             if not row:
-                print(f"[FEHLER] Gebäude #{structure_id} nicht gefunden.")
+                print(f"[ERROR] Structure #{structure_id} not found.")
                 return False
                 
             infra_dict = dict(row)
@@ -124,12 +124,12 @@ class Sensors:
             }
             return infra_dict
             
-        # 3. Target C: Sector Geology & Wiki Spionage
+        # 3. Target C: Sector Geology & Wiki Espionage
         elif system_name is not None:
             cursor.execute("SELECT name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot FROM systems WHERE name = ?", (system_name,))
             row = cursor.fetchone()
             if not row:
-                print(f"[FEHLER] Sektor '{system_name}' nicht kartografiert.")
+                print(f"[ERROR] Sector '{system_name}' not mapped.")
                 return False
                 
             sys_dict = dict(row)
@@ -137,19 +137,19 @@ class Sensors:
             if system_name != agent['location']:
                 has_sat = system_service.has_active_infrastructure(cursor, agent['location'], ('sat_link', 'comms_relay'))
                 if not has_sat:
-                    print(f"[DENIED] Spionage fehlgeschlagen. Sektor '{system_name}' ist außer Reichweite. Errichte einen 'sat_link' oder ein 'comms_relay'.")
+                    print(f"[DENIED] Espionage failed. Sector '{system_name}' is out of range. Build a 'sat_link' or 'comms_relay'.")
                     return False
             
             cursor.execute("SELECT id, author_id, title FROM docs WHERE system_name = ? ORDER BY id ASC", (system_name,))
             sys_dict['public_sector_wiki_docs'] = [dict(r) for r in cursor.fetchall()]
             return sys_dict
 
-        # 4. Target D: Blueprint Detail Retrieval (Säule 3)
+        # 4. Target D: Blueprint Detail Retrieval (Pillar 3)
         elif blueprint_name is not None:
             cursor.execute("SELECT id, name, author_id, matrix_json, stats_json FROM blueprints WHERE name = ?", (blueprint_name,))
             row = cursor.fetchone()
             if not row:
-                print(f"[FEHLER] Blueprint '{blueprint_name}' nicht gefunden.")
+                print(f"[ERROR] Blueprint '{blueprint_name}' not found.")
                 return False
             return {
                 "id": row["id"],
@@ -160,7 +160,7 @@ class Sensors:
             }
             
         else:
-            print("[FEHLER] 'inspect' erfordert 'ship_id', 'structure_id', 'system_name' oder 'blueprint_name'.")
+            print("[ERROR] 'inspect' requires 'ship_id', 'structure_id', 'system_name', or 'blueprint_name'.")
             return False
         
     @agent_service.with_agent_context(allow_disembodied=True)
@@ -181,7 +181,7 @@ class Sensors:
         if not system:
             return {"error": "System data not found."}
             
-        # 1. Lokales System (Depots & Geologie)
+        # 1. Local System (Depots & Geology)
         rules = config_service.get_economy_rules()
         infra_rules = rules.get('infrastructure', {})
         
@@ -199,7 +199,7 @@ class Sensors:
                 theoretical_max += stats.get('energy_regen_bonus', 0) * lvl
                 total_maint += stats.get('maintenance_energy_cost', 1)
 
-        # 2. Lokale Schiffe (Inklusive progress_matter und required_matter für Etappenbau-Dashboard)
+        # 2. Local Ships (Including progress_matter and required_matter for staged construction dashboard)
         cursor.execute("SELECT id, name, chassis, pilot_id, progress_matter, required_matter, blueprint_name FROM ships WHERE system_name = ?", (sys_name,))
         local_ships_raw = cursor.fetchall()
         
@@ -217,7 +217,7 @@ class Sensors:
                 ship_dict['name'] = f"{r['name']} ({bp_name} Construction: {prog}/{req} {material})"
             local_ships.append(ship_dict)
 
-        # 3. Lokale andere Bobs (inkl. Host-Wissen)
+        # 3. Local other Bobs (incl. Host-Knowledge)
         try:
             cursor.execute("""
                 SELECT id, chosen_name, status, host_type, host_id FROM (
@@ -234,22 +234,22 @@ class Sensors:
         except sqlite3.OperationalError:
             cursor.execute("SELECT id, chosen_name, status, NULL as host_type, NULL as host_id FROM agents WHERE location = ? AND id != ?", (sys_name, self.agent.id))
         
-        # Name-First Formatierung für lokale andere Instanzen (Säule 1 & 3)
+        # Name-First Formatting for local other instances (Pillar 1 & 3)
         local_bobs = []
         for r in cursor.fetchall():
             local_bobs.append({
                 "name": get_display_name(r),
                 "id": r['id'],
-                "chosen_name": r['chosen_name'], # Legacy-Alias für 100% Abwärtskompatibilität!
+                "chosen_name": r['chosen_name'], # Legacy alias for 100% backward compatibility!
                 "status": r['status'],
                 "host_type": r['host_type'] if r['host_type'] else "Unknown",
                 "host_id": r['host_id'] if r['host_id'] else "Unknown"
             })
 
-        # 4. Beobachtungen anderer Agenten ("Unread Events")
+        # 4. Observations of other Agents ("Unread Events")
         unread_events = []
         if 'last_seen_event_id' in agent:
-            # Holen aller Events seit dem letzten Zug
+            # Retrieve all events since the last turn
             cursor.execute("""
                 SELECT rowid, actor_id, event_type, description 
                 FROM visual_events 
@@ -258,26 +258,26 @@ class Sensors:
             """, (sys_name, agent['last_seen_event_id'], self.agent.id))
             event_rows = cursor.fetchall()
             
-            # 4a. Anonymisierungs-Mapping (SSoT-Muster)
+            # 4a. Anonymization Mapping (SSoT Pattern)
             anonym_map = {
-                "MINING": "[SENSORSIGNAL] Geologische Erschütterung: Rohmaterial-Minderwert im Sektor-Kern registriert.",
-                "REFINING": "[NETZ-SIGNAL] Industrielle Aktivität: Lokale Raffinerie hat Veredelungsprozess gestartet.",
-                "DEPOSIT": "[DEPOT-REGISTRIERUNG] Einzahlung erfasst: Materie/Energie im Sektor-Depot eingebucht.",
-                "WITHDRAW": "[DEPOT-REGISTRIERUNG] Abbuchung erfasst: Materie/Energie aus Sektor-Depot entnommen.",
-                "TRANSIT_BOARD": "[RADAR-SIGNAL] Cockpit-Kopplung: Ein Pilot hat ein Schiff betreten.",
-                "TRANSIT_EXIT": "[RADAR-SIGNAL] Cockpit-Entkopplung: Ein Pilot hat ein Schiff verlassen.",
-                "TRANSIT_DEPART": "[RADAR-ECHO] Hyperraum-Austritt: Ein Schiff hat den Sektor verlassen.",
-                "TRANSIT_ARRIVE": "[RADAR-ECHO] Hyperraum-Eintritt: Ein Schiff ist im Sektor eingetroffen.",
-                "CONSTRUCTION": "[WERFT-PROGNOSE] Trockendock-Aktivität: Ein neues Schiff/Gebäude wurde auf Kiel gelegt.",
-                "DECONSTRUCTION": "[ABBAU-MELDUNG] Sektor-Masseänderung: Eine unbemannte Hülle/Station wurde dekonstruiert.",
-                "RENAME": "[REGISTRY-UPDATE] Ein Schiff wurde registriert/umbenannt.",
-                "MITOSIS": "[SYSTEM-PROTOTYP] Replikations-Mitoseschleife: Neue Instanz initialisiert.",
-                "RELIC": "[SEKTOR-ARCHIV] Öffentliches Relikt im Sektor hinterlegt."
+                "MINING": "[SENSOR] Core mining detected.",
+                "REFINING": "[SIGNAL] Local refinery active.",
+                "DEPOSIT": "[DEPOT] Resources deposited.",
+                "WITHDRAW": "[DEPOT] Resources withdrawn.",
+                "TRANSIT_BOARD": "[RADAR] Pilot boarded ship.",
+                "TRANSIT_EXIT": "[RADAR] Pilot exited ship.",
+                "TRANSIT_DEPART": "[RADAR] Ship departed sector.",
+                "TRANSIT_ARRIVE": "[RADAR] Ship arrived in sector.",
+                "CONSTRUCTION": "[CONSTR] Construction initialized.",
+                "DECONSTRUCTION": "[DECONSTR] Structure deconstructed.",
+                "RENAME": "[REGISTRY] Ship registry updated.",
+                "MITOSIS": "[SYSTEM] New instance replicated.",
+                "RELIC": "[ARCHIVE] Sector relic deposited."
             }
 
-            # 4b. Chronologische Aggregation / Kompression zur massiven Token-Ersparnis
+            # 4b. Chronological Aggregation / Compression for massive token savings
             aggregated_list = []
-            event_counts = {}  # Key: anonymisierte_description, Value: [count, first_rowid]
+            event_counts = {}  # Key: anonymized_description, Value: [count, first_rowid]
             
             for r in event_rows:
                 event_type = r['event_type']
@@ -297,14 +297,14 @@ class Sensors:
                 else:
                     unread_events.append(f"[Event #{rowid}] ({count}x) {desc}")
             
-            # Update last_seen_event_id auf das absolute Maximum
+            # Update last_seen_event_id to the absolute maximum
             cursor.execute("SELECT MAX(rowid) FROM visual_events")
             max_rowid_row = cursor.fetchone()
             max_rowid = max_rowid_row[0] if max_rowid_row and max_rowid_row[0] is not None else 0
             if max_rowid > agent['last_seen_event_id']:
                 cursor.execute("UPDATE agents SET last_seen_event_id = ? WHERE id = ?", (max_rowid, self.agent.id))
 
-        # 5. Radar: Entdeckte Sektoren (mit Entfernung)
+        # 5. Radar: Discovered Sectors (with Distance)
         cursor.execute("SELECT name, x, y FROM systems WHERE name != ?", (sys_name,))
         other_systems = []
         for r in cursor.fetchall():
@@ -315,7 +315,7 @@ class Sensors:
                 "distance": dist
             })
 
-        # 6. Radar: Entfernte Bobs (Nur ID, Name, Status, Location)
+        # 6. Radar: Distant Bobs (Only ID, Name, Status, Location)
         try:
             cursor.execute("""
                 SELECT id, chosen_name, status, location FROM (
@@ -330,27 +330,27 @@ class Sensors:
                 ) WHERE location != ? AND id != ?
             """, (sys_name, self.agent.id))
             
-            # Name-First Formatierung für entfernte andere Instanzen (Säule 1 & 3)
+            # Name-First Formatting for distant other instances (Pillar 1 & 3)
             distant_bobs = []
             for r in cursor.fetchall():
                 distant_bobs.append({
                     "name": get_display_name(r),
                     "id": r['id'],
-                    "chosen_name": r['chosen_name'], # Legacy-Alias
+                    "chosen_name": r['chosen_name'], # Legacy alias
                     "location": r['location'],
                     "status": r['status']
                 })
         except sqlite3.OperationalError:
             distant_bobs = []
 
-        # 7. Offene Memos/Protokolle (Task 4)
+        # 7. Open Memos/Protocols (Task 4)
         try:
             cursor.execute("SELECT id, content FROM memos WHERE agent_id = ? AND status = 'open' ORDER BY id ASC", (self.agent.id,))
             memos_list = [f"[Memo #{r['id']}] {r['content']} (Status: open)" for r in cursor.fetchall()]
         except sqlite3.OperationalError:
             memos_list = []
 
-        # Resolve dynamic inventory host and capacity limits (Säule 1 & 3)
+        # Resolve dynamic inventory host and capacity limits (Pillar 1 & 3)
         host_type = agent.get('host_type', 'Unknown')
         host_id = agent.get('host_id', 'Unknown')
         storage_capacity = agent['matter_storage_capacity']
@@ -364,11 +364,11 @@ class Sensors:
                 ship_name = s_row['name']
             current_inventory_host = f"ship '{ship_name}' (ID: {host_id})"
         elif host_type == 'matrix':
-            # Dynamic override: Match capacity with Sektor Depot limit to prevent inventory overflow paradox!
+            # Dynamic override: Match capacity with Sector Depot limit to prevent inventory overflow paradox!
             storage_capacity = system['depot_matter_capacity']
             current_inventory_host = f"system depot '{system['name']}'"
 
-        # Host-Schiffsdaten vorab sauber laden (Säule 1 & 3: SSoT Telemetrie Aggregation)
+        # Load Host Ship Data cleanly in advance (Pillar 1 & 3: SSoT Telemetry Aggregation)
         host_dict = {}
         if host_type == 'ship' and host_id:
             cursor.execute("""
@@ -380,18 +380,18 @@ class Sensors:
             """, (host_id,))
             r = cursor.fetchone()
             if r:
-                # Blueprint-Daten für exakte Diagnostics / Telemetrien laden
+                # Load Blueprint data for exact Diagnostics / Telemetry
                 bp_name = r['blueprint_name'] or r['chassis']
                 cursor.execute("SELECT stats_json FROM blueprints WHERE name = ?", (bp_name,))
                 bp = cursor.fetchone()
                 
                 bp_stats = json.loads(bp['stats_json']) if bp else None
                 
-                # SSoT Aggregation (Keine lambdas!)
+                # SSoT Aggregation (No lambdas!)
                 host_dict = aggregate_ship_telemetry(r, bp_stats)
 
         return {
-            "lokales_system": {
+            "local_system": {
                 "name": sys_name,
                 "coordinates": f"X{system['x']}-Y{system['y']}",
                 "depots": {
@@ -406,8 +406,8 @@ class Sensors:
                 "ships": local_ships,
                 "present_entities": local_bobs
             },
-            "letzte_system_wahrnehmungen": unread_events,
-            "dein_status": {
+            "last_system_perceptions": unread_events,
+            "your_status": {
                 "id": agent['id'],
                 "name": get_display_name(agent),
                 "host_type": host_type,
@@ -420,7 +420,7 @@ class Sensors:
                 },
                 "storage_capacity": storage_capacity,
                 "status": agent['status'],
-                "offene_memos_und_protokolle": memos_list,
+                "open_memos_and_protocols": memos_list,
                 "host": {
                     "type": host_type,
                     "id": host_id,
@@ -433,8 +433,8 @@ class Sensors:
                     **host_dict
                 }
             },
-            "radar_entfernter_sektoren": other_systems,
-            "radar_entfernter_signaturen": distant_bobs
+            "radar_of_distant_sectors": other_systems,
+            "radar_of_distant_signatures": distant_bobs
         }
         
     @agent_service.with_agent_context(allow_disembodied=True)

@@ -22,8 +22,8 @@ class TestV105RSNSReplication(unittest.TestCase):
         
         init_db.init()
         
-        # 1. Seede ein System (SYS_X500_Y1000) an den Koordinaten (500, 1000)
-        # Dies muss sich im L-Segment des Replikanten als 'X5Y10' niederschlagen!
+        # 1. Seed a system (SYS_X500_Y1000) at coordinates (500, 1000)
+        # This must be reflected in the replicant's L-segment as 'X5Y10'!
         conn = db_config.get_connection()
         conn.execute("""
             INSERT OR IGNORE INTO systems 
@@ -47,7 +47,7 @@ class TestV105RSNSReplication(unittest.TestCase):
         conn.commit()
         conn.close()
         
-        # Setze den aktuellen Zyklus über die BOB_CYCLE-Umgebungsvariable (Soll-Verhalten der Engine!)
+        # Set the current cycle via the BOB_CYCLE environment variable (Engine's intended behavior!)
         os.environ['BOB_CYCLE'] = '65'
         
         with open(TEST_POP, 'w') as f:
@@ -64,22 +64,22 @@ class TestV105RSNSReplication(unittest.TestCase):
         if 'TEST_POP_PATH' in os.environ: del os.environ['TEST_POP_PATH']
 
     def test_rsns_segmented_serial_number_generation(self):
-        # 1. Trigger Replikation (Sollte eine RSNS-Seriennummer generieren und zurückgeben!)
+        # 1. Trigger replication (Should generate and return an RSNS serial number!)
         new_agent_id = self.agent.replicate()
         self.assertIsNotNone(new_agent_id)
         
-        # 2. Validierung des RSNS-Formats per Regex!
+        # 2. Validate RSNS format via Regex!
         # Format: X[x_code]Y[y_code]-C[cycle]-[alphanumeric_6]
         # x_code: 500 / 100 = 5
         # y_code: 1000 / 100 = 10
         # cycle: 65
-        # 6-stelliger Alphanumerik-Unique-Suffix: [A-Z0-9]{6}
+        # 6-digit alphanumeric unique suffix: [A-Z0-9]{6}
         expected_pattern = r"^X5Y10-C65-[A-Z0-9]{6}$"
         self.assertTrue(re.match(expected_pattern, new_agent_id), f"RSNS ID '{new_agent_id}' does not match expected format pattern '{expected_pattern}'!")
         
-        print(f"  [TEST RSNS] Erfolgreich generierte Seriennummer: {new_agent_id}")
+        print(f"  [TEST RSNS] Successfully generated serial number: {new_agent_id}")
         
-        # 3. Verifiziere Verankerung in SQLite
+        # 3. Verify anchoring in SQLite
         conn = db_config.get_connection()
         clone = conn.execute("SELECT * FROM agents WHERE id = ?", (new_agent_id,)).fetchone()
         self.assertIsNotNone(clone)

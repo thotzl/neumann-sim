@@ -16,7 +16,7 @@ def linear_interpolate(start, end, progress):
 
 def calculate_scan_coordinates(origin_x, origin_y, distance, angle_degrees, grid_size=100):
     """
-    Berechnet die Zielkoordinaten eines Scans und snappt sie auf das planetare Grid.
+    Calculates the target coordinates of a scan and snaps them to the planetary grid.
     """
     raw_x = origin_x + distance * math.cos(math.radians(angle_degrees))
     raw_y = origin_y + distance * math.sin(math.radians(angle_degrees))
@@ -28,15 +28,15 @@ def calculate_scan_coordinates(origin_x, origin_y, distance, angle_degrees, grid
 
 def calculate_upgrade_cost(base_cost, upgrade_multiplier):
     """
-    Berechnet die absoluten Materie-Kosten für ein Infrastruktur-Upgrade.
+    Calculates the absolute matter cost for an infrastructure upgrade.
     """
     return int(base_cost * upgrade_multiplier)
 
 def validate_module_connectivity(matrix):
     """
-    Checks if all modules spanning multiple tiles are orthogonally connected (Säule 3 Adjazenz).
+    Checks if all modules spanning multiple tiles are orthogonally connected (Pillar 3 Adjacency).
     """
-    # 0. SSoT-Typsicherung (Säule 3 Robustheits-Garantie)
+    # 0. SSoT type validation (Pillar 3 robustness guarantee)
     if not isinstance(matrix, list) or len(matrix) == 0 or any(not isinstance(row, list) for row in matrix):
         return False, "Matrix must be a 2D list of lists (e.g., [['engine', 'cargo']]). Do not wrap in a dictionary."
 
@@ -81,15 +81,15 @@ def validate_module_connectivity(matrix):
 
 def evaluate_ship_matrix(name, matrix, rules):
     """
-    Deterministischer 2D-Gitter Evaluator für Schiffe (Säule 3 Physik-Regelwerk).
+    Deterministic 2D grid evaluator for ships (Pillar 3 physics ruleset).
     """
-    # 0. SSoT-Typsicherung (Säule 3 Robustheits-Garantie)
+    # 0. SSoT type validation (Pillar 3 robustness guarantee)
     if not isinstance(matrix, list) or len(matrix) == 0 or any(not isinstance(row, list) for row in matrix):
         return {"error": "Matrix must be a 2D list of lists (e.g., [['engine', 'cargo']]). Do not wrap in a dictionary."}
 
     p = rules.get('ship_physics') or rules.get('physics')
     
-    # Adapt global rules (Säule 3 schema unification)
+    # Adapt global rules (Pillar 3 schema unification)
     if 'global_settings' in rules:
         g = rules['global_settings'].get('ship_constants', {})
     else:
@@ -126,12 +126,12 @@ def evaluate_ship_matrix(name, matrix, rules):
                 modules[m_id] = cell
             module_tiles[m_id] += 1
 
-    # 2. Orthogonal Adjazenz prüfen
+    # 2. Check orthogonal adjacency
     ok, err_msg = validate_module_connectivity(matrix)
     if not ok:
         return {"error": err_msg}
 
-    # --- DEKLARATIVE METADATEN-SPERRE & CAPABILITIES (Komplett entkoppelt vom Loop!) ---
+    # --- DECLARATIVE METADATA LOCK & CAPABILITIES (Completely decoupled from the loop!) ---
     has_drill = any(d['type'] == 'drill' for d in modules.values())
     has_fab = any(d['type'] == 'fabricator' for d in modules.values())
     has_comms = any(d['type'] == 'comm' for d in modules.values())
@@ -156,16 +156,16 @@ def evaluate_ship_matrix(name, matrix, rules):
         
         if not m_rule: return {"error": f"Unknown module: {m_type}"}
         
-        # A. Statische Festpreis-Module (logic_core, drill, fabricator)
-        # Wenn das Modul feste static mass/cost im JSON definiert, akkumulieren wir direkt!
+        # A. Static fixed-price modules (logic_core, drill, fabricator)
+        # If the module defines fixed static mass/cost in the JSON, we accumulate directly!
         if 'mass' in m_rule and 'cost' in m_rule:
             stats['mass'] += m_rule['mass']
             stats['cost'] += m_rule['cost']
             stats['drain'] += m_rule.get('idle_drain', 0)
             continue
 
-        # B. Skalierbare Module (Automatische SSoT-Schlüsselerkennung!)
-        # Wir finden die Metrik dynamisch (z.B. extrahiert 'thrust' aus 'max_thrust_per_tile')
+        # B. Scalable modules (Automatic SSoT key detection!)
+        # We dynamically find the metric (e.g., extracts 'thrust' from 'max_thrust_per_tile')
         val_key = next((k[4:-9] for k in m_rule if k.startswith('max_') and k.endswith('_per_tile')), None)
         if not val_key:
             return {"error": f"Invalid module rule for {m_type}: Missing scaling limit key."}
@@ -173,31 +173,31 @@ def evaluate_ship_matrix(name, matrix, rules):
         limit_key = f"max_{val_key}_per_tile"
         max_per_tile = m_rule[limit_key]
         
-        # Abwärtskompatibler Fallback (falls der explizite Wert im Dict fehlt!)
+        # Backward-compatible fallback (if the explicit value is missing from the dict!)
         val = data.get(val_key)
         if val is None:
             val = tiles * max_per_tile
             
-        # Validierung der Größen-Beschränkung
+        # Validation of size limitation
         if tiles < math.ceil(val / float(max_per_tile)): 
             return {"error": f"{name}: {m_type.capitalize()} {m_id} too small for {val} {val_key}. Needs at least {math.ceil(val / float(max_per_tile))} tiles."}
 
-        # Dynamisches Akkumulieren von Masse, Kosten & Leistungen (100% DRY!)
+        # Dynamically accumulate mass, cost & performance (100% DRY!)
         stats['mass'] += val * m_rule.get(f'mass_per_{val_key}', 0)
         stats['cost'] += val * m_rule.get(f'cost_per_{val_key}', 0)
         
-        # Sektor-Ressourcen mappen (mit Aliasen für cargo/battery)
+        # Map sector resources (with aliases for cargo/battery)
         ALIAS_MAP = {'volume': 'cargo', 'energy': 'battery'}
         stats_key = ALIAS_MAP.get(val_key, val_key)
         
         if stats_key in stats:
             stats[stats_key] += val
             
-        # Antennenreichweite akkumulieren (Säule 3)
+        # Accumulate antenna range (Pillar 3)
         if m_type == 'comm':
             total_comm_range += val
             
-        # Drain berechnen
+        # Calculate drain
         stats['drain'] += val * m_rule.get(f'drain_per_{val_key}', 0)
         if 'idle_drain' in m_rule:
             stats['drain'] += m_rule['idle_drain']
@@ -208,7 +208,7 @@ def evaluate_ship_matrix(name, matrix, rules):
     max_range = int(stats['battery'] / cost_per_dist) if cost_per_dist > 0 else 0
     build_time = math.ceil(stats['cost'] / float(g['shipyard_rate']))
 
-    # Berechne Energie-Netto-Bilanz und Drift-Lebenszeit (Säule 3 Physik-Formeln)
+    # Calculate net energy balance and drift lifetime (Pillar 3 physics formulas)
     net_energy_balance = round(stats['regen'] - stats['drain'], 1)
     
     if net_energy_balance >= 0:
@@ -216,7 +216,7 @@ def evaluate_ship_matrix(name, matrix, rules):
     else:
         idle_lifetime = int(stats['battery'] / abs(net_energy_balance)) if stats['battery'] > 0 and net_energy_balance != 0 else 0
 
-    # Berechne passive Ladezyklen (Solar)
+    # Calculate passive charging cycles (Solar)
     if stats['regen'] > 0:
         solar_recharge = math.ceil(stats['battery'] / float(stats['regen']))
     else:

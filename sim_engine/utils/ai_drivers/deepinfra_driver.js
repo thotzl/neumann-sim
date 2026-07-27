@@ -5,8 +5,8 @@ const DeepinfraDriver = {
     buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) {
         let systemContent = "";
         if (globalInstr) systemContent += `${globalInstr}\n\n`;
-        if (systemPrompt) systemContent += `DEIN BRIEFING:\n${systemPrompt}\n\n`;
-        if (memory) systemContent += `DEIN GEDÄCHTNIS:\n${memory}\n\n`;
+        if (systemPrompt) systemContent += `YOUR BRIEFING:\n${systemPrompt}\n\n`;
+        if (memory) systemContent += `YOUR MEMORY:\n${memory}\n\n`;
 
         let messages = [];
         if (systemContent.trim()) {
@@ -31,7 +31,7 @@ const DeepinfraDriver = {
         // DeepInfra uses DEEP_INFRA_KEY, DEEPINFRA_API_KEY, or standard API_KEY
         const apiKey = process.env.DEEP_INFRA_KEY || process.env.DEEPINFRA_API_KEY || process.env.API_KEY;
         if (!apiKey) {
-            throw new Error("[DeepInfra Error] Kein DEEP_INFRA_KEY in deiner .env Datei oder Umgebung gefunden.");
+            throw new Error("[DeepInfra Error] No DEEP_INFRA_KEY found in your .env file or environment.");
         }
 
         const endpoint = config.deepinfra_endpoint || "https://api.deepinfra.com/v1/openai/chat/completions";
@@ -41,7 +41,7 @@ const DeepinfraDriver = {
             model: model,
             messages: payload.messages,
             temperature: 0.2,
-            max_tokens: 4096 // Explizit setzen, um den DeepInfra-Server-Default-Bug (65536) zu umgehen!
+            max_tokens: 4096 // Explicitly set to bypass the DeepInfra server default bug (65536)!
         };
 
         for (let i = 0; i < retries; i++) {
@@ -57,13 +57,13 @@ const DeepinfraDriver = {
 
                 const data = await response.json();
 
-                // 2. Selbstheilendes Rate-Limit-Handling für DeepInfra (HTTP 429 oder limit exceeded)
+                // 2. Self-healing rate-limit handling for DeepInfra (HTTP 429 or limit exceeded)
                 if (data.error) {
                     const errMsg = data.error.message || JSON.stringify(data.error);
                     if (response.status === 429 || errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded")) {
-                        console.warn(`\n[DeepInfra Rate-Limit] Rate-Limit erreicht. Pausiere für 12 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                        console.warn(`\n[DeepInfra Rate-Limit] Rate limit reached. Pausing for 12 seconds before attempt ${i + 1}/${retries}...`);
                         await new Promise(r => setTimeout(r, 12000));
-                        continue; // Schleife fortsetzen und erneut senden!
+                        continue; // Continue loop and resend!
                     }
                     throw new Error(errMsg);
                 }
@@ -76,14 +76,14 @@ const DeepinfraDriver = {
             } catch (err) {
                 const errMsg = err.message || "";
                 if (errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("exceeded")) {
-                    console.warn(`\n[DeepInfra Rate-Limit] Rate-Limit erreicht. Pausiere für 12 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                    console.warn(`\n[DeepInfra Rate-Limit] Rate limit reached. Pausing for 12 seconds before attempt ${i + 1}/${retries}...`);
                     await new Promise(r => setTimeout(r, 12000));
                     continue;
                 }
 
                 if (i === retries - 1) throw err;
                 
-                console.warn(`\n[DeepInfra Error] API-Fehler (Versuch ${i + 1}/${retries}): ${err.message}. Pausiere 4 Sekunden...`);
+                console.warn(`\n[DeepInfra Error] API error (Attempt ${i + 1}/${retries}): ${err.message}. Pausing for 4 seconds...`);
                 await new Promise(r => setTimeout(r, 4000));
             }
         }

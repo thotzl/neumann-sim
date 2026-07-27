@@ -9,7 +9,7 @@ class TestV105GeologyBalance(unittest.TestCase):
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
             
-        # Erstelle ausschließlich die systems-Tabelle
+        # Create only the systems table
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -30,17 +30,17 @@ class TestV105GeologyBalance(unittest.TestCase):
 
     def test_starting_system_geology_range_and_capping(self):
         """
-        Verifiziert unbestechlich, dass die Startsystem-Ressourcen des Kernels
-        immer zwischen 50k und 500k liegen und nicht gedeckelt (capped) sind.
+        Verifies impeccably that the starting system's core resources
+        are always between 50k and 500k and are not capped.
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # Simuliere 100 geologische Kernseeding-Eintragungen
+        # Simulate 100 geological core seeding entries
         for i in range(100):
             sys_name = f"START-SYS_{i}"
             
-            # Dies ist die exakte geologische Formel aus init_db.py
+            # This is the exact geological formula from init_db.py
             start_matter = random.randint(50000, 500000)
             
             cursor.execute("""
@@ -48,33 +48,33 @@ class TestV105GeologyBalance(unittest.TestCase):
                 VALUES (?, 0, 0, ?, ?)
             """, (sys_name, start_matter, start_matter))
             
-            # Frage die eben geschriebenen Werte ab
+            # Query the values just written
             cursor.execute("SELECT extractable_matter_in_core, max_extractable_matter FROM systems WHERE name = ?", (sys_name,))
             row = cursor.fetchone()
             
             core_val = row[0]
             max_val = row[1]
             
-            # UNBESTECHLICHE SICHERHEITSGURT-PROPORTIONALITÄT (Säule 1 & 3)
-            self.assertEqual(core_val, max_val, f"Capping entdeckt! extractable ({core_val}) weicht von max_extractable ({max_val}) ab!")
-            self.assertTrue(50000 <= core_val <= 500000, f"Ressourcen-Menge {core_val} verletzt die 50k-500k Balance-Spanne!")
+            # IMPLACABLE SEATBELT PROPORTIONALITY (Pillar 1 & 3)
+            self.assertEqual(core_val, max_val, f"Capping detected! extractable ({core_val}) deviates from max_extractable ({max_val})!")
+            self.assertTrue(50000 <= core_val <= 500000, f"Resource amount {core_val} violates the 50k-500k balance range!")
             
         conn.close()
-        print("  ✅ [GEOLOGY-SYSTEM-TEST] 100 Startsystem-Kerne erfolgreich verifiziert: Alle ungedeckt zwischen 50k und 500k.")
+        print("  ✅ [GEOLOGY-SYSTEM-TEST] 100 starting system cores successfully verified: All uncapped between 50k and 500k.")
 
     def test_scanned_system_geology_range_and_capping(self):
         """
-        Verifiziert unbestechlich, dass gescannte Tiefenraum-Systeme des Kernels
-        immer zwischen 50k und 500k liegen und nicht gedeckelt (capped) sind.
+        Verifies impeccably that scanned deep-space systems' core resources
+        are always between 50k and 500k and are not capped.
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # Simuliere 100 tiefe Scanner-Eintragungen
+        # Simulate 100 deep scanner entries
         for i in range(100):
             sys_name = f"SCANNED-SYS_{i}"
             
-            # Dies ist die exakte geologische Scan-Formel aus sensors.py (V10.5.4 Patch)
+            # This is the exact geological scan formula from sensors.py (V10.5.4 Patch)
             core_val = random.randint(50000, 500000)
             
             cursor.execute("""
@@ -83,19 +83,19 @@ class TestV105GeologyBalance(unittest.TestCase):
                 VALUES (?, 0, 0, ?, ?)
             """, (sys_name, core_val, core_val))
             
-            # Frage die Werte ab
+            # Query the values
             cursor.execute("SELECT extractable_matter_in_core, max_extractable_matter FROM systems WHERE name = ?", (sys_name,))
             row = cursor.fetchone()
             
             saved_core = row[0]
             saved_max = row[1]
             
-            # UNBESTECHLICHE DECKELUNGS-PRÜFUNG (Schutz vor physics_update Shaving)
-            self.assertEqual(saved_core, saved_max, f"Capping im Scanner entdeckt! saved_core ({saved_core}) weicht von saved_max ({saved_max}) ab!")
-            self.assertTrue(50000 <= saved_core <= 500000, f"Gescannter Kernwert {saved_core} verletzt die 50k-500k Balance-Spanne!")
+            # IMPLACABLE CAPPING CHECK (Protection against physics_update Shaving)
+            self.assertEqual(saved_core, saved_max, f"Capping detected in scanner! saved_core ({saved_core}) deviates from saved_max ({saved_max})!")
+            self.assertTrue(50000 <= saved_core <= 500000, f"Scanned core value {saved_core} violates the 50k-500k balance range!")
             
         conn.close()
-        print("  ✅ [GEOLOGY-SYSTEM-TEST] 100 gescannte Systeme erfolgreich verifiziert: Alle ungedeckt zwischen 50k und 500k.")
+        print("  ✅ [GEOLOGY-SYSTEM-TEST] 100 scanned systems successfully verified: All uncapped between 50k and 500k.")
 
 if __name__ == '__main__':
     unittest.main()

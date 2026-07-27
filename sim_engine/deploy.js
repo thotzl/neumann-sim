@@ -13,23 +13,23 @@ function deploy(targetVersion) {
     console.log("==========================================\n");
 
     // 1. RUN TESTS FIRST
-    console.log("[1/2] Führe Verifikations-Tests aus...");
+    console.log("[1/2] Running verification tests...");
     try {
         execSync(`node ${testHub}`, { stdio: 'inherit' });
-        console.log("\n✅ Tests erfolgreich. Starte Deployment...\n");
+        console.log("\n✅ Tests successful. Starting deployment...\n");
     } catch (e) {
-        console.error("\n🚨 [ABBRUCH] Tests fehlgeschlagen. Deployment verweigert.");
+        console.error("\n🚨 [ABORT] Tests failed. Deployment denied.");
         process.exit(1);
     }
 
     // 2. IDENTIFY TARGETS
     let targets = [];
     if (targetVersion) {
-        const vPath = path.join(experimentsDir, targetVersion);
-        if (fs.existsSync(vPath)) {
+        const versionPath = path.join(experimentsDir, targetVersion);
+        if (fs.existsSync(versionPath)) {
             targets.push(targetVersion);
         } else {
-            console.error(`❌ Fehler: Version ${targetVersion} nicht gefunden.`);
+            console.error(`❌ Error: Version ${targetVersion} not found.`);
             process.exit(1);
         }
     } else {
@@ -37,27 +37,27 @@ function deploy(targetVersion) {
     }
 
     // 3. UPDATE TOOLS
-    console.log(`[2/2] Update Tools in ${targets.length} Experimenten...`);
+    console.log(`[2/2] Updating tools in ${targets.length} experiments...`);
     targets.forEach(v => {
         const targetTools = path.join(experimentsDir, v, '_verse', 'tools');
         if (!fs.existsSync(targetTools)) {
-            console.log(`- Überspringe ${v}: Kein tools Ordner gefunden.`);
+            console.log(`- Skipping ${v}: No tools folder found.`);
             return;
         }
 
         const files = fs.readdirSync(sourceTools).filter(f => f.endsWith('.py'));
         files.forEach(file => {
-            // Wir überspringen NIEMALS DB-Configs oder ähnliches, da wir im Master fixen
-            // Aber wir stellen sicher, dass wir nur die .py Dateien überschreiben
+            // We NEVER skip DB configs or similar, as we fix them in master
+            // But we ensure that we only overwrite .py files
             const srcFile = path.join(sourceTools, file);
             const destFile = path.join(targetTools, file);
             fs.copyFileSync(srcFile, destFile);
         });
-        console.log(`- ${v}: ${files.length} Tools aktualisiert.`);
+        console.log(`- ${v}: ${files.length} tools updated.`);
     });
 
     console.log("\n==========================================");
-    console.log("   🎉 DEPLOYMENT ERFOLGREICH ABGESCHLOSSEN ");
+    console.log("   🎉 DEPLOYMENT SUCCESSFULLY COMPLETED ");
     console.log("==========================================\n");
 }
 

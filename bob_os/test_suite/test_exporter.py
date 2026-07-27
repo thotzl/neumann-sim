@@ -5,7 +5,7 @@ import sqlite3
 import shutil
 import sys
 
-# Testet den State Exporter (Node.js Modul) in einer kontrollierten Umgebung
+# Tests the State Exporter (Node.js module) in a controlled environment
 
 class TestStateExporter(unittest.TestCase):
     def setUp(self):
@@ -15,7 +15,7 @@ class TestStateExporter(unittest.TestCase):
         self.db_path = os.path.join(self.verse_dir, 'universe.db')
         os.environ['TEST_DB_PATH'] = self.db_path
         
-        # Erstelle Mock DB (Nutze reales Schema via init_db)
+        # Create Mock DB (Use real schema via init_db)
         sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
         from core.bin import init_db
         init_db.init()
@@ -34,7 +34,7 @@ class TestStateExporter(unittest.TestCase):
             "round": 1,
             "totalTurns": 1,
             "histories": {
-                "Instance-1": [{"agent": "Instance-1", "text": "Ich denke nach.", "tick": 1}]
+                "Instance-1": [{"agent": "Instance-1", "text": "I am thinking.", "tick": 1}]
             }
         }
         with open(os.path.join(self.test_dir, 'state.json'), 'w') as f:
@@ -45,7 +45,7 @@ class TestStateExporter(unittest.TestCase):
             shutil.rmtree(self.test_dir)
 
     def test_export_execution(self):
-        # Korrigierter Pfad zur sim_engine
+        # Corrected path to sim_engine
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         exporter_path = os.path.join(base_dir, 'sim_engine', 'utils', 'state_exporter.js')
         
@@ -53,7 +53,7 @@ class TestStateExporter(unittest.TestCase):
         cmd = f"node -e \"const exporter = require('{exporter_path}'); const state = JSON.parse(require('fs').readFileSync('{self.test_dir}/state.json', 'utf8')); exporter.exportWorldState('{self.verse_dir}', state, 'Instance-1');\""
         exit_code = os.system(cmd)
         
-        self.assertEqual(exit_code, 0, "Exporter-Lauf ist fehlgeschlagen!")
+        self.assertEqual(exit_code, 0, "Exporter run failed!")
 
 if __name__ == '__main__':
     unittest.main()

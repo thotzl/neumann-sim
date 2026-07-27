@@ -49,40 +49,40 @@ class TestV105Utils(unittest.TestCase):
         self.assertFalse(math_helpers.is_within_bounds(9999, 0))
 
     def test_get_display_name_happy_path(self):
-        # 1. Agent mit Namen
+        # 1. Agent with name
         agent = {"id": "Instance-1", "chosen_name": "Robert"}
         self.assertEqual(formatting.get_display_name(agent), "Robert")
         
     def test_get_display_name_fallback_unnamed(self):
-        # 2. Agent ohne Name (None)
+        # 2. Agent without name (None)
         agent_none = {"id": "Instance-1", "chosen_name": None}
         self.assertEqual(formatting.get_display_name(agent_none), "Unnamed")
         
-        # 3. Agent mit Name 'Unnamed'
+        # 3. Agent with name 'Unnamed'
         agent_unnamed = {"id": "Instance-1", "chosen_name": "Unnamed"}
         self.assertEqual(formatting.get_display_name(agent_unnamed), "Unnamed")
         
-        # 4. Leerer Datensatz / Fallback
+        # 4. Empty dataset / Fallback
         self.assertEqual(formatting.get_display_name({}), "Unnamed")
         self.assertEqual(formatting.get_display_name(None), "Unnamed")
 
     def test_get_display_name_with_id_happy_path(self):
-        # 1. Mit Namen und ID im Dict
+        # 1. With name and ID in Dict
         agent = {"id": "Instance-1", "chosen_name": "Robert"}
         self.assertEqual(formatting.get_display_name_with_id(agent), "Robert (ID: Instance-1)")
         
     def test_get_display_name_with_id_unnamed(self):
-        # 2. Unbenannt mit ID im Dict
+        # 2. Unnamed with ID in Dict
         agent = {"id": "Instance-1", "chosen_name": None}
         self.assertEqual(formatting.get_display_name_with_id(agent), "Unnamed (ID: Instance-1)")
         
     def test_get_display_name_with_id_explicit_override(self):
-        # 3. Explizite ID-Übergabe
+        # 3. Explicit ID passing
         agent = {"chosen_name": "Alice"}
         self.assertEqual(formatting.get_display_name_with_id(agent, "Alice-ID"), "Alice (ID: Alice-ID)")
 
     def test_aggregate_ship_telemetry_happy_path(self):
-        # 1. Simuliere Schiffs-Zeile aus DB
+        # 1. Simulate ship row from DB
         ship_row = {
             "id": 1,
             "name": "Scout-1",
@@ -100,7 +100,7 @@ class TestV105Utils(unittest.TestCase):
             "has_logic_core": 1
         }
         
-        # Simuliere Blueprint-Stats
+        # Simulate Blueprint stats
         bp_stats = {
             "drain": 27.0,
             "regen": 0.0,
@@ -127,7 +127,7 @@ class TestV105Utils(unittest.TestCase):
         self.assertEqual(aggregated["diagnostics"]["idle_lifetime_cycles"], 185)
 
     def test_aggregate_ship_telemetry_fallback(self):
-        # 2. Simuliere Schiffs-Zeile ohne Blueprint-Stats (Fallback-Modus)
+        # 2. Simulate ship row without Blueprint stats (Fallback mode)
         ship_row = {
             "id": 2,
             "name": None, # Unnamed
@@ -147,24 +147,24 @@ class TestV105Utils(unittest.TestCase):
         self.assertEqual(aggregated["blueprint"], "Scout-Legacy")
         self.assertEqual(aggregated["capabilities"]["drill"], "active")
         self.assertTrue(aggregated["diagnostics"]["can_move"])
-        self.assertTrue(aggregated["diagnostics"]["can_mine"]) # Hat drill und battery > 0!
+        self.assertTrue(aggregated["diagnostics"]["can_mine"]) # Has drill and battery > 0!
         self.assertEqual(aggregated["diagnostics"]["idle_lifetime_cycles"], "unlimited")
 
     def test_get_ship_display_name(self):
-        # 1. Schiff mit vergebenem Namen
+        # 1. Ship with assigned name
         ship_row = {"id": 1, "name": "Sovereign"}
         self.assertEqual(formatting.get_ship_display_name(ship_row), "'Sovereign' (ID: 1)")
         
-        # 2. Unbenanntes Schiff
+        # 2. Unnamed ship
         ship_unnamed = {"id": 2, "name": None}
         self.assertEqual(formatting.get_ship_display_name(ship_unnamed), "'Unnamed' (ID: 2)")
 
     def test_get_system_display_name(self):
-        # 1. Sektor mit vergebenem Namen
+        # 1. Sector with assigned name
         system_row = {"name": "SYS_A", "display_name": "HomeBase"}
         self.assertEqual(formatting.get_system_display_name(system_row), "'HomeBase' (ID: SYS_A)")
         
-        # 2. Unbenannter Sektor / Standardname
+        # 2. Unnamed sector / Default name
         system_default = {"name": "SYS_A", "display_name": None}
         self.assertEqual(formatting.get_system_display_name(system_default), "SYS_A")
 

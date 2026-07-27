@@ -1,11 +1,51 @@
-import { useState, useEffect, useRef } from 'react';
-import { LogEntry, LogCategory, Selection } from './types';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { signal } from '@preact/signals-react';
+import { LogCategory } from './types';
 import { LogPanel } from './components/LogPanel';
 import { ExplorerPanel } from './components/ExplorerPanel';
 import { InspectorPanel } from './components/InspectorPanel';
 import { useC2Store } from './store/stateStore';
 
 const SCALE = 0.5;
+
+const cameraX = signal(0);
+const cameraY = signal(0);
+const zoom = signal(1);
+const isDraggingSignal = signal(false);
+
+const RadarGrid = ({ children, mapRef, onMouseDown, onMouseMove, onMouseUp, onMouseLeave, onWheel }: {
+  children: React.ReactNode;
+  mapRef: React.RefObject<HTMLDivElement | null>;
+  onMouseDown: React.MouseEventHandler;
+  onMouseMove: React.MouseEventHandler;
+  onMouseUp: React.MouseEventHandler;
+  onMouseLeave: React.MouseEventHandler;
+  onWheel: React.WheelEventHandler;
+}) => {
+  const activeDrag = isDraggingSignal.value;
+  return (
+    <div 
+      ref={mapRef} className="radar-grid"
+      style={{ flex: 1, background: '#020203', overflow: 'hidden', cursor: activeDrag ? 'grabbing' : 'grab', position: 'relative' }}
+      onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave} onWheel={onWheel}
+    >
+      {children}
+    </div>
+  );
+};
+
+const MapContainer = ({ children }: { children: React.ReactNode }) => {
+  const x = cameraX.value;
+  const y = cameraY.value;
+  const z = zoom.value;
+  const activeDrag = isDraggingSignal.value;
+  
+  return (
+    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${z})`, transformOrigin: 'center center', transition: activeDrag ? 'none' : 'transform 0.15s ease-out' }}>
+      {children}
+    </div>
+  );
+};
 
 const getColorForId = (id: string) => {
   const numbersOnly = id.replace(/\D+/g, '');
@@ -26,15 +66,12 @@ export default function App() {
   const logs = useC2Store((store) => store.logs);
   const selection = useC2Store((store) => store.selection);
   const setSelection = useC2Store((store) => store.setSelection);
-  const isReady = useC2Store((store) => store.isReady);
   const setReady = useC2Store((store) => store.setReady);
   const initializeLogs = useC2Store((store) => store.initializeLogs);
   const updateState = useC2Store((store) => store.updateState);
 
   const [filters, setFilters] = useState<Record<LogCategory, boolean>>({ thought: true, action: true, system: true, scut: true });
   
-  const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
-  const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const mapRef = useRef<HTMLDivElement>(null);
   
@@ -44,7 +81,9 @@ export default function App() {
     if (!mapRef.current || coords.length === 0) return;
     const rect = mapRef.current.getBoundingClientRect();
     if (coords.length === 1) {
-       setCamera({ x: -coords[0].x * SCALE, y: -coords[0].y * SCALE, zoom: 1.2 });
+       cameraX.value = -coords[0].x * SCALE;
+       cameraY.value = -coords[0].y * SCALE;
+       zoom.value = 1.2;
        return;
     }
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -58,7 +97,9 @@ export default function App() {
     const newZoom = Math.min(Math.max(0.2, Math.min(rect.width / width, rect.height / height)), 2);
     const centerX = minX + (maxX - minX) / 2;
     const centerY = minY + (maxY - minY) / 2;
-    setCamera({ x: -centerX, y: -centerY, zoom: newZoom });
+    cameraX.value = -centerX;
+    cameraY.value = -centerY;
+    zoom.value = newZoom;
   };
 
   const focusAllBobs = () => {
@@ -72,17 +113,25 @@ export default function App() {
      focusBounds(state.systems.map(s => ({x: s.x, y: s.y})));
   };
 
-  const focusHome = () => { setCamera({ x: 0, y: 0, zoom: 1 }); };
+  const focusHome = useCallback(() => {
+     cameraX.value = 0;
+     cameraY.value = 0;
+     zoom.value = 1;
+  }, []);
 
+  const tick = state?.tick;
   useEffect(() => {
-     if (state && state.tick < 2) {
-        focusHome();
+     if (tick !== undefined && tick < 2) {
+        const timer = setTimeout(() => {
+           focusHome();
+        }, 0);
+        return () => clearTimeout(timer);
      }
-  }, [state?.tick]);
+  }, [tick, focusHome]);
 
   useEffect(() => {
     let socket: WebSocket | null = null;
-    let reconnectTimeout: any = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const connectWS = () => {
       const host = window.location.hostname || 'localhost';
@@ -140,22 +189,23 @@ export default function App() {
       if (socket) socket.close();
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
-  }, []);
+  }, [initializeLogs, setReady, updateState]);
 
   const handleWheel = (e: React.WheelEvent) => {
     if (!mapRef.current) return;
     const zoomFactor = -e.deltaY * 0.001;
-    const newZoom = Math.min(Math.max(0.1, camera.zoom + zoomFactor), 4);
-    setCamera(prev => ({ ...prev, zoom: newZoom }));
+    const newZoom = Math.min(Math.max(0.1, zoom.value + zoomFactor), 4);
+    zoom.value = newZoom;
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    dragStart.current = { x: e.clientX - camera.x, y: e.clientY - camera.y };
+    isDraggingSignal.value = true;
+    dragStart.current = { x: e.clientX - cameraX.value, y: e.clientY - cameraY.value };
   };
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setCamera(prev => ({ ...prev, x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y }));
+    if (!isDraggingSignal.value) return;
+    cameraX.value = e.clientX - dragStart.current.x;
+    cameraY.value = e.clientY - dragStart.current.y;
   };
 
   if (!state) return <div style={{color: '#38bdf8', background: '#020203', height: '100vh', padding: '40px', fontFamily: 'monospace'}}>INITIALIZING C2 LINK...</div>;
@@ -175,13 +225,16 @@ export default function App() {
            <button onClick={focusAllSystems} style={{ background: 'rgba(15,23,42,0.8)', color: '#38bdf8', border: '1px solid #38bdf8', padding: '8px 16px', borderRadius: '4px', fontSize: '0.8rem', cursor: 'pointer', backdropFilter: 'blur(4px)', textTransform: 'uppercase', letterSpacing: '1px' }}>🌍 GALAXY</button>
         </div>
 
-        <div 
-          ref={mapRef} className="radar-grid"
-          style={{ flex: 1, background: '#020203', overflow: 'hidden', cursor: isDragging ? 'grabbing' : 'grab', position: 'relative' }}
-          onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={() => setIsDragging(false)} onMouseLeave={() => setIsDragging(false)} onWheel={handleWheel}
+        <RadarGrid
+          mapRef={mapRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={() => { isDraggingSignal.value = false; }}
+          onMouseLeave={() => { isDraggingSignal.value = false; }}
+          onWheel={handleWheel}
         >
           <div className="cosmic-stars" />
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: `translate(calc(-50% + ${camera.x}px), calc(-50% + ${camera.y}px)) scale(${camera.zoom})`, transformOrigin: 'center center', transition: isDragging ? 'none' : 'transform 0.15s ease-out' }}>
+          <MapContainer>
             <svg style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible', pointerEvents: 'none' }}>
                {/* Transit Lines */}
                {state.agents.filter(a => a.status === 'traveling').map((a) => (
@@ -290,8 +343,8 @@ export default function App() {
                  </div>
                );
             })}
-          </div>
-        </div>
+          </MapContainer>
+        </RadarGrid>
         <InspectorPanel state={state} selection={selection} setSelection={setSelection} selectedAgent={selectedAgent} selectedSystem={selectedSystem} />
       </div>
 

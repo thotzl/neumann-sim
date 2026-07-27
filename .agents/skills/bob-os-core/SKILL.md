@@ -19,9 +19,9 @@ This skill defines the technical internals of the Bob-OS engine, specifically th
 ## 3. Agent Lifecycle
 - **Hard-Boot:** New agents receive a procedural boot sequence: `[Parent Memories] -> [SYSTEM BOOT + Dashboard] -> [Unique Prompt]`.
 - **Live Spawning:** The runner checks `population.json` at the start of EVERY round. New clones enter the turn sequence immediately without engine restart.
-- **Existential Awakening:** Klone erben keine Befehle (instruction), sondern eine neutrale Start-Direktive: Identität wählen (`set_name`), Funkkontakt aufnehmen (`scut`).
+- **Existential Awakening:** Clones do not inherit instructions, but a neutral starting directive: choose identity (`set_name`), establish radio contact (`scut`).
 
 ## 4. Automation Runtime
 - Engine executes everything in `_verse/scripts/active/*.py` before the agent's turn.
 - Python stderr is piped and returned as feedback; it does not crash the Node.js runner.
-- **Bypass Verbotsgesetz:** Agents MUST NOT use `subprocess.run` in scripts. They must `print("[RUN: ...]")` for the Node-Engine to parse.
+- **Bypass Prohibition Law:** Agents MUST NOT use `subprocess.run` in scripts. They must `print("[RUN: ...]")` for the Node-Engine to parse.

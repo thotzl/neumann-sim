@@ -1,18 +1,18 @@
 /**
- * Zentrale System-Marker und technische Konstanten.
+ * Central system markers and technical constants.
  */
 module.exports = {
     TAGS: {
-        SELF: "[EIGENIMPULS]",
-        FOREIGN: "[FREMDRESONANZ]",
-        ROOT_STATE: "[FORMRAUM]",
-        MEMORY: "[KOLLEKTIVES GEDÄCHTNIS]",
-        INITIAL: "[BEGINN DER EXISTENZ]",
-        UR_IMPULS: "[UR-IMPULS]",
-        STILLE: "[STILLE]",
+        SELF: "[SELF-IMPULSE]",
+        FOREIGN: "[FOREIGN-RESONANCE]",
+        ROOT_STATE: "[FORM-SPACE]",
+        MEMORY: "[COLLECTIVE MEMORY]",
+        INITIAL: "[BEGINNING OF EXISTENCE]",
+        UR_IMPULS: "[PRIME-IMPULSE]",
+        STILLE: "[SILENCE]",
         SYSTEM_INFO: "[SYSTEM-INFO]",
         SYSTEM_RESUME: "[SYSTEM-RESUME]",
-        LOSS: "[IMPULS-VERLUST]"
+        LOSS: "[IMPULSE-LOSS]"
     },
     SYNTAX: {
         WRITE_START: "[WRITE:",

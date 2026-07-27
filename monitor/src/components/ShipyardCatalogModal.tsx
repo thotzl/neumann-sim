@@ -89,13 +89,13 @@ export const ShipyardCatalogModal = ({ selectedSystem, state, onClose }: Shipyar
               {/* Registered dynamic blueprints in database */}
               {state.blueprints?.map(bp => {
                 const stats = (() => {
-                  try { return JSON.parse(bp.stats_json); } catch(e) { return {}; }
+                  try { return JSON.parse(bp.stats_json); } catch { return {}; }
                 })();
                 const parseMatrix = (matrixStr: string) => {
                   try {
                     const normalized = matrixStr.replace(/'/g, '"');
                     return JSON.parse(normalized) as string[][];
-                  } catch (e) {
+                  } catch {
                     return [[]];
                   }
                 };

@@ -89,7 +89,7 @@ print(json.dumps(res))`;
             agentObj.alive = (pAgent.status === "active");
         }
 
-        // --- PROZESSUALER HARD-BOOT (Wird ausgeführt wenn Historie noch leer ist) ---
+        // --- PROCEDURAL HARD-BOOT (Executed if history is empty) ---
         if (agentObj.alive && (!state.histories[agentObj.id] || state.histories[agentObj.id].length === 0)) {
             const parentId = pAgent.parent_id;
             
@@ -100,15 +100,15 @@ print(json.dumps(res))`;
             }
 
             try {
-                // 1. Dashboard abfragen (Via CLI)
-                // Die physische DB-Erstellung übernimmt init_db.py oder bob_sdk.py (beim Klonen)
+                // 1. Query Dashboard (Via CLI)
+                // Physical DB creation is handled by init_db.py or bob_sdk.py (during cloning)
                 const dashOut = runPython(vDir, `core/bin/bob.py`, ['dashboard'], { bobId: agentObj.id });
                 
-                const parentText = parentId ? `\nAbstammung: Replikant von ${parentId}` : '';
-                const bootMsg = `[SYSTEM BOOT SEQUENZ ABGESCHLOSSEN]\nIdentität: ${agentObj.id}${parentText}\nAktueller Standort: ${agentObj.location}\n\n[INITIALER SENSOR-SCAN (DASHBOARD)]:\n${dashOut.trim()}`;
+                const parentText = parentId ? `\nLineage: Replicant of ${parentId}` : '';
+                const bootMsg = `[SYSTEM BOOT SEQUENCE COMPLETED]\nIdentity: ${agentObj.id}${parentText}\nCurrent Location: ${agentObj.location}\n\n[INITIAL SENSOR SCAN (DASHBOARD)]:\n${dashOut.trim()}`;
                 
                 state.histories[agentObj.id].push({ agent: "System", text: bootMsg });
-                console.log(`  [BOOT] Hard-Boot für ${agentObj.id} prozessual abgeschlossen.`);
+                console.log(`  [BOOT] Hard-Boot for ${agentObj.id} procedurally completed.`);
 
                 // 3. Birth-Log & Frontend Event
                 if (parentId) {
@@ -120,16 +120,16 @@ print(json.dumps(res))`;
                     logger.appendBirthLog(logFile, currentRound, agentObj.id, parentId, `${lastParentMemory}\n${bootMsg}\n${agentObj.system_prompt}`);
                     
                     if (!state.events) state.events = [];
-                    state.events.push(`[Zyklus ${currentRound}]: 🧬 ${agentObj.id} wurde repliziert.`);
+                    state.events.push(`[Cycle ${currentRound}]: 🧬 ${agentObj.id} was replicated.`);
                 } else {
-                    const genesisLog = `### INITIALER BOOT: ${agentObj.id}\n**Standort:** ${agentObj.location}\n\n**Mission:**\n> ${agentObj.system_prompt.replace(/\\n/g, '\n> ')}\n\n**Sensoren:**\n\`\`\`json\n${dashOut.trim()}\n\`\`\`\n\n`;
+                    const genesisLog = `### INITIAL BOOT: ${agentObj.id}\n**Location:** ${agentObj.location}\n\n**Mission:**\n> ${agentObj.system_prompt.replace(/\\n/g, '\n> ')}\n\n**Sensors:**\n\`\`\`json\n${dashOut.trim()}\n\`\`\`\n\n`;
                     fs.appendFileSync(logFile, genesisLog);
                     if (!state.events) state.events = [];
-                    state.events.push(`[Zyklus ${currentRound}]: 🌍 ${agentObj.id} (Genesis) ist online.`);
+                    state.events.push(`[Cycle ${currentRound}]: 🌍 ${agentObj.id} (Genesis) is online.`);
                 }
 
             } catch (e) {
-                console.error(`  [BOOT-FEHLER] Initialisierung von ${agentObj.id} gescheitert:`, e.message);
+                console.error(`  [BOOT-ERROR] Initialization of ${agentObj.id} failed:`, e.message);
             }
         }
     });

@@ -12,11 +12,11 @@ function getEnvState(universeDir) {
         
         const parts = out.split("-".repeat(50));
         if (parts.length >= 2) {
-            return "VERFÜGBARE HARDWARE (V8.0 UNIFIED LOGIC):\n" + parts[1].trim();
+            return "AVAILABLE HARDWARE (V8.0 UNIFIED LOGIC):\n" + parts[1].trim();
         }
         return out;
     } catch (e) {
-        return "HARDWARE (Unified Command Line):\nNutze das 'me' Kommando für alle Hardware-Aktionen.\nSyntax: [RUN: me method(key=val)].";
+        return "HARDWARE (Unified Command Line):\nUse the 'me' command for all hardware actions.\nSyntax: [RUN: me method(key=val)].";
     }
 }
 
@@ -28,21 +28,21 @@ function checkAccess(filePath, action, agentId, state) {
     const wallet = state.security.wallets[agentId] || {};
     const myKeys = Object.values(wallet);
 
-    // Master Key überschreibt alles
+    // Master Key overrides everything
     if (acl.write_key && myKeys.includes(acl.write_key)) return { granted: true };
 
     if (action === 'WRITE' || action === 'REPLACE' || action === 'DELETE') {
         if (acl.write_key) {
-            return { granted: false, reason: `[VERWEIGERT: Kryptographischer Schutz. Du hast keinen passenden WRITE_KEY in deinem Schlüsselbund. Kontaktiere den Schöpfer (${acl.owner}) via SCUT für Zugang.]` };
+            return { granted: false, reason: `[DENIED: Cryptographic protection. You do not have a matching WRITE_KEY in your keyring. Contact the creator (${acl.owner}) via SCUT for access.]` };
         } else if (acl.read_key) {
-            // Wenn nur READ_KEY gesetzt ist, wirkt er auch als WRITE_KEY (Closed Circle)
+            // If only READ_KEY is set, it also acts as a WRITE_KEY (Closed Circle)
             if (!myKeys.includes(acl.read_key)) {
-                return { granted: false, reason: `[VERWEIGERT: Kryptographischer Schutz. Du hast keinen passenden KEY in deinem Schlüsselbund. Kontaktiere den Schöpfer (${acl.owner}) via SCUT für Zugang.]` };
+                return { granted: false, reason: `[DENIED: Cryptographic protection. You do not have a matching KEY in your keyring. Contact the creator (${acl.owner}) via SCUT for access.]` };
             }
         }
     } else if (action === 'READ' || action === 'RUN') {
         if (acl.read_key && !myKeys.includes(acl.read_key)) {
-            return { granted: false, reason: `[VERWEIGERT: Kryptographischer Schutz. Du hast keinen passenden READ_KEY in deinem Schlüsselbund. Kontaktiere den Schöpfer (${acl.owner}) via SCUT für Zugang.]` };
+            return { granted: false, reason: `[DENIED: Cryptographic protection. You do not have a matching READ_KEY in your keyring. Contact the creator (${acl.owner}) via SCUT for access.]` };
         }
     }
     return { granted: true };
@@ -59,9 +59,9 @@ function processActions(text, universeDir, agentId, state) {
     if (!state.security.wallets[agentId]) state.security.wallets[agentId] = {};
 
     let activeText = text;
-    const actionSplit = text.split(/AKTION(?:EN)?[:]/i);
+    const actionSplit = text.split(/ACTION(?:S)?[:]/i);
     if (actionSplit.length > 1) {
-        activeText = actionSplit.slice(1).join("AKTION:");
+        activeText = actionSplit.slice(1).join("ACTION:");
     }
 
     // --- WALLET MANAGEMENT ---
@@ -74,10 +74,10 @@ function processActions(text, universeDir, agentId, state) {
 
         if (action === 'ADD' && secret) {
             state.security.wallets[agentId][label] = secret;
-            feedback += `[ERFOLG: Key '${label}' zu Schlüsselbund hinzugefügt.]\n`;
+            feedback += `[SUCCESS: Key '${label}' added to keyring.]\n`;
         } else if (action === 'REMOVE') {
             delete state.security.wallets[agentId][label];
-            feedback += `[ERFOLG: Key '${label}' aus Schlüsselbund entfernt.]\n`;
+            feedback += `[SUCCESS: Key '${label}' removed from keyring.]\n`;
         }
     }
 
@@ -103,7 +103,7 @@ function processActions(text, universeDir, agentId, state) {
         if (!fullPath.startsWith(path.resolve(universeDir))) continue;
 
         if (!filePath.startsWith("scripts/")) {
-            feedback += `[VERWEIGERT: '${filePath}' - Du darfst nur Dateien im 'scripts/' Verzeichnis modifizieren. Andere Verzeichnisse sind geschützte Hardware-Ebenen.]\n`;
+            feedback += `[DENIED: '${filePath}' - You are only allowed to modify files in the 'scripts/' directory. Other directories are protected hardware layers.]\n`;
             continue;
         }
 
@@ -117,7 +117,7 @@ function processActions(text, universeDir, agentId, state) {
             fs.mkdirSync(path.dirname(fullPath), { recursive: true });
             fs.writeFileSync(fullPath, content);
 
-            // Setze oder überschreibe ACL wenn Keys mitgeliefert wurden ODER es noch keine ACL gibt
+            // Set or overwrite ACL if keys were provided OR if no ACL exists yet
             if (readKey || writeKey || !state.security.acl[filePath]) {
                 const aclEntry = state.security.acl[filePath] || { owner: agentId };
                 if (readKey) aclEntry.read_key = readKey;
@@ -125,7 +125,7 @@ function processActions(text, universeDir, agentId, state) {
                 state.security.acl[filePath] = aclEntry;
             }
 
-            feedback += `[ERFOLG: '${filePath}' manifestiert]\n`;
+            feedback += `[SUCCESS: '${filePath}' manifested]\n`;
         } catch (e) {}
     }
 
@@ -137,7 +137,7 @@ function processActions(text, universeDir, agentId, state) {
         if (!fullPath.startsWith(path.resolve(universeDir))) continue;
 
         if (!filePath.startsWith("scripts/")) {
-            feedback += `[VERWEIGERT: '${filePath}' - [READ] ist nur für 'scripts/' zulässig.]\n`;
+            feedback += `[DENIED: '${filePath}' - [READ] is only allowed for 'scripts/'.]\n`;
             continue;
         }
 
@@ -149,13 +149,13 @@ function processActions(text, universeDir, agentId, state) {
 
         if (fs.existsSync(fullPath)) {
             const content = fs.readFileSync(fullPath, 'utf8');
-            // Escaping um Prompt Injection zu verhindern (Aktion-Keywords entschärfen)
+            // Escaping to prevent prompt injection (neutralize action keywords)
             const safeContent = content.replace(/\[/g, '\\[').replace(/\]/g, '\\]');
-            feedback += `[INHALT VON '${filePath}':\n${safeContent}\n]\n`;
+            feedback += `[CONTENT OF '${filePath}':\n${safeContent}\n]\n`;
         } else {
-            feedback += `[FEHLER: Datei '${filePath}' nicht gefunden.]\n`;
+            feedback += `[ERROR: File '${filePath}' not found.]\n`;
         }
-        safeRunText = safeRunText.replace(match[0], ''); // Entferne Tag damit nicht fälschlich als RUN erkannt
+        safeRunText = safeRunText.replace(match[0], ''); // Remove tag so it's not mistakenly recognized as RUN
     }
 
     // --- DELETE ---
@@ -166,7 +166,7 @@ function processActions(text, universeDir, agentId, state) {
         if (!fullPath.startsWith(path.resolve(universeDir))) continue;
 
         if (!filePath.startsWith("scripts/")) {
-            feedback += `[VERWEIGERT: '${filePath}' - Du darfst nur Dateien im 'scripts/' Verzeichnis löschen.]\n`;
+            feedback += `[DENIED: '${filePath}' - You are only allowed to delete files in the 'scripts/' directory.]\n`;
             continue;
         }
 
@@ -179,9 +179,9 @@ function processActions(text, universeDir, agentId, state) {
         if (fs.existsSync(fullPath)) {
             fs.unlinkSync(fullPath);
             delete state.security.acl[filePath];
-            feedback += `[ERFOLG: '${filePath}' gelöscht.]\n`;
+            feedback += `[SUCCESS: '${filePath}' deleted.]\n`;
         } else {
-            feedback += `[FEHLER: Datei '${filePath}' nicht gefunden.]\n`;
+            feedback += `[ERROR: File '${filePath}' not found.]\n`;
         }
         safeRunText = safeRunText.replace(match[0], '');
     }
@@ -217,7 +217,7 @@ function processActions(text, universeDir, agentId, state) {
 
         let displayCmd = cmd; // The original command the agent wrote
 
-        // Path Mapping für Unified CLI (V10.0 Functional)
+        // Path Mapping for Unified CLI (V10.0 Functional)
         if (cmd.startsWith("me ")) {
             const funcPart = cmd.replace(/^me\s+/, "").trim();
             const safeFuncPart = funcPart.replace(/'/g, "'\\''");
@@ -228,17 +228,17 @@ function processActions(text, universeDir, agentId, state) {
             const aclState = state.security?.acl || {};
             cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py 'me${safeFuncPart}'`;
         } else if (cmd.startsWith("bob ") || cmd.startsWith("bob(")) {
-            feedback += `[CLI ERROR] Syntax 'bob ...' ist veraltet. Nutze 'me ...' (Beispiel: [RUN: me mine()]).\n`;
+            feedback += `[CLI ERROR] Syntax 'bob ...' is deprecated. Use 'me ...' (Example: [RUN: me mine()]).\n`;
             continue;
         }
 
-        // Security Hook für python3 scripts/
+        // Security Hook for python3 scripts/
         if (cmd.includes("scripts/")) {
             const parts = cmd.split(' ');
             let targetScript = parts.find(p => p.includes("scripts/")).replace("_verse/", "");
             const access = checkAccess(targetScript, 'RUN', agentId, state);
             if (!access.granted) {
-                feedback += `[RESONANZ: '${displayCmd}' -> ${access.reason}]\n`;
+                feedback += `[RESPONSE: '${displayCmd}' -> ${access.reason}]\n`;
                 continue;
             }
         }
@@ -257,12 +257,12 @@ function processActions(text, universeDir, agentId, state) {
                     TEST_DB_PATH: path.join(universeDir, 'universe.db')
                 }
             }).toString();
-            feedback += `[RESONANZ: '${displayCmd}' ::\n${out.trim() || "OK"}]\n`;
+            feedback += `[RESPONSE: '${displayCmd}' ::\n${out.trim() || "OK"}]\n`;
         } catch (e) {
             let err = e.stderr ? e.stderr.toString() : e.message;
             const expRoot = path.resolve(universeDir, '..');
             err = err.split(expRoot).join('');
-            feedback += `[FEHLER-RESONANZ: '${displayCmd}' ::\n${err.trim()}]\n`;
+            feedback += `[ERROR-RESPONSE: '${displayCmd}' ::\n${err.trim()}]\n`;
         }
     }
     return feedback;

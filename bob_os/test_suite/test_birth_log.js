@@ -5,11 +5,11 @@ const logger = require('../../sim_engine/utils/logger.js');
 const logPath = path.resolve('test_birth.md');
 if (fs.existsSync(logPath)) fs.unlinkSync(logPath);
 
-const fakeContext = "Das ist ein extrem langer Text, der das Gedächtnis des Vaters simuliert. " + 
-    "Es folgt ein bisschen BlaBla, und dann das Dashboard: {'agents': [], 'systems': [], 'you': {'id': 'Bob-X'}} " + 
-    "Und hier ist der Prompt des Erschaffers: Baue ein Silo.";
+const fakeContext = "This is an extremely long text that simulates the father's memory. " + 
+    "A bit of blah blah follows, and then the dashboard: {'agents': [], 'systems': [], 'you': {'id': 'Bob-X'}} " + 
+    "And here is the creator's prompt: Build a silo.";
 
-// Mach den Text künstlich über 600 Zeichen lang
+// Make the text artificially longer than 600 characters
 const paddedContext = fakeContext + " X".repeat(200);
 
 logger.appendBirthLog(logFile=logPath, round=5, agentId="Bob-X", parentId="Instance-1", fullContextBlock=paddedContext);

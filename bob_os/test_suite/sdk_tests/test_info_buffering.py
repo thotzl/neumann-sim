@@ -31,21 +31,21 @@ class TestInfoBuffering(unittest.TestCase):
         if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
     def test_dashboard_does_not_leak_visual_events(self):
-        # 1. Mine materie (erzeugt visual_event)
+        # 1. Mine matter (generates visual_event)
         self.assertTrue(self.agent.mine())
         
-        # 2. Prüfe, ob das Event in der DB existiert
+        # 2. Check if the event exists in the DB
         conn = db_config.get_connection()
         event = conn.execute("SELECT * FROM visual_events WHERE actor_id='Instance-1'").fetchone()
         self.assertIsNotNone(event)
         self.assertEqual(event['event_type'], 'MINING')
         conn.close()
         
-        # 3. Abrufen des Live-Dashboards
+        # 3. Retrieve the live dashboard
         dashboard = self.agent.sensors.local_system()
         
-        # 4. Überprüfe, dass letzte_system_wahrnehmungen im Dashboard leer ist (da eigene Aktionen herausgefiltert werden)
-        self.assertEqual(len(dashboard['letzte_system_wahrnehmungen']), 0)
+        # 4. Verify that last_system_perceptions in the dashboard is empty (as own actions are filtered out)
+        self.assertEqual(len(dashboard['last_system_perceptions']), 0)
 
 if __name__ == '__main__':
     unittest.main()

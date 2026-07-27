@@ -87,13 +87,13 @@ class Agent:
         Shortcut wrapper: Calls inspect under the hood and prints it beautifully as YAML.
         """
         if not name:
-            print("[FEHLER] 'view_blueprint' erfordert den Namen des Blueprints.")
+            print("[ERROR] 'view_blueprint' requires the blueprint name.")
             return False
             
         bp = self.inspect(blueprint_name=name)
         if bp:
             import yaml
-            print(f"\nDETAIL-ANSICHT BLAUPAUSE '{name}':\n---\n{yaml.dump(bp, sort_keys=False, default_flow_style=False).strip()}\n---")
+            print(f"\nBLUEPRINT DETAIL VIEW '{name}':\n---\n{yaml.dump(bp, sort_keys=False, default_flow_style=False).strip()}\n---")
             return True
         return False
 

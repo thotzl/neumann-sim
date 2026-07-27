@@ -1,7 +1,7 @@
 import re
 
-# Definition der Methoden und ihrer Parameter-Struktur
-# 'greedy' definiert, welcher Parameter den Rest des Strings schluckt (meist der letzte)
+# Definition of methods and their parameter structure
+# 'greedy' defines which parameter consumes the rest of the string (usually the last one)
 METHOD_META = {
     "mine": {"params": [], "greedy": None},
     "build": {"params": ["building_type", "matter_to_invest"], "greedy": None},
@@ -39,8 +39,8 @@ METHOD_META = {
 
 def parse_functional_string(s):
     """
-    Parsiert einen funktionalen String wie method(key=val, ...) oder nur method
-    Gibt ein Dict {'method': str, 'params': dict} zurück.
+    Parses a functional string like method(key=val, ...) or just method.
+    Returns a dict {'method': str, 'params': dict}.
     """
     s = s.strip()
     match = re.match(r"^(\w+)(?:\s*\((.*)\))?$", s)
@@ -58,35 +58,35 @@ def parse_functional_string(s):
     
     meta = METHOD_META.get(method)
     if not meta:
-        # Unbekannte Methode, wir versuchen dennoch zu parsen
+        # Unknown method, we still try to parse
         meta = {"params": [], "greedy": None}
 
-    # Wir parsen Key-Value Paare
-    # Strategie: Wir suchen nach key= Mustern aus der Meta-Info
-    # Falls kein Key gefunden wird, nehmen wir an es ist positional (optional Support)
+    # We parse key-value pairs
+    # Strategy: We look for key= patterns from the meta-info
+    # If no key is found, we assume it's positional (optional support)
     
     current_str = raw_args
     
-    # 1. Finde alle Keys, die tatsächlich im String stehen
+    # 1. Find all keys that are actually in the string
     found_keys = []
     for key in meta["params"]:
-        # Regex sucht nach Key, eventuellen Leerzeichen und dem Gleichheitszeichen
-        # Wir müssen auf Wortgrenzen achten, damit z.B. "to=" nicht in "photo=" gefunden wird
+        # Regex searches for key, optional whitespace, and the equals sign
+        # We must pay attention to word boundaries, so that e.g. "to=" is not found in "photo="
         pattern = rf"\b{key}\s*="
         matches = list(re.finditer(pattern, current_str))
         if matches:
-            # Wir nehmen nur den ersten Match pro Key (LLMs sollten Keys nicht doppelt nennen)
+            # We only take the first match per key (LLMs should not name keys twice)
             found_keys.append({"key": key, "start": matches[0].start(), "end": matches[0].end()})
             
     if found_keys:
-        # Sortiere nach Position im String
+        # Sort by position in the string
         found_keys.sort(key=lambda x: x["start"])
         
         for i, k_info in enumerate(found_keys):
             key = k_info["key"]
             val_start = k_info["end"]
             
-            # Wo endet der Wert? Am Start des NÄCHSTEN gefundenen Keys, oder am Ende des Strings.
+            # Where does the value end? At the start of the NEXT found key, or at the end of the string.
             if i + 1 < len(found_keys):
                 val_end = found_keys[i+1]["start"]
             else:
@@ -95,25 +95,25 @@ def parse_functional_string(s):
             val_raw = current_str[val_start:val_end].strip()
             
             if meta.get("greedy") != key:
-                # Falls der Wert in Anführungszeichen steht, exakt diesen extrahieren
+                # If the value is in quotes, extract exactly that
                 if val_raw.startswith('"'):
                     val_clean = val_raw[1:].split('"')[0]
                 elif val_raw.startswith("'"):
                     val_clean = val_raw[1:].split("'")[0]
                 else:
-                    # Ansonsten nur bis zum ersten Komma lesen
+                    # Otherwise, read only up to the first comma
                     val_clean = val_raw.split(',')[0].strip()
             else:
-                # Greedy-Modus: Alles nehmen, nur Rand-Bereinigung
+                # Greedy mode: take everything, just trim edges
                 val_clean = val_raw.rstrip(",")
                 if (val_clean.startswith('"') and val_clean.endswith('"')) or (val_clean.startswith("'") and val_clean.endswith("'")):
                     val_clean = val_clean[1:-1]
             
             params[key] = val_clean.strip()
             
-    # Fallback: Positional Parsing, falls GAR KEINE Keys gefunden wurden
+    # Fallback: Positional parsing, if NO keys were found at all
     elif raw_args:
-        # Wir splitten nur nach Kommata
+        # We only split by commas
         parts = [p.strip().strip("\"' ") for p in raw_args.split(",")]
         for i, p_name in enumerate(meta["params"]):
             if i < len(parts):

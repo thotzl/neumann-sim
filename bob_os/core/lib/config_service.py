@@ -8,8 +8,8 @@ def get_config():
     global _config_cache
     if _config_cache: return _config_cache
     
-    # Pfad-Logik für neue Struktur:
-    # Diese Datei liegt in <exp_root>/core/lib/config_service.py
+    # Path logic for new structure:
+    # This file is located in <exp_root>/core/lib/config_service.py
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     config_path = os.path.join(base_dir, 'config.json')
     
@@ -28,7 +28,7 @@ def get_economy_rules():
     if _economy_cache: return _economy_cache
     
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    # Master-Pfad (während Build) oder Exp-Pfad (während Run)
+    # Master path (during build) or Exp path (during run)
     rules_path = os.path.join(base_dir, 'core', 'lib', 'ECONOMY_RULES.json')
     
     if os.path.exists(rules_path):
@@ -41,7 +41,7 @@ def get_physics_constants():
     conf = get_config()
     rules = get_economy_rules()
     
-    # Harte Defaults aus Economy-JSON falls vorhanden, sonst Fallback
+    # Hard defaults from Economy-JSON if available, otherwise fallback
     defaults = {
         "travel_speed_per_tick": 300,
         "energy_cost_per_distance": rules.get('tool_costs', {}).get('move_per_unit', {}).get('energy', 0.1),

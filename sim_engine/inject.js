@@ -2,20 +2,20 @@ const fs = require('fs');
 const path = require('path');
 
 const expName = process.argv[2];
-const sourcePath = process.argv[3]; // Kann Pfad oder "engine" oder "tools" sein
+const sourcePath = process.argv[3]; // Can be a path or "engine" or "tools"
 
 if (!expName || !sourcePath) {
     console.log("Syntax: npm run inject <experiment_name> <file_or_alias>");
-    console.log("Beispiele:");
+    console.log("Examples:");
     console.log("  npm run inject ONE sim_engine/utils/environment.js");
-    console.log("  npm run inject ONE engine   (Kopiert gesamte sim_engine)");
-    console.log("  npm run inject ONE tools    (Kopiert tools & system_libs)");
+    console.log("  npm run inject ONE engine   (Copies entire sim_engine)");
+    console.log("  npm run inject ONE tools    (Copies tools & system_libs)");
     process.exit(1);
 }
 
 const expDir = path.join(__dirname, '../experiments', expName);
 if (!fs.existsSync(expDir)) {
-    console.error(`[FEHLER] Experiment '${expName}' existiert nicht.`);
+    console.error(`[ERROR] Experiment '${expName}' does not exist.`);
     process.exit(1);
 }
 
@@ -35,16 +35,16 @@ function copyRecursiveSync(src, dest) {
 }
 
 if (sourcePath === 'engine') {
-    console.log(`Injiziere gesamte Node.js Engine in ${expName}...`);
+    console.log(`Injecting entire Node.js Engine into ${expName}...`);
     copyRecursiveSync(path.join(__dirname, '../sim_engine'), path.join(expDir, 'sim_engine'));
-    console.log(`[ERFOLG] Engine synchronisiert.`);
+    console.log(`[SUCCESS] Engine synchronized.`);
 } else if (sourcePath === 'tools') {
-    console.log(`Injiziere Python Tools & Libs in ${expName}...`);
+    console.log(`Injecting Python Tools & Libs into ${expName}...`);
     copyRecursiveSync(path.join(__dirname, '../bob_os/core'), path.join(expDir, 'core'));
-    console.log(`[ERFOLG] Python Logik synchronisiert.`);
+    console.log(`[SUCCESS] Python logic synchronized.`);
 } else if (sourcePath === 'migrate') {
-    console.log(`Führe Datenbank-Migration für ${expName} aus...`);
-    // Kopiere migrations.py
+    console.log(`Executing database migration for ${expName}...`);
+    // Copy migrations.py
     const srcMigrate = path.resolve(__dirname, '../bob_os/core/lib/migrations.py');
     const targetMigrate = path.join(expDir, 'core/lib/migrations.py');
     fs.copyFileSync(srcMigrate, targetMigrate);
@@ -55,16 +55,16 @@ if (sourcePath === 'engine') {
             env: { ...process.env, PYTHONPATH: expDir },
             stdio: 'inherit'
         });
-        console.log(`[ERFOLG] Migration erfolgreich angewendet.`);
+        console.log(`[SUCCESS] Migration applied successfully.`);
     } catch (e) {
-        console.error(`[MIGRATION FEHLER]`, e.message);
+        console.error(`[MIGRATION ERROR]`, e.message);
         process.exit(1);
     }
     process.exit(0);
 } else {
     const absoluteSrc = path.resolve(sourcePath);
     if (!fs.existsSync(absoluteSrc)) {
-        console.error(`[FEHLER] Quelle existiert nicht: ${absoluteSrc}`);
+        console.error(`[ERROR] Source does not exist: ${absoluteSrc}`);
         process.exit(1);
     }
     
@@ -72,7 +72,7 @@ if (sourcePath === 'engine') {
     const relPath = path.relative(projectRoot, absoluteSrc);
     
     if (relPath.startsWith('experiments')) {
-        console.error("[FEHLER] Du kannst keine Dateien aus dem experiments/ Ordner injizieren.");
+        console.error("[ERROR] You cannot inject files from the experiments/ folder.");
         process.exit(1);
     }
 
@@ -84,8 +84,8 @@ if (sourcePath === 'engine') {
     }
 
     const targetPath = path.join(expDir, targetRelPath);
-    console.log(`Injiziere ${relPath} -> ${targetPath}`);
+    console.log(`Injecting ${relPath} -> ${targetPath}`);
     
     copyRecursiveSync(absoluteSrc, targetPath);
-    console.log(`[ERFOLG] Injektion abgeschlossen.`);
+    console.log(`[SUCCESS] Injection complete.`);
 }

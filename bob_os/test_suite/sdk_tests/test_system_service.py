@@ -12,7 +12,7 @@ class TestSystemService(unittest.TestCase):
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
         
-        # Erstelle vereinfachte Infrastructure Tabelle
+        # Create simplified Infrastructure table
         self.cursor.execute("""
             CREATE TABLE infrastructure (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,7 +22,7 @@ class TestSystemService(unittest.TestCase):
             )
         """)
         
-        # Seed Test-Daten
+        # Seed test data
         self.cursor.execute("""
             INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_A', 'shipyard', 'active')
         """)
@@ -38,22 +38,22 @@ class TestSystemService(unittest.TestCase):
         self.conn.close()
 
     def test_has_active_infrastructure_single_active(self):
-        # Shipyard ist aktiv in SYS_A
+        # Shipyard is active in SYS_A
         res = system_service.has_active_infrastructure(self.cursor, 'SYS_A', 'shipyard')
         self.assertTrue(res)
 
     def test_has_active_infrastructure_single_construction(self):
-        # Refinery ist in construction in SYS_A, also nicht aktiv
+        # Refinery is under construction in SYS_A, so not active
         res = system_service.has_active_infrastructure(self.cursor, 'SYS_A', 'matter_refinery')
         self.assertFalse(res)
 
     def test_has_active_infrastructure_missing(self):
-        # Comms relay existiert nicht in SYS_A
+        # Comms relay does not exist in SYS_A
         res = system_service.has_active_infrastructure(self.cursor, 'SYS_A', 'comms_relay')
         self.assertFalse(res)
 
     def test_has_active_infrastructure_multiple_types(self):
-        # Prüfe mehrere Typen gleichzeitig (z.B. shipyard oder advanced_shipyard)
+        # Check multiple types simultaneously (e.g., shipyard or advanced_shipyard)
         res = system_service.has_active_infrastructure(self.cursor, 'SYS_A', ('advanced_shipyard', 'shipyard'))
         self.assertTrue(res)
         

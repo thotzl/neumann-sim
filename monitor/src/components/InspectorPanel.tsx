@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Agent, System, Selection, WorldState } from '../types';
+import { Agent, System, Selection, WorldState, Ship } from '../types';
 import { ProgressBar } from './ProgressBar';
 import { 
   parseManifestation, 
@@ -18,18 +18,34 @@ interface InspectorPanelProps {
   selectedSystem: System | null | undefined;
 }
 
+interface DistantSector {
+  name: string;
+  coordinates: string;
+  distance: number;
+}
+
+interface DistantSignature {
+  id: string;
+  chosen_name?: string;
+  status: string;
+  location?: string | null;
+}
+
 export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, selectedSystem }: InspectorPanelProps) => {
   const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'meta' | 'raw'>('status');
   const [showVesselSchematic, setShowVesselSchematic] = useState(false);
-  const [selectedShipForSchematic, setSelectedShipForSchematic] = useState<any>(null);
+  const [selectedShipForSchematic, setSelectedShipForSchematic] = useState<Ship | null>(null);
   const [showShipyardCatalog, setShowShipyardCatalog] = useState(false);
 
   // Reset Tab bei Selektionswechsel
   useEffect(() => {
-    setActiveTab('status');
-    setShowVesselSchematic(false);
-    setSelectedShipForSchematic(null);
-    setShowShipyardCatalog(false);
+    const timer = setTimeout(() => {
+      setActiveTab('status');
+      setShowVesselSchematic(false);
+      setSelectedShipForSchematic(null);
+      setShowShipyardCatalog(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [selection?.id]);
 
   if (!selection) return null;
@@ -298,7 +314,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '4px', border: '1px solid #1e293b' }}>
                           <h3 style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#38bdf8', letterSpacing: '1px' }}>🛰️ RADAR_SECTORS:</h3>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {dashboardObj.radar_entfernter_sektoren.map((tp: any, idx: number) => (
+                            {dashboardObj.radar_entfernter_sektoren.map((tp: DistantSector, idx: number) => (
                               <div key={idx} className="mono-text" style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '2px' }}>
                                 <span style={{ color: '#fff', fontWeight: 'bold' }}>{tp.name}</span>
                                 <span>{tp.coordinates} • {tp.distance} ly</span>
@@ -313,7 +329,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '4px', border: '1px solid #1e293b' }}>
                           <h3 style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#e0f2fe', letterSpacing: '1px' }}>📡 DISTANT_RADAR_SIGNATURES //</h3>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {dashboardObj.radar_entfernter_signaturen.map((tp: any, idx: number) => (
+                            {dashboardObj.radar_entfernter_signaturen.map((tp: DistantSignature, idx: number) => (
                               <div key={idx} className="mono-text" style={{ fontSize: '0.7rem', color: '#e0f2fe', fontWeight: 'bold' }}>
                                 <span style={{ color: '#e0f2fe', fontWeight: 'bold' }}>{tp.chosen_name || tp.id}</span>
                                 <span> {tp.status.toUpperCase()} @ {tp.location || 'Unknown'}</span>

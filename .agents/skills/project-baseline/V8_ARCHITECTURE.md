@@ -31,4 +31,4 @@ The Unified Bob Command Line (UBCL) script `bob.py` no longer uses standard `arg
 
 ## 4. Physics & Capacities
 - Building infrastructure (`matter_silo`, `solar_collector`) immediately updates the system's `matter_cap` and `energy_cap`.
-- Solar Collectors also immediately increase the `passive_energy_rate` by 100, which is distributed to the system depot at the end of each `System-Runde`.
+- Solar Collectors also immediately increase the `passive_energy_rate` by 100, which is distributed to the system depot at the end of each `System Cycle`.

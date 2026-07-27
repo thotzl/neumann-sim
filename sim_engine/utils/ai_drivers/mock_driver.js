@@ -26,8 +26,8 @@ const MockDriver = {
         if (process.env[stepVar]) return process.env[stepVar];
         if (process.env[respVar]) return process.env[respVar];
 
-        // Fallback-Mock
-        return "[ANALYSE] Default Mock. [AKTION:] [RUN: me mine]";
+        // Fallback Mock
+        return "[ANALYZE] Default Mock. [ACTION:] [RUN: me mine]";
     }
 };
 

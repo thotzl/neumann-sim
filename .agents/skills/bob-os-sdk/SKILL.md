@@ -15,7 +15,7 @@ Agents use identical syntax structures in manual Prompts and Automated Scripts.
 ## 2. The Custom Parser (`functional_parser.py`)
 - The CLI does NOT use `argparse`. It uses a custom Regex/Meta-based parser.
 - **Quote Tolerance:** It ignores missing or surplus quotes (`"` or `'`).
-- **Greedy Endings:** Freitext arguments (like `msg` in `scut`) swallow all commas and spaces until the closing parenthesis.
+- **Greedy Endings:** Free-text arguments (like `msg` in `scut`) swallow all commas and spaces until the closing parenthesis.
 - **Optional Parens:** Methods without arguments (e.g., `mine`) can be called via `bob mine` or `bob mine()`.
 
 ## 3. The Flat SDK (`bob_sdk.py`)
@@ -23,5 +23,5 @@ Agents use identical syntax structures in manual Prompts and Automated Scripts.
 - Internal classes (`Actuators`, `Sensors`, `Logistics`) are abstracted away from the LLM.
 
 ## 4. Automation Rules
-- Automation scripts run **once per cycle** during the `System-Runde` (handled by `automation.js`), AFTER all agents had their turn. This prevents O(N^2) energy vampire bugs.
+- Automation scripts run **once per cycle** during the `System Cycle` (handled by `automation.js`), AFTER all agents had their turn. This prevents O(N^2) energy vampire bugs.
 - Scripts reside in `_verse/scripts/active/<agent_id>/` and are invoked with the owner's `BOB_ID` injected.

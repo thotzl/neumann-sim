@@ -1,5 +1,5 @@
 Start Log
 
 ---
-### [SYSTEM]: ABSCHLUSS-ROUTINE EINGELEITET (Grund: Fehler)
+### [SYSTEM]: FINALIZATION ROUTINE INITIATED (Reason: Error)
 

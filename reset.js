@@ -13,42 +13,42 @@ function reset() {
     const configFile = path.join(expDir, 'config.json');
 
     if (!fs.existsSync(configFile)) {
-        console.error(`[ERROR] Experiment '${expName}' existiert nicht oder besitzt kein config.json.`);
+        console.error(`[ERROR] Experiment '${expName}' does not exist or has no config.json.`);
         process.exit(1);
     }
 
-    console.log(`[RESET] Backe Konfiguration für '${expName}' auf...`);
+    console.log(`[RESET] Backing up configuration for '${expName}'...`);
     const configContent = fs.readFileSync(configFile, 'utf8');
 
-    console.log(`[RESET] Lösche komplettes Experiment-Verzeichnis '${expDir}'...`);
+    console.log(`[RESET] Deleting complete experiment directory '${expDir}'...`);
     if (fs.existsSync(expDir)) {
         fs.rmSync(expDir, { recursive: true, force: true });
     }
 
-    console.log(`[RESET] Baue frische Struktur mit 'build.py' auf...`);
+    console.log(`[RESET] Building fresh structure with 'build.py'...`);
     try {
-        // Erzeuge ein temporäres Dummy-Experiment über den Builder
+        // Create a temporary dummy experiment via the builder
         execSync(`python3 bob_os/build.py ${expName} --rounds 1 --mission "temp" --skip-tests`, {
             stdio: 'inherit'
         });
     } catch (e) {
-        console.error(`[ERROR] Rebuild über 'build.py' fehlgeschlagen:`, e.message);
+        console.error(`[ERROR] Rebuild via 'build.py' failed:`, e.message);
         process.exit(1);
     }
 
-    console.log(`[RESET] Setze die gesicherte Original-Konfiguration wieder ein...`);
+    console.log(`[RESET] Restoring the backed-up original configuration...`);
     fs.writeFileSync(configFile, configContent, 'utf8');
 
-    // WICHTIG: Lösche die Dummy-Datenbank, da sie auf der falschen (Dummy-)Config basiert
+    // IMPORTANT: Delete the dummy database, as it is based on the wrong (dummy) config
     const dbFile = path.join(expDir, '_verse', 'universe.db');
     if (fs.existsSync(dbFile)) {
         fs.unlinkSync(dbFile);
     }
 
-    // NEU: Initialisiere die leeren Tabellenstrukturen frisch in der gelöschten Datenbank!
-    // Dadurch existieren alle Tabellen (systems, agents, etc.), sind aber völlig leer.
-    // Wenn der Runner startet, kann er sie fehlerfrei basierend auf der restaurierten config.json seeden!
-    console.log(`[RESET] Erzeuge leere Tabellenstrukturen (init_db.py)...`);
+    // NEW: Initialize the empty table structures freshly in the deleted database!
+    // This ensures all tables (systems, agents, etc.) exist, but are completely empty.
+    // When the Runner starts, it can seed them without errors based on the restored config.json!
+    console.log(`[RESET] Creating empty table structures (init_db.py)...`);
     try {
         const initScript = path.join(expDir, 'core', 'bin', 'init_db.py');
         execSync(`python3 ${initScript}`, {
@@ -56,19 +56,19 @@ function reset() {
             stdio: 'inherit'
         });
     } catch (e) {
-        console.error(`[ERROR] Erzeugung des Datenbank-Schemas fehlgeschlagen:`, e.message);
+        console.error(`[ERROR] Creation of the database schema failed:`, e.message);
         process.exit(1);
     }
 
-    // Lösche auch die neu generierte state.json, um einen sauberen Hard-Boot zu erzwingen
+    // Also delete the newly generated state.json to force a clean hard boot
     const stateFile = path.join(expDir, 'state.json');
     if (fs.existsSync(stateFile)) {
         fs.unlinkSync(stateFile);
     }
 
-    console.log(`\n🎉 [SUCCESS] Experiment '${expName}' wurde erfolgreich zurückgesetzt!`);
-    console.log(`Die Code-Hüllen (core & sim_engine) wurden frisch synchronisiert, während deine config.json zu 100% erhalten blieb.`);
-    console.log(`Starte den Lauf einfach wieder mit: npm run sim ${expName}`);
+    console.log(`\n🎉 [SUCCESS] Experiment '${expName}' has been successfully reset!`);
+    console.log(`The code shells (core & sim_engine) have been freshly synchronized, while your config.json remained 100% intact.`);
+    console.log(`Simply restart the run with: npm run sim ${expName}`);
 }
 
 reset();

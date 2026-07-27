@@ -1,4 +1,4 @@
-import { Agent, WorldState } from '../types';
+import { Agent, WorldState, ShipWithCAD, ShipTelemetry } from '../types';
 
 export const parseManifestation = (manifestation: string | undefined) => {
   if (!manifestation) return { thought: '', action: '' };
@@ -40,7 +40,7 @@ export const parseManifestation = (manifestation: string | undefined) => {
 };
 
 // Custom recursive YAML dumper in TypeScript to match Python's output
-export function jsonToYaml(obj: any, indent: number = 0): string {
+export function jsonToYaml(obj: unknown, indent: number = 0): string {
   if (obj === null) return 'null';
   if (obj === undefined) return '';
   if (typeof obj !== 'object') {
@@ -65,11 +65,12 @@ export function jsonToYaml(obj: any, indent: number = 0): string {
     }).join('\n');
   }
   
-  const keys = Object.keys(obj);
+  const record = obj as Record<string, unknown>;
+  const keys = Object.keys(record);
   if (keys.length === 0) return '{}';
   
   const parts = keys.map(key => {
-    const val = obj[key];
+    const val = record[key];
     const valStr = jsonToYaml(val, indent + 2);
     if (typeof val === 'object' && val !== null && (!Array.isArray(val) || val.length > 0)) {
       return `${spacer}${key}:${valStr}`;
@@ -81,7 +82,7 @@ export function jsonToYaml(obj: any, indent: number = 0): string {
 }
 
 // Resolves a raw ship object into V10.5 CAD Telemetry and Diagnostics
-export const resolveShipCADTelemetry = (ship: any) => {
+export const resolveShipCADTelemetry = (ship: ShipWithCAD | null | undefined): ShipTelemetry | null => {
   if (!ship) return null;
   
   const stats = {

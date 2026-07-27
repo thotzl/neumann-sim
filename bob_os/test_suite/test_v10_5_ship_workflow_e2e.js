@@ -11,20 +11,20 @@ if (fs.existsSync(rootMockDir)) fs.rmSync(rootMockDir, { recursive: true, force:
 fs.mkdirSync(rootMockDir, { recursive: true });
 fs.mkdirSync(mockDir, { recursive: true });
 
-// Erstelle Symlink zur Core-Engine, um den absoluten Pfad der Sandbox-Umgebung perfekt abzubilden!
+// Create symlink to the Core Engine to perfectly map the absolute path of the sandbox environment!
 fs.symlinkSync(path.resolve('bob_os/core'), path.resolve(rootMockDir, 'core'), 'dir');
 
-console.log("Starte puren E2E-Workflow Test für konfigurierbare Gitter-Schiffe...");
+console.log("Starting pure E2E workflow test for configurable grid ships...");
 
-// 1. Initialisiere eine frische Test-Datenbank per init_db.py
+// 1. Initialize a fresh test database via init_db.py
 try {
     execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=bob_os python3 bob_os/core/bin/init_db.py`, { stdio: 'pipe' });
 } catch (e) {
-    console.error("Datenbank-Initialisierung fehlgeschlagen:", e.stderr ? e.stderr.toString() : e.message);
+    console.error("Database initialization failed:", e.stderr ? e.stderr.toString() : e.message);
     process.exit(1);
 }
 
-// 2. Seede die Testdaten über ein temporäres Python-Skript (0 sperrenoffene SQLite-Connections!)
+// 2. Seed the test data via a temporary Python script (0 open SQLite connections!)
 const seedScriptPath = path.join(rootMockDir, 'seed_e2e_db.py');
 const seedScriptContent = `
 import os
@@ -38,132 +38,132 @@ conn.execute("INSERT INTO infrastructure (id, system_name, type, status, level, 
 conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'Robert', '2', 'matrix', 'active', 0, 0, NULL)")
 conn.commit()
 conn.close()
-print("[SEED SUCCESS] Testdaten injiziert.")
+print("[SEED SUCCESS] Test data injected.")
 `;
 
 try {
     fs.writeFileSync(seedScriptPath, seedScriptContent.trim());
     execSync(`TEST_DB_PATH=${dbPath} python3 ${seedScriptPath}`, { stdio: 'pipe' });
-    fs.unlinkSync(seedScriptPath); // Sofortige Müllabfuhr
+    fs.unlinkSync(seedScriptPath); // Immediate cleanup
 } catch (e) {
-    console.error("Datenbank-Seeding fehlgeschlagen:", e.stderr ? e.stderr.toString() : e.message);
+    console.error("Database seeding failed:", e.stderr ? e.stderr.toString() : e.message);
     process.exit(1);
 }
 
-// 3. E2E Test-Ablauf über pure processActions-Auswertung
+// 3. E2E Test flow via pure processActions evaluation
 let mockState = { security: { acl: {}, wallets: {} } };
 const absMockDir = path.resolve(mockDir);
 
-// Setze TEST_DB_PATH und BOB_ID in der Umgebung, damit der Python-Subprozess sich mit der korrekten DB verbindet!
+// Set TEST_DB_PATH and BOB_ID in the environment so the Python subprocess connects to the correct DB!
 process.env.TEST_DB_PATH = dbPath;
 process.env.BOB_ID = 'Instance-1';
 process.env.PYTHONPATH = path.resolve('.');
 
 try {
-    // --- SCHRITT 0: PRÜFE LEERE BLAUPAUSEN-LISTE (list_blueprints empty info feedback) ---
+    // --- STEP 0: CHECK EMPTY BLUEPRINT LIST (list_blueprints empty info feedback) ---
     const emptyListInput = `
-AKTION:
+ACTION:
 [RUN: me list_blueprints]
 `;
-    console.log("  0. Führe me.list_blueprints (Leeres Archiv) aus...");
+    console.log("  0. Executing me.list_blueprints (Empty Archive)...");
     const feedbackEmptyList = processActions(emptyListInput, absMockDir, "Instance-1", mockState);
-    if (!feedbackEmptyList.includes("[INFO] Keine Blaupausen im Sektor-Archiv registriert")) {
-        throw new Error("SCHRITT 0 FAILED: Leere Blaupausen-Meldung wurde nicht ausgegeben! Feedback: " + feedbackEmptyList);
+    if (!feedbackEmptyList.includes("[INFO] No blueprints registered in the sector archive")) {
+        throw new Error("STEP 0 FAILED: Empty blueprint message was not output! Feedback: " + feedbackEmptyList);
     }
-    console.log("    ✅ Schritt 0 (Leeres Archiv: Info-Meldung) erfolgreich.");
+    console.log("    ✅ Step 0 (Empty Archive: Info message) successful.");
 
-    // --- SCHRITT A: BLUEPRINT SIMULATION (design_blueprint) ---
+    // --- STEP A: BLUEPRINT SIMULATION (design_blueprint) ---
     const designInput = `
-AKTION:
+ACTION:
 [RUN: me design_blueprint(name="E2E-Scout", matrix_json='[["logic_core", "engine"], ["battery", null]]')]
 `;
-    console.log("  1. Führe me.design_blueprint (Planungsphase) aus...");
+    console.log("  1. Executing me.design_blueprint (Planning phase)...");
     const feedbackDesign = processActions(designInput, absMockDir, "Instance-1", mockState);
     if (!feedbackDesign.includes("successfully simulated/planned")) {
-        throw new Error("SCHRITT A FAILED: Blueprint-Planung wurde nicht erfolgreich bestätigt! Feedback: " + feedbackDesign);
+        throw new Error("STEP A FAILED: Blueprint planning was not successfully confirmed! Feedback: " + feedbackDesign);
     }
-    console.log("    ✅ Schritt A (Planungsphase: simulated/not saved) erfolgreich.");
+    console.log("    ✅ Step A (Planning phase: simulated/not saved) successful.");
 
-    // --- SCHRITT B: BLUEPRINT SPEICHERN (save_blueprint) ---
+    // --- STEP B: SAVE BLUEPRINT (save_blueprint) ---
     const saveInput = `
-AKTION:
+ACTION:
 [RUN: me save_blueprint(name="E2E-Scout", matrix_json='[["logic_core", "engine"], ["battery", null]]')]
 `;
-    console.log("  2. Führe me.save_blueprint (Speicherphase) aus...");
+    console.log("  2. Executing me.save_blueprint (Save phase)...");
     const feedbackSave = processActions(saveInput, absMockDir, "Instance-1", mockState);
     if (!feedbackSave.includes("successfully saved to sector database")) {
-        throw new Error("SCHRITT B FAILED: Speicherung wurde nicht erfolgreich bestätigt! Feedback: " + feedbackSave);
+        throw new Error("STEP B FAILED: Saving was not successfully confirmed! Feedback: " + feedbackSave);
     }
-    console.log("    ✅ Schritt B (Speicherphase: saved) erfolgreich.");
+    console.log("    ✅ Step B (Save phase: saved) successful.");
 
-    // --- SCHRITT B-VERIFY: PRÜFE EINTRAG (list_blueprints) ---
+    // --- STEP B-VERIFY: CHECK ENTRY (list_blueprints) ---
     const listInput = `
-AKTION:
+ACTION:
 [RUN: me list_blueprints]
 `;
-    console.log("  2-Verify. Überprüfe Blueprint-Eintrag über me.list_blueprints...");
+    console.log("  2-Verify. Verifying blueprint entry via me.list_blueprints...");
     const feedbackList = processActions(listInput, absMockDir, "Instance-1", mockState);
-    console.log("    [DIAGNOSTIK] list_blueprints Feedback:\n" + feedbackList);
+    console.log("    [DIAGNOSTICS] list_blueprints Feedback:\n" + feedbackList);
     if (!feedbackList.includes("E2E-Scout")) {
-        throw new Error("SCHRITT B-VERIFY FAILED: Blueprint existiert nicht in der Sektor-Liste! Feedback: " + feedbackList);
+        throw new Error("STEP B-VERIFY FAILED: Blueprint does not exist in the sector list! Feedback: " + feedbackList);
     }
-    console.log("    ✅ Schritt B-Verify (Eintrag vorhanden) erfolgreich.");
+    console.log("    ✅ Step B-Verify (Entry present) successful.");
 
-    // --- SCHRITT C: SCHIFFSBAU (build_ship) ---
+    // --- STEP C: SHIP CONSTRUCTION (build_ship) ---
     const buildInput = `
-AKTION:
+ACTION:
 [RUN: me build_ship(blueprint_name="E2E-Scout")]
 `;
-    console.log("  3. Führe me.build_ship (Bauphase) aus...");
+    console.log("  3. Executing me.build_ship (Construction phase)...");
     const feedbackBuild = processActions(buildInput, absMockDir, "Instance-1", mockState);
-    if (!feedbackBuild.includes("built successfully") || !feedbackBuild.includes("Cost: 1000 Depot") || !feedbackBuild.includes("ERRECHNETE HARDWARE-SPEZIFIKATIONEN") || !feedbackBuild.includes("blueprint_specs")) {
-        throw new Error("SCHRITT C FAILED: Schiffsbau fehlgeschlagen, falsche Kosten oder fehlender CAD-Spezifikations-Report! Feedback: " + feedbackBuild);
+    if (!feedbackBuild.includes("built successfully") || !feedbackBuild.includes("Cost: 1000 Depot") || !feedbackBuild.includes("CALCULATED HARDWARE SPECIFICATIONS") || !feedbackBuild.includes("blueprint_specs")) {
+        throw new Error("STEP C FAILED: Ship construction failed, incorrect costs or missing CAD specification report! Feedback: " + feedbackBuild);
     }
-    console.log("    ✅ Schritt C (Bauphase: built with cost: 1000 refined_matter & CAD specs printed) erfolgreich.");
+    console.log("    ✅ Step C (Construction phase: built with cost: 1000 refined_matter & CAD specs printed) successful.");
 
-    // --- SCHRITT C-VERIFY: PRÜFE SPECS & DEPOT-ABZUG (inspect) ---
+    // --- STEP C-VERIFY: CHECK SPECS & DEPOT DEDUCTION (inspect) ---
     const inspectInput = `
-AKTION:
+ACTION:
 [RUN: me inspect(ship_id=1)]
 [RUN: me inspect(system_name="SYS_A")]
 `;
-    console.log("  3-Verify. Inspiziere das neue Schiff und Sektor SYS_A depots...");
+    console.log("  3-Verify. Inspecting the new ship and Sector SYS_A depots...");
     const feedbackInspect = processActions(inspectInput, absMockDir, "Instance-1", mockState);
     if (!feedbackInspect.includes("logic_core: active") || !feedbackInspect.includes("refined_matter_depot: 4000")) {
-        throw new Error("SCHRITT C-VERIFY FAILED: Falsche Gitter-Specs oder Depot-Ressourcen nicht abgezogen! Feedback: " + feedbackInspect);
+        throw new Error("STEP C-VERIFY FAILED: Incorrect grid specs or depot resources not deducted! Feedback: " + feedbackInspect);
     }
-    console.log("    ✅ Schritt C-Verify (Specs & Depot-Abzug verifiziert) erfolgreich.");
+    console.log("    ✅ Step C-Verify (Specs & Depot deduction verified) successful.");
 
-    // --- SCHRITT D: RECYCLING (deconstruct_ship) ---
+    // --- STEP D: RECYCLING (deconstruct_ship) ---
     const deconstructInput = `
-AKTION:
+ACTION:
 [RUN: me deconstruct_ship(ship_id=1)]
 `;
-    console.log("  4. Führe me.deconstruct_ship (Recyclingphase) aus...");
+    console.log("  4. Executing me.deconstruct_ship (Recycling phase)...");
     const feedbackDec = processActions(deconstructInput, absMockDir, "Instance-1", mockState);
     if (!feedbackDec.includes("deconstructed successfully") || !feedbackDec.includes("Refunded 750 refined_matter")) {
-        throw new Error("SCHRITT D FAILED: Recycling oder Erstattung fehlgeschlagen! Feedback: " + feedbackDec);
+        throw new Error("STEP D FAILED: Recycling or refund failed! Feedback: " + feedbackDec);
     }
-    console.log("    ✅ Schritt D (Recyclingphase: deconstructed & 75% refunded) erfolgreich.");
+    console.log("    ✅ Step D (Recycling phase: deconstructed & 75% refunded) successful.");
 
-    // --- SCHRITT D-VERIFY: PRÜFE ERSTATTETES DEPOT (inspect) ---
+    // --- STEP D-VERIFY: CHECK REFUNDED DEPOT (inspect) ---
     const inspectFinalInput = `
-AKTION:
+ACTION:
 [RUN: me inspect(system_name="SYS_A")]
 `;
-    console.log("  4-Verify. Inspiziere Sektor-Depots nach Rückerstattung...");
+    console.log("  4-Verify. Inspecting sector depots after refund...");
     const feedbackInspectFinal = processActions(inspectFinalInput, absMockDir, "Instance-1", mockState);
     if (!feedbackInspectFinal.includes("refined_matter_depot: 4750")) {
-        throw new Error("SCHRITT D-VERIFY FAILED: Rückerstattung von 750 refined_matter wurde nicht gutgeschrieben! Feedback: " + feedbackInspectFinal);
+        throw new Error("STEP D-VERIFY FAILED: Refund of 750 refined_matter was not credited! Feedback: " + feedbackInspectFinal);
     }
-    console.log("    ✅ Schritt D-Verify (Depot-Rückerstattung verifiziert) erfolgreich.");
+    console.log("    ✅ Step D-Verify (Depot refund verified) successful.");
 
-    console.log("🎉 E2E-SCHIFFS-WORKFLOW INTEGRATIONSTEST ERFOLGREICH!");
+    console.log("🎉 E2E SHIP WORKFLOW INTEGRATION TEST SUCCESSFUL!");
     cleanup();
     process.exit(0);
 
 } catch (error) {
-    console.error("❌ E2E-SCHIFFS-WORKFLOW TEST FEHLGESCHLAGEN:", error.message);
+    console.error("❌ E2E SHIP WORKFLOW TEST FAILED:", error.message);
     cleanup();
     process.exit(1);
 }

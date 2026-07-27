@@ -5,8 +5,8 @@ const SambanovaDriver = {
     buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) {
         let systemContent = "";
         if (globalInstr) systemContent += `${globalInstr}\n\n`;
-        if (systemPrompt) systemContent += `DEIN BRIEFING:\n${systemPrompt}\n\n`;
-        if (memory) systemContent += `DEIN GEDÄCHTNIS:\n${memory}\n\n`;
+        if (systemPrompt) systemContent += `YOUR BRIEFING:\n${systemPrompt}\n\n`;
+        if (memory) systemContent += `YOUR MEMORY:\n${memory}\n\n`;
 
         let messages = [];
         if (systemContent.trim()) {
@@ -30,7 +30,7 @@ const SambanovaDriver = {
     async generateText(payload, config, retries = 3) {
         const apiKey = process.env.SAMBANOVA_API_KEY || process.env.API_KEY;
         if (!apiKey) {
-            throw new Error("[Sambanova Error] Kein SAMBANOVA_API_KEY in deiner .env Datei oder Umgebung gefunden.");
+            throw new Error("[Sambanova Error] No SAMBANOVA_API_KEY found in your .env file or environment.");
         }
 
         const endpoint = config.sambanova_endpoint || "https://api.sambanova.ai/v1/chat/completions";
@@ -64,7 +64,7 @@ const SambanovaDriver = {
 
                 return data.choices[0].message.content;
             } catch (err) {
-                console.error(`Sambanova API-Call failed (Attempt ${i + 1}/${retries}): ${err.message}`);
+                console.error(`Sambanova API call failed (Attempt ${i + 1}/${retries}): ${err.message}`);
                 if (i === retries - 1) throw err;
                 await new Promise(r => setTimeout(r, 2000));
             }

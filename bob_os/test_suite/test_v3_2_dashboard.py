@@ -4,7 +4,7 @@ import sqlite3
 import json
 import sys
 
-# Pfade für SDK hinzufügen
+# Add paths for SDK
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.lib import bob_sdk, db_config
@@ -40,7 +40,7 @@ class TestBobOS_v3_2_Dashboard(unittest.TestCase):
 
     def test_01_schema_stability(self):
         conn = db_config.get_connection()
-        # Lege Testdaten an
+        # Create test data
         conn.execute("INSERT OR REPLACE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, energy_depot) VALUES ('SYS_X0_Y0', 0, 0, 1000, 0, 50)")
         conn.execute("INSERT OR REPLACE INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS_X0_Y0', 'sem_matrix', 'active')")
         conn.execute("INSERT OR REPLACE INTO ships (id, name, chassis, pilot_id, system_name, raw_matter_inventory, energy_inventory, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_X0_Y0', 100, 100, 300)")
@@ -51,8 +51,8 @@ class TestBobOS_v3_2_Dashboard(unittest.TestCase):
 
         # Test Local System Sensor
         local = self.agent.sensors.local_system()
-        self.assertEqual(local['lokales_system']['name'], 'SYS_X0_Y0')
-        self.assertIn('infrastructure', local['lokales_system']) # Injected by service
+        self.assertEqual(local['local_system']['name'], 'SYS_X0_Y0')
+        self.assertIn('infrastructure', local['local_system']) # Injected by service
 
         # Test Entities Sensor (Privacy Filtered)
         entities = self.agent.sensors.entities()

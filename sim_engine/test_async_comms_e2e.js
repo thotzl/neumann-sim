@@ -3,7 +3,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 const assert = require('assert');
 
-console.log("🚀 Starte Async Comms E2E Test (Inbox/Batching)...");
+console.log("🚀 Starting Async Comms E2E Test (Inbox/Batching)...");
 
 const expName = 'async_comms_test';
 const vDir = path.join(__dirname, '../experiments', expName);
@@ -33,30 +33,30 @@ async function callGemini(url, payload) {
     if (callCount <= 2) {
         if (agentId === "Instance-1") {
             // Tick 1
-            action = "[RUN: me scut(receiver_id='ALL', message='Hello Schwarm!')]\\n[RUN: me mine]";
+            action = "[RUN: me scut(receiver_id='ALL', message='Hello Swarm!')]\\n[RUN: me mine]";
         } else {
             // Tick 2
-            if (payload.contents[0].parts[0].text.includes('Hello Schwarm!')) {
+            if (payload.contents[0].parts[0].text.includes('Hello Swarm!')) {
                 fs.writeFileSync('fail.txt', 'Message arrived too early!');
             }
         }
     } else {
         if (agentId === "Instance-1") {
             // Tick 3
-            if (!payload.contents[0].parts[0].text.includes('hat Materie abgebaut')) {
+            if (!payload.contents[0].parts[0].text.includes('mined matter')) {
                 fs.writeFileSync('fail.txt', 'Missing visual event for A1!\\n' + payload.contents[0].parts[0].text);
             }
         } else {
             // Tick 4
-            if (!payload.contents[0].parts[0].text.includes('Hello Schwarm!')) {
+            if (!payload.contents[0].parts[0].text.includes('Hello Swarm!')) {
                 fs.writeFileSync('fail.txt', 'Missing SCUT for A2!\\n' + payload.contents[0].parts[0].text);
             }
-            if (!payload.contents[0].parts[0].text.includes('Stimme Gottes')) {
-                fs.writeFileSync('fail.txt', 'Missing VoG for A2!\n' + payload.contents[0].parts[0].text);
+            if (!payload.contents[0].parts[0].text.includes('Voice of God')) {
+                fs.writeFileSync('fail.txt', 'Missing VoG for A2!\\n' + payload.contents[0].parts[0].text);
             }
         }
     }
-    return "ANALYSE:\\nTest\\n\\nAKTION:\\n" + action;
+    return "ANALYZE:\\nTest\\n\\nACTION:\\n" + action;
 }
 function buildAgentContext(agentId, histories, memory, envState, globalInstr, systemPrompt, anonymity) {
     return { contents: [{ role: 'user', parts: [{ text: \`Agent: \${agentId}\\nEnv: \${envState}\\nHist: \${JSON.stringify(histories)}\` }] }] };
@@ -65,15 +65,15 @@ module.exports = { callGemini, buildAgentContext };
 `;
 
 fs.writeFileSync(path.join(vDir, 'sim_engine', 'utils', 'api_client.js'), mockApiContent);
-fs.writeFileSync(path.join(vDir, 'creator_msg.txt'), "Das ist die Stimme Gottes.");
+fs.writeFileSync(path.join(vDir, 'creator_msg.txt'), "This is the Voice of God.");
 
 try {
     execSync('node sim_engine/runner.js', { cwd: vDir, stdio: 'pipe' });
 } catch (e) {}
 
 if (fs.existsSync(path.join(vDir, 'fail.txt'))) {
-    console.error("❌ TEST FEHLGESCHLAGEN: " + fs.readFileSync(path.join(vDir, 'fail.txt'), 'utf8'));
+    console.error("❌ TEST FAILED: " + fs.readFileSync(path.join(vDir, 'fail.txt'), 'utf8'));
     process.exit(1);
 } else {
-    console.log("✅ Async Comms E2E Test erfolgreich!");
+    console.log("✅ Async Comms E2E Test successful!");
 }

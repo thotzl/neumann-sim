@@ -5,8 +5,8 @@ const GithubDriver = {
     buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) {
         let systemContent = "";
         if (globalInstr) systemContent += `${globalInstr}\n\n`;
-        if (systemPrompt) systemContent += `DEIN BRIEFING:\n${systemPrompt}\n\n`;
-        if (memory) systemContent += `DEIN GEDÄCHTNIS:\n${memory}\n\n`;
+        if (systemPrompt) systemContent += `YOUR BRIEFING:\n${systemPrompt}\n\n`;
+        if (memory) systemContent += `YOUR MEMORY:\n${memory}\n\n`;
 
         let messages = [];
         if (systemContent.trim()) {
@@ -31,7 +31,7 @@ const GithubDriver = {
         // GitHub Models uses either GITHUB_TOKEN or GITHUB_API_KEY
         const apiKey = process.env.GITHUB_TOKEN || process.env.GITHUB_API_KEY || process.env.API_KEY;
         if (!apiKey) {
-            throw new Error("[Github Models Error] Kein GITHUB_TOKEN oder GITHUB_API_KEY in deiner .env Datei oder Umgebung gefunden.");
+            throw new Error("[Github Models Error] No GITHUB_TOKEN or GITHUB_API_KEY found in your .env file or environment.");
         }
 
         const endpoint = config.github_endpoint || "https://models.inference.ai.azure.com/chat/completions";
@@ -43,7 +43,7 @@ const GithubDriver = {
             temperature: 0.2
         };
 
-        // 1. Pauschale Bremse (6 Sekunden) zwischen allen Turns, um das 10-RPM-Limit von vornherein natürlich einzuhalten!
+        // 1. General throttle (6 seconds) between all turns to naturally adhere to the 10-RPM limit from the outset!
         await new Promise(r => setTimeout(r, 6000));
 
         for (let i = 0; i < retries; i++) {
@@ -59,13 +59,13 @@ const GithubDriver = {
 
                 const data = await response.json();
 
-                // 2. Selbstheilendes Rate-Limit-Handling für GitHub Models (HTTP 429 oder limit exceeded)
+                // 2. Self-healing rate-limit handling for GitHub Models (HTTP 429 or limit exceeded)
                 if (data.error) {
                     const errMsg = data.error.message || JSON.stringify(data.error);
                     if (response.status === 429 || errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded")) {
-                        console.warn(`\n[GitHub Models Rate-Limit] Rate-Limit oder Token-Limit erreicht. Pausiere für 12 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                        console.warn(`\n[GitHub Models Rate-Limit] Rate limit or token limit reached. Pausing for 12 seconds before attempt ${i + 1}/${retries}...`);
                         await new Promise(r => setTimeout(r, 12000));
-                        continue; // Schleife fortsetzen und erneut senden!
+                        continue; // Continue loop and resend!
                     }
                     throw new Error(errMsg);
                 }
@@ -76,17 +76,17 @@ const GithubDriver = {
 
                 return data.choices[0].message.content;
             } catch (err) {
-                // Selbstheilender Check für direkt geworfene Fetch- oder Netzwerkfehler im Stream
+                // Self-healing check for directly thrown Fetch or network errors in the stream
                 const errMsg = err.message || "";
                 if (errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("exceeded")) {
-                    console.warn(`\n[GitHub Models Rate-Limit] Rate-Limit erreicht. Pausiere für 12 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                    console.warn(`\n[GitHub Models Rate-Limit] Rate limit reached. Pausing for 12 seconds before attempt ${i + 1}/${retries}...`);
                     await new Promise(r => setTimeout(r, 12000));
                     continue;
                 }
 
                 if (i === retries - 1) throw err;
                 
-                console.warn(`\n[GitHub Models Error] API-Fehler (Versuch ${i + 1}/${retries}): ${err.message}. Pausiere 4 Sekunden...`);
+                console.warn(`\n[GitHub Models Error] API error (Attempt ${i + 1}/${retries}): ${err.message}. Pausing for 4 seconds...`);
                 await new Promise(r => setTimeout(r, 4000));
             }
         }

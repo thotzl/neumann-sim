@@ -11,35 +11,35 @@ function loadState(statePath) {
 }
 
 async function runDistillation(bridge, globalHistory, currentMemoryPath) {
-    console.log("Führe Epochal-Destillation durch...");
-    const currentMemory = fs.existsSync(currentMemoryPath) ? fs.readFileSync(currentMemoryPath, 'utf8') : "Anfang der Zeit.";
+    console.log("Performing epochal distillation...");
+    const currentMemory = fs.existsSync(currentMemoryPath) ? fs.readFileSync(currentMemoryPath, 'utf8') : "Beginning of time.";
     
-    const prompt = `Konsolidiere das bestehende KOLLEKTIVE GEDÄCHTNIS mit den neuesten Ereignis-Logs zu einem aktualisierten, zentralen Dokument.
-    Du agierst als unsichtbarer Synthese-Mechanismus. Erwähne dich selbst niemals. Nutze keine einleitenden Floskeln (wie "Das aktualisierte Gedächtnis..."). Liefere ausschließlich den finalen, strukturierten Text.
+    const prompt = `Consolidate the existing COLLECTIVE MEMORY with the latest event logs into an updated, central document.
+    You act as an invisible synthesis mechanism. Never mention yourself. Do not use introductory phrases (such as "The updated memory..."). Output ONLY the final, structured text.
 
-    ZIEL:
-    Erstelle eine kumulative, objektive Chronik. Lösche keine etablierten Meilensteine oder Regeln. Integriere neue Fakten und Handlungsstränge neutral in die bestehende Struktur. Reflektiere die Rollen und Pläne der Agenten präzise, ohne eigene Wertung.
+    OBJECTIVE:
+    Create a cumulative, objective chronicle. Do not delete established milestones or rules. Integrate new facts and plotlines neutrally into the existing structure. Reflect the roles and plans of the agents precisely, without personal bias.
     
-    STRUKTUR-VORGABE:
-    - ÜBERSICHT: Objektiver Status des Systems.
-    - ERRUNGENSCHAFTEN: Alle bisherigen Meilensteine (kumulativ).
-    - PROTOKOLLE & REGELN: Etablierte Formate, Architektur-Prinzipien und Absprachen der Agenten.
-    - AGENTEN-STATUS: Status, Dynamik und von den Agenten eingenommene Rollen (Lebend/Erloschen).
-    - OFFENE PFADE: Von den Agenten geplante, aber unvollendete Ziele.
+    STRUCTURAL SPECIFICATION:
+    - OVERVIEW: Objective status of the system.
+    - ACHIEVEMENTS: All previous milestones (cumulative).
+    - PROTOCOLS & RULES: Established formats, architectural principles, and agent agreements.
+    - AGENT STATUS: Status, dynamics, and roles assumed by agents (Active/Terminated).
+    - OPEN PATHS: Goals planned by agents but not yet completed.
     
-    RICHTLINIE:
-    Fasse die Historie sachlich zusammen. Vermeide es, lange Dateiinhalte zu kopieren; verweise stattdessen auf Dateipfade.
+    GUIDELINE:
+    Summarize the history objectively. Avoid copying long file contents; refer to file paths instead.
     
-    BESTEHENDES GEDÄCHTNIS:
+    EXISTING MEMORY:
     ${currentMemory}
     
-    NEUE EREIGNISSE (JSON-Log):
+    NEW EVENTS (JSON log):
     ${JSON.stringify(globalHistory)}
     
-    GIB AUSSCHLIESSLICH DAS AKTUALISIERTE DOKUMENT AUS (max. 1500 Wörter):`;
+    OUTPUT ONLY THE UPDATED DOCUMENT (max 1500 words):`;
 
     try {
-        // Rein symmetrischer, entkoppelter API-Aufruf über die Bridge!
+        // Purely symmetrical, decoupled API call via the Bridge!
         const payload = bridge.buildContext('System', [{ agent: 'User', text: prompt }], null, null, null, null);
         const newMemory = await bridge.generateText(payload);
 
@@ -49,45 +49,45 @@ async function runDistillation(bridge, globalHistory, currentMemoryPath) {
         }
         return false;
     } catch (e) {
-        console.error("Destillation fehlgeschlagen:", e.message);
+        console.error("Distillation failed:", e.message);
         return false;
     }
 }
 
 async function finalizeSimulation(bridge, state, memoryFile, logFile, errorOccurred) {
-    console.log("Starte Abschluss-Routine...");
-    fs.appendFileSync(logFile, `\n---\n### [SYSTEM]: ABSCHLUSS-ROUTINE EINGELEITET (Grund: ${errorOccurred ? 'Fehler' : 'Simulation beendet'})\n\n`);
+    console.log("Starting finalization routine...");
+    fs.appendFileSync(logFile, `\n---\n### [SYSTEM]: FINAL ROUTINE INITIATED (Reason: ${errorOccurred ? 'Error' : 'Simulation finished'})\n\n`);
 
     if (state.globalHistory && state.globalHistory.length > 0) {
-        console.log("Sichere letzte Impulse...");
+        console.log("Saving last impulses...");
         const success = await runDistillation(bridge, state.globalHistory, memoryFile);
         if (success) {
-            fs.appendFileSync(logFile, `### [FINALER GEDÄCHTNIS-DUMP]: Letzte Impulse erfolgreich destilliert.\n\n`);
+            fs.appendFileSync(logFile, `### [FINAL MEMORY DUMP]: Last impulses successfully distilled.\n\n`);
         }
     }
-    console.log("Abschluss abgeschlossen.");
+    console.log("Finalization completed.");
 }
 
 async function runIndividualDistillation(bridge, history, agentId) {
-    console.log(`Führe individuelle Destillation für ${agentId} durch...`);
+    console.log(`Performing individual distillation for ${agentId}...`);
     
-    const prompt = `Du bist ein autonomes Gedächtnis-Modul für die Neumann-Sonde ${agentId}.
-    Deine Aufgabe: Komprimiere die vorliegende Historie deiner Erfahrungen zu einem dichten, präzisen Langzeitgedächtnis.
+    const prompt = `You are an autonomous memory module for the Neumann probe ${agentId}.
+    Your task: Compress the provided history of your experiences into a dense, precise long-term memory.
     
-    RICHTLINIEN:
-    1. Bewahre alle Fakten über deinen Status, deine Materie und deine Entdeckungen.
-    2. Behalte deine aktuellen Ziele und Briefings bei.
-    3. Lösche redundante oder unwichtige Details.
-    4. Antworte in der Ich-Form (als ${agentId}).
-    5. Erwähne den Kompressionsvorgang nicht. Liefere nur den reinen Gedächtnis-Text.
+    GUIDELINES:
+    1. Preserve all facts about your status, your matter, and your discoveries.
+    2. Retain your current goals and briefings.
+    3. Delete redundant or unimportant details.
+    4. Answer in the first-person perspective (as ${agentId}).
+    5. Do not mention the compression process. Output ONLY the raw memory text.
     
-    AKTUELLE HISTORIE (JSON):
+    CURRENT HISTORY (JSON):
     ${JSON.stringify(history)}
     
-    DEIN KOMPRIMIERTES GEDÄCHTNIS:`;
+    YOUR COMPRESSED MEMORY:`;
 
     try {
-        // Rein symmetrischer, entkoppelter API-Aufruf über die Bridge!
+        // Purely symmetrical, decoupled API call via the Bridge!
         const payload = bridge.buildContext(agentId, [{ agent: 'User', text: prompt }], null, null, null, null);
         const newMemory = await bridge.generateText(payload);
 
@@ -96,7 +96,7 @@ async function runIndividualDistillation(bridge, history, agentId) {
         }
         return null;
     } catch (e) {
-        console.error(`Individuelle Destillation für ${agentId} fehlgeschlagen:`, e.message);
+        console.error(`Individual distillation for ${agentId} failed:`, e.message);
         return null;
     }
 }

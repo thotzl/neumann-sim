@@ -49,7 +49,7 @@ for (let i = 0; i < lines.length; i++) {
                           const isASel = selection?.type === 'agent' && pilot && selection.id === pilot.id;
                           const shipColor = pilot ? (isASel ? '#fff' : '#0ea5e9') : '#64748b';
                           return (
-                              <div key={\`ship-\${ship.id}\`} title={\`\${ship.name} \${pilot ? '(Bemannt)' : '(Leer)'}\`} onClick={(e) => { e.stopPropagation(); if (pilot) setSelection({type: 'agent', id: pilot.id}); }} style={{ cursor: pilot ? 'pointer' : 'default', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <div key={\`ship-\${ship.id}\`} title={\`\${ship.name} \${pilot ? '(Manned)' : '(Empty)'}\`} onClick={(e) => { e.stopPropagation(); if (pilot) setSelection({type: 'agent', id: pilot.id}); }} style={{ cursor: pilot ? 'pointer' : 'default', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                  <div style={{ width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderBottom: \`14px solid \${shipColor}\`, filter: \`drop-shadow(0 0 5px \${shipColor})\`, transition: 'all 0.2s', transform: isASel ? 'scale(1.2)' : 'scale(1)' }} />
                               </div>
                           );

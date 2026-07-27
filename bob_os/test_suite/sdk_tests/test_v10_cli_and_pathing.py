@@ -91,7 +91,7 @@ class TestV10Fixes(unittest.TestCase):
     def test_cli_help_content(self, mock_stdout):
         bob.main()
         output = mock_stdout.getvalue()
-        self.assertIn("HINWEIS: 'run_script' existiert nicht", output)
+        self.assertIn("NOTE: 'run_script' does not exist", output)
         self.assertIn("- board:", output)
         self.assertIn("- exit_ship:", output)
 

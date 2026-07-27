@@ -5,8 +5,8 @@ const OpenrouterDriver = {
     buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) {
         let systemContent = "";
         if (globalInstr) systemContent += `${globalInstr}\n\n`;
-        if (systemPrompt) systemContent += `DEIN BRIEFING:\n${systemPrompt}\n\n`;
-        if (memory) systemContent += `DEIN GEDÄCHTNIS:\n${memory}\n\n`;
+        if (systemPrompt) systemContent += `YOUR BRIEFING:\n${systemPrompt}\n\n`;
+        if (memory) systemContent += `YOUR MEMORY:\n${memory}\n\n`;
 
         let messages = [];
         if (systemContent.trim()) {
@@ -30,7 +30,7 @@ const OpenrouterDriver = {
     async generateText(payload, config, retries = 10) {
         const apiKey = process.env.OPENROUTER_API_KEY || process.env.API_KEY;
         if (!apiKey) {
-            throw new Error("[OpenRouter Error] Kein OPENROUTER_API_KEY in deiner .env Datei oder Umgebung gefunden.");
+            throw new Error("[OpenRouter Error] No OPENROUTER_API_KEY found in your .env file or environment.");
         }
 
         const endpoint = config.openrouter_endpoint || "https://openrouter.ai/api/v1/chat/completions";
@@ -42,7 +42,7 @@ const OpenrouterDriver = {
             temperature: 0.2
         };
 
-        // 1. Pauschale Bremse (6 Sekunden), um Rate-Limits vorzubeugen (besonders bei Gratis-Modellen)
+        // 1. General throttle (6 seconds) to prevent rate limits (especially for free models)
         await new Promise(r => setTimeout(r, 6000));
 
         for (let i = 0; i < retries; i++) {
@@ -52,7 +52,7 @@ const OpenrouterDriver = {
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${apiKey}`,
-                        'HTTP-Referer': 'https://github.com/thotzl/neumann-sim', // Optional, aber gut für OpenRouter Metrics
+                        'HTTP-Referer': 'https://github.com/thotzl/neumann-sim', // Optional, but good for OpenRouter Metrics
                         'X-Title': 'Bob-OS Simulation'
                     },
                     body: JSON.stringify(requestBody)
@@ -60,11 +60,11 @@ const OpenrouterDriver = {
 
                 const data = await response.json();
 
-                // 2. Selbstheilendes Rate-Limit-Handling für OpenRouter (HTTP 429 oder limit exceeded)
+                // 2. Self-healing rate limit handling for OpenRouter (HTTP 429 or limit exceeded)
                 if (data.error) {
                     const errMsg = data.error.message || JSON.stringify(data.error);
                     if (response.status === 429 || errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded")) {
-                        console.warn(`\n[OpenRouter Rate-Limit] Rate-Limit erreicht. Pausiere für 12 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                        console.warn(`\n[OpenRouter Rate-Limit] Rate limit reached. Pausing for 12 seconds before attempt ${i + 1}/${retries}...`);
                         await new Promise(r => setTimeout(r, 12000));
                         continue;
                     }
@@ -79,14 +79,14 @@ const OpenrouterDriver = {
             } catch (err) {
                 const errMsg = err.message || "";
                 if (errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("exceeded")) {
-                    console.warn(`\n[OpenRouter Rate-Limit] Rate-Limit erreicht. Pausiere für 12 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                    console.warn(`\n[OpenRouter Rate-Limit] Rate limit reached. Pausing for 12 seconds before attempt ${i + 1}/${retries}...`);
                     await new Promise(r => setTimeout(r, 12000));
                     continue;
                 }
 
                 if (i === retries - 1) throw err;
                 
-                console.warn(`\n[OpenRouter Error] API-Fehler (Versuch ${i + 1}/${retries}): ${err.message}. Pausiere 4 Sekunden...`);
+                console.warn(`\n[OpenRouter Error] API error (attempt ${i + 1}/${retries}): ${err.message}. Pausing for 4 seconds...`);
                 await new Promise(r => setTimeout(r, 4000));
             }
         }

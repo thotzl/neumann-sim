@@ -1,27 +1,27 @@
 const fs = require('fs');
 const path = require('path');
 
-// Wir testen hier die Logik der Intervall-Berechnung (isIntervallEnd)
-// Da runner.js ein monolithisches Skript ist, testen wir die Logik abstrakt
+// We are testing the logic of the interval calculation (isIntervallEnd) here
+// Since runner.js is a monolithic script, we are testing the logic abstractly
 
 describe('Runner Logic - Epoch Triggering', () => {
     const distillationInterval = 5;
 
-    test('sollte am Anfang von Zyklus 6 destillieren (nach Abschluss von 1-5)', () => {
+    test('should distill at the beginning of cycle 6 (after completion of 1-5)', () => {
         const r = 6;
         const currentTurnIndex = 0;
         const isIntervallEnd = (r > 1 && (r - 1) % distillationInterval === 0 && currentTurnIndex === 0);
         expect(isIntervallEnd).toBe(true);
     });
 
-    test('sollte NICHT in Zyklus 1 destillieren', () => {
+    test('should NOT distill in cycle 1', () => {
         const r = 1;
         const currentTurnIndex = 0;
         const isIntervallEnd = (r > 1 && (r - 1) % distillationInterval === 0 && currentTurnIndex === 0);
         expect(isIntervallEnd).toBe(false);
     });
 
-    test('sollte NICHT mitten im Zyklus destillieren', () => {
+    test('should NOT distill in the middle of the cycle', () => {
         const r = 6;
         const currentTurnIndex = 1;
         const isIntervallEnd = (r > 1 && (r - 1) % distillationInterval === 0 && currentTurnIndex === 0);
@@ -30,7 +30,7 @@ describe('Runner Logic - Epoch Triggering', () => {
 });
 
 describe('Runner Logic - Memory Limit', () => {
-    test('sollte max_turns korrekt berechnen', () => {
+    test('should calculate max_turns correctly', () => {
         const agentsCount = 3;
         const interval = 5;
         const maxTurns = agentsCount * interval * 2;

@@ -8,44 +8,44 @@ const expDir = path.resolve(`experiments/${version}`);
 try {
     if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
 
-    console.log("Erstelle Replication-Experiment...");
-    // Nutze Build ohne Tests, um die Grundstruktur zu bekommen
+    console.log("Creating Replication Experiment...");
+    // Use build without tests to get the basic structure
     execSync(`python3 bob_os/build.py ${version} --rounds 3 --mission "DEBUG" --skip-tests`, { stdio: 'ignore' });
 
-    // Manipuliere DB für Instant-Replikation (Werft + Materie)
+    // Manipulate DB for instant replication (shipyard + matter)
     const dbPath = path.join(expDir, '_verse/universe.db');
     execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); conn.execute('INSERT OR REPLACE INTO infrastructure (system_name, type, status) VALUES (\\'SYS_X0_Y0\\', \\'shipyard\\', \\'active\\')'); conn.execute('UPDATE systems SET raw_matter_depot = 1000, depot_matter_capacity = 1000 WHERE name = \\'SYS_X0_Y0\\''); conn.execute('UPDATE agents SET energy_inventory = 200 WHERE id = \\'Instance-1\\''); conn.commit(); conn.close();"`);
 
-    // Schreibe eine gezielte Config für Instance-1
+    // Write a specific config for Instance-1
     const config = JSON.parse(fs.readFileSync(path.join(expDir, 'config.json'), 'utf8'));
     config.rounds = 5;
-    config.agents[0].system_prompt = "ID: Instance-1. MISSION: Das System-Depot (Silo) ist bereits mit 1000 Materie gefüllt und die Werft (Shipyard) ist aktiv. Du darfst nichts abbauen oder bauen. Führe sofort in Runde 1 die Replikation aus: `[RUN: python3 tools/replicate.py Instance-1 Instance-2]`";
+    config.agents[0].system_prompt = "ID: Instance-1. MISSION: The system depot (silo) is already filled with 1000 matter and the shipyard is active. You are not allowed to mine or build anything. Immediately execute replication in Round 1: `[RUN: python3 tools/replicate.py Instance-1 Instance-2]`";
     fs.writeFileSync(path.join(expDir, 'config.json'), JSON.stringify(config, null, 2));
 
-    console.log("Starte Engine für 5 Runden (Echtzeit-LLM-Test)...");
+    console.log("Starting Engine for 5 Rounds (Real-time LLM Test)...");
     execSync(`node run.js ${version}`, { stdio: 'inherit' });
 
-    console.log("\n--- VALIDIERUNG ---");
-    // Prüfe die tatsächlichen Auswirkungen auf die Datenbank
+    console.log("\n--- VALIDATION ---");
+    // Check the actual effects on the database
     const validateScript = `
 import sqlite3
 import sys
 conn = sqlite3.connect(sys.argv[1])
 cursor = conn.cursor()
 
-# 1. Existiert Instance-2?
+# 1. Does Instance-2 exist?
 cursor.execute("SELECT chosen_name FROM agents WHERE id = 'Instance-2'")
 agent = cursor.fetchone()
 if not agent:
-    print("FEHLER: Instance-2 existiert nicht in der Datenbank.")
+    print("ERROR: Instance-2 does not exist in the database.")
     sys.exit(1)
 
-# 2. Hat Instance-2 sich umbenannt? (Beweis für Autonomie-Direktive)
+# 2. Has Instance-2 renamed itself? (Proof of Autonomy Directive)
 if agent[0] == 'Unnamed':
-    print("FEHLER: Instance-2 hat seinen Namen nicht geändert. (Noch 'Unnamed'). Autonomie-Direktive ignoriert.")
+    print("ERROR: Instance-2 has not changed its name. (Still 'Unnamed'). Autonomy directive ignored.")
     sys.exit(1)
 
-print("ERFOLG: Instance-2 existiert und hat sich autonom umbenannt: " + agent[0])
+print("SUCCESS: Instance-2 exists and has autonomously renamed itself: " + agent[0])
 conn.close()
 `;
     
@@ -53,13 +53,13 @@ conn.close()
         fs.writeFileSync(path.join(expDir, 'validate.py'), validateScript);
         const out = execSync(`python3 validate.py ${dbPath}`, { cwd: expDir }).toString();
         console.log(out.trim());
-        console.log("✅ V5 Existential Awakening E2E Test erfolgreich.");
+        console.log("✅ V5 Existential Awakening E2E Test successful.");
     } catch (e) {
         throw new Error(e.stdout ? e.stdout.toString() : e.message);
     }
 
     fs.rmSync(expDir, { recursive: true, force: true });
 } catch (e) {
-    console.error("❌ Test fehlgeschlagen:", e.message);
+    console.error("❌ Test failed:", e.message);
     process.exit(1);
 }

@@ -131,3 +131,55 @@ export interface LogEntry {
 }
 
 export type Selection = { type: 'agent' | 'system'; id: string };
+
+export type HistoryEntry = {
+  agent?: string;
+  agentId?: string;
+  tick: number | string;
+  text: string;
+};
+
+export interface ShipWithCAD extends Ship {
+  energy_capacity?: number;
+  stats?: {
+    mass?: number;
+    max_speed?: number;
+    thrust?: number;
+    energy_capacity?: number;
+    storage_capacity?: number;
+  };
+  capabilities?: {
+    drill?: string;
+    fabricator?: string;
+    logic_core?: string;
+  };
+}
+
+export type ShipTelemetry = ShipWithCAD & {
+  blueprint: string;
+  stats: {
+    mass: number;
+    max_speed: number;
+    thrust: number;
+    energy_capacity: number;
+    storage_capacity: number;
+  };
+  capabilities: {
+    drill: string;
+    fabricator: string;
+    logic_core: string;
+  };
+  diagnostics: {
+    can_move: boolean;
+    can_mine: boolean;
+    can_build: boolean;
+    has_energy_grid: boolean;
+    is_self_sustainable: boolean;
+    travel_cost_per_unit: number;
+    net_energy_balance: number;
+    idle_lifetime_cycles: string | number;
+    comm_range: number;
+    solar_recharge_cycles: string | number;
+    cargo_to_mass_ratio: number;
+  };
+};

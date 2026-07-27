@@ -9,28 +9,28 @@ def analyze(exp_name):
     db_file = os.path.join(exp_dir, "_verse", "universe.db")
 
     if not os.path.exists(state_file):
-        print(f"Keine state.json unter {state_file} gefunden.")
+        print(f"No state.json found at {state_file}.")
         return
     if not os.path.exists(db_file):
-        print(f"Keine universe.db unter {db_file} gefunden.")
+        print(f"No universe.db found at {db_file}.")
         return
 
     with open(state_file, 'r') as f:
         state = json.load(f)
 
     print(f"=== EXPERIMENT: {exp_name} ===")
-    print(f"Aktuelle Runde: {state.get('round')}")
-    print("\n--- AGENTEN (state.json) ---")
+    print(f"Current Round: {state.get('round')}")
+    print("\n--- AGENTS (state.json) ---")
     for agent in state.get('agents', []):
         print(f"  ID: {agent['id']} | Alive: {agent.get('alive', True)} | System: {agent.get('location', 'SYS_X0_Y0')}")
 
-    print("\n--- DATENBANK ---")
+    print("\n--- DATABASE ---")
     conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     
     # 1. Agents (DB)
-    print("Agenten (DB):")
+    print("Agents (DB):")
     try:
         agents = c.execute("SELECT * FROM agents").fetchall()
         for a_row in agents:
@@ -40,9 +40,9 @@ def analyze(exp_name):
                 ship_row = c.execute("SELECT * FROM ships WHERE id=?", (a['active_ship_id'],)).fetchone()
                 if ship_row:
                     ship = dict(ship_row)
-                    ship_info = f" | Pilotiert: '{ship['name']}' ({ship.get('blueprint_name', 'unclassified')}) | Inventar M/RM/E: {ship['raw_matter_inventory']}/{ship['refined_matter_inventory']}/{ship['energy_inventory']}"
+                    ship_info = f" | Piloted: '{ship['name']}' ({ship.get('blueprint_name', 'unclassified')}) | Inventory M/RM/E: {ship['raw_matter_inventory']}/{ship['refined_matter_inventory']}/{ship['energy_inventory']}"
                 else:
-                    ship_info = f" | Pilotiert: Ship ID {a['active_ship_id']} (nicht in DB gefunden!)"
+                    ship_info = f" | Piloted: Ship ID {a['active_ship_id']} (not found in DB!)"
             else:
                 host_type = a.get('host_type', 'unknown')
                 host_id = a.get('host_id', 'unknown')
@@ -50,10 +50,10 @@ def analyze(exp_name):
             
             print(f"  {a['id']} (Name: {a.get('chosen_name', 'Unnamed')}) - Status: {a.get('status', 'active')} | System: {a.get('target_system') or 'SYS_X0_Y0'}{ship_info}")
     except sqlite3.Error as e:
-        print(f"  Fehler beim Lesen der Agenten-Tabelle: {e}")
+        print(f"  Error reading agents table: {e}")
 
     # 2. Ships (DB)
-    print("\nSchiffe (DB):")
+    print("\nShips (DB):")
     try:
         table_exists = c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ships'").fetchone()
         if table_exists:
@@ -63,26 +63,26 @@ def analyze(exp_name):
                     s = dict(s_row)
                     print(f"  ID {s['id']} [{s['system_name']}]: '{s['name']}' ({s.get('blueprint_name', 'unclassified')}) | Pilot: {s['pilot_id'] or 'None'} | HP: {s['health']}/{s['max_health']} | M/RM/E: {s['raw_matter_inventory']}/{s['refined_matter_inventory']}/{s['energy_inventory']}")
             else:
-                print("  Keine Schiffe registriert.")
+                print("  No ships registered.")
         else:
-            print("  Tabelle 'ships' existiert in diesem DB-Schema nicht.")
+            print("  Table 'ships' does not exist in this DB schema.")
     except sqlite3.Error as e:
-        print(f"  Fehler beim Lesen der Schiffe-Tabelle: {e}")
+        print(f"  Error reading ships table: {e}")
         
     # 3. Systems (DB)
-    print("\nSysteme (DB):")
+    print("\nSystems (DB):")
     try:
         systems = c.execute("SELECT * FROM systems").fetchall()
         for s_row in systems:
             s = dict(s_row)
-            # Zeige nur Sektoren, die entweder bewohnt sind oder bereits Ressourcen/Infrastruktur besitzen
+            # Show only sectors that are either inhabited or already possess resources/infrastructure
             if s['extractable_matter_in_core'] is not None or s['raw_matter_depot'] > 0 or s['refined_matter_depot'] > 0 or s['energy_depot'] > 0:
                 print(f"  {s['name']} (x={s.get('x', 0)}, y={s.get('y', 0)}) - Core: {s['extractable_matter_in_core']} | Depot E: {s['energy_depot']}/{s['depot_energy_capacity']} | Depot M/RM: {s['raw_matter_depot']}/{s['depot_matter_capacity']} (Refined: {s['refined_matter_depot']})")
     except sqlite3.Error as e:
-        print(f"  Fehler beim Lesen der Systeme-Tabelle: {e}")
+        print(f"  Error reading systems table: {e}")
         
     # 4. Infrastructure (DB)
-    print("\nInfrastruktur (DB):")
+    print("\nInfrastructure (DB):")
     try:
         infra = c.execute("SELECT * FROM infrastructure").fetchall()
         if infra:
@@ -90,12 +90,12 @@ def analyze(exp_name):
                 i = dict(i_row)
                 print(f"  ID {i['id']} [{i['system_name']}]: {i['type']} Lvl {i['level']} ({i['health']}/{i['max_health']} HP) - Status: {i['status']} | Progress: {i['progress_matter']}/{i['required_matter']}")
         else:
-            print("  Keine Infrastruktur gebaut.")
+            print("  No infrastructure built.")
     except sqlite3.Error as e:
-        print(f"  Fehler beim Lesen der Infrastruktur-Tabelle: {e}")
+        print(f"  Error reading infrastructure table: {e}")
 
     # 5. Blueprints (DB)
-    print("\nBlaupausen (DB):")
+    print("\nBlueprints (DB):")
     try:
         table_exists = c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='blueprints'").fetchone()
         if table_exists:
@@ -103,13 +103,13 @@ def analyze(exp_name):
             if blueprints:
                 for bp_row in blueprints:
                     bp = dict(bp_row)
-                    print(f"  '{bp['name']}' (Autor: {bp['author_id']})")
+                    print(f"  '{bp['name']}' (Author: {bp['author_id']})")
             else:
-                print("  Keine Blaupausen gespeichert.")
+                print("  No blueprints saved.")
         else:
-            print("  Tabelle 'blueprints' existiert nicht.")
+            print("  Table 'blueprints' does not exist.")
     except sqlite3.Error as e:
-        print(f"  Fehler beim Lesen der Blaupausen-Tabelle: {e}")
+        print(f"  Error reading blueprints table: {e}")
 
     conn.close()
 

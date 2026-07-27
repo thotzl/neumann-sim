@@ -28,7 +28,7 @@ function getSql(dbPath, sql) {
 }
 
 async function runIndustrialE2E() {
-    console.log("🚀 Starte V9.0 Industrial E2E Test...");
+    console.log("🚀 Starting V9.0 Industrial E2E Test...");
     const version = 'industrial_e2e_test';
     const expDir = path.join(__dirname, '../experiments', version);
     const dbPath = path.join(expDir, '_verse', 'universe.db');
@@ -36,7 +36,7 @@ async function runIndustrialE2E() {
     try {
         if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
 
-        console.log("- Erstelle Experiment...");
+        console.log("- Creating Experiment...");
         execSync(`python3 bob_os/build.py ${version} --rounds 5 --skip-tests --mission "Industrial Test"`, { stdio: 'inherit' });
 
         // 1. Setup Infra
@@ -50,13 +50,13 @@ async function runIndustrialE2E() {
         execSync(`PYTHONPATH=bob_os TEST_DB_PATH=${dbPath} python3 bob_os/core/bin/physics_update.py`);
 
         const row1 = await getSql(dbPath, "SELECT health FROM infrastructure WHERE type='matter_silo'");
-        console.log(`  Health nach 1 Tick: ${row1.health}/100`);
-        if (row1.health >= 100) throw new Error("Kein Decay!");
+        console.log(`  Health after 1 Tick: ${row1.health}/100`);
+        if (row1.health >= 100) throw new Error("No Decay!");
 
         const sys1 = await getSql(dbPath, "SELECT depot_matter_capacity, energy_depot FROM systems WHERE name='SYS_X0_Y0'");
         console.log(`  System: Cap=${sys1.depot_matter_capacity}, Energy=${sys1.energy_depot}`);
-        if (sys1.depot_matter_capacity !== 1000) throw new Error("Cap Bonus fehlt!");
-        if (sys1.energy_depot <= 500) throw new Error("Keine Energie-Regeneration festgestellt!");
+        if (sys1.depot_matter_capacity !== 1000) throw new Error("Missing Cap Bonus!");
+        if (sys1.energy_depot <= 500) throw new Error("No energy regeneration detected!");
 
         // 3. Blackout Test
         console.log("- Phase 3: Blackout Simulation...");
@@ -65,12 +65,12 @@ async function runIndustrialE2E() {
 
         const sys2 = await getSql(dbPath, "SELECT depot_matter_capacity FROM systems WHERE name='SYS_X0_Y0'");
         console.log(`  Blackout Cap: ${sys2.depot_matter_capacity}`);
-        if (sys2.depot_matter_capacity !== 0) throw new Error("Blackout-Deaktivierung fehlgeschlagen!");
+        if (sys2.depot_matter_capacity !== 0) throw new Error("Blackout deactivation failed!");
 
-        console.log("✅ V9.0 Industrial E2E erfolgreich abgeschlossen.");
+        console.log("✅ V9.0 Industrial E2E successfully completed.");
 
     } catch (e) {
-        console.error("❌ Industrial E2E Test fehlgeschlagen:", e.message);
+        console.error("❌ Industrial E2E Test failed:", e.message);
         process.exit(1);
     }
 }

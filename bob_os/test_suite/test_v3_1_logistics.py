@@ -4,7 +4,7 @@ import sqlite3
 import json
 import sys
 
-# Pfade für SDK hinzufügen
+# Add paths for SDK
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.bin import init_db
@@ -39,13 +39,13 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
     def test_01_transit_initiation(self):
-        # Reise von SYS_X0_Y0 nach SYS_X400_Y400
+        # Travel from SYS_X0_Y0 to SYS_X400_Y400
         conn = db_config.get_connection()
         conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core) VALUES ('SYS_X400_Y400', 400, 400, 5000)")
         conn.commit()
         conn.close()
 
-        # Nutze die SDK!
+        # Use the SDK!
         success = self.agent.move('SYS_X400_Y400')
         self.assertTrue(success)
         
@@ -56,7 +56,7 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         conn.close()
 
     def test_02_blocked_actions_during_transit(self):
-        # Während Transit darf mine() nicht funktionieren (SDK Check)
+        # During transit, mine() should not work (SDK Check)
         success = self.agent.mine()
         self.assertFalse(success)
 

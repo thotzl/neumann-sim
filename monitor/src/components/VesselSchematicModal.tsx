@@ -1,7 +1,7 @@
-import { WorldState } from '../types';
+import { WorldState, ShipTelemetry } from '../types';
 
 interface VesselSchematicModalProps {
-  modalShip: any;
+  modalShip: ShipTelemetry | null;
   state: WorldState;
   onClose: () => void;
 }
@@ -303,12 +303,13 @@ export const VesselSchematicModal = ({ modalShip, state, onClose }: VesselSchema
 
             {/* MINIATURE RAW BLUEPRINT MATRIX THUMBNAIL OVERLAY (Säule 3 Miniature representation) */}
             {(() => {
+              if (!modalShip) return null;
               const bp = state.blueprints?.find(b => b.name === modalShip.blueprint);
               const parseMatrix = (matrixStr: string) => {
                 try {
                   const normalized = matrixStr.replace(/'/g, '"');
                   return JSON.parse(normalized) as string[][];
-                } catch (e) {
+                } catch {
                   return null;
                 }
               };

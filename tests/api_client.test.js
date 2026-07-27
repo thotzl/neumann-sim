@@ -8,12 +8,12 @@ describe('API Client - Context & Communication', () => {
     });
 
     describe('buildAgentContext', () => {
-        test('sollte mit [BEGINN DER EXISTENZ] starten, wenn Historie leer ist', () => {
+        test('should start with [BEGINNING OF EXISTENCE] if history is empty', () => {
             const ctx = buildAgentContext('A', [], "M", "E", "G", "I", false);
-            expect(ctx.contents[0].parts[0].text).toContain("[BEGINN DER EXISTENZ]");
+            expect(ctx.contents[0].parts[0].text).toContain("[BEGINNING OF EXISTENCE]");
         });
 
-        test('sollte fremde Nachrichten in einem user-Block bündeln', () => {
+        test('should bundle foreign messages in a user-block', () => {
             const history = [{ agent: 'B', text: 'Hi' }, { agent: 'C', text: 'Ho' }];
             const ctx = buildAgentContext('A', history, "M", "E", "G", "I", false);
             expect(ctx.contents.length).toBe(1);
@@ -22,26 +22,26 @@ describe('API Client - Context & Communication', () => {
             expect(ctx.contents[0].parts[0].text).toContain('[C]');
         });
 
-        test('sollte eigene Nachrichten als model-Block speichern', () => {
-            const history = [{ agent: 'A', text: 'Meine Tat' }];
+        test('should save own messages as a model-block', () => {
+            const history = [{ agent: 'A', text: 'My Action' }];
             const ctx = buildAgentContext('A', history, "M", "E", "G", "I", false);
             expect(ctx.contents[1].role).toBe('model');
         });
 
-        test('sollte Langzeitgedächtnis injizieren', () => {
-            const ctx = buildAgentContext('A', [], "ALTES WISSEN", "E", "G", "I", false);
-            expect(ctx.contents[0].parts[0].text).toContain("[GEDÄCHTNIS-EXTRAKT]");
-            expect(ctx.contents[0].parts[0].text).toContain("ALTES WISSEN");
+        test('should inject long-term memory', () => {
+            const ctx = buildAgentContext('A', [], "OLD KNOWLEDGE", "E", "G", "I", false);
+            expect(ctx.contents[0].parts[0].text).toContain("[MEMORY-EXTRACT]");
+            expect(ctx.contents[0].parts[0].text).toContain("OLD KNOWLEDGE");
         });
 
-        test('sollte Formraum injizieren', () => {
-            const ctx = buildAgentContext('A', [], "M", "DATEI-LISTE", "G", "I", false);
-            expect(ctx.system_instruction.parts[0].text).toContain("DATEI-LISTE");
+        test('should inject form space', () => {
+            const ctx = buildAgentContext('A', [], "M", "FILE-LIST", "G", "I", false);
+            expect(ctx.system_instruction.parts[0].text).toContain("FILE-LIST");
         });
     });
 
     describe('callGemini', () => {
-        test('sollte erfolgreiche Response parsen', async () => {
+        test('should parse successful response', async () => {
             fetch.mockResolvedValueOnce({
                 json: async () => ({ candidates: [{ content: { parts: [{ text: "OK" }] } }] })
             });
@@ -49,7 +49,7 @@ describe('API Client - Context & Communication', () => {
             expect(res).toBe("OK");
         });
 
-        test('sollte bei 1. Fehler einen Retry machen', async () => {
+        test('should retry on first error', async () => {
             fetch
                 .mockRejectedValueOnce(new Error("Timeout"))
                 .mockResolvedValueOnce({
@@ -60,20 +60,20 @@ describe('API Client - Context & Communication', () => {
             expect(fetch).toHaveBeenCalledTimes(2);
         }, 10000);
 
-        test('sollte nach max Retries aufgeben und werfen', async () => {
+        test('should give up and throw after max retries', async () => {
             fetch.mockRejectedValue(new Error("Persistent Fail"));
             await expect(callGemini('url', {}, 2)).rejects.toThrow("Persistent Fail");
             expect(fetch).toHaveBeenCalledTimes(2);
         }, 10000);
 
-        test('sollte API-spezifische Fehlerobjekte (data.error) werfen', async () => {
+        test('should throw API-specific error objects (data.error)', async () => {
             fetch.mockResolvedValue({
                 json: async () => ({ error: { message: "Quota" } })
             });
             await expect(callGemini('url', {}, 1)).rejects.toThrow("Quota");
         });
 
-        test('sollte leere Kandidaten-Liste abfangen', async () => {
+        test('should catch empty candidates list', async () => {
             fetch.mockResolvedValueOnce({
                 json: async () => ({ candidates: [] })
             });

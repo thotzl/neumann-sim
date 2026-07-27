@@ -27,7 +27,7 @@ class TestTransfer(unittest.TestCase):
         if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
     def test_p2p_transfer_matter(self):
-        # Instance-1 schickt 50 Materie an Instance-2
+        # Instance-1 sends 50 matter to Instance-2
         success = self.agent.logistics.transfer('Instance-2', 'matter', 50)
         self.assertTrue(success)
         
@@ -41,7 +41,7 @@ class TestTransfer(unittest.TestCase):
         conn.close()
 
     def test_p2p_transfer_energy(self):
-        # Instance-1 schickt 50 Energie an Instance-2
+        # Instance-1 sends 50 energy to Instance-2
         success = self.agent.logistics.transfer('Instance-2', 'energy', 50)
         self.assertTrue(success)
         

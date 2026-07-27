@@ -10,29 +10,29 @@ services:
       - ollama_data:/root/.ollama
     restart: unless-stopped
 
-    # 1. Hardware-Schnittstellen (dri & kfd) durchreichen
+    # 1. Pass through hardware interfaces (dri & kfd)
     devices:
       - "/dev/kfd:/dev/kfd"
       - "/dev/dri:/dev/dri"
 
-    # 2. Systemrechte & Shared-Memory mappen (Unerlässlich für HIP/ROCm Performance)
-    # Nutzt die exakten numerischen GIDs deines Host-Systems (video: 44, render: 992)
+    # 2. Map system rights & shared memory (Essential for HIP/ROCm Performance)
+    # Uses the exact numerical GIDs of your host system (video: 44, render: 992)
     group_add:
       - "44"
       - "992"
     cap_add:
-      - SYS_PTRACE              # Erlaubt dem ROCm-Profiler direkten Speicherzugriff
+      - SYS_PTRACE              # Allows the ROCm profiler direct memory access
     security_opt:
-      - seccomp=unconfined      # Verhindert, dass Docker HIP/ROCm Systemaufrufe blockiert
-    ipc: host                   # Teilt den Shared-Memory-Bereich mit dem Host für maximales Tempo
+      - seccomp=unconfined      # Prevents Docker from blocking HIP/ROCm system calls
+    ipc: host                   # Shares the shared memory area with the host for maximum speed
 
-    # 3. Ryzen AI / Radeon "Secret Sauce" & Extreme Optimierungen
+    # 3. Ryzen AI / Radeon "Secret Sauce" & Extreme Optimizations
     environment:
-      - HSA_OVERRIDE_GFX_VERSION=11.5.0 # WICHTIG: Behandelt Radeon 840M (gfx1152) als kompatible gfx1150 RDNA 3.5 GPU
-      - OLLAMA_IGPU_ENABLE=1            # Aktiviert die Hardware-Beschleunigung für integrierte AMD-Grafikkarten
-      - HSA_ENABLE_SDMA=0               # WICHTIG: Schaltet SDMA ab. Löst alle iGPU-Hänger und Abstürze unter Linux!
-      - OLLAMA_FLASH_ATTENTION=1        # Halbiert VRAM-Bedarf bei langen Kontexten (Sonden-Runden)
-      - OLLAMA_NUM_PARALLEL=1           # Fokussiert 100% der iGPU-Leistung auf die aktive Sonde
+      - HSA_OVERRIDE_GFX_VERSION=11.5.0 # IMPORTANT: Treats Radeon 840M (gfx1152) as compatible gfx1150 RDNA 3.5 GPU
+      - OLLAMA_IGPU_ENABLE=1            # Enables hardware acceleration for integrated AMD graphics cards
+      - HSA_ENABLE_SDMA=0               # IMPORTANT: Disables SDMA. Solves all iGPU freezes and crashes on Linux!
+      - OLLAMA_FLASH_ATTENTION=1        # Halves VRAM requirement for long contexts (probe rounds)
+      - OLLAMA_NUM_PARALLEL=1           # Focuses 100% of iGPU performance on the active probe
 
 volumes:
   ollama_data:

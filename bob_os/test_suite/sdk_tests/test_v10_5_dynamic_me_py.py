@@ -75,12 +75,12 @@ class DepotsObject:
 
 class StatusWrapper:
     def __init__(self, dash):
-        self.host = HostObject(dash.get('dein_status', {}))
-        self.depots = DepotsObject(dash.get('lokales_system', {}))
+        self.host = HostObject(dash.get('your_status', {}))
+        self.depots = DepotsObject(dash.get('local_system', {}))
 
 class MeAgent(Agent):
-    def __init__(self):
-        super().__init__(os.environ.get('BOB_ID', 'Bob'))
+    def __init__(self, agent_id):
+        super().__init__(agent_id)
         
     def status(self):
         dash = self.dashboard()
@@ -90,9 +90,9 @@ class MeAgent(Agent):
         sys.stderr.write(f"# [LOG] {message}\\n")
         sys.stderr.flush()
 
-_agent = MeAgent()
+_agent = MeAgent(os.environ.get('BOB_ID', 'Bob'))
 
-# Exportiere dynamisch ausschließlich öffentliche, aufrufbare Methoden von MeAgent in den Modulnamensraum (100% DRY & sicher!)
+# Dynamically export only public, callable methods of MeAgent to the module namespace (100% DRY & secure!)
 for _name in dir(_agent):
     if not _name.startswith('_'):
         _attr = getattr(_agent, _name)

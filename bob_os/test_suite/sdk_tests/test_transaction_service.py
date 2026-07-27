@@ -8,12 +8,12 @@ from bob_os.core.lib import db_config, transaction_service
 
 class TestTransactionService(unittest.TestCase):
     def setUp(self):
-        # Nutze In-Memory DB für isolierte Unit-Tests
+        # Use In-Memory DB for isolated unit tests
         self.conn = sqlite3.connect(":memory:")
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
         
-        # Erstelle vereinfachte Tabellen für den Test
+        # Create simplified tables for the test
         self.cursor.execute("""
             CREATE TABLE agents (
                 id TEXT PRIMARY KEY,
@@ -33,7 +33,7 @@ class TestTransactionService(unittest.TestCase):
             )
         """)
         
-        # Seed Test-Daten
+        # Seed test data
         self.cursor.execute("""
             INSERT INTO agents VALUES ('agent-1', 'agent-1', 100, 50, 100, 300)
         """)
@@ -46,7 +46,7 @@ class TestTransactionService(unittest.TestCase):
         self.conn.close()
 
     def test_missing_agent_or_system(self):
-        # Fehler bei ungültigem Agent oder System
+        # Error with invalid agent or system
         res = transaction_service.pay_pipeline_costs(self.cursor, 'invalid-agent', 'SYS_A', 10, 10)
         self.assertFalse(res)
         
@@ -54,17 +54,17 @@ class TestTransactionService(unittest.TestCase):
         self.assertFalse(res)
 
     def test_insufficient_matter(self):
-        # Fehlschlag bei ungenügend Materie
+        # Failure due to insufficient matter
         res = transaction_service.pay_pipeline_costs(self.cursor, 'agent-1', 'SYS_A', energy_cost=10, matter_cost=600, matter_type="raw_matter")
         self.assertFalse(res)
 
     def test_insufficient_energy(self):
-        # Fehlschlag bei ungenügend Energie
+        # Failure due to insufficient energy
         res = transaction_service.pay_pipeline_costs(self.cursor, 'agent-1', 'SYS_A', energy_cost=300, matter_cost=10, matter_type="raw_matter")
         self.assertFalse(res)
 
     def test_cost_splitting_and_db_updates(self):
-        # Erfolgreicher Abzug und Splitting
+        # Successful deduction and splitting
         res = transaction_service.pay_pipeline_costs(self.cursor, 'agent-1', 'SYS_A', energy_cost=150, matter_cost=450, matter_type="raw_matter")
         
         self.assertIsNotNone(res)
@@ -73,7 +73,7 @@ class TestTransactionService(unittest.TestCase):
         self.assertEqual(res["energy_from_depot"], 100)
         self.assertEqual(res["energy_from_inventory"], 50)
         
-        # Prüfe DB Zustand nach Transaktion
+        # Check DB state after transaction
         self.cursor.execute("SELECT raw_matter_inventory, energy_inventory FROM agents WHERE id='agent-1'")
         agent = self.cursor.fetchone()
         self.assertEqual(agent["raw_matter_inventory"], 50)

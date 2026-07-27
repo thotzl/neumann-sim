@@ -4,77 +4,77 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 
 async function runE2ETest() {
-    console.log("🚀 Starte E2E Mock-Loop Test...");
+    console.log("🚀 Starting E2E Mock-Loop Test...");
     const version = 'e2e_test_run';
     const expDir = path.join(__dirname, '../experiments', version);
     const dbPath = path.join(expDir, '_verse', 'universe.db');
     const statePath = path.join(expDir, 'state.json');
 
     try {
-        // - Erstelle Test-Experiment (Nutze build.py für korrekte Struktur)
-        console.log("- Erstelle Test-Experiment...");
+        // - Create test experiment (Use build.py for correct structure)
+        console.log("- Creating test experiment...");
         if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
         execSync(`python3 bob_os/build.py ${version} --rounds 3 --skip-tests --mission "E2E Test Mission"`, { stdio: 'inherit' });
 
-        // Wir modifizieren die Config so, dass das Token-Limit extrem niedrig ist, 
-        // um eine Destillation nach 3 Runden zu erzwingen.
+        // We modify the config so that the token limit is extremely low,
+        // to force a distillation after 3 rounds.
         const configPath = path.join(expDir, 'config.json');
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        config.config_override = { model: "gemini-1.5-flash", token_limit: 100 }; // Extrem niedrig
+        config.config_override = { model: "gemini-1.5-flash", token_limit: 100 }; // Extremely low
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-        console.log("- Starte Runner mit API-Mock...");
+        console.log("- Starting Runner with API Mock...");
         process.env.E2E_MOCK = 'true';
         
-        // HINWEIS: Wir machen KEINEN manuellen DB-Insert mehr. 
-        // Die runner.js MUSS den Agenten aus der config.json via init_db.py --seed anlegen.
+        // NOTE: We no longer perform manual DB inserts.
+        // The runner.js MUST create the agent from config.json via init_db.py --seed.
 
         try {
             const runnerOutput = execSync(`node sim_engine/runner.js ${version}`, { encoding: 'utf8' });
-            if (runnerOutput.includes("FEHLER") || runnerOutput.includes("Error")) {
-                console.error("Runner meldet interne Fehler:\n", runnerOutput);
+            if (runnerOutput.includes("ERROR") || runnerOutput.includes("Error")) {
+                console.error("Runner reports internal errors:\n", runnerOutput);
                 process.exit(1);
             }
         } catch (e) {
-            console.error("Runner Absturz:", e.message);
+            console.error("Runner crash:", e.message);
             process.exit(1);
         }
 
-        console.log("- Validiere Ergebnisse in der Datenbank...");
+        console.log("- Validating results in the database...");
         const db = new sqlite3.Database(dbPath);
         
-        // Der Agent 'Instance-1' (Default ID von build.py) muss existieren und Materie gesammelt haben.
+        // Agent 'Instance-1' (Default ID from build.py) must exist and have collected matter.
         db.get("SELECT s.raw_matter_inventory, s.energy_inventory, a.active_ship_id FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='Instance-1'", (err, row) => {
             if (err) throw err;
-            if (!row) throw new Error("Agent 'Instance-1' wurde nicht in der DB angelegt! [PRERUN FAIL]");
+            if (!row) throw new Error("Agent 'Instance-1' was not created in the DB! [PRERUN FAIL]");
             
             console.log(`  Instance-1 Status: Matter=${row.raw_matter_inventory}, Energy=${row.energy_inventory}, Ship=${row.active_ship_id}`);
 
-            // In 3 Runden baut der Mock 3x ab (300M).
-            if (row.raw_matter_inventory < 100) throw new Error(`Instance hat nicht die erwartete Materie (Hat: ${row.raw_matter_inventory}, Soll: >=100)`);
+            // In 3 rounds, the mock mines 3 times (300M).
+            if (row.raw_matter_inventory < 100) throw new Error(`Instance does not have the expected matter (Has: ${row.raw_matter_inventory}, Expected: >=100)`);
             
-            // Validiere, ob das Gedächtnis destilliert wurde
-            console.log("- Validiere Gedächtnis-Destillation...");
+            // Validate if memory was distilled
+            console.log("- Validating memory distillation...");
             const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
             const history = state.histories['Instance-1'];
-            const hasExtract = history.some(h => h.text.includes('[GEDÄCHTNIS-EXTRAKT]'));
+            const hasExtract = history.some(h => h.text.includes('[MEMORY-EXTRACT]'));
             if (!hasExtract) {
-                throw new Error("❌ Destillation wurde nicht ausgeführt, obwohl Token-Limit extrem niedrig war!");
+                throw new Error("❌ Distillation was not performed, even though token limit was extremely low!");
             }
-            console.log("  ✅ Distillation erfolgreich getriggert und gespeichert.");
+            console.log("  ✅ Distillation successfully triggered and saved.");
 
             db.get("SELECT extractable_matter_in_core FROM systems WHERE name='Alpha_Centauri'", (err, sysRow) => {
                 if (err) throw err;
-                console.log(`  System Ressourcen: ${sysRow.extractable_matter_in_core}`);
-                if (sysRow.extractable_matter_in_core >= 100000) throw new Error("Kern-Ressourcen wurden nicht abgebaut!");
+                console.log(`  System Resources: ${sysRow.extractable_matter_in_core}`);
+                if (sysRow.extractable_matter_in_core >= 100000) throw new Error("Core resources were not mined!");
                 
-                console.log("✅ E2E Mock-Loop, Boot-Sequenz und Memory-Management erfolgreich abgeschlossen.");
+                console.log("✅ E2E Mock-Loop, Boot Sequence, and Memory Management successfully completed.");
                 db.close();
             });
         });
 
     } catch (error) {
-        console.error("❌ E2E Test fehlgeschlagen:", error.message);
+        console.error("❌ E2E Test failed:", error.message);
         process.exit(1);
     }
 }

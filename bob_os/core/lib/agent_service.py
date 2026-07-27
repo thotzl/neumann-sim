@@ -21,7 +21,7 @@ def resolve_agent_location(cursor, host_type, host_id, status):
 
 def get_agent_or_fail(cursor, agent_id, required_columns="*"):
     try:
-        # Try retrieving with CASE subqueries mapping inventories to their physical hosts (Säule 1)
+        # Try retrieving with CASE subqueries mapping inventories to their physical hosts (Pillar 1)
         cursor.execute("""
             SELECT 
                 a.id, a.chosen_name, a.host_id, a.host_type, a.status, a.birth_cycle,
@@ -65,7 +65,7 @@ def get_agent_or_fail(cursor, agent_id, required_columns="*"):
 
     row = cursor.fetchone()
     if not row:
-        print(f"[ERROR] Agent '{agent_id}' nicht gefunden.")
+        print(f"[ERROR] Agent '{agent_id}' not found.")
         return None
     agent_dict = dict(row)
     if 'location' not in agent_dict:
@@ -74,13 +74,13 @@ def get_agent_or_fail(cursor, agent_id, required_columns="*"):
 
 def require_active_status(agent, tool_name):
     if agent['status'] == 'traveling':
-        print(f"[VERWEIGERT] Engines active. {tool_name} impossible in interstellar space.")
+        print(f"[DENIED] Engines active. {tool_name} impossible in interstellar space.")
         return False
     return True
 
 def update_agent_resources(cursor, agent_id, raw_matter=0, refined_matter=0, energy=0):
     """
-    Explicitly updates resources on the physical host (vessel or sector-depot). (Säule 1)
+    Explicitly updates resources on the physical host (vessel or sector-depot). (Pillar 1)
     """
     try:
         cursor.execute("SELECT host_id, host_type FROM agents WHERE id = ?", (agent_id,))
@@ -149,8 +149,8 @@ def consume_resources(cursor, agent_id, energy=0, matter=0):
 
 def with_agent_context(required_columns="*", require_active=False, action_name="Action", allow_disembodied=False):
     """
-    Decorator: Öffnet DB, lädt Agent, übergibt (self, cursor, agent, *args).
-    Schließt und committet automatisch, sofern nicht False zurückgegeben wird.
+    Decorator: Opens DB, loads Agent, passes (self, cursor, agent, *args).
+    Closes and commits automatically, unless False is returned.
     """
     def decorator(func):
         @functools.wraps(func)

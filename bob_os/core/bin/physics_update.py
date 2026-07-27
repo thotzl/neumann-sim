@@ -21,15 +21,15 @@ def update(current_tick=1):
     decay_interval = global_settings.get('decay_interval', 1)
     core_regen = global_settings.get('core_regen_per_tick', 5)
 
-    # 1. Bauprojekte abschließen
+    # 1. Complete construction projects
     cursor.execute("SELECT * FROM infrastructure WHERE status = 'construction'")
     construction_sites = cursor.fetchall()
     for site in construction_sites:
         if site['progress_matter'] >= site['required_matter']:
             cursor.execute("UPDATE infrastructure SET status = 'active', progress_matter = 0, health = 100, max_health = 100, level = 1, maintenance_cooldown = 10 WHERE id = ?", (site['id'],))
-            print(f"[PHYSICS] Projekt {site['type']} in {site['system_name']} fertiggestellt!")
+            print(f"[PHYSICS] Project {site['type']} in {site['system_name']} completed!")
 
-    # 2. Logistik & Transit (Säule 1)
+    # 2. Logistics & Transit (Pillar 1)
     try:
         cursor.execute("""
             SELECT 
@@ -56,7 +56,7 @@ def update(current_tick=1):
         if new_passed >= t['transit_ticks_total']:
             cursor.execute("UPDATE agents SET status='active', current_x=?, current_y=?, transit_ticks_passed=? WHERE id=?",
                            (t['target_x'], t['target_y'], new_passed, t['id']))
-            # NEU: Ziehe das Schiff mit an den neuen Ort
+            # NEW: Move the ship to the new location as well
             cursor.execute("""
                 UPDATE ships SET system_name = ? 
                 WHERE id = (SELECT active_ship_id FROM agents WHERE id = ?)
@@ -65,22 +65,22 @@ def update(current_tick=1):
             cursor.execute("UPDATE agents SET current_x=?, current_y=?, transit_ticks_passed=? WHERE id=?",
                            (cur_x, cur_y, new_passed, t['id']))
         
-        # Deduct travel tick costs explicitly from the host (Säule 1)
+        # Deduct travel tick costs explicitly from the host (Pillar 1)
         agent_service.update_agent_resources(cursor, t['id'], energy=-tick_cost)
 
-    # 3. Energie (Passive Regeneration/Drain für Aktive Schiffe mit Piloten) (Säule 1)
+    # 3. Energy (Passive Regeneration/Drain for Active Ships with Pilots) (Pillar 1)
     try:
         cursor.execute("""
             UPDATE ships SET energy_inventory = MIN(energy_capacity, MAX(0, energy_inventory + ? - ?))
             WHERE pilot_id IS NOT NULL
         """, (regen_base, drain_idle))
     except sqlite3.OperationalError:
-        # Fallback for unittests that use a flache agents table format
+        # Fallback for unittests that use a flat agents table format
         cursor.execute("UPDATE agents SET energy_inventory = MIN(?, MAX(0, energy_inventory + ? - ?)) WHERE status = 'active'", 
                        (agent_limits['energy'], regen_base, drain_idle))
     
-    # 4. Globales System-Update (Wartung, Kosten, Kapazitäten, Geologie)
-    # A. Geologische Regeneration der Planetenkerne
+    # 4. Global System Update (Maintenance, Costs, Capacities, Geology)
+    # A. Geological Regeneration of Planet Cores
     cursor.execute("UPDATE systems SET extractable_matter_in_core = MIN(extractable_matter_in_core + ?, max_extractable_matter)", (core_regen,))
     
     cursor.execute("SELECT name, raw_matter_depot, energy_depot FROM systems")
@@ -89,15 +89,15 @@ def update(current_tick=1):
     for sys in systems:
         sys_name = sys['name']
         
-        # B. Infrastruktur-Verfall & Cooldown
-        # Dann HP abziehen, ABER NUR wenn der Cooldown auf 0 ist (wir prüfen den cooldown BEVOR er dekrementiert wird)
+        # B. Infrastructure Decay & Cooldown
+        # Then deduct HP, BUT ONLY if the cooldown is 0 (we check the cooldown BEFORE it is decremented)
         if current_tick % decay_interval == 0:
             cursor.execute("UPDATE infrastructure SET health = MAX(0, health - ?) WHERE system_name = ? AND status != 'construction' AND maintenance_cooldown = 0", (decay_rate, sys_name))
         
-        # Zuerst Cooldown dekrementieren
+        # First decrement cooldown
         cursor.execute("UPDATE infrastructure SET maintenance_cooldown = MAX(0, maintenance_cooldown - 1) WHERE system_name = ? AND status != 'construction'", (sys_name,))
         
-        # B. Sammle alle funktionsfähigen Gebäude
+        # B. Collect all functional buildings
         cursor.execute("SELECT * FROM infrastructure WHERE system_name = ? AND status = 'active' AND health > 0", (sys_name,))
         active_infras = cursor.fetchall()
         
@@ -118,11 +118,11 @@ def update(current_tick=1):
             new_matter_rate += stats.get('matter_regen_bonus', 0) * lvl
             total_maintenance_cost += stats.get('maintenance_energy_cost', 1)
             
-        # C. Energie-Budget prüfen
+        # C. Check Energy Budget
         if sys['energy_depot'] < total_maintenance_cost:
             # Blackout!
-            # Kapazitäten bleiben erhalten (passive Strukturen),
-            # aktive Boni (Produktion) werden deaktiviert.
+            # Capacities are retained (passive structures),
+            # active bonuses (production) are deactivated.
             new_energy_rate = 0
             new_matter_rate = 0
             # Blackout deactivates manufacturing, but keeps a baseline survival solar/RTG regen (+5) active (Step 2)
@@ -133,7 +133,7 @@ def update(current_tick=1):
             energy_limit = new_energy_cap if new_energy_cap > 0 else agent_limits['energy']
             final_energy = min(energy_limit, final_energy)
             
-        # D. Materie-Regeneration und Capping
+        # D. Matter Regeneration and Capping
         final_matter = min(new_matter_cap, sys['raw_matter_depot'] + new_matter_rate)
         
         # E. Update System

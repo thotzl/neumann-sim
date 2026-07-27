@@ -13,13 +13,13 @@ describe('Config Loader (Live FS)', () => {
         if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true });
     });
 
-    test('deepMerge sollte Objekte korrekt zusammenführen', () => {
+    test('deepMerge should correctly merge objects', () => {
         const target = { a: 1, b: { c: 2 } };
         const source = { b: { d: 3 } };
         expect(deepMerge(target, source)).toEqual({ a: 1, b: { c: 2, d: 3 } });
     });
 
-    test('loadConfig sollte echte JSON-Dateien laden und mergen', () => {
+    test('loadConfig should load and merge real JSON files', () => {
         const cFile = path.join(tempDir, 'core.json');
         const vFile = path.join(tempDir, 'version.json');
         

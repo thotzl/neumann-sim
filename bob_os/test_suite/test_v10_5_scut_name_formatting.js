@@ -7,7 +7,7 @@ const rootMockDir = path.join(__dirname, 'mock_scut_name_universe');
 const universeDir = path.join(rootMockDir, '_verse');
 const dbPath = path.join(universeDir, 'universe.db');
 
-// Setze Testumgebungs-Variablen
+// Set test environment variables
 process.env.TEST_DB_PATH = dbPath;
 process.env.BOB_ID = "Instance-1";
 
@@ -15,7 +15,7 @@ function setupMockUniverse() {
     if (fs.existsSync(rootMockDir)) fs.rmSync(rootMockDir, { recursive: true, force: true });
     fs.mkdirSync(universeDir, { recursive: true });
 
-    // Initialisiere temporäre SQLite DB synchron via Python-Skriptdatei
+    // Initialize temporary SQLite DB synchronously via Python script file
     const initScript = `import sqlite3, os
 conn = sqlite3.connect(os.environ['TEST_DB_PATH'])
 c = conn.cursor()
@@ -56,12 +56,12 @@ conn.close()`;
 }
 
 function runVerification() {
-    console.log("Starte Posteingangs-Namens-Verifikationstest...");
+    console.log("Starting inbox name verification test...");
     setupMockUniverse();
 
     const envManager = require('../../sim_engine/utils/environment');
     
-    // Simuliere den Zustand des JS-Runners in memory
+    // Simulate the state of the JS runner in memory
     const mockState = {
         round: 1,
         agents: [
@@ -71,14 +71,14 @@ function runVerification() {
         ],
         global_inbox: {
             "Instance-1": [
-                { type: "scut", sender: "Instance-2", content: "Hallo Robert, hier ist Xyla." },
-                { type: "scut", sender: "Instance-3", content: "Hallo Robert, ich bin noch unbenannt." }
+                { type: "scut", sender: "Instance-2", content: "Hello Robert, this is Xyla." },
+                { type: "scut", sender: "Instance-3", content: "Hello Robert, I am still unnamed." }
             ]
         }
     };
 
-    // 1. PHASE BATCHING: Wir simulieren das Python dbScript im Runner
-    // (Liest die Namen direkt aus SQLite aus und mappt sie synchron auf state.agentNames)
+    // 1. BATCHING PHASE: We simulate the Python dbScript in the Runner
+    // (Reads names directly from SQLite and maps them synchronously to state.agentNames)
     const dbScript = `
 import sqlite3, json, os
 conn = sqlite3.connect(os.environ['TEST_DB_PATH'])
@@ -95,10 +95,10 @@ print(json.dumps({"names": names}))`;
     });
     const batchData = JSON.parse(batchOut);
     
-    // Synchronisiere Namen in den State
+    // Synchronize names into the state
     mockState.agentNames = batchData.names;
 
-    // 2. FORMATIERUNG: Wir füttern das Environment mit dem Inbox-Formatter aus runner.js
+    // 2. FORMATTING: We feed the Environment with the Inbox Formatter from runner.js
     const myInbox = mockState.global_inbox["Instance-1"];
     let inboxText = "";
     
@@ -106,27 +106,27 @@ print(json.dumps({"names": names}))`;
         if (item.type === 'scut') {
             const chosenName = (mockState.agentNames && mockState.agentNames[item.sender]) || "Unnamed";
             const senderName = `${chosenName} (ID: ${item.sender})`;
-            inboxText += `[SCUT] Von ${senderName}: ${item.content}\n`;
+            inboxText += `[SCUT] From ${senderName}: ${item.content}\n`;
         }
     });
 
-    console.log("\nGENERIERTER POSTEINGANG:");
+    console.log("\nGENERATED INBOX:");
     console.log("------------------------");
     console.log(inboxText.trim());
     console.log("------------------------");
 
-    // UNBESTECHLICHE PRÜFUNG (DOD)
+    // IMPENETRABLE VERIFICATION (DOD)
     if (inboxText.includes("undefined")) {
-        throw new Error("FAIL: 'undefined' Name-Leak im Posteingang entdeckt!");
+        throw new Error("FAIL: 'undefined' name leak detected in inbox!");
     }
-    if (!inboxText.includes("[SCUT] Von Xyla (ID: Instance-2): Hallo Robert, hier ist Xyla.")) {
-        throw new Error("FAIL: Benannter Absender 'Xyla' fehlerhaft formatiert!");
+    if (!inboxText.includes("[SCUT] From Xyla (ID: Instance-2): Hello Robert, this is Xyla.")) {
+        throw new Error("FAIL: Named sender 'Xyla' incorrectly formatted!");
     }
-    if (!inboxText.includes("[SCUT] Von Unnamed (ID: Instance-3): Hallo Robert, ich bin noch unbenannt.")) {
-        throw new Error("FAIL: Unbenannter Absender fehlerhaft formatiert!");
+    if (!inboxText.includes("[SCUT] From Unnamed (ID: Instance-3): Hello Robert, I am still unnamed.")) {
+        throw new Error("FAIL: Unnamed sender incorrectly formatted!");
     }
 
-    console.log("\n✅ POSTEINGANGS-NAMENS-VERIFIKATIONSTEST ERFOLGREICH! Keine Leaks gefunden.");
+    console.log("\n✅ INBOX NAME VERIFICATION TEST SUCCESSFUL! No leaks found.");
     cleanup();
 }
 
@@ -140,7 +140,7 @@ try {
     runVerification();
     process.exit(0);
 } catch (e) {
-    console.error("\n❌ TEST FEHLGESCHLAGEN:", e.message);
+    console.error("\n❌ TEST FAILED:", e.message);
     cleanup();
     process.exit(1);
 }

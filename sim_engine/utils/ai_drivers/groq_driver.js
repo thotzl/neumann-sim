@@ -5,8 +5,8 @@ const GroqDriver = {
     buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) {
         let systemContent = "";
         if (globalInstr) systemContent += `${globalInstr}\n\n`;
-        if (systemPrompt) systemContent += `DEIN BRIEFING:\n${systemPrompt}\n\n`;
-        if (memory) systemContent += `DEIN GEDÄCHTNIS:\n${memory}\n\n`;
+        if (systemPrompt) systemContent += `YOUR BRIEFING:\n${systemPrompt}\n\n`;
+        if (memory) systemContent += `YOUR MEMORY:\n${memory}\n\n`;
 
         let messages = [];
         if (systemContent.trim()) {
@@ -30,7 +30,7 @@ const GroqDriver = {
     async generateText(payload, config, retries = 10) {
         const apiKey = process.env.GROQ_API_KEY || process.env.API_KEY;
         if (!apiKey) {
-            throw new Error("[Groq Error] Kein GROQ_API_KEY in deiner .env Datei oder Umgebung gefunden.");
+            throw new Error("[Groq Error] No GROQ_API_KEY found in your .env file or environment.");
         }
 
         const endpoint = config.groq_endpoint || "https://api.groq.com/openai/v1/chat/completions";
@@ -42,7 +42,7 @@ const GroqDriver = {
             temperature: 0.2
         };
 
-        // 1. Pauschale Bremse (15 Sekunden) zwischen allen Turns, um TPM-Rate-Limits bei Llama 3.1 8B (40k TPM) zu 100% auszuschließen!
+        // 1. Global throttle (15 seconds) between all turns to 100% exclude TPM rate limits for Llama 3.1 8B (40k TPM)!
         await new Promise(r => setTimeout(r, 15000));
 
         for (let i = 0; i < retries; i++) {
@@ -58,13 +58,13 @@ const GroqDriver = {
 
                 const data = await response.json();
                 
-                // 2. Selbstheilendes Rate-Limit-Handling für Groq (HTTP 429 oder Rate Limit reached)
+                // 2. Self-healing rate limit handling for Groq (HTTP 429 or Rate Limit reached)
                 if (data.error) {
                     const errMsg = data.error.message || "";
                     if (response.status === 429 || errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("tpm")) {
-                        console.warn(`\n[Groq Rate-Limit] Rate-Limit oder TPM-Quota erreicht. Pausiere für 8 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                        console.warn(`\n[Groq Rate-Limit] Rate limit or TPM quota reached. Pausing for 8 seconds before attempt ${i + 1}/${retries}...`);
                         await new Promise(r => setTimeout(r, 8000));
-                        continue; // Schleife fortsetzen und erneut senden!
+                        continue; // Continue loop and resend!
                     }
                     throw new Error(errMsg);
                 }
@@ -75,17 +75,17 @@ const GroqDriver = {
 
                 return data.choices[0].message.content;
             } catch (err) {
-                // Selbstheilender Check für Netzwerk- oder Timeout-Fehler im Fetch-Kanal
+                // Self-healing check for network or timeout errors in the fetch channel
                 const errMsg = err.message || "";
                 if (errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("tpm")) {
-                    console.warn(`\n[Groq Rate-Limit] Rate-Limit erreicht. Pausiere für 8 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                    console.warn(`\n[Groq Rate-Limit] Rate limit reached. Pausing for 8 seconds before attempt ${i + 1}/${retries}...`);
                     await new Promise(r => setTimeout(r, 8000));
                     continue;
                 }
 
                 if (i === retries - 1) throw err;
                 
-                console.warn(`\n[Groq Error] API-Fehler (Versuch ${i + 1}/${retries}): ${err.message}. Pausiere 3 Sekunden...`);
+                console.warn(`\n[Groq Error] API error (attempt ${i + 1}/${retries}): ${err.message}. Pausing for 3 seconds...`);
                 await new Promise(r => setTimeout(r, 3000));
             }
         }

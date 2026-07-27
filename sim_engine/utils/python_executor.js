@@ -2,7 +2,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 
 /**
- * Führt ein Python-Skript oder Tool innerhalb des Experiment-Kontexts aus.
+ * Executes a Python script or tool within the experiment context.
  */
 function runPython(vDir, scriptPath, args = [], options = {}) {
     const bobId = options.bobId || null;
@@ -28,7 +28,7 @@ function runPython(vDir, scriptPath, args = [], options = {}) {
 
     const mergedOptions = { ...defaultOptions, ...options };
     
-    // V8-Syntax Robustheit: Quotiere Argumente einzeln, falls es ein Array ist
+    // V8 syntax robustness: Quote arguments individually if it's an array
     let argString = args;
     if (Array.isArray(args)) {
         argString = args.map(arg => `'${arg.replace(/'/g, "'\\''")}'`).join(' ');

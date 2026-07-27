@@ -2,8 +2,8 @@ import yaml
 
 def clean_dict(d):
     """
-    Bereinigt verschachtelte Dictionaries für die Token-Schonung.
-    Ersetzt None, [] und {} durch leere Strings "".
+    Cleans nested dictionaries for token preservation.
+    Replaces None, [], and {} with empty strings "".
     """
     if not isinstance(d, dict): 
         return d
@@ -21,16 +21,16 @@ def clean_dict(d):
 
 def format_yaml(obj, clean=False):
     """
-    Zentralisiert die standardisierte YAML-Generierung für den Simulator.
-    Wendet optional die clean_dict-Bereinigung vor dem Dump an.
+    Centralizes standardized YAML generation for the simulator.
+    Optionally applies clean_dict cleanup before dumping.
     """
     target = clean_dict(obj) if clean else obj
     return yaml.dump(target, sort_keys=False, default_flow_style=False).strip()
 
 def get_display_name(agent_data):
     """
-    Gibt den reinen Anzeigenamen des Agenten zurück (chosen_name oder 'Unnamed').
-    Ausschließlich für read-only Präsentationszwecke nutzen! Niemals in die DB schreiben.
+    Returns the pure display name of the agent (chosen_name or 'Unnamed').
+    Use exclusively for read-only presentation purposes! Never write to the DB.
     """
     if not agent_data:
         return "Unnamed"
@@ -42,7 +42,7 @@ def get_display_name(agent_data):
 
 def get_display_name_with_id(agent_data, agent_id=None):
     """
-    Gibt den Anzeigenamen kombiniert mit der ID zurück (z.B. 'Alice (ID: X0Y0-C0-K9A2)').
+    Returns the display name combined with the ID (e.g., 'Alice (ID: X0Y0-C0-K9A2)').
     """
     name = get_display_name(agent_data)
     if not agent_id:
@@ -54,9 +54,8 @@ def get_display_name_with_id(agent_data, agent_id=None):
 
 def aggregate_ship_telemetry(ship_row, blueprint_stats=None):
     """
-    Zentraler, SSoT-konformer Helfer, der die physischen Spezifikationen, Capabilities
-    und Diagnosen eines Schiffes zu einem standardisierten Telemetrie-HUD aggregiert.
-    Niemals für Schreibvorgänge verwenden.
+    Central, SSoT-compliant helper that aggregates a ship's physical specifications, capabilities,
+    and diagnostics into a standardized telemetry HUD. Never use for write operations.
     """
     if not ship_row:
         return {}
@@ -76,7 +75,7 @@ def aggregate_ship_telemetry(ship_row, blueprint_stats=None):
         "battery": int(ship_row.get('energy_capacity', 500))
     }
 
-    # Falls der Blueprint exakte Daten wie regen/drain enthält (SSoT)
+    # If the blueprint contains exact data like regen/drain (SSoT)
     if blueprint_stats:
         stats_dict['drain'] = float(blueprint_stats.get('drain', 0.0))
         stats_dict['regen'] = float(blueprint_stats.get('regen', 0.0))
@@ -88,11 +87,11 @@ def aggregate_ship_telemetry(ship_row, blueprint_stats=None):
         "logic_core": "active" if ship_row.get('has_logic_core') else "inactive"
     }
 
-    # Diagnostics laden oder Fallback berechnen
+    # Load diagnostics or calculate fallback
     if blueprint_stats and 'diagnostics' in blueprint_stats:
         diagnostics_dict = blueprint_stats['diagnostics']
     else:
-        # Robustes mathematisches Fallback für Legacy-Mocks ohne hinterlegte Blaupause
+        # Robust mathematical fallback for legacy mocks without a stored blueprint
         has_drill = ship_row.get('has_drill', 0)
         has_fab = ship_row.get('has_fabricator', 0)
         diagnostics_dict = {
@@ -129,7 +128,7 @@ def aggregate_ship_telemetry(ship_row, blueprint_stats=None):
 
 def get_ship_display_name(ship_row):
     """
-    Formatiert den Schiffsnamen kollisionsfrei für alle Text-Ausgaben (z.B. "'Sovereign' (ID: 1)").
+    Formats the ship name collision-free for all text outputs (e.g., "'Sovereign' (ID: 1)").
     """
     if not ship_row:
         return "Unknown Ship"
@@ -141,7 +140,7 @@ def get_ship_display_name(ship_row):
 
 def get_system_display_name(system_row):
     """
-    Formatiert den Sektornamen kollisionsfrei (z.B. "'HomeBase' (ID: SYS_X0_Y0)" oder einfach "SYS_X0_Y0").
+    Formats the sector name collision-free (e.g., "'HomeBase' (ID: SYS_X0_Y0)" or simply "SYS_X0_Y0").
     """
     if not system_row:
         return "Unknown Sector"

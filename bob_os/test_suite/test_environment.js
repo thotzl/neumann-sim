@@ -11,20 +11,20 @@ function testEnvState() {
     if (fs.existsSync(mockDir)) fs.rmSync(mockDir, { recursive: true });
     fs.mkdirSync(toolsDir, { recursive: true });
     
-    // Erstelle ein paar Dummy Tools
+    // Create some dummy tools
     fs.writeFileSync(path.join(toolsDir, 'mine.py'), 'print("mining")');
     fs.writeFileSync(path.join(toolsDir, 'build.py'), 'print("building")');
     
-    // Erstelle eine "Manifestation" (sollte NICHT auftauchen)
+    // Create a "manifestation" (should NOT appear)
     fs.writeFileSync(path.join(mockDir, 'secret_plans.txt'), 'Top Secret');
     
     const state = envManager.getEnvState(mockDir);
     console.log("Resulting State:\n", state);
     
-    assert.ok(state.includes('HARDWARE (Unified Command Line):') || state.includes('VERFÜGBARE HARDWARE'), "Header fehlt");
-    assert.ok(state.includes('me method(key=val)'), "Befehls-Hinweis fehlt");
-    assert.ok(!state.includes('secret_plans.txt'), "Manifestationen sollten NICHT angezeigt werden!");
-    assert.ok(!state.includes('[object Object]'), "Kein Objekt-Slop erlaubt!");
+    assert.ok(state.includes('HARDWARE (Unified Command Line):') || state.includes('AVAILABLE HARDWARE'), "Header missing");
+    assert.ok(state.includes('me method(key=val)'), "Command hint missing");
+    assert.ok(!state.includes('secret_plans.txt'), "Manifestations should NOT be displayed!");
+    assert.ok(!state.includes('[object Object]'), "No object slop allowed!");
     
     console.log("✅ Environment Simplification Test OK.");
     
@@ -35,14 +35,14 @@ function testEnvState() {
 function testPhantomActions() {
     console.log("Testing Phantom Action Isolation...");
     const llmOutput = `
-ANALYSE:
-Ich überlege, ob ich später [RUN: echo "phantom"] aufrufen soll.
-Aber jetzt mache ich nichts.
+ANALYSIS:
+I am thinking about whether I should run [RUN: echo "phantom"] later.
+But right now I do nothing.
 
-AKTION:
+ACTION:
 [RUN: echo "echt"]
 `;
-    // Wir brauchen ein leeres dummy_verse für execSync
+    // We need an empty dummy_verse for execSync
     const mockDir = './test_env_fs_phantom';
     if (fs.existsSync(mockDir)) fs.rmSync(mockDir, { recursive: true });
     fs.mkdirSync(mockDir, { recursive: true });
@@ -50,11 +50,11 @@ AKTION:
     let mockState = { security: { acl: {}, wallets: {} } };
     const feedback = envManager.processActions(llmOutput, mockDir, "Instance-1", mockState);    
     if (feedback.includes("phantom")) {
-        console.error("❌ Phantom Action Test FAILED. Befehl im Analyse-Block wurde ausgeführt!\nFeedback war:\n", feedback);
+        console.error("❌ Phantom Action Test FAILED. Command in analysis block was executed!\nFeedback was:\n", feedback);
         process.exit(1);
     }
     if (!feedback.includes("echt")) {
-        console.error("❌ Phantom Action Test FAILED. Echter Befehl wurde nicht ausgeführt!");
+        console.error("❌ Phantom Action Test FAILED. Real command was not executed!");
         process.exit(1);
     }
     console.log("✅ Phantom Action Isolation Test OK.");

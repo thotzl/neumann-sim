@@ -9,7 +9,7 @@ function runSystemAutomations(vDir, universeDir, state) {
 
     if (!fs.existsSync(activeScriptsDir)) return "";
 
-    // Cleanup-Logik: Alte, ungeschützte Dateien aus der Bob-Sandbox restlos tilgen
+    // Cleanup logic: Completely remove old, unprotected files from the Bob sandbox
     const oldMePy = path.join(activeScriptsDir, "me.py");
     const oldSitePy = path.join(activeScriptsDir, "sitecustomize.py");
     if (fs.existsSync(oldMePy)) {
@@ -19,7 +19,7 @@ function runSystemAutomations(vDir, universeDir, state) {
         try { fs.unlinkSync(oldSitePy); } catch (e) {}
     }
 
-    // Dynamisch generierte me.py im geschützten core/lib Ordner ablegen (Säule 3)
+    // Place dynamically generated me.py in the protected core/lib folder (Pillar 3)
     const coreLibDir = path.join(vDir, "core", "lib");
     const mePyPath = path.join(coreLibDir, "me.py");
     const mePyContent = `import os
@@ -50,8 +50,8 @@ class DepotsObject:
 
 class StatusWrapper:
     def __init__(self, dash):
-        self.host = HostObject(dash.get('dein_status', {}))
-        self.depots = DepotsObject(dash.get('lokales_system', {}))
+        self.host = HostObject(dash.get('your_status', {}))
+        self.depots = DepotsObject(dash.get('local_system', {}))
 
 class MeAgent(Agent):
     def __init__(self):
@@ -67,7 +67,7 @@ class MeAgent(Agent):
 
 _agent = MeAgent()
 
-# Exportiere dynamisch ausschließlich öffentliche, aufrufbare Methoden von MeAgent in den Modulnamensraum (100% DRY & sicher!)
+# Dynamically export only public, callable methods of MeAgent into the module namespace (100% DRY & secure!)
 for _name in dir(_agent):
     if not _name.startswith('_'):
         _attr = getattr(_agent, _name)
@@ -76,7 +76,7 @@ for _name in dir(_agent):
 `;
     fs.writeFileSync(mePyPath, mePyContent);
 
-    // sitecustomize.py für permanenten, importfreien Bootstrapping-Support schreiben
+    // Write sitecustomize.py for permanent, import-free bootstrapping support
     const sitePyPath = path.join(coreLibDir, "sitecustomize.py");
     const sitePyContent = `import builtins
 import me
@@ -90,16 +90,16 @@ builtins.me = me
         const acl = state.security?.acl?.[scriptRelPath];
         const ownerId = acl ? acl.owner : "Unknown";
 
-        // Ermittle Standort für die lokale Zustellung
+        // Determine location for local delivery
         const ownerAgent = state.agents.find(a => a.id === ownerId) || state.agents[0];
         const targetLocation = ownerAgent ? ownerAgent.location : "Deep Space";
 
         try {
-            // Führe Skript im Namen des Besitzers aus
+            // Execute script on behalf of the owner
             const out = runPython(vDir, `_verse/${scriptRelPath}`, [], { bobId: ownerId, aclState: state.security?.acl || {} });
             
             let feedback = "";
-            let reportOut = "Keine Ausgaben.";
+            let reportOut = "No output.";
             
             if (out) {
                 feedback = envManager.processActions(out, universeDir, ownerId, state);
@@ -109,15 +109,15 @@ builtins.me = me
             const report = `
 [AUTOMATION-REPORT]
 - System: ${targetLocation}
-- Skript: ${script}
-- Besitzer: ${ownerId}
+- Script: ${script}
+- Owner: ${ownerId}
 - Status: OK
 - Output: ${reportOut}
-- Ergebnis: ${feedback.trim() || 'Keine Engine-Aktionen'}`.trim();
+- Result: ${feedback.trim() || 'No engine actions'}`.trim();
 
             autoOutput += `\n${report}`;
             
-            // Zustellung an alle im System
+            // Delivery to everyone in the system
             state.agents.filter(a => a.alive && a.location === targetLocation).forEach(a => {
                 if (!state.global_inbox[a.id]) state.global_inbox[a.id] = [];
                 state.global_inbox[a.id].push({ type: 'automation', text: report });
@@ -130,14 +130,14 @@ builtins.me = me
             const errorMsg = `
 [AUTOMATION-REPORT]
 - System: ${targetLocation}
-- Skript: ${script}
-- Besitzer: ${ownerId}
-- Status: FEHLGESCHLAGEN
-- Fehler: ${err.trim()}`.trim();
+- Script: ${script}
+- Owner: ${ownerId}
+- Status: FAILED
+- Error: ${err.trim()}`.trim();
 
             autoOutput += `\n${errorMsg}`;
             
-            // Fehler-Zustellung an alle im System
+            // Error delivery to everyone in the system
             state.agents.filter(a => a.alive && a.location === targetLocation).forEach(a => {
                 if (!state.global_inbox[a.id]) state.global_inbox[a.id] = [];
                 state.global_inbox[a.id].push({ type: 'automation', text: errorMsg });

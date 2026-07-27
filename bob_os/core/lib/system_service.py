@@ -2,7 +2,7 @@ import sqlite3
 
 def get_system_or_fail(cursor, system_name):
     """
-    Lädt Systemdaten oder gibt None zurück.
+    Loads system data or returns None.
     """
     cursor.execute("SELECT * FROM systems WHERE name = ?", (system_name,))
     return cursor.fetchone()

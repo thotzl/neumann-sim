@@ -3,9 +3,9 @@ from .agent_service import get_agent_or_fail, update_agent_resources
 
 def pay_pipeline_costs(cursor, agent_id, system_name, energy_cost, matter_cost, matter_type="raw_matter"):
     """
-    Kapselt die Ressourcen-Überprüfung und den Ressourcen-Abzug aus dem kombinierten
-    Pool von Agent (Inventory) und System (Depot).
-    Gibt ein Dict mit den abgezogenen Beträgen zurück, oder False bei Fehlschlag.
+    Encapsulates resource checking and resource deduction from the combined
+    pool of Agent (Inventory) and System (Depot).
+    Returns a dict with the deducted amounts, or False on failure.
     """
     agent = get_agent_or_fail(cursor, agent_id)
     system = get_system_or_fail(cursor, system_name)
@@ -37,7 +37,7 @@ def pay_pipeline_costs(cursor, agent_id, system_name, energy_cost, matter_cost, 
     energy_from_depot = min(energy_cost, available_depot_energy)
     energy_from_inventory = energy_cost - energy_from_depot
 
-    # Subduce matter and energy via the unified update_agent_resources service (Säule 1)
+    # Deduct matter and energy via the unified update_agent_resources service (Pillar 1)
     if energy_from_inventory > 0 or matter_from_inventory > 0:
         if matter_type == "refined_matter":
             update_agent_resources(cursor, agent_id, refined_matter=-matter_from_inventory, energy=-energy_from_inventory)

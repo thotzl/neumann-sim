@@ -25,7 +25,7 @@ class TestV105UniversalInspect(unittest.TestCase):
         
         # Seed distant system (SYS_B) with geology and a logged document
         conn.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot) VALUES ('SYS_B', 500, 500, 4500, 50, 0, 0)")
-        conn.execute("INSERT INTO docs (id, author_id, system_name, title, content) VALUES (1, 'Instance-2', 'SYS_B', 'Sektor-Tagebuch', 'Bohrversuch war erfolgreich.')")
+        conn.execute("INSERT INTO docs (id, author_id, system_name, title, content) VALUES (1, 'Instance-2', 'SYS_B', 'Sector Logbook', 'Drilling attempt was successful.')")
         
         # Seed disembodied agent
         conn.execute("""
@@ -105,7 +105,7 @@ class TestV105UniversalInspect(unittest.TestCase):
         
         # Verify logged documents (Doc Wiki) are successfully retrieved
         self.assertEqual(len(sys_dict['public_sector_wiki_docs']), 1)
-        self.assertEqual(sys_dict['public_sector_wiki_docs'][0]['title'], "Sektor-Tagebuch")
+        self.assertEqual(sys_dict['public_sector_wiki_docs'][0]['title'], "Sector Logbook")
 
 if __name__ == '__main__':
     unittest.main()

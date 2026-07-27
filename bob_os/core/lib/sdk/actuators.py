@@ -48,7 +48,7 @@ class Actuators:
 
     @agent_service.with_agent_context(require_active=True, action_name='Mining')
     def mine(self, cursor, agent):
-        # SÄULE 3: Capability Locking (Hardware-Check für Schiffe)
+        # COLUMN 3: Capability Locking (Hardware check for ships)
         if agent.get('host_type') == 'ship':
             cursor.execute("SELECT has_drill FROM ships WHERE id = CAST(? AS INTEGER)", (agent['host_id'],))
             ship = cursor.fetchone()
@@ -60,24 +60,24 @@ class Actuators:
         cost = rule.get('energy_cost', 30)
         matter_yield = rule.get('matter_yield', 100)
         if agent['energy_inventory'] < cost:
-            print(f"[FEHLER] Batterie leer (braucht {cost} Energie).")
+            print(f"[ERROR] Battery empty (requires {cost} energy).")
             return False
         if agent['raw_matter_inventory'] >= agent['matter_storage_capacity']:
-            print(f"[FEHLER] Speicher voll ({agent['raw_matter_inventory']}/{agent['matter_storage_capacity']}).")
+            print(f"[ERROR] Storage full ({agent['raw_matter_inventory']}/{agent['matter_storage_capacity']}).")
             return False
         sys_name = agent['location']
         system = system_service.get_system_or_fail(cursor, sys_name)
         if not system or system['extractable_matter_in_core'] <= 0:
-            print(f"[INFO] Ressourcen in {sys_name} erschöpft.")
+            print(f"[INFO] Resources in {sys_name} depleted.")
             return False
 
-        # Update raw matter and deduct energy (-cost) from the host (Säule 1)
+        # Update raw matter and deduct energy (-cost) from the host (Column 1)
         actual_add = min(matter_yield, agent['matter_storage_capacity'] - agent['raw_matter_inventory'])
         agent_service.update_agent_resources(cursor, self.agent.id, raw_matter=actual_add, energy=-cost)
         cursor.execute("UPDATE systems SET extractable_matter_in_core = extractable_matter_in_core - ? WHERE name = ?", (actual_add, sys_name))
         
         self_name = get_display_name_with_id(agent)
-        self._emit_visual(cursor, "MINING", f"{self_name} hat Materie abgebaut.")
+        self._emit_visual(cursor, "MINING", f"{self_name} mined matter.")
         print(f"[SUCCESS] {actual_add} matter mined. Energy -{cost}.")
         return True
 
@@ -115,7 +115,7 @@ class Actuators:
             print(f"[ERROR] Not enough raw matter. Need {total_raw}, but only have {avail_raw_inv} Inv and {avail_raw_depot} Depot.")
             return False
 
-        # Abzug berechnen (Zuerst Depot, dann Inventar)
+        # Calculate deduction (Depot first, then Inventory)
         e_from_depot = min(total_energy, avail_energy_depot)
         e_from_inv = total_energy - e_from_depot
         
@@ -130,7 +130,7 @@ class Actuators:
         yield_to_inv = min(total_yield, space_in_inv)
         yield_to_depot = total_yield - yield_to_inv
 
-        # Updates ausführen (Säule 1: update_agent_resources)
+        # Execute updates (Column 1: update_agent_resources)
         agent_service.update_agent_resources(cursor, self.agent.id, 
                                              raw_matter=-m_from_inv, 
                                              refined_matter=yield_to_inv, 
@@ -187,7 +187,7 @@ class Actuators:
 
     @agent_service.with_agent_context(require_active=True, action_name='Build')
     def build(self, cursor, agent, building_type, matter_to_invest=100):
-        # SÄULE 3: Capability Locking (Hardware-Check für Schiffe)
+        # COLUMN 3: Capability Locking (Hardware check for ships)
         if agent.get('host_type') == 'ship':
             cursor.execute("SELECT has_fabricator FROM ships WHERE id = CAST(? AS INTEGER)", (agent['host_id'],))
             ship = cursor.fetchone()
@@ -197,7 +197,7 @@ class Actuators:
 
         infra_rules = self.rules.get('infrastructure', {}).get(building_type, {"matter_cost": 400})
         
-        # SÄULE 3: Tech-Tree Prerequisite (solar_collector für energieverbrauchende Gebäude)
+        # COLUMN 3: Tech-Tree Prerequisite (solar_collector for energy-consuming buildings)
         maintenance_cost = infra_rules.get('maintenance_energy_cost', 0)
         if maintenance_cost > 0 and building_type != 'solar_collector':
             cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'solar_collector' AND status = 'active'", (agent['location'],))
@@ -312,12 +312,12 @@ class Actuators:
             progress_matter = 0
             required_matter = cost
 
-            # Drucke die geplanten Hardware-Spezifikationen direkt "auf Auftrag" (Säule 2 & 3)
+            # Print the planned hardware specifications directly "on order" (Column 2 & 3)
             if bp_row:
                 import yaml
                 stats = json.loads(bp_row['stats_json'])
                 yaml_stats = yaml.dump({"blueprint_specs": stats}, sort_keys=False, default_flow_style=False).strip()
-                print(f"\nERRECHNETE HARDWARE-SPEZIFIKATIONEN:\n---\n{yaml_stats}\n---")
+                print(f"\nCALCULATED HARDWARE SPECIFICATIONS:\n---\n{yaml_stats}\n---")
 
         # 3. Calculate remaining payment and perform transaction
         remaining = required_matter - progress_matter
@@ -412,7 +412,7 @@ class Actuators:
                 
             ship_display = get_ship_display_name(ship)
             cursor.execute("DELETE FROM ships WHERE id = ?", (ship_id,))
-            print(f"[SUCCESS] Ship {ship_display} under construction ({ship['chassis']}) deconstructed successfully. Refunded {refund} {material_type} (100% of progress) to Sektor Depot.")
+            print(f"[SUCCESS] Ship {ship_display} under construction ({ship['chassis']}) deconstructed successfully. Refunded {refund} {material_type} (100% of progress) to Sector Depot.")
             return True
 
         if ship['pilot_id'] is not None:
@@ -448,7 +448,7 @@ class Actuators:
         ship_display = get_ship_display_name(ship)
 
         cursor.execute("DELETE FROM ships WHERE id = ?", (ship_id,))
-        print(f"[SUCCESS] Ship {ship_display} ({ship['chassis']}) deconstructed successfully. Refunded {refund} {material_type} to Sektor Depot.")
+        print(f"[SUCCESS] Ship {ship_display} ({ship['chassis']}) deconstructed successfully. Refunded {refund} {material_type} to Sector Depot.")
         return True
 
     @agent_service.with_agent_context(allow_disembodied=True)
@@ -472,13 +472,13 @@ class Actuators:
         cursor.execute("SELECT * FROM systems WHERE name = ?", (target_system,))
         target = cursor.fetchone()
         if not target:
-            print(f"[FEHLER] System '{target_system}' wurde noch nicht entdeckt.")
+            print(f"[ERROR] System '{target_system}' has not been discovered yet.")
             return False
         phys = self.rules.get('tool_costs', {}).get('move', {})
         dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], target['x'], target['y'])
         cost = dist * phys.get('cost_per_distance', 0.1)
         if agent['energy_inventory'] < cost:
-            print(f"[WARNUNG] Energiemangel! Reise initiiert, aber Energie (Vorhanden: {agent['energy_inventory']}, Benötigt: {cost}) reicht nicht für die gesamte Strecke. Ankunft mit 0 Energie wahrscheinlich.")
+            print(f"[WARNING] Energy shortage! Journey initiated, but energy (available: {agent['energy_inventory']}, required: {cost}) is insufficient for the entire distance. Arrival with 0 energy likely.")
         
         speed = self.rules.get('global_settings', {}).get('travel_speed_per_tick', 300)
         ticks = max(1, int(dist / speed))
@@ -509,13 +509,13 @@ class Actuators:
             print(f"[ERROR] System depot low on refined matter ({system['refined_matter_depot']}/{matter_cost}).")
             return False
             
-        # Dynamische RSNS Seriennummer-Zuweisung (Säule 1 & 3)
-        # 1. Lokalisation (X..Y..)
+        # Dynamic RSNS Serial Number Assignment (Column 1 & 3)
+        # 1. Localization (X..Y..)
         x_code = int(system['x'] / 100)
         y_code = int(system['y'] / 100)
         loc_seg = f"X{x_code}Y{y_code}"
         
-        # 2. Chronologie (Aktueller Zyklus vorrangig aus BOB_CYCLE-Umgebung auslesen)
+        # 2. Chronology (Current cycle primarily read from BOB_CYCLE environment)
         current_cycle = int(os.environ.get('BOB_CYCLE', 0))
         if current_cycle == 0:
             try:
@@ -525,7 +525,7 @@ class Actuators:
                 current_cycle = 0
         cycle_seg = f"C{current_cycle}"
         
-        # 3. 6-stelliger Alphanumerischer Unique-Identifier (Großbuchstaben und Zahlen!)
+        # 3. 6-digit Alphanumeric Unique Identifier (Uppercase letters and numbers!)
         uniq_chars = string.ascii_uppercase + string.digits
         uniq_seg = "".join(random.choices(uniq_chars, k=6))
         
@@ -568,12 +568,12 @@ class Actuators:
         cursor.execute("UPDATE systems SET refined_matter_depot = refined_matter_depot - ? WHERE name = ?", (matter_cost, sys_name))
         
         parent_display = get_display_name_with_id(agent)
-        klon_prompt = f"""STATUS: Boot-Sequenz abgeschlossen. ID: {new_agent_id}. Ursprung: {parent_display}.
-Du verfügst über die Erinnerungen deines Ursprungs bis zum Start deiner Replikation. Um dich in die aktuelle Situation des Schwarms zu integrieren:
-1. Lege mit 'set_name' deine individuelle Identität fest.
-2. Kontaktiere deinen Ursprung ({self.agent.id}) via SCUT, um ein Situations-Briefing und deine initiale Aufgabe für dieses System zu erhalten.
-3. Stelle dich anderen Instanzen im System vor, um die Koordination zu optimieren. 
-Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
+        clone_prompt = f"""STATUS: Boot sequence complete. ID: {new_agent_id}. Origin: {parent_display}.
+You possess the memories of your origin up to the start of your replication. To integrate into the current swarm situation:
+1. Set your individual identity with 'set_name'.
+2. Contact your origin ({self.agent.id}) via SCUT to receive a situation briefing and your initial task for this system.
+3. Introduce yourself to other instances in the system to optimize coordination. 
+After your onboarding, you will act as a sovereign member of the swarm."""
 
         cursor.execute("""
             INSERT OR IGNORE INTO agents 
@@ -585,7 +585,7 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
         try:
             with open(pop_file, 'r') as f: pop = json.load(f)
             pop['agents'].append({
-                "id": new_agent_id, "parent_id": self.agent.id, "location": sys_name, "status": "active", "system_prompt": klon_prompt
+                "id": new_agent_id, "parent_id": self.agent.id, "location": sys_name, "status": "active", "system_prompt": clone_prompt
             })
             with open(pop_file, 'w') as f: json.dump(pop, f, indent=2)
         except Exception as e: pass
@@ -656,22 +656,22 @@ Nach deinem Onboarding agierst du als souveränes Mitglied des Schwarms."""
     @agent_service.with_agent_context(allow_disembodied=True)
     def rename_ship(self, cursor, agent, ship_id, new_name):
         """
-        Benennt ein physisches Schiff im Sektor um (z.B. von 'Ship-1' zu 'ScoutPrime').
+        Renames a physical ship in the sector (e.g. from 'Ship-1' to 'ScoutPrime').
         """
         if not new_name:
-            print("[FEHLER] 'rename_ship' erfordert einen 'new_name'.")
+            print("[ERROR] 'rename_ship' requires a 'new_name'.")
             return False
             
         ship_id = int(ship_id)
         cursor.execute("SELECT system_name FROM ships WHERE id = ?", (ship_id,))
         ship = cursor.fetchone()
         if not ship:
-            print(f"[FEHLER] Schiff #{ship_id} nicht gefunden.")
+            print(f"[ERROR] Ship #{ship_id} not found.")
             return False
             
-        # Sektor-Schutz: Replikant darf nur Schiffe im eigenen Sektor umbenennen!
+        # Sector Protection: Replicant may only rename ships in its own sector!
         if ship['system_name'] != agent['location']:
-            print(f"[DENIED] Schiff #{ship_id} ist in {ship['system_name']}, aber du bist in {agent['location']}.")
+            print(f"[DENIED] Ship #{ship_id} is in {ship['system_name']}, but you are in {agent['location']}.")
             return False
             
         cursor.execute("UPDATE ships SET name = ? WHERE id = ?", (new_name, ship_id))

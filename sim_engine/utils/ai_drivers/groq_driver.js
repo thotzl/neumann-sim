@@ -33,7 +33,7 @@ const GroqDriver = {
             throw new Error("[Groq Error] Kein GROQ_API_KEY in deiner .env Datei oder Umgebung gefunden.");
         }
 
-        const endpoint = config.config_override?.groq_endpoint || "https://api.groq.com/openapi/v1/chat/completions";
+        const endpoint = config.config_override?.groq_endpoint || "https://api.groq.com/openai/v1/chat/completions";
         const model = config.config_override?.model || config.model || "llama-3.3-70b-versatile";
 
         const requestBody = {

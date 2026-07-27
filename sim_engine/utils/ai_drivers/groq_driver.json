@@ -1,4 +1,4 @@
 {
   "model": "llama-3.3-70b-versatile",
-  "groq_endpoint": "https://api.groq.com/openapi/v1/chat/completions"
+  "groq_endpoint": "https://api.groq.com/openai/v1/chat/completions"
 }

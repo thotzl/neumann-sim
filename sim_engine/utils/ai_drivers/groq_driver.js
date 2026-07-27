@@ -42,8 +42,8 @@ const GroqDriver = {
             temperature: 0.2
         };
 
-        // 1. Pauschale Bremse (20 Sekunden) zwischen allen Turns, um TPM-Rate-Limits mathematisch zu 100% auszuschließen!
-        await new Promise(r => setTimeout(r, 20000));
+        // 1. Pauschale Bremse (6 Sekunden) zwischen allen Turns, um TPM-Rate-Limits bei Llama 3.1 8B (40k TPM) zu 100% auszuschließen!
+        await new Promise(r => setTimeout(r, 6000));
 
         for (let i = 0; i < retries; i++) {
             try {

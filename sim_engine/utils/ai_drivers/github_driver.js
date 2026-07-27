@@ -25,9 +25,9 @@ const GithubDriver = {
     },
 
     /**
-     * Sends the payload to Github Models (Azure Inference) official endpoint
+     * Sends the payload to Github Models (Azure Inference) official endpoint with self-healing rate limits
      */
-    async generateText(payload, config, retries = 3) {
+    async generateText(payload, config, retries = 10) {
         // GitHub Models uses either GITHUB_TOKEN or GITHUB_API_KEY
         const apiKey = process.env.GITHUB_TOKEN || process.env.GITHUB_API_KEY || process.env.API_KEY;
         if (!apiKey) {
@@ -43,6 +43,9 @@ const GithubDriver = {
             temperature: 0.2
         };
 
+        // 1. Pauschale Bremse (6 Sekunden) zwischen allen Turns, um das 10-RPM-Limit von vornherein natürlich einzuhalten!
+        await new Promise(r => setTimeout(r, 6000));
+
         for (let i = 0; i < retries; i++) {
             try {
                 const response = await fetch(endpoint, {
@@ -55,8 +58,16 @@ const GithubDriver = {
                 });
 
                 const data = await response.json();
+
+                // 2. Selbstheilendes Rate-Limit-Handling für GitHub Models (HTTP 429 oder limit exceeded)
                 if (data.error) {
-                    throw new Error(data.error.message || JSON.stringify(data.error));
+                    const errMsg = data.error.message || JSON.stringify(data.error);
+                    if (response.status === 429 || errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("exceeded")) {
+                        console.warn(`\n[GitHub Models Rate-Limit] Rate-Limit oder Token-Limit erreicht. Pausiere für 12 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                        await new Promise(r => setTimeout(r, 12000));
+                        continue; // Schleife fortsetzen und erneut senden!
+                    }
+                    throw new Error(errMsg);
                 }
 
                 if (!data.choices || data.choices.length === 0) {
@@ -65,9 +76,18 @@ const GithubDriver = {
 
                 return data.choices[0].message.content;
             } catch (err) {
-                console.error(`Github Models API-Call failed (Attempt ${i + 1}/${retries}): ${err.message}`);
+                // Selbstheilender Check für direkt geworfene Fetch- oder Netzwerkfehler im Stream
+                const errMsg = err.message || "";
+                if (errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("exceeded")) {
+                    console.warn(`\n[GitHub Models Rate-Limit] Rate-Limit erreicht. Pausiere für 12 Sekunden vor Versuch ${i + 1}/${retries}...`);
+                    await new Promise(r => setTimeout(r, 12000));
+                    continue;
+                }
+
                 if (i === retries - 1) throw err;
-                await new Promise(r => setTimeout(r, 2000));
+                
+                console.warn(`\n[GitHub Models Error] API-Fehler (Versuch ${i + 1}/${retries}): ${err.message}. Pausiere 4 Sekunden...`);
+                await new Promise(r => setTimeout(r, 4000));
             }
         }
     }

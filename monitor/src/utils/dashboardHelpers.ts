@@ -2,10 +2,10 @@ import { Agent, WorldState, ShipWithCAD, ShipTelemetry } from '../types';
 
 export const parseManifestation = (manifestation: string | undefined) => {
   if (!manifestation) return { thought: '', action: '' };
-  const raw = manifestation.trim();
+  const raw = manifestation.trim().replace(/^\[SELF-IMPULSE\]:\s*/i, '');
   
-  // Find the action index. Bobs might output "AKTION:" or "1. AKTION:" or "**AKTION:**" or similar.
-  const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?AKTION(?:EN)?\s*(?:Befehl|Buffer)?[：:]*(?:\*\*|\*)?/i;
+  // Find the action index. Bobs might output "ACTION:" or "**ACTION:**" or similar.
+  const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ACTION\s*[：:]*(?:\*\*|\*)?/i;
   const match = raw.match(actionRegex);
   
   if (match && match.index !== undefined) {
@@ -14,8 +14,7 @@ export const parseManifestation = (manifestation: string | undefined) => {
     
     // Clean up analysis tags and numbering from thought
     const thought = thoughtRaw
-      .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSE\s*[：:]*(?:\*\*|\*)?/i, '')
-      .replace(/\[EIGENIMPULS\]:\s*/i, '')
+      .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '')
       .trim();
       
     return { thought, action: actionRaw };
@@ -27,14 +26,13 @@ export const parseManifestation = (manifestation: string | undefined) => {
     const thoughtRaw = raw.substring(0, runMatch).trim();
     const actionRaw = raw.substring(runMatch).trim();
     const thought = thoughtRaw
-      .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSE\s*[：:]*(?:\*\*|\*)?/i, '')
-      .replace(/\[EIGENIMPULS\]:\s*/i, '')
+      .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '')
       .trim();
     return { thought, action: actionRaw };
   }
 
   const cleanedThought = raw
-    .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSE\s*[：:]*(?:\*\*|\*)?/i, '')
+    .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '')
     .trim();
   return { thought: cleanedThought, action: '' };
 };
@@ -269,8 +267,8 @@ export const buildBobDashboard = (agent: Agent, state: WorldState) => {
       ships: localShips,
       present_entities: localBobs
     },
-    letzte_system_wahrnehmungen: state.events || [],
-    dein_status: {
+    last_system_perceptions: state.events || [],
+    your_status: {
       id: agent.id,
       name: agent.chosen_name,
       host_type: agent.host_type || 'Unknown',
@@ -283,9 +281,9 @@ export const buildBobDashboard = (agent: Agent, state: WorldState) => {
       storage_capacity: agent.sensors?.inventory?.matter_limit || 100,
       status: agent.status,
       host: buildHostObject(),
-      offene_memos_und_protokolle: agentMemos
+      open_memos_and_protocols: agentMemos
     },
-    radar_entfernter_sektoren: otherSystems,
-    radar_entfernter_signaturen: distantBobs
+    radar_of_distant_sectors: otherSystems,
+    radar_of_distant_signatures: distantBobs
   };
 };

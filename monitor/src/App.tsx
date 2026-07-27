@@ -1,65 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { signal } from '@preact/signals-react';
 import { LogCategory } from './types';
 import { LogPanel } from './components/LogPanel';
 import { ExplorerPanel } from './components/ExplorerPanel';
 import { InspectorPanel } from './components/InspectorPanel';
 import { useC2Store } from './store/stateStore';
 
-const SCALE = 0.5;
-
-const cameraX = signal(0);
-const cameraY = signal(0);
-const zoom = signal(1);
-const isDraggingSignal = signal(false);
-
-const RadarGrid = ({ children, mapRef, onMouseDown, onMouseMove, onMouseUp, onMouseLeave, onWheel }: {
-  children: React.ReactNode;
-  mapRef: React.RefObject<HTMLDivElement | null>;
-  onMouseDown: React.MouseEventHandler;
-  onMouseMove: React.MouseEventHandler;
-  onMouseUp: React.MouseEventHandler;
-  onMouseLeave: React.MouseEventHandler;
-  onWheel: React.WheelEventHandler;
-}) => {
-  const activeDrag = isDraggingSignal.value;
-  return (
-    <div 
-      ref={mapRef} className="radar-grid"
-      style={{ flex: 1, background: '#020203', overflow: 'hidden', cursor: activeDrag ? 'grabbing' : 'grab', position: 'relative' }}
-      onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave} onWheel={onWheel}
-    >
-      {children}
-    </div>
-  );
-};
-
-const MapContainer = ({ children }: { children: React.ReactNode }) => {
-  const x = cameraX.value;
-  const y = cameraY.value;
-  const z = zoom.value;
-  const activeDrag = isDraggingSignal.value;
-  
-  return (
-    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${z})`, transformOrigin: 'center center', transition: activeDrag ? 'none' : 'transform 0.15s ease-out' }}>
-      {children}
-    </div>
-  );
-};
-
-const getColorForId = (id: string) => {
-  const numbersOnly = id.replace(/\D+/g, '');
-  const hashSeed = numbersOnly || id;
-  let hash = 0;
-  for (let i = 0; i < hashSeed.length; i++) {
-    hash = hashSeed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash) % 360;
-  return {
-    solid: `hsl(${hue}, 70%, 50%)`,
-    glow: `hsla(${hue}, 70%, 50%, 0.5)`
-  };
-};
+import { RadarGrid } from './components/Map/RadarGrid';
+import { MapContainer } from './components/Map/MapContainer';
+import { TransitLines } from './components/Map/TransitLines';
+import { TravelingAgents } from './components/Map/TravelingAgents';
+import { CosmicSystems } from './components/Map/CosmicSystems';
+import { cameraX, cameraY, zoom, isDraggingSignal, SCALE } from './store/mapSignals';
 
 export default function App() {
   const state = useC2Store((store) => store.state);
@@ -235,114 +186,9 @@ export default function App() {
         >
           <div className="cosmic-stars" />
           <MapContainer>
-            <svg style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible', pointerEvents: 'none' }}>
-               {/* Transit Lines */}
-               {state.agents.filter(a => a.status === 'traveling').map((a) => (
-                  <line key={`route-${a.id}`} x1={a.origin_x * SCALE} y1={a.origin_y * SCALE} x2={a.target_x * SCALE} y2={a.target_y * SCALE} stroke="rgba(56,189,248,0.25)" strokeWidth="1" strokeDasharray="4,4" />
-               ))}
-            </svg>
-
-            {/* Traveling Agents (Asteroids Style Ships) */}
-            {state.agents.filter(a => a.status === 'traveling').map(a => {
-              const dx = a.target_x - a.origin_x; 
-              const dy = a.target_y - a.origin_y;
-              const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90; // +90 because CSS triangle points UP by default
-              const isSel = selection?.type === 'agent' && selection.id === a.id;
-              const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : a.id;
-              const shipColor = isSel ? '#fff' : '#0ea5e9'; // Cyber-Blue
-              
-              return (
-                <div 
-                   key={a.id} className="agent-dot-container" 
-                   onClick={(e) => { e.stopPropagation(); setSelection({type: 'agent', id: a.id}); }} 
-                   style={{ position: 'absolute', left: a.current_x * SCALE, top: a.current_y * SCALE, transform: 'translate(-50%, -50%)', zIndex: 5, cursor: 'pointer' }}
-                >
-                   {/* Triangle Hack via Borders */}
-                   <div style={{ 
-                      width: 0, height: 0, 
-                      borderLeft: '6px solid transparent', 
-                      borderRight: '6px solid transparent', 
-                      borderBottom: `14px solid ${shipColor}`, 
-                      transform: `rotate(${angle}deg)`, 
-                      filter: `drop-shadow(0 0 8px ${shipColor})`,
-                      transition: 'all 0.1s' 
-                   }} />
-                   <div className="agent-tooltip">{displayName}</div>
-                </div>
-              );
-            })}
-
-            {/* Systems */}
-            {state.systems.map((s) => {
-               const isSel = selection?.type === 'system' && selection.id === s.name;
-               const colors = getColorForId(s.name);
-               const bobsHere = state.agents.filter(a => a.location === s.name && a.status !== 'traveling');
-               const shipsHere = state.ships ? state.ships.filter(ship => ship.system_name === s.name) : [];
-               return (
-                 <div key={s.name} onClick={(e) => { e.stopPropagation(); setSelection({type: 'system', id: s.name}); }} style={{ position: 'absolute', left: s.x * SCALE, top: s.y * SCALE, transform: 'translate(-50%, -50%)', textAlign: 'center', cursor: 'pointer' }}>
-                   {/* System Core */}
-                   <div className="system-core" style={{ width: '40px', height: '40px', background: colors.solid, borderRadius: '50%', border: isSel ? '3px solid #fff' : '2px solid rgba(255,255,255,0.2)', boxShadow: `0 0 50px ${colors.glow}, inset 0 0 10px rgba(255,255,255,0.3)`, margin: '0 auto', transition: 'all 0.2s', position: 'relative' }}>
-                      {/* Telemetry / Infrastructure dots */}
-                      {s.infra && s.infra.length > 0 && (
-                          <div className="infra-tooltip" style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(15,23,42,0.95)', border: '1px solid #38bdf8', borderRadius: '6px', padding: '4px 8px', display: 'none', flexDirection: 'row', flexWrap: 'nowrap', gap: '4px', justifyContent: 'center', zIndex: 20, boxShadow: '0 0 10px rgba(0,0,0,0.8)', whiteSpace: 'nowrap' }}>
-                             {s.infra.map(i => {
-                                let icon = "🏢";
-                                if (i.type === "matter_silo") icon = "📦";
-                                else if (i.type === "solar_collector") icon = "☀️";
-                                else if (i.type === "matter_refinery") icon = "🏭";
-                                else if (i.type === "shipyard" || i.type === "advanced_shipyard") icon = "🏗️";
-                                else if (i.type === "battery_bank") icon = "🔋";
-                                else if (i.type === "comms_relay") icon = "📡";
-                                else if (i.type === "mind_forge") icon = "🧠";
-                                else if (i.type === "deep_space_scanner") icon = "🔭";
-                                else if (i.type === "sem_matrix") return null;
-                                
-                                return <div key={i.id} title={`${i.type} L${i.level}`} style={{ fontSize: '14px', lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px' }}>{icon}</div>
-                            })}
-                          </div>
-                      )}
-                   </div>
-                   
-                   <div style={{ marginTop: '12px', fontWeight: 700, fontSize: '1rem', color: isSel ? '#fff' : '#94a3b8', textShadow: '0 0 10px black', letterSpacing: '1px' }}>{s.display_name || s.name}</div>
-                   
-                   <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: '12px', marginTop: '12px' }}>
-                      {/* Ships Block */}
-                      {shipsHere.length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', alignContent: 'flex-start', gap: '6px', padding: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', width: '60px' }}>
-                              {shipsHere.map(ship => {
-                                  const isUnderConstruction = ship.pilot_id === "UNDER_CONSTRUCTION";
-                                  const pilot = bobsHere.find(a => a.active_ship_id === ship.id);
-                                  const isASel = selection?.type === 'agent' && pilot && selection.id === pilot.id;
-                                  
-                                  const shipColor = isUnderConstruction ? '#f59e0b' : (pilot ? (isASel ? '#fff' : '#0ea5e9') : '#64748b');
-                                  const tooltip = isUnderConstruction 
-                                      ? `${ship.name || 'Unnamed Vessel'} [TROCKENDOCK: ${Math.round((ship.progress_matter / (ship.required_matter || 1)) * 100)}%]`
-                                      : `${ship.name} ${pilot ? '(Bemannt)' : '(Leer)'}`;
-
-                                  return (
-                                      <div key={`ship-${ship.id}`} title={tooltip} onClick={(e) => { e.stopPropagation(); if (pilot) setSelection({type: 'agent', id: pilot.id}); }} style={{ cursor: pilot ? 'pointer' : 'default', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                         <div style={{ width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderBottom: `12px solid ${shipColor}`, filter: `drop-shadow(0 0 4px ${shipColor})`, transition: 'all 0.2s', transform: isASel ? 'scale(1.2)' : 'scale(1)' }} />
-                                      </div>
-                                  );
-                              })}
-                          </div>
-                      )}
-                      
-                      {/* Matrix Bobs Block */}
-                      {bobsHere.filter(a => !a.active_ship_id).length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', alignContent: 'flex-start', gap: '6px', padding: '6px', background: 'rgba(56,189,248,0.1)', borderRadius: '6px', border: '1px solid rgba(56,189,248,0.3)', width: '60px' }}>
-                              {bobsHere.filter(a => !a.active_ship_id).map(a => {
-                                const isASel = selection?.id === a.id;
-                                return (
-                                   <div key={a.id} title={`Matrix: ${a.id}`} onClick={(e) => { e.stopPropagation(); setSelection({type: 'agent', id: a.id}); }} style={{ width: '10px', height: '10px', background: isASel ? '#fff' : '#38bdf8', border: '1px solid rgba(255,255,255,0.5)', cursor: 'pointer', transition: 'all 0.2s', transform: isASel ? 'scale(1.3)' : 'scale(1)', boxShadow: `0 0 5px ${isASel ? '#fff' : '#38bdf8'}` }} />
-                                );
-                              })}
-                          </div>
-                      )}
-                   </div>
-                 </div>
-               );
-            })}
+            <TransitLines state={state} />
+            <TravelingAgents state={state} selection={selection} setSelection={setSelection} />
+            <CosmicSystems state={state} selection={selection} setSelection={setSelection} />
           </MapContainer>
         </RadarGrid>
         <InspectorPanel state={state} selection={selection} setSelection={setSelection} selectedAgent={selectedAgent} selectedSystem={selectedSystem} />

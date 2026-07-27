@@ -68,8 +68,8 @@ export const useC2Store = create<C2Store>((set) => ({
     if (data && data.agents && Array.isArray(data.agents)) {
       data.agents.forEach(a => {
         if (a.last_manifestation?.trim()) {
-          const raw = a.last_manifestation.trim();
-          const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?AKTION(?:EN)?\s*(?:Befehl|Buffer)?[：:]*(?:\*\*|\*)?/i;
+          const raw = a.last_manifestation.trim().replace(/^\[SELF-IMPULSE\]:\s*/i, '');
+          const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ACTION\s*[：:]*(?:\*\*|\*)?/i;
           const match = raw.match(actionRegex);
           
           let rawThought: string;
@@ -88,8 +88,7 @@ export const useC2Store = create<C2Store>((set) => ({
           }
           
           const thought = rawThought
-            .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSE\s*[：:]*(?:\*\*|\*)?/i, '')
-            .replace(/\[EIGENIMPULS\]:\s*/i, '')
+            .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '')
             .trim();
               
           if (thought) {

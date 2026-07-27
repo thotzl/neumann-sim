@@ -54,8 +54,8 @@ export const CosmicSystems = ({ state, selection, setSelection }: CosmicSystemsP
                             
                             const shipColor = isUnderConstruction ? '#f59e0b' : (pilot ? (isASel ? '#fff' : '#0ea5e9') : '#64748b');
                             const tooltip = isUnderConstruction 
-                                ? `${ship.name || 'Unnamed Vessel'} [TROCKENDOCK: ${Math.round((ship.progress_matter / (ship.required_matter || 1)) * 100)}%]`
-                                : `${ship.name} ${pilot ? '(Bemannt)' : '(Leer)'}`;
+                                ? `${ship.name || 'Unnamed Vessel'} [DRY DOCK: ${Math.round((ship.progress_matter / (ship.required_matter || 1)) * 100)}%]`
+                                : `${ship.name} ${pilot ? '(Crewed)' : '(Empty)'}`;
 
                             return (
                                 <div key={`ship-${ship.id}`} title={tooltip} onClick={(e) => { e.stopPropagation(); if (pilot) setSelection({type: 'agent', id: pilot.id}); }} style={{ cursor: pilot ? 'pointer' : 'default', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

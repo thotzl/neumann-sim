@@ -160,15 +160,15 @@ export const ShipyardCatalogModal = ({ selectedSystem, state, onClose }: Shipyar
                             </span>
                           </div>
                           <ProgressBar 
-                            label={`TROCKENDOCK DRY-DOCK ASSEMBLY`} 
+                            label={`DRY-DOCK ASSEMBLY`} 
                             value={ship.progress_matter} 
                             max={ship.required_matter} 
                             color="#f59e0b" 
                           />
                           <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '8px', lineHeight: '1.4' }}>
                             CHASSIS ARCHITECTURE: <span style={{ color: '#fff', fontWeight: 'bold' }}>{ship.chassis}</span><br/>
-                            RESSOURCE BALANCE: <span style={{ color: '#fff' }}>{ship.progress_matter} / {ship.required_matter} Matter</span> (Erstattet 100% bei Abbruch)<br/>
-                            <span style={{ color: '#f59e0b', fontStyle: 'italic' }}>⚙️ Werft-Spezifikation: Montage-Kräne aktiv.</span>
+                            RESOURCE BALANCE: <span style={{ color: '#fff' }}>{ship.progress_matter} / {ship.required_matter} Matter</span> (100% Refunded on cancel)<br/>
+                            <span style={{ color: '#f59e0b', fontStyle: 'italic' }}>⚙️ Shipyard Specification: Assembly cranes active.</span>
                           </div>
                         </div>
                       );

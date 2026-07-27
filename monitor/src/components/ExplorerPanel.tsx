@@ -48,7 +48,7 @@ export const ExplorerPanel = ({ state, selection, setSelection, focusBounds }: E
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {state.agents.map(a => {
               const isASel = selection?.type === 'agent' && selection.id === a.id;
-              const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : 'Unbenannt';
+              const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : 'Unnamed';
               return (
                 <div 
                   key={a.id} 

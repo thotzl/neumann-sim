@@ -114,29 +114,29 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   
                   {/* Graphical Decoupled Host Box */}
                   <div style={{ 
-                    background: dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.04)' : 'rgba(129,140,248,0.04)', 
-                    border: `1px solid ${dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.2)' : 'rgba(129,140,248,0.2)'}`, 
+                    background: dashboardObj.your_status.host.type === 'ship' ? 'rgba(56,189,248,0.04)' : 'rgba(129,140,248,0.04)', 
+                    border: `1px solid ${dashboardObj.your_status.host.type === 'ship' ? 'rgba(56,189,248,0.2)' : 'rgba(129,140,248,0.2)'}`, 
                     borderRadius: '4px', 
                     padding: '10px 14px', 
                     display: 'flex', 
                     flexDirection: 'column', 
                     gap: '4px',
-                    boxShadow: `inset 0 0 10px ${dashboardObj.dein_status.host.type === 'ship' ? 'rgba(56,189,248,0.05)' : 'rgba(129,140,248,0.05)'}`
+                    boxShadow: `inset 0 0 10px ${dashboardObj.your_status.host.type === 'ship' ? 'rgba(56,189,248,0.05)' : 'rgba(129,140,248,0.05)'}`
                   }}>
-                    <div className="mono-text" style={{ fontSize: '0.65rem', color: dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8', fontWeight: 700, letterSpacing: '1px' }}>
-                      {dashboardObj.dein_status.host.type === 'ship' ? '🚢 DECOUPLED_VESSEL_HOST' : '🖲️ DECOUPLED_MATRIX_HOST'} //
+                    <div className="mono-text" style={{ fontSize: '0.65rem', color: dashboardObj.your_status.host.type === 'ship' ? '#38bdf8' : '#818cf8', fontWeight: 700, letterSpacing: '1px' }}>
+                      {dashboardObj.your_status.host.type === 'ship' ? '🚢 DECOUPLED_VESSEL_HOST' : '🖲️ DECOUPLED_MATRIX_HOST'} //
                     </div>
                     <div className="mono-text" style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 'bold' }}>
-                      HOST_TYPE: <span style={{ color: dashboardObj.dein_status.host.type === 'ship' ? '#38bdf8' : '#818cf8' }}>{dashboardObj.dein_status.host.type.toUpperCase()}</span>
+                      HOST_TYPE: <span style={{ color: dashboardObj.your_status.host.type === 'ship' ? '#38bdf8' : '#818cf8' }}>{dashboardObj.your_status.host.type.toUpperCase()}</span>
                     </div>
                     <div className="mono-text" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                      HOST_ID: <span style={{ color: '#fff' }}>{dashboardObj.dein_status.host.id}</span>
+                      HOST_ID: <span style={{ color: '#fff' }}>{dashboardObj.your_status.host.id}</span>
                     </div>
 
                     {/* Host Specifications and Modules (Säule 1 & 3) */}
                     {(() => {
-                      if (dashboardObj.dein_status.host.type === 'ship') {
-                        const ship = resolveShipCADTelemetry(dashboardObj.dein_status.host);
+                      if (dashboardObj.your_status.host.type === 'ship') {
+                        const ship = resolveShipCADTelemetry(dashboardObj.your_status.host);
                         if (!ship) return null;
                         return (
                           <div style={{ marginTop: '6px', borderTop: '1px dashed rgba(56,189,248,0.15)', paddingTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -183,8 +183,8 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                             </button>
                           </div>
                         );
-                      } else if (dashboardObj.dein_status.host.type === 'matrix') {
-                        const hostMat = dashboardObj.dein_status.host;
+                      } else if (dashboardObj.your_status.host.type === 'matrix') {
+                        const hostMat = dashboardObj.your_status.host;
                         return (
                           <div style={{ marginTop: '6px', borderTop: '1px dashed rgba(129,140,248,0.15)', paddingTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                             <div className="mono-text" style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
@@ -232,9 +232,9 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   </div>
                 </div>
                 <div>
-                  <ProgressBar label="ENERGY_CORE" value={dashboardObj.dein_status.inventory.energy} max={Math.max(selectedAgent.sensors?.inventory?.energy_limit || 200, dashboardObj.dein_status.inventory.energy)} color="#38bdf8" />
-                  <ProgressBar label="RAW_MATTER" value={dashboardObj.dein_status.inventory.raw_matter} max={dashboardObj.dein_status.storage_capacity} color="#f59e0b" />
-                  <ProgressBar label="REFINED_MATTER" value={dashboardObj.dein_status.inventory.refined_matter} max={dashboardObj.dein_status.storage_capacity} color="#8b5cf6" />
+                  <ProgressBar label="ENERGY_CORE" value={dashboardObj.your_status.inventory.energy} max={Math.max(selectedAgent.sensors?.inventory?.energy_limit || 200, dashboardObj.your_status.inventory.energy)} color="#38bdf8" />
+                  <ProgressBar label="RAW_MATTER" value={dashboardObj.your_status.inventory.raw_matter} max={dashboardObj.your_status.storage_capacity} color="#f59e0b" />
+                  <ProgressBar label="REFINED_MATTER" value={dashboardObj.your_status.inventory.refined_matter} max={dashboardObj.your_status.storage_capacity} color="#8b5cf6" />
                 </div>
               </>
             )}
@@ -310,11 +310,11 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   ) : (
                     <>
                       {/* Radar Sectors */}
-                      {dashboardObj.radar_entfernter_sektoren && dashboardObj.radar_entfernter_sektoren.length > 0 && (
+                      {dashboardObj.radar_of_distant_sectors && dashboardObj.radar_of_distant_sectors.length > 0 && (
                         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '4px', border: '1px solid #1e293b' }}>
                           <h3 style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#38bdf8', letterSpacing: '1px' }}>🛰️ RADAR_SECTORS:</h3>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {dashboardObj.radar_entfernter_sektoren.map((tp: DistantSector, idx: number) => (
+                            {dashboardObj.radar_of_distant_sectors.map((tp: DistantSector, idx: number) => (
                               <div key={idx} className="mono-text" style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '2px' }}>
                                 <span style={{ color: '#fff', fontWeight: 'bold' }}>{tp.name}</span>
                                 <span>{tp.coordinates} • {tp.distance} ly</span>
@@ -325,11 +325,11 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                       )}
 
                       {/* Radar Signatures (Distant Radar) */}
-                      {dashboardObj.radar_entfernter_signaturen && dashboardObj.radar_entfernter_signaturen.length > 0 && (
+                      {dashboardObj.radar_of_distant_signatures && dashboardObj.radar_of_distant_signatures.length > 0 && (
                         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '4px', border: '1px solid #1e293b' }}>
                           <h3 style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#e0f2fe', letterSpacing: '1px' }}>📡 DISTANT_RADAR_SIGNATURES //</h3>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {dashboardObj.radar_entfernter_signaturen.map((tp: DistantSignature, idx: number) => (
+                            {dashboardObj.radar_of_distant_signatures.map((tp: DistantSignature, idx: number) => (
                               <div key={idx} className="mono-text" style={{ fontSize: '0.7rem', color: '#e0f2fe', fontWeight: 'bold' }}>
                                 <span style={{ color: '#e0f2fe', fontWeight: 'bold' }}>{tp.chosen_name || tp.id}</span>
                                 <span> {tp.status.toUpperCase()} @ {tp.location || 'Unknown'}</span>
@@ -466,14 +466,14 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                                     fontWeight: 'bold',
                                     letterSpacing: '0.5px'
                                   }}>
-                                    {isUnderConstruction ? '🚧 TROCKENDOCK' : `Pilot: ${ship.pilot_id || 'unbemannt'}`}
+                                    {isUnderConstruction ? '🚧 DRY DOCK' : `Pilot: ${ship.pilot_id || 'unpiloted'}`}
                                   </span>
                                 </div>
 
                                 {isUnderConstruction ? (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                     <ProgressBar 
-                                      label={`WERFT-ASSEMBLY PROGRESS (${progressPct}%)`} 
+                                      label={`SHIPYARD ASSEMBLY PROGRESS (${progressPct}%)`} 
                                       value={ship.progress_matter} 
                                       max={ship.required_matter} 
                                       color="#f59e0b" 

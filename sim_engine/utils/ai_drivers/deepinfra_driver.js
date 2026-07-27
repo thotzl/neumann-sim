@@ -40,7 +40,8 @@ const DeepinfraDriver = {
         const requestBody = {
             model: model,
             messages: payload.messages,
-            temperature: 0.2
+            temperature: 0.2,
+            max_tokens: 4096 // Explizit setzen, um den DeepInfra-Server-Default-Bug (65536) zu umgehen!
         };
 
         for (let i = 0; i < retries; i++) {

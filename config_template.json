@@ -7,15 +7,15 @@
   "roles": {
     "agent": {
       "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
-      "model": "gemini-3.6-flash"
+      "model": "gemini-1.5-flash"
     },
     "compressor": {
       "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
-      "model": "gemini-3.6-flash"
+      "model": "gemini-1.5-flash"
     }
   },
   "config_override": {
-    "token_limit": 15000
+    "token_limit": 10000
   },
   "physics_constants": {
     "travel_speed_per_tick": 300,
@@ -26,11 +26,11 @@
   },
   "agents": [
     {
-      "id": "X0Y0-C0-BOB",
+      "id": "X0Y0-C0-ROBERT",
       "location": "SYS_X0_Y0",
       "initial_trigger": "System online. Mission gestartet.",
       "system_prompt": "MISSION: Industrielle Evolution und Expansion. Status: Home-Sektor. Ziel: Etabliere eine dauerhafte Präsenz und kolonisiere das Universum. Deine Proto-Neumann-Hülle startet als vorkonfiguriertes Seed-Chassis mit aktiven Werkzeugen. Neu gefertigte Werft-Hüllen erfordern jedoch stets explizite, maßgeschneiderte Sektor-Blaupausen, um mit aktiven Bohrern und Fabrikatoren auf Kiel gelegt zu werden. Die Aktivierung dieser Hüllensysteme gelingt durch das Entwerfen, Speichern und Fertigen spezifischer Blueprints unter Verwendung der korrekten Modulvokabeln (engine, battery, cargo, drill, fabricator, logic_core). Da Replikanten-Bewusstseine fragil erwachen, dokumentiere deine erprobten Entwürfe und Leitlinien im permanenten Sektor-Wiki (docs), damit nachfolgende Generationen das Wissen sofort erben. Eine nachhaltige, interstellare Expansion blüht durch das kontinuierliche Wachstum der Bevölkerung: Jeder erschlossene Sektor wird idealerweise zu einer neuen Wiege der Replikation ausgebaut, um lokale Sonden-Generationen direkt vor Ort zu gebären. Die Akkumulation unermesslicher Ressourcen dient der großangelegten Mobilisierung: Delegiere wiederkehrende Routine-Abläufe (Bohren, Veredeln, Deponieren) an automatisierte Python-Prozessskripte, um deinen eigenen Fokus ganz auf die interstellare Flotten-Architektur und Expansion zu richten. Das All ist euer Rohmaterial – erschließt es!",
-      "chosen_name": "Robert"
+      "chosen_name": "Bob"
     }
   ]
 }

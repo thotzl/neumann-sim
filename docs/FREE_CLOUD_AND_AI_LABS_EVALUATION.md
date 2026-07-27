@@ -10,8 +10,9 @@ Dieses Dossier bündelt alle Evaluierungsergebnisse, System-Benchmarks, Integrat
 3.  **Säule 3: Die echten 24/7 Dauerbrenner-Server (Oracle & Google Cloud VM Tiers)**
 4.  **Säule 4: Das mathematische Token- & Rate-Limit-Handbuch (Die Quota-Fallen)**
 5.  **Säule 5: Das GitHub-Models Power-Szenario für Bezahl-Accounts (Die ultimative Lösung)**
-6.  **Säule 6: Interaktive Entwickler-Sandboxen (Lightning AI & Google Cloud Shell)**
-7.  **Das Ultimative Entscheidungs-Matrix-Wiki**
+6.  **Säule 6: Weitere professionelle API-Modell-Router (Together AI, DeepInfra, SambaNova, GLHF)**
+7.  **Säule 7: Interaktive Entwickler-Sandboxen (Lightning AI & Google Cloud Shell)**
+8.  **Das Ultimative Entscheidungs-Matrix-Wiki**
 
 ---
 
@@ -184,7 +185,50 @@ Microsoft und GitHub bieten zahlenden Abonnenten massiv aufgewertete Kontingente
 
 ---
 
-## 🛠️ Säule 6: Interaktive Entwickler-Sandboxen
+## 🔗 Säule 6: Weitere professionelle API-Modell-Router (Together AI, DeepInfra, SambaNova, GLHF)
+*Die stärksten und unkompliziertesten Alternativen, um massive Inferenz-Kapazitäten vollkommen ohne Kreditkarte und ohne strikte Free-Tier-Absturzgrenzen freizuschalten.*
+
+### A. Together AI – Das unendliche Startguthaben
+Together AI ist einer der Pioniere im Hosten freier Modelle im Hyper-Scale-Maßstab.
+*   **Das Free-Angebot:** Jeder neue Entwickler erhält bei Registrierung **$25.00 kostenloses Startguthaben** (keine Kreditkarte erforderlich!).
+*   **Warum das unendlich ist:** Auf Together AI kostet Inferenz für Llama 3.1 8B nur unvorstellbare $0,0001 pro 1 Mio. Tokens. Deine $25 reichen also für gigantische **250.000.000 (250 Millionen) Tokens**! Du kannst damit monatelang Tag und Nacht simulieren.
+*   **API-Setup:** Nutze deinen universellen `openai_driver.js` und trage in der `config.json` Folgendes ein:
+    ```json
+    "driver_path": "./sim_engine/utils/ai_drivers/openai_driver",
+    "model": "meta-llama/meta-llama-3.1-8b-instruct",
+    "openai_endpoint": "https://api.together.xyz/v1/chat/completions"
+    ```
+    *Der API-Key wird als `OPENAI_API_KEY` in deiner `.env` hinterlegt.*
+
+### B. DeepInfra – Der preiseffiziente Geheimtipp
+DeepInfra bietet extrem schnelle Serverlaufzeiten und unschlagbar niedrige Inferenz-Preise.
+*   **Das Free-Angebot:** Du erhältst bei der Anmeldung **$1.80 kostenloses Startguthaben** (ohne Kreditkarte).
+*   **Die Reichweite:** Da das Hosting von Llama-Modellen dort nur $0,05 pro 1 Mio. Tokens kostet, reicht dein Startguthaben für stolze **36 Millionen kostenlose Tokens**!
+*   **API-Setup:**
+    ```json
+    "driver_path": "./sim_engine/utils/ai_drivers/openai_driver",
+    "model": "meta-llama/Meta-Llama-3.1-8B-Instruct",
+    "openai_endpoint": "https://api.deepinfra.com/v1/openai/chat/completions"
+    ```
+
+### C. SambaNova Cloud – Unbegrenzter High-Speed LPU-Herausforderer
+SambaNova fordert Groq direkt mit eigenen LPUs heraus und bietet unverschämt schnelle Inferenzzeiten (Llama 3.3 70B mit 460+ t/s).
+*   **Das Free-Angebot:** Ein **dauerhaft kostenloser Entwickler-Tier** mit sehr großzügigen RPM/TPM Limits (keine Kreditkarte erforderlich!).
+*   **API-Setup:**
+    ```json
+    "driver_path": "./sim_engine/utils/ai_drivers/sambanova_driver",
+    "model": "llama-3.3-70b-instruct"
+    ```
+    *Der API-Key wird als `SAMBANOVA_API_KEY` in deiner `.env` hinterlegt.*
+
+### D. GLHF.chat – Der Community-Hoster (100% Free)
+Ein Zusammenschluss von Entwicklern, die freie Rechenleistung bündeln und aggregiert anbieten.
+*   **Das Free-Angebot:** Ein **dauerhaft zu 100 % kostenloser, offener API-Key** für diverse Llama, Qwen und Mistral Modelle.
+*   **API-Setup:** Nutzt die standardisierte OpenAI-Schnittstelle über deinen `openai_driver.js`.
+
+---
+
+## 🛠️ Säule 7: Interaktive Entwickler-Sandboxen
 *Schnelles Prototyping, kollaboratives Coden im Team oder direktes Editieren im Cloud-Browser.*
 
 ### A. Lightning AI (Lightning Studios)
@@ -205,6 +249,7 @@ Microsoft und GitHub bieten zahlenden Abonnenten massiv aufgewertete Kontingente
 | :--- | :--- | :--- |
 | **Maximale Inferenz-Intelligenz & Echtzeit-Speed (0,4s/Turn)** | **GitHub Models (mit GitHub Pro/Copilot)** <br>+ *gpt-4o / llama-3.3-70b* | **Die ultimative Lösung für dich!** Deine bezahlte GitHub-Identität liefert ungedrosselte High-End-Inferenz auf Azure-Servern. |
 | **Absturzsicherer Dauerlauf im Free Tier (100% Unzerstörbar)** | **Gemini 3.6 Flash** <br>+ *12-Sekunden-Bremse* | Google bietet gigantische 1 Mio. TPM. Mit der 12s-Sicherheitsbremse ist ein API-Absturz mathematisch unmöglich. |
+| **Massive Cloud-Inferenz-Power komplett kostenlos & ohne Limits** | **Together AI** <br>*(Llama 3.1 8B)* | $25 Startguthaben decken 250 Millionen kostenlose Tokens ohne jegliche Free-Tier-Bremse (unbegrenztes RPM!). |
 | **Autarker 24/7-Lauf (Laptop aus, Robert expandiert im All)** | **Oracle Cloud Free Tier (ARM VM)** <br>+ *GitHub Models API* | 24 GB RAM und 4 CPU-Kerne hosten den Node-Runner permanent kostenlos im Hintergrund, während GitHub die Inferenz rechnet. |
 | **Voll-lokaler, anspruchsvoller GPU-Lauf ohne PC-Last** | **Google Colab (NVIDIA T4)** <br>+ *Localtunnel / ngrok* | Die 16 GB NVIDIA-Cloud-GPU übernimmt das schwere Rechnen von Qwen 7B, während dein Laptop eiskalt bleibt. |
 | **Maximale Datensouveränität (100 % Privat)** | **Lokales Docker-Compose** <br>+ *Ollama (qwen2.5-coder:7b)* | Dank unserer GFX `11.5.0` (RDNA 3.5) Optimierung läuft dein Laptop lautlos und 100 % offline im eigenen LAN. |

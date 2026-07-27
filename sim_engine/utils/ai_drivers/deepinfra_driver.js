@@ -43,9 +43,6 @@ const DeepinfraDriver = {
             temperature: 0.2
         };
 
-        // 1. Pauschale Bremse (3 Sekunden) zwischen Turns, um TPM-Sperren im Prepaid-Dauerlauf vorzubeugen
-        await new Promise(r => setTimeout(r, 3000));
-
         for (let i = 0; i < retries; i++) {
             try {
                 const response = await fetch(endpoint, {

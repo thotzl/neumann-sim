@@ -6,12 +6,12 @@
   "reproduction": true,
   "roles": {
     "agent": {
-      "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
-      "model": "gemini-3.6-flash"
+      "driver_path": "./sim_engine/utils/ai_drivers/github_driver",
+      "model": "gpt-4o"
     },
     "compressor": {
-      "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
-      "model": "gemini-3.6-flash"
+      "driver_path": "./sim_engine/utils/ai_drivers/github_driver",
+      "model": "gpt-4o"
     }
   },
   "config_override": {

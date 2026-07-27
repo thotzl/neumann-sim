@@ -4,8 +4,17 @@
   "state": "state.json",
   "rounds": 50,
   "reproduction": true,
+  "roles": {
+    "agent": {
+      "driver_path": "./sim_engine/utils/ai_drivers/groq_driver",
+      "model": "llama-3.3-70b-versatile"
+    },
+    "compressor": {
+      "driver_path": "./sim_engine/utils/ai_drivers/groq_driver",
+      "model": "llama-3.3-70b-versatile"
+    }
+  },
   "config_override": {
-    "model": "gemini-2.5-flash",
     "token_limit": 15000
   },
   "physics_constants": {

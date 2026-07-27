@@ -11,7 +11,7 @@ function loadState(statePath) {
     return safeReadJsonSync(statePath, null);
 }
 
-async function runDistillation(apiUrl, globalHistory, currentMemoryPath) {
+async function runDistillation(bridgeOrUrl, globalHistory, currentMemoryPath) {
     console.log("Führe Epochal-Destillation durch...");
     const currentMemory = fs.existsSync(currentMemoryPath) ? fs.readFileSync(currentMemoryPath, 'utf8') : "Anfang der Zeit.";
     
@@ -39,8 +39,16 @@ async function runDistillation(apiUrl, globalHistory, currentMemoryPath) {
     
     GIB AUSSCHLIESSLICH DAS AKTUALISIERTE DOKUMENT AUS (max. 1500 Wörter):`;
 
+    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+
     try {
-        const newMemory = await callGemini(apiUrl, { contents: [{ role: "user", parts: [{ text: prompt }] }] });
+        let newMemory;
+        if (bridgeOrUrl && typeof bridgeOrUrl.generateText === 'function') {
+            newMemory = await bridgeOrUrl.generateText(payload);
+        } else {
+            newMemory = await callGemini(bridgeOrUrl, payload);
+        }
+
         if (newMemory && !newMemory.includes("[ERROR]")) {
             fs.writeFileSync(currentMemoryPath, newMemory);
             return true;
@@ -52,13 +60,13 @@ async function runDistillation(apiUrl, globalHistory, currentMemoryPath) {
     }
 }
 
-async function finalizeSimulation(apiUrl, state, memoryFile, logFile, errorOccurred) {
+async function finalizeSimulation(bridgeOrUrl, state, memoryFile, logFile, errorOccurred) {
     console.log("Starte Abschluss-Routine...");
     fs.appendFileSync(logFile, `\n---\n### [SYSTEM]: ABSCHLUSS-ROUTINE EINGELEITET (Grund: ${errorOccurred ? 'Fehler' : 'Simulation beendet'})\n\n`);
 
     if (state.globalHistory && state.globalHistory.length > 0) {
         console.log("Sichere letzte Impulse...");
-        const success = await runDistillation(apiUrl, state.globalHistory, memoryFile);
+        const success = await runDistillation(bridgeOrUrl, state.globalHistory, memoryFile);
         if (success) {
             fs.appendFileSync(logFile, `### [FINALER GEDÄCHTNIS-DUMP]: Letzte Impulse erfolgreich destilliert.\n\n`);
         }
@@ -66,7 +74,7 @@ async function finalizeSimulation(apiUrl, state, memoryFile, logFile, errorOccur
     console.log("Abschluss abgeschlossen.");
 }
 
-async function runIndividualDistillation(apiUrl, history, agentId) {
+async function runIndividualDistillation(bridgeOrUrl, history, agentId) {
     console.log(`Führe individuelle Destillation für ${agentId} durch...`);
     
     const prompt = `Du bist ein autonomes Gedächtnis-Modul für die Neumann-Sonde ${agentId}.
@@ -84,8 +92,16 @@ async function runIndividualDistillation(apiUrl, history, agentId) {
     
     DEIN KOMPRIMIERTES GEDÄCHTNIS:`;
 
+    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+
     try {
-        const newMemory = await callGemini(apiUrl, { contents: [{ role: "user", parts: [{ text: prompt }] }] });
+        let newMemory;
+        if (bridgeOrUrl && typeof bridgeOrUrl.generateText === 'function') {
+            newMemory = await bridgeOrUrl.generateText(payload);
+        } else {
+            newMemory = await callGemini(bridgeOrUrl, payload);
+        }
+
         if (newMemory && !newMemory.includes("[ERROR]")) {
             return newMemory;
         }

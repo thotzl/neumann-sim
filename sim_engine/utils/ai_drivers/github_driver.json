@@ -1,0 +1,4 @@
+{
+  "model": "gpt-4o",
+  "github_endpoint": "https://models.inference.ai.azure.com/chat/completions"
+}

@@ -9,7 +9,8 @@ function writeLogHeader(logFile, config, isResumed = false) {
     const fullSystemPrompt = `${globalInstr}\n\n${agentPrompt}`;
     
     const resumeMarker = isResumed ? " (RESUMED)" : "";
-    const header = `# Log ${logFile}${resumeMarker}\n**Model:** ${config.model || "unknown"}\n**Token Limit:** ${config.token_limit || 15000}\n\n### INITIAL SYSTEM PROMPT\n> ${fullSystemPrompt.trim().replace(/\n/g, '\n> ')}\n\n---\n`;
+    const resolvedModel = config.roles?.agent?.model || config.model || "gemini-2.5-flash";
+    const header = `# Log ${logFile}${resumeMarker}\n**Model:** ${resolvedModel}\n**Token Limit:** ${config.token_limit || 15000}\n\n### INITIAL SYSTEM PROMPT\n> ${fullSystemPrompt.trim().replace(/\n/g, '\n> ')}\n\n---\n`;
     fs.writeFileSync(logFile, header);
 }
 

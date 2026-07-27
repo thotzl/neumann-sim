@@ -111,12 +111,12 @@ async function run() {
 
     logger.writeLogHeader(logFile, config, state.isResumed);
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-    if (!apiKey) {
-        console.error("FEHLER: Kein GEMINI_API_KEY in .env gefunden.");
-        process.exit(1);
-    }
-    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + (config.config_override?.model || config.model) + ':generateContent?key=' + apiKey;
+    const AIBridge = require('./utils/ai_bridge');
+    const agentConfig = config.roles?.agent || config;
+    const compressorConfig = config.roles?.compressor || config;
+
+    const agentBridge = new AIBridge(agentConfig);
+    const compressorBridge = new AIBridge(compressorConfig);
 
     async function turn() {
         if (state.round >= config.rounds && state.currentTurnIndex === 0) return false;
@@ -193,7 +193,7 @@ print(json.dumps({"messages": msgs, "names": names}))`;
         const envState = envManager.getEnvState(universeDir);
         const globalInstr = config.global_system_instruction || "";
 
-        await memoryCtrl.handleDistillation(agent.id, state, config, apiUrl);
+        await memoryCtrl.handleDistillation(agent.id, state, config, compressorBridge);
 
         // Vorbereiten der Payload (Inbox Extraction)
         let promptText = "";
@@ -238,9 +238,9 @@ print(json.dumps({"messages": msgs, "names": names}))`;
         
         contextArray.push({ agent: "System", text: promptText });
 
-        const payload = apiClient.buildAgentContext(agent.id, contextArray, null, envState, globalInstr, agent.system_prompt, config.anonymity);
+        const payload = agentBridge.buildContext(agent.id, contextArray, null, envState, globalInstr, agent.system_prompt);
         process.env.CURRENT_MOCK_AGENT = agent.id;
-        let responseText = await apiClient.callGemini(apiUrl, payload);
+        let responseText = await agentBridge.generateText(payload);
 
         let preTurnEvents = inboxText ? inboxText.trim() : "";
 

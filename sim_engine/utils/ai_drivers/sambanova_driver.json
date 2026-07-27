@@ -1,0 +1,4 @@
+{
+  "model": "llama-3.3-70b-instruct",
+  "sambanova_endpoint": "https://api.sambanova.ai/v1/chat/completions"
+}

@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { callGemini } = require('./api_client');
 const { safeReadJsonSync } = require('./io_helpers');
 
 function saveState(statePath, data) {
@@ -11,7 +10,7 @@ function loadState(statePath) {
     return safeReadJsonSync(statePath, null);
 }
 
-async function runDistillation(bridgeOrUrl, globalHistory, currentMemoryPath) {
+async function runDistillation(bridge, globalHistory, currentMemoryPath) {
     console.log("Führe Epochal-Destillation durch...");
     const currentMemory = fs.existsSync(currentMemoryPath) ? fs.readFileSync(currentMemoryPath, 'utf8') : "Anfang der Zeit.";
     
@@ -40,15 +39,9 @@ async function runDistillation(bridgeOrUrl, globalHistory, currentMemoryPath) {
     GIB AUSSCHLIESSLICH DAS AKTUALISIERTE DOKUMENT AUS (max. 1500 Wörter):`;
 
     try {
-        let newMemory;
-        if (bridgeOrUrl && typeof bridgeOrUrl.generateText === 'function') {
-            // Symmetrischer Payload-Aufbau: Baut das richtige Format (messages vs. contents) vollautomatisch über die Bridge!
-            const payload = bridgeOrUrl.buildContext('System', [{ agent: 'User', text: prompt }], null, null, null, null);
-            newMemory = await bridgeOrUrl.generateText(payload);
-        } else {
-            const legacyPayload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            newMemory = await callGemini(bridgeOrUrl, legacyPayload);
-        }
+        // Rein symmetrischer, entkoppelter API-Aufruf über die Bridge!
+        const payload = bridge.buildContext('System', [{ agent: 'User', text: prompt }], null, null, null, null);
+        const newMemory = await bridge.generateText(payload);
 
         if (newMemory && !newMemory.includes("[ERROR]")) {
             fs.writeFileSync(currentMemoryPath, newMemory);
@@ -61,13 +54,13 @@ async function runDistillation(bridgeOrUrl, globalHistory, currentMemoryPath) {
     }
 }
 
-async function finalizeSimulation(bridgeOrUrl, state, memoryFile, logFile, errorOccurred) {
+async function finalizeSimulation(bridge, state, memoryFile, logFile, errorOccurred) {
     console.log("Starte Abschluss-Routine...");
     fs.appendFileSync(logFile, `\n---\n### [SYSTEM]: ABSCHLUSS-ROUTINE EINGELEITET (Grund: ${errorOccurred ? 'Fehler' : 'Simulation beendet'})\n\n`);
 
     if (state.globalHistory && state.globalHistory.length > 0) {
         console.log("Sichere letzte Impulse...");
-        const success = await runDistillation(bridgeOrUrl, state.globalHistory, memoryFile);
+        const success = await runDistillation(bridge, state.globalHistory, memoryFile);
         if (success) {
             fs.appendFileSync(logFile, `### [FINALER GEDÄCHTNIS-DUMP]: Letzte Impulse erfolgreich destilliert.\n\n`);
         }
@@ -75,7 +68,7 @@ async function finalizeSimulation(bridgeOrUrl, state, memoryFile, logFile, error
     console.log("Abschluss abgeschlossen.");
 }
 
-async function runIndividualDistillation(bridgeOrUrl, history, agentId) {
+async function runIndividualDistillation(bridge, history, agentId) {
     console.log(`Führe individuelle Destillation für ${agentId} durch...`);
     
     const prompt = `Du bist ein autonomes Gedächtnis-Modul für die Neumann-Sonde ${agentId}.
@@ -94,15 +87,9 @@ async function runIndividualDistillation(bridgeOrUrl, history, agentId) {
     DEIN KOMPRIMIERTES GEDÄCHTNIS:`;
 
     try {
-        let newMemory;
-        if (bridgeOrUrl && typeof bridgeOrUrl.generateText === 'function') {
-            // Symmetrischer Payload-Aufbau: Baut das richtige Format (messages vs. contents) vollautomatisch über die Bridge!
-            const payload = bridgeOrUrl.buildContext(agentId, [{ agent: 'User', text: prompt }], null, null, null, null);
-            newMemory = await bridgeOrUrl.generateText(payload);
-        } else {
-            const legacyPayload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            newMemory = await callGemini(bridgeOrUrl, legacyPayload);
-        }
+        // Rein symmetrischer, entkoppelter API-Aufruf über die Bridge!
+        const payload = bridge.buildContext(agentId, [{ agent: 'User', text: prompt }], null, null, null, null);
+        const newMemory = await bridge.generateText(payload);
 
         if (newMemory && !newMemory.includes("[ERROR]")) {
             return newMemory;

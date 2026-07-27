@@ -7,11 +7,11 @@
   "roles": {
     "agent": {
       "driver_path": "./sim_engine/utils/ai_drivers/deepinfra_driver",
-      "model": "meta-llama/Meta-Llama-3.1-8B-Instruct"
+      "model": "Qwen/Qwen2.5-Coder-32B-Instruct"
     },
     "compressor": {
       "driver_path": "./sim_engine/utils/ai_drivers/deepinfra_driver",
-      "model": "meta-llama/Meta-Llama-3.1-8B-Instruct"
+      "model": "Qwen/Qwen2.5-Coder-32B-Instruct"
     }
   },
   "config_override": {

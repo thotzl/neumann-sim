@@ -6,12 +6,12 @@
   "reproduction": true,
   "roles": {
     "agent": {
-      "driver_path": "./sim_engine/utils/ai_drivers/github_driver",
-      "model": "gpt-4o"
+      "driver_path": "./sim_engine/utils/ai_drivers/deepinfra_driver",
+      "model": "meta-llama/Meta-Llama-3.1-8B-Instruct"
     },
     "compressor": {
-      "driver_path": "./sim_engine/utils/ai_drivers/github_driver",
-      "model": "gpt-4o"
+      "driver_path": "./sim_engine/utils/ai_drivers/deepinfra_driver",
+      "model": "meta-llama/Meta-Llama-3.1-8B-Instruct"
     }
   },
   "config_override": {

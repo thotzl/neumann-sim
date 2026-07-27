@@ -15,7 +15,7 @@
     }
   },
   "config_override": {
-    "token_limit": 15000
+    "token_limit": 2500
   },
   "physics_constants": {
     "travel_speed_per_tick": 300,

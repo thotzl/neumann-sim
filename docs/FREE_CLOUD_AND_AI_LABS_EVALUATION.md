@@ -1,6 +1,6 @@
 # 🪐 Bob-OS: Das ultimative Dossier für kostenfreie Cloud- & KI-Laboratorien
 
-Dieses Dossier konsolidiert alle Evaluierungsergebnisse, System-Benchmarks, Integrationsanleitungen und Profi-Entwickler-Hacks, um die Bob-OS Simulation (sowohl den Runner als auch die Inferenz lokaler oder Cloud-LLMs) zu 100 % kostenfrei, hardwarebeschleunigt und vollkommen autark im Web zu betreiben.
+Dieses Dossier bündelt alle Evaluierungsergebnisse, System-Benchmarks, Integrationsanleitungen, mathematischen Limit-Analysen und Profi-Entwickler-Hacks, um die Bob-OS Simulation (sowohl den Runner als auch die Inferenz lokaler oder Cloud-LLMs) zu 100 % kostenfrei, hardwarebeschleunigt und vollkommen autark im Web zu betreiben.
 
 ---
 
@@ -8,8 +8,9 @@ Dieses Dossier konsolidiert alle Evaluierungsergebnisse, System-Benchmarks, Inte
 1.  **Säule 1: Lokale GPU-Modelle in der Cloud (Der Google Colab & Kaggle Tunnel-Hack)**
 2.  **Säule 2: Serverlose High-Speed APIs (Groq, Mistral, GitHub Models)**
 3.  **Säule 3: Die echten 24/7 Dauerbrenner-Server (Oracle & Google Cloud VM Tiers)**
-4.  **Säule 4: Interaktive Entwickler-Sandboxen (Lightning AI & Google Cloud Shell)**
-5.  **Das Ultimative Entscheidungs-Matrix-Wiki**
+4.  **Säule 5: Das mathematische Token- & Rate-Limit-Handbuch (Die Quota-Fallen)**
+5.  **Säule 4: Interaktive Entwickler-Sandboxen (Lightning AI & Google Cloud Shell)**
+6.  **Das Ultimative Entscheidungs-Matrix-Wiki**
 
 ---
 
@@ -113,12 +114,44 @@ Oracle bietet das mit Abstand großzügigste und spektakulärste dauerhafte Free
 ### B. Google Compute Engine (GCE) e2-micro VM
 *   **Rechenleistung:** **`e2-micro` Instanz** (2 vCPUs, 1 GB RAM).
 *   **Speicher:** Bis zu 30 GB HDD-Speicher.
-*   **Kosten:** **100 % dauerhaft kostenlos** (Gilt für eine aktive Instanz in den US-Regionen `us-central1`, `us-east1` oder `us-west1`).
+*   **Kosten:** **100 % dauerhaft kostenlos** (Gilt für eine active Instanz in den US-Regionen `us-central1`, `us-east1` oder `us-west1`).
 *   **Warum es passt:** Hervorragend geeignet, um den schlanken Node-Runner in einer persistenten `screen`-Sitzung dauerhaft laufen zu lassen, während die LLM-Calls über die kostenlose Groq-API (Säule 2) ausgelagert werden.
 
 ---
 
-## 🛠️ Säule 4: Interaktive Entwickler-Sandboxen
+## 📐 Säule 4: Das mathematische Token- & Rate-Limit-Handbuch (Die Quota-Fallen)
+*Wer asynchrone Multi-Agenten-Simulationen mit massiven Systemprompts betreibt, rennt unweigerlich in API-Schranken. Dieses Kapitel bricht die Mathematik hinter den Limits auf und zeigt, wie man sie perfekt austrickst.*
+
+### 1. Das mathematische TPM-Problem (Beispiel: Groq Free-Tier)
+Ein typischer Zug einer Neumann-Sonde hat folgenden Token-Bedarf:
+$$\text{Prompt-Inhalt (Regeln, Dashboard, History)} \approx 3.600 \text{ Tokens}$$
+$$\text{Modell-Antwort (Analyse, Code-Block, Aktion)} \approx 800 \text{ Tokens}$$
+$$\text{Gesamtverbrauch pro Anfrage} \approx 4.400 \text{ Tokens}$$
+
+Wenn die API deines Anbieters ein Limit von **12.000 Tokens pro Minute (TPM)** vorschreibt (wie bei Groqs kostenlosem Llama 3.3 70B), gilt folgende Rechnung:
+$$\text{Maximale Anfragen pro Minute} = \frac{12.000 \text{ TPM (Limit)}}{4.400 \text{ Tokens (Verbrauch)}} = 2,72 \text{ Requests}$$
+
+*   **Die Falle:** Sendest du innerhalb von 60 Sekunden einen **dritten** Request, reißt du die 12.000 TPM sofort ($3 \times 4.400 = 13.200$) und wirst für eine volle Minute blockiert.
+*   **Die mathematische Lösung:** Wir drosseln den Treiber über eine pauschale Zeitbremse (*Flat Delay*) auf exakt **20 Sekunden**. Dadurch machen wir maximal 3 Requests pro Minute und bleiben selbst bei völligem Ausfall des Prompt-Cachings dauerhaft sicher unter der Grenze!
+
+### 2. Das RPM-Problem bei neuen Keys (Beispiel: Google AI Studio)
+Google AI Studio schränkt neu erstellte, unbestätigte API-Keys in den ersten Stunden rigoros auf **5 Requests pro Minute (RPM)** ein (später steigt das Limit automatisch auf 15 RPM).
+*   **Die Falle:** Läuft die Simulation ungedrosselt, berechnet Gemini 3.6 Flash einen Turn in unter 2 Sekunden. Nach 10 Sekunden ist das 5-RPM-Limit gesprengt.
+*   **Die mathematische Lösung:** Wir drosseln den Gemini-Treiber auf einen festen Abstand von **12 Sekunden** ($12 \text{s} \times 5 = 60\text{s}$). Damit landen wir bei exakt 5 RPM und laufen unendlich, absolut absturzfrei und kostenlos durch.
+
+### 3. Der große API-Limit-Vergleich
+
+| API Provider | Modell (Beispiel) | Requests pro Minute (RPM) | Tokens pro Minute (TPM) | Risikoprofil & Eignung |
+| :--- | :--- | :--- | :--- | :--- |
+| **Google AI Studio** <br>*(Free Tier)* | **Gemini 3.6 Flash** | **15 RPM** <br>*(5 RPM für neue Keys)* | **1.000.000 TPM** | **Geringstes Risiko.** Die 1 Mio. TPM sind praktisch unbegrenzt. Erfordert nur eine 12s Bremse für neue Keys. |
+| **Groq** <br>*(Free Tier)* | **Llama 3.3 70B** | **30 RPM** | **12.000 TPM** | **Sehr hohes Risiko.** Die 12k TPM sind nach 2 Turns verstopft. Erfordert eine 20s Bremse. |
+| **Groq** <br>*(Free Tier)* | **Llama 3.1 8B** | **30 RPM** | **40.000 TPM** | **Mittleres Risiko.** Erlaubt dank 40k TPM schnellere Turns (Bremse auf 15s ausreichend). |
+| **Cerebras** <br>*(Free Tier)* | **Llama 3.1 8B** | **30 RPM** | *Hoch / Variabel* | **Geringes Risiko.** Extrem schnell (1.800+ t/s), erfordert aber eine Kreditkarte zur Bot-Abwehr. |
+| **SambaNova** <br>*(Free Tier)* | **Llama 3.3 70B** | **30 RPM** | *Generös* | **Geringes Risiko.** Keine Kreditkarte nötig, hohe Limits und extrem schneller Inferenz-Takt. |
+
+---
+
+## 🛠️ Säule 5: Interaktive Entwickler-Sandboxen
 *Schnelles Prototyping, kollaboratives Coden im Team oder direktes Editieren im Cloud-Browser.*
 
 ### A. Lightning AI (Lightning Studios)
@@ -137,8 +170,8 @@ Oracle bietet das mit Abstand großzügigste und spektakulärste dauerhafte Free
 
 | Dein primäres Ziel | Die beste Plattform-Kombination | Warum dieses Setup? |
 | :--- | :--- | :--- |
-| **Maximale Inferenz-Intelligenz & Echtzeit-Speed (0,4s/Turn)** | **Groq (Llama 3.3 70B)** | LPU-Hardware liefert 300+ t/s auf GPT-4-Niveau, komplett kostenlos und ohne lokalen Stromverbrauch. |
-| **Autarker 24/7-Lauf (Laptop aus, Robert expandiert im All)** | **Oracle Cloud Free Tier (ARM VM)** <br>+ *Groq / Gemini API* | 24 GB RAM und 4 CPU-Kerne hosten die Docker-Container permanent kostenlos im Hintergrund. |
+| **Absturzsicherer Dauerlauf im Free Tier (100% Unzerstörbar)** | **Gemini 3.6 Flash** <br>+ *12-Sekunden-Bremse* | Google bietet gigantische 1 Mio. TPM. Mit der 12s-Sicherheitsbremse ist ein API-Absturz mathematisch unmöglich. |
+| **Maximale Inferenz-Intelligenz & Echtzeit-Speed (0,4s/Turn)** | **Groq / SambaNova** <br>*(Llama 3.3 70B)* | LPUs liefern GPT-4-Leistung in Millisekunden. Erfordert aber zur TPM-Schonung die 15-20s Bremse. |
+| **Autarker 24/7-Lauf (Laptop aus, Robert expandiert im All)** | **Oracle Cloud Free Tier (ARM VM)** <br>+ *Gemini / Groq API* | 24 GB RAM und 4 CPU-Kerne hosten den Node-Runner permanent kostenlos im Hintergrund. |
 | **Voll-lokaler, anspruchsvoller GPU-Lauf ohne PC-Last** | **Google Colab (NVIDIA T4)** <br>+ *Localtunnel / ngrok* | Die 16 GB NVIDIA-Cloud-GPU übernimmt das schwere Rechnen von Qwen 7B, während dein Laptop eiskalt bleibt. |
-| **Schnelles Team-Coding & direkte Script-Anpassung** | **Lightning AI (VS Code Studio)** | Du codest im Web-VS-Code und hast sofortigen Zugriff auf mächtige Cloud-Ressourcen. |
 | **Maximale Datensouveränität (100 % Privat)** | **Lokales Docker-Compose** <br>+ *Ollama (qwen2.5-coder:7b)* | Dank unserer GFX `11.5.0` (RDNA 3.5) Optimierung läuft dein Laptop lautlos und 100 % offline im eigenen LAN. |

@@ -29,9 +29,6 @@ const GeminiDriver = {
         const model = config.config_override?.model || config.model || "gemini-3.6-flash";
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-        // 1. Pauschale Bremse (12.0 Sekunden) zwischen allen Turns, um Rate-Limits von vornherein vorzubeugen
-        await new Promise(r => setTimeout(r, 12000));
-
         for (let i = 0; i < retries; i++) {
             try {
                 const response = await fetch(apiUrl, {

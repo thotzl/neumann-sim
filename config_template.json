@@ -6,12 +6,12 @@
   "reproduction": true,
   "roles": {
     "agent": {
-      "driver_path": "./sim_engine/utils/ai_drivers/deepinfra_driver",
-      "model": "Qwen/Qwen2.5-Coder-32B-Instruct"
+      "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
+      "model": "gemini-3.6-flash"
     },
     "compressor": {
-      "driver_path": "./sim_engine/utils/ai_drivers/deepinfra_driver",
-      "model": "Qwen/Qwen2.5-Coder-32B-Instruct"
+      "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
+      "model": "gemini-3.6-flash"
     }
   },
   "config_override": {

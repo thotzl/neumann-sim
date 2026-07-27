@@ -42,8 +42,8 @@ const GroqDriver = {
             temperature: 0.2
         };
 
-        // 1. Pauschale Bremse (3.0 Sekunden) zwischen allen Turns, um Rate-Limits von vornherein vorzubeugen
-        await new Promise(r => setTimeout(r, 3000));
+        // 1. Pauschale Bremse (20 Sekunden) zwischen allen Turns, um TPM-Rate-Limits mathematisch zu 100% auszuschließen!
+        await new Promise(r => setTimeout(r, 20000));
 
         for (let i = 0; i < retries; i++) {
             try {

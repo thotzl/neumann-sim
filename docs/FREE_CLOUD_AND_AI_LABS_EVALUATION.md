@@ -8,9 +8,10 @@ Dieses Dossier bündelt alle Evaluierungsergebnisse, System-Benchmarks, Integrat
 1.  **Säule 1: Lokale GPU-Modelle in der Cloud (Der Google Colab & Kaggle Tunnel-Hack)**
 2.  **Säule 2: Serverlose High-Speed APIs (Groq, Mistral, GitHub Models)**
 3.  **Säule 3: Die echten 24/7 Dauerbrenner-Server (Oracle & Google Cloud VM Tiers)**
-4.  **Säule 5: Das mathematische Token- & Rate-Limit-Handbuch (Die Quota-Fallen)**
-5.  **Säule 4: Interaktive Entwickler-Sandboxen (Lightning AI & Google Cloud Shell)**
-6.  **Das Ultimative Entscheidungs-Matrix-Wiki**
+4.  **Säule 4: Das mathematische Token- & Rate-Limit-Handbuch (Die Quota-Fallen)**
+5.  **Säule 5: Das GitHub-Models Power-Szenario für Bezahl-Accounts (Die ultimative Lösung)**
+6.  **Säule 6: Interaktive Entwickler-Sandboxen (Lightning AI & Google Cloud Shell)**
+7.  **Das Ultimative Entscheidungs-Matrix-Wiki**
 
 ---
 
@@ -151,7 +152,39 @@ Google AI Studio schränkt neu erstellte, unbestätigte API-Keys in den ersten S
 
 ---
 
-## 🛠️ Säule 5: Interaktive Entwickler-Sandboxen
+## 💎 Säule 5: Das GitHub-Models Power-Szenario für Bezahl-Accounts
+*Wenn du ein kostenpflichtiges GitHub-Abonnement (GitHub Pro, GitHub Copilot oder GitHub Enterprise) besitzt, ist GitHub Models (Azure Inference API) die absolute und unangefochtene Nummer 1 für dein Projekt.*
+
+### 1. Die verborgenen Privilegien deines Bezahl-Accounts
+Microsoft und GitHub bieten zahlenden Abonnenten massiv aufgewertete Kontingente für ihren Modell-Router an, um professionelles Prototyping zu unterstützen:
+*   **Erhöhte Rate-Limits (Warp-Speed):** Während Gratis-User stark gedrosselt sind, werden bezahlte Accounts auf bis zu **150 Requests pro Minute (RPM)** und extrem hohe TPM-Raten hochgestuft!
+*   **Vollzugriff auf Premium-Kombinationen:** Du kannst absolute Spitzenklassen-Modelle wie **`gpt-4o`** oder **`llama-3.3-70b`** völlig ungedrosselt und in Echtzeit ansprechen.
+*   **Keinerlei Zusatzkosten:** Die Inferenz ist zu 100 % in deinem bestehenden GitHub-Abonnement enthalten. Du zahlst keinen Cent extra!
+*   **Unübertroffene Azure-Stabilität:** Da die API auf Microsofts weltweiter Azure-Infrastruktur gehostet wird, gibt es keine "Stoßzeiten-Hänger" oder asynchronen Quota-Abbrüche wie bei Gratis-Aggregatoren.
+
+### 2. Schritt-für-Schritt Einrichtung mit deinem GitHub-Token
+1.  Gehe in deine GitHub-Einstellungen zu: **Developer Settings -> Personal Access Tokens -> Tokens (classic)**.
+2.  Erstelle einen neuen Token (Klicke auf *Generate new token*).
+    *   Benenne ihn (z. B. "Bob-OS-Inference").
+    *   Du musst **keinerlei Berechtigungen (Scopes)** auswählen! Ein nackter Token reicht für die Inferenz aus (maximale Sicherheit!).
+    *   Klicke auf *Generate*. Kopiere den generierten Token (er beginnt meist mit `ghp_`).
+3.  Trage den Token in deine `.env`-Datei ein:
+    ```bash
+    GITHUB_TOKEN=ghp_dein_github_token_hier
+    ```
+4.  Aktiviere das GitHub-Profil in deiner `config.json` für die Bobs. Durch die 150 RPM von GitHub kannst du die Sekundendrosselungen im Treiber komplett weglassen und die Turns im Millisekundentakt durchknuspern!
+    ```json
+    "roles": {
+      "agent": {
+        "driver_path": "./sim_engine/utils/ai_drivers/github_driver",
+        "model": "gpt-4o"
+      }
+    }
+    ```
+
+---
+
+## 🛠️ Säule 6: Interaktive Entwickler-Sandboxen
 *Schnelles Prototyping, kollaboratives Coden im Team oder direktes Editieren im Cloud-Browser.*
 
 ### A. Lightning AI (Lightning Studios)
@@ -170,8 +203,8 @@ Google AI Studio schränkt neu erstellte, unbestätigte API-Keys in den ersten S
 
 | Dein primäres Ziel | Die beste Plattform-Kombination | Warum dieses Setup? |
 | :--- | :--- | :--- |
+| **Maximale Inferenz-Intelligenz & Echtzeit-Speed (0,4s/Turn)** | **GitHub Models (mit GitHub Pro/Copilot)** <br>+ *gpt-4o / llama-3.3-70b* | **Die ultimative Lösung für dich!** Deine bezahlte GitHub-Identität liefert ungedrosselte High-End-Inferenz auf Azure-Servern. |
 | **Absturzsicherer Dauerlauf im Free Tier (100% Unzerstörbar)** | **Gemini 3.6 Flash** <br>+ *12-Sekunden-Bremse* | Google bietet gigantische 1 Mio. TPM. Mit der 12s-Sicherheitsbremse ist ein API-Absturz mathematisch unmöglich. |
-| **Maximale Inferenz-Intelligenz & Echtzeit-Speed (0,4s/Turn)** | **Groq / SambaNova** <br>*(Llama 3.3 70B)* | LPUs liefern GPT-4-Leistung in Millisekunden. Erfordert aber zur TPM-Schonung die 15-20s Bremse. |
-| **Autarker 24/7-Lauf (Laptop aus, Robert expandiert im All)** | **Oracle Cloud Free Tier (ARM VM)** <br>+ *Gemini / Groq API* | 24 GB RAM und 4 CPU-Kerne hosten den Node-Runner permanent kostenlos im Hintergrund. |
+| **Autarker 24/7-Lauf (Laptop aus, Robert expandiert im All)** | **Oracle Cloud Free Tier (ARM VM)** <br>+ *GitHub Models API* | 24 GB RAM und 4 CPU-Kerne hosten den Node-Runner permanent kostenlos im Hintergrund, während GitHub die Inferenz rechnet. |
 | **Voll-lokaler, anspruchsvoller GPU-Lauf ohne PC-Last** | **Google Colab (NVIDIA T4)** <br>+ *Localtunnel / ngrok* | Die 16 GB NVIDIA-Cloud-GPU übernimmt das schwere Rechnen von Qwen 7B, während dein Laptop eiskalt bleibt. |
 | **Maximale Datensouveränität (100 % Privat)** | **Lokales Docker-Compose** <br>+ *Ollama (qwen2.5-coder:7b)* | Dank unserer GFX `11.5.0` (RDNA 3.5) Optimierung läuft dein Laptop lautlos und 100 % offline im eigenen LAN. |

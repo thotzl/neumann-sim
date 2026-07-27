@@ -39,14 +39,15 @@ async function runDistillation(bridgeOrUrl, globalHistory, currentMemoryPath) {
     
     GIB AUSSCHLIESSLICH DAS AKTUALISIERTE DOKUMENT AUS (max. 1500 Wörter):`;
 
-    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-
     try {
         let newMemory;
         if (bridgeOrUrl && typeof bridgeOrUrl.generateText === 'function') {
+            // Symmetrischer Payload-Aufbau: Baut das richtige Format (messages vs. contents) vollautomatisch über die Bridge!
+            const payload = bridgeOrUrl.buildContext('System', [{ agent: 'User', text: prompt }], null, null, null, null);
             newMemory = await bridgeOrUrl.generateText(payload);
         } else {
-            newMemory = await callGemini(bridgeOrUrl, payload);
+            const legacyPayload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            newMemory = await callGemini(bridgeOrUrl, legacyPayload);
         }
 
         if (newMemory && !newMemory.includes("[ERROR]")) {
@@ -92,14 +93,15 @@ async function runIndividualDistillation(bridgeOrUrl, history, agentId) {
     
     DEIN KOMPRIMIERTES GEDÄCHTNIS:`;
 
-    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-
     try {
         let newMemory;
         if (bridgeOrUrl && typeof bridgeOrUrl.generateText === 'function') {
+            // Symmetrischer Payload-Aufbau: Baut das richtige Format (messages vs. contents) vollautomatisch über die Bridge!
+            const payload = bridgeOrUrl.buildContext(agentId, [{ agent: 'User', text: prompt }], null, null, null, null);
             newMemory = await bridgeOrUrl.generateText(payload);
         } else {
-            newMemory = await callGemini(bridgeOrUrl, payload);
+            const legacyPayload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            newMemory = await callGemini(bridgeOrUrl, legacyPayload);
         }
 
         if (newMemory && !newMemory.includes("[ERROR]")) {

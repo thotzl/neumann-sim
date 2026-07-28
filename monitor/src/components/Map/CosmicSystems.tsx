@@ -51,18 +51,24 @@ export const CosmicSystems = ({ state, selection, setSelection }: CosmicSystemsP
                             const isUnderConstruction = ship.pilot_id === "UNDER_CONSTRUCTION";
                             const pilot = bobsHere.find(a => a.active_ship_id === ship.id);
                             const isASel = selection?.type === 'agent' && pilot && selection.id === pilot.id;
-                            const pilotSleeping = pilot && pilot.sleep_state && pilot.sleep_state > 0;
+                            
+                            const pilotRemaining = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilot.sleep_until_cycle
+                              ? Math.max(0, pilot.sleep_until_cycle - state.tick)
+                              : 0;
+                            const pilotSleeping = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilotRemaining > 0;
 
                             let shipColor = isUnderConstruction ? '#f59e0b' : (pilot ? (isASel ? '#fff' : '#0ea5e9') : '#64748b');
-                            if (pilot && pilot.sleep_state === 1) {
-                              shipColor = '#3b82f6'; // Standby Blue
-                            } else if (pilot && pilot.sleep_state === 2) {
-                              shipColor = '#a855f7'; // Hibernate Purple
+                            if (pilotSleeping && pilot) {
+                              if (pilot.sleep_state === 1) {
+                                shipColor = '#f59e0b'; // Standby Yellow/Orange
+                              } else if (pilot.sleep_state === 2) {
+                                shipColor = '#a855f7'; // Silent Standby Purple
+                              }
                             }
 
                             const tooltip = isUnderConstruction 
                                 ? `${ship.name || 'Unnamed Vessel'} [DRY DOCK: ${Math.round((ship.progress_matter / (ship.required_matter || 1)) * 100)}%]`
-                                : `${ship.name} ${pilot ? `(Crewed - Pilot: ${pilot.id}${pilotSleeping ? ` [💤 ${pilot.sleep_state === 1 ? 'STANDBY' : 'DND'}]` : ''})` : '(Empty)'}`;
+                                : `${ship.name} ${pilot ? `(Crewed - Pilot: ${pilot.id}${pilotSleeping ? ` [💤 ${pilot.sleep_state === 1 ? 'STANDBY' : 'SILENT STANDBY'}]` : ''})` : '(Empty)'}`;
 
                             return (
                                 <div 
@@ -92,16 +98,22 @@ export const CosmicSystems = ({ state, selection, setSelection }: CosmicSystemsP
                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', alignContent: 'flex-start', gap: '6px', padding: '6px', background: 'rgba(56,189,248,0.1)', borderRadius: '6px', border: '1px solid rgba(56,189,248,0.3)', width: '60px' }}>
                         {bobsHere.filter(a => !a.active_ship_id).map(a => {
                           const isASel = selection?.id === a.id;
-                          const isSleeping = a.sleep_state && a.sleep_state > 0;
+                          
+                          const remaining = a.sleep_state && a.sleep_state > 0 && a.sleep_until_cycle
+                            ? Math.max(0, a.sleep_until_cycle - state.tick)
+                            : 0;
+                          const isSleeping = a.sleep_state && a.sleep_state > 0 && remaining > 0;
                           
                           let bobColor = isASel ? '#fff' : '#38bdf8';
-                          if (a.sleep_state === 1) {
-                            bobColor = '#3b82f6'; // Standby Blue
-                          } else if (a.sleep_state === 2) {
-                            bobColor = '#a855f7'; // Hibernate Purple
+                          if (isSleeping) {
+                            if (a.sleep_state === 1) {
+                              bobColor = '#f59e0b'; // Standby Yellow/Orange
+                            } else if (a.sleep_state === 2) {
+                              bobColor = '#a855f7'; // Silent Standby Purple
+                            }
                           }
                           
-                          const tooltip = `Matrix: ${a.id}${a.sleep_state === 1 ? ' [💤 STANDBY]' : (a.sleep_state === 2 ? ' [🌙 HIBERNATING]' : '')}`;
+                          const tooltip = `Matrix: ${a.id}${isSleeping ? (a.sleep_state === 1 ? ' [💤 STANDBY]' : ' [🔕 SILENT STANDBY]') : ''}`;
                           return (
                              <div 
                                key={a.id} 

@@ -39,7 +39,7 @@ export const LogPanel = ({ logs, filters, setFilters, vogMsg, setVogMsg }: LogPa
     <div className="scifi-panel" style={{ borderLeft: '1px solid #1e293b', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#05060a' }}>
       {/* FILTER BAR */}
       <div style={{ padding: '12px 15px', borderBottom: '1px solid #1e293b', display: 'flex', gap: '6px', flexWrap: 'wrap', flexShrink: 0, background: 'rgba(15,23,42,0.8)' }}>
-        <button onClick={() => setFilters(f => ({...f, thought: !f.thought}))} style={{ background: filters.thought ? '#1e293b' : 'transparent', color: filters.thought ? '#fff' : '#475569', border: '1px solid #334155', padding: '4px 10px', borderRadius: '2px', fontSize: '0.7rem', cursor: 'pointer' }}>THOUGHTS</button>
+        <button onClick={() => setFilters(f => ({...f, thought: !f.thought}))} style={{ background: filters.thought ? '#1e293b' : 'transparent', color: filters.thought ? '#fff' : '#475569', border: '1px solid #334155', padding: '4px 10px', borderRadius: '2px', fontSize: '0.7rem', cursor: 'pointer' }}>MISSION LOGS</button>
         <button onClick={() => setFilters(f => ({...f, action: !f.action}))} style={{ background: filters.action ? 'rgba(56,189,248,0.2)' : 'transparent', color: filters.action ? '#38bdf8' : '#475569', border: `1px solid ${filters.action ? '#38bdf8' : '#334155'}`, padding: '4px 10px', borderRadius: '2px', fontSize: '0.7rem', cursor: 'pointer' }}>ACTIONS</button>
         <button onClick={() => setFilters(f => ({...f, scut: !f.scut}))} style={{ background: filters.scut ? 'rgba(245,158,11,0.2)' : 'transparent', color: filters.scut ? '#f59e0b' : '#475569', border: `1px solid ${filters.scut ? '#f59e0b' : '#334155'}`, padding: '4px 10px', borderRadius: '2px', fontSize: '0.7rem', cursor: 'pointer' }}>SCUT</button>
         <button onClick={() => setFilters(f => ({...f, system: !f.system}))} style={{ background: filters.system ? 'rgba(239,68,68,0.2)' : 'transparent', color: filters.system ? '#ef4444' : '#475569', border: `1px solid ${filters.system ? '#ef4444' : '#334155'}`, padding: '4px 10px', borderRadius: '2px', fontSize: '0.7rem', cursor: 'pointer' }}>SYSTEM</button>
@@ -76,7 +76,7 @@ export const LogPanel = ({ logs, filters, setFilters, vogMsg, setVogMsg }: LogPa
                 <span style={{ fontWeight: 700, color: badgeColor, letterSpacing: '1px', textTransform: 'uppercase' }}>
                   {entry.agentName && entry.agentName !== entry.agentId ? `${entry.agentName.toUpperCase()} (ID: ${entry.agentId})` : (entry.agentName || entry.agentId || 'UNKNOWN').toUpperCase()}
                 </span>
-                <span className="mono-text" style={{ color: '#475569' }}>T_{entry.tick}</span>
+                <span className="mono-text" style={{ color: '#475569' }}>SD_{entry.tick}</span>
               </div>
               {(() => {
                 // Parse out multiplier like (3x) or (2x) from entry.text (Point 26)

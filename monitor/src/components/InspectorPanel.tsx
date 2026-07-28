@@ -78,14 +78,14 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                onClick={() => setActiveTab('cognition')}
                style={{ padding: '0 20px', background: activeTab === 'cognition' ? 'rgba(56,189,248,0.1)' : 'transparent', border: 'none', borderBottom: activeTab === 'cognition' ? '2px solid #38bdf8' : 'none', color: activeTab === 'cognition' ? '#fff' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
              >
-               COGNITION
+               NEURAL THREADS
              </button>
            )}
            <button 
              onClick={() => setActiveTab('meta')}
              style={{ padding: '0 20px', background: activeTab === 'meta' ? 'rgba(56,189,248,0.1)' : 'transparent', border: 'none', borderBottom: activeTab === 'meta' ? '2px solid #38bdf8' : 'none', color: activeTab === 'meta' ? '#fff' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
            >
-             {selection.type === 'agent' ? 'TELEMETRY' : 'INFRASTRUCTURE'}
+             {selection.type === 'agent' ? 'MISSION TELEMETRY' : 'INFRASTRUCTURE'}
            </button>
            <button 
              onClick={() => setActiveTab('raw')}
@@ -112,10 +112,14 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                         const remaining = selectedAgent.sleep_state && selectedAgent.sleep_state > 0 && selectedAgent.sleep_until_cycle
                           ? Math.max(0, selectedAgent.sleep_until_cycle - state.tick)
                           : 0;
-                        if (selectedAgent.sleep_state === 1) {
-                          return <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>● STANDBY ({remaining} Cycles)</span>;
-                        } else if (selectedAgent.sleep_state === 2) {
-                          return <span style={{ color: '#a855f7', fontWeight: 'bold' }}>● DND / HIBERNATING ({remaining} Cycles)</span>;
+                        const isCurrentlySleeping = selectedAgent.sleep_state && selectedAgent.sleep_state > 0 && remaining > 0;
+                        
+                        if (isCurrentlySleeping) {
+                          if (selectedAgent.sleep_state === 1) {
+                            return <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>● STANDBY ({remaining} Cycles)</span>;
+                          } else {
+                            return <span style={{ color: '#a855f7', fontWeight: 'bold' }}>● SILENT STANDBY ({remaining} Cycles)</span>;
+                          }
                         } else {
                           return <span style={{ color: selectedAgent.status === 'active' ? '#10b981' : '#f59e0b' }}>● {(selectedAgent.status || 'unknown').toUpperCase()}</span>;
                         }
@@ -306,8 +310,8 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
             {activeTab === 'meta' && (
               <>
                 <div className="mono-text" style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: '1.8' }}>
-                  BOOT_TICK: {selectedAgent.birth_cycle}<br/>
-                  PARENT_ID: {selectedAgent.parent_id || 'ORIGIN'}<br/>
+                  BOOT_STARDATE: {selectedAgent.birth_cycle}<br/>
+                  PARENT_ID: {selectedAgent.parent_id || 'FIRST INSTANCE'}<br/>
                   COORD_X: {Math.round(selectedAgent.current_x)}<br/>
                   COORD_Y: {Math.round(selectedAgent.current_y)}
                 </div>

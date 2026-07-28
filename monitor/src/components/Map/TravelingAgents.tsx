@@ -19,7 +19,10 @@ export const TravelingAgents = ({ state, selection, setSelection }: TravelingAge
         const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : a.id;
         const shipColor = isSel ? '#fff' : '#0ea5e9'; // Cyber-Blue
         
-        const isSleeping = a.sleep_state && a.sleep_state > 0;
+        const remaining = a.sleep_state && a.sleep_state > 0 && a.sleep_until_cycle
+          ? Math.max(0, a.sleep_until_cycle - state.tick)
+          : 0;
+        const isSleeping = a.sleep_state && a.sleep_state > 0 && remaining > 0;
         return (
           <div 
              key={a.id} className="agent-dot-container" 

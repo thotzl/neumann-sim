@@ -152,6 +152,7 @@ async function run() {
 
         if (state.currentTurnIndex === 0) {
             state.round++;
+            state.actualRoundTicks = 0; // Initialize dynamic sequential tick count
             console.log(`\nCycle ${state.round}/${config.rounds}...`);
             
             bootstrapper.syncPopulation(populationFile, universeDir, vDir, state, logger, logFile, state.round);
@@ -212,14 +213,6 @@ print(json.dumps({"messages": msgs, "names": names}))`;
         const agentId = state.turnSequence[state.currentTurnIndex];
         const agent = state.agents.find(a => a.id === agentId);
 
-        // --- TIER I/V: FRACTIONAL STARDATE CALCULATOR ---
-        const totalTicks = state.turnSequence.length;
-        const currentTick = state.currentTurnIndex + 1; // 1-based index
-        const fractionalStardate = Number(`${state.round}.${currentTick}`);
-
-        // Set fractional stardate for child executions
-        process.env.BOB_CYCLE = String(fractionalStardate);
-
         if (!agent || !agent.alive) {
             state.currentTurnIndex++;
             if (state.currentTurnIndex >= state.turnSequence.length) state.currentTurnIndex = 0;
@@ -234,6 +227,13 @@ print(json.dumps({"messages": msgs, "names": names}))`;
             const skipped = await wakeupManager.handleStandby(agent, state, config, universeDir, logFile, dbPath);
             if (skipped) return true; // Turn übersprungen, im Standby verblieben!
         }
+
+        // --- TIER I/V: DYNAMIC SEQUENTIAL STARDATE CALCULATOR ---
+        state.actualRoundTicks = (state.actualRoundTicks || 0) + 1;
+        const fractionalStardate = Number(`${state.round}.${state.actualRoundTicks}`);
+
+        // Set fractional stardate for child executions
+        process.env.BOB_CYCLE = String(fractionalStardate);
 
         console.log(`  Turn: ${agent.id}`);
         const envState = envManager.getEnvState(universeDir);

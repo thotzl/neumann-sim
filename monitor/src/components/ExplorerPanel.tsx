@@ -56,22 +56,28 @@ export const ExplorerPanel = ({ state, selection, setSelection, focusBounds }: E
                 ? Math.max(0, a.sleep_until_cycle - state.tick)
                 : 0;
                 
+              const isCurrentlySleeping = a.sleep_state && a.sleep_state > 0 && remaining > 0;
+              
               let dotColor = a.status === 'active' ? '#10b981' : '#f59e0b';
               let dotShadow = a.status === 'active' ? '0 0 10px #10b981' : 'none';
               
-              if (a.sleep_state === 1) {
-                dotColor = '#38bdf8'; // Standby Blue
-                dotShadow = '0 0 10px #38bdf8';
-              } else if (a.sleep_state === 2) {
-                dotColor = '#a855f7'; // Hibernate Purple
-                dotShadow = '0 0 10px #a855f7';
+              if (isCurrentlySleeping) {
+                if (a.sleep_state === 1) {
+                  dotColor = '#f59e0b'; // Standby Yellow/Orange
+                  dotShadow = '0 0 10px #f59e0b';
+                } else if (a.sleep_state === 2) {
+                  dotColor = '#a855f7'; // Silent Standby Purple
+                  dotShadow = '0 0 10px #a855f7';
+                }
               }
               
-              let statusText = a.status === 'traveling' ? 'Transit' : (a.location || 'Unknown');
-              if (a.sleep_state === 1) {
-                statusText = `Standby (💤 ${remaining}C)`;
-              } else if (a.sleep_state === 2) {
-                statusText = `DND Sleep (🌙 ${remaining}C)`;
+              let statusText = a.status === 'traveling' ? 'In Transit' : (a.location || 'Unknown');
+              if (isCurrentlySleeping) {
+                if (a.sleep_state === 1) {
+                  statusText = `Standby (💤 ${remaining}C)`;
+                } else if (a.sleep_state === 2) {
+                  statusText = `Silent Standby (🔕 ${remaining}C)`;
+                }
               }
 
               return (

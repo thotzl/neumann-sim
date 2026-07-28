@@ -64,10 +64,27 @@ async function handleDistillation(agentId, state, config, apiUrl) {
         const chosenName = (state.agents && state.agents.find(a => a.id === agentId)?.chosen_name) || "Unnamed";
         const agentDisplayName = `${chosenName} (ID: ${agentId})`;
 
+        const agent = state.agents && state.agents.find(a => a.id === agentId);
+        
+        // Skip distillation if the agent is still on cooldown from a previous API failure
+        if (agent && agent.distillation_cooldown > 0) {
+            agent.distillation_cooldown--;
+            console.log(`  [MEMORY-COOLDOWN] Skipping distillation for ${agentId}. Cooldown ticks left: ${agent.distillation_cooldown}`);
+            return;
+        }
+
         const stitched = await stateManager.compressAndStitchHistory(apiUrl, state.histories[agentId], agentId, config, agentDisplayName);
+        
         if (stitched && stitched.length > 0) {
             state.histories[agentId] = stitched;
             console.log(`  [MEMORY-STITCH] Unified Causal Stitching applied for ${agentId}. Saved last 5 turns uncompressed.`);
+            if (agent) agent.distillation_cooldown = 0; // Clear on success
+        } else {
+            // Apply a 10-cycle cooldown upon rate-limits or API failures to prevent rapid-fire spam
+            if (agent) {
+                agent.distillation_cooldown = 10;
+                console.log(`  [MEMORY-COOLDOWN] Distillation failed or rate-limited for ${agentId}. Applying 10-cycle cooldown.`);
+            }
         }
     }
 }

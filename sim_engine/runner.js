@@ -387,9 +387,14 @@ print(json.dumps({"messages": msgs, "names": names}))`;
             if (systemAutoOutput) {
                 logger.appendTurnLog(logFile, state.round, "System", 0, 0, "[SYSTEM AUTOMATION RUN]", systemAutoOutput, true, "");
             }
-            try { 
-                runPython(vDir, `core/bin/physics_update.py`, [state.round.toString()]);
+            try {
+               runPython(vDir, `core/bin/physics_update.py`, [state.round.toString()]);
             } catch (e) { console.error("[PHYSICS-ERROR] Update failed:", e.message); }
+
+            // Artificial 500ms pulse delay to throttle the simulation speed
+            // and protect the Gemini API from rapid-fire standby rate-limits.
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             stateManager.saveState(stateFile, state);
         }
         return true;

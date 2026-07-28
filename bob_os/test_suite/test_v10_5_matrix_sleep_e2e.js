@@ -80,7 +80,7 @@ async function run() {
     });
 
     // Sync database state into memory
-    syncPopulation(populationFile, testVerseDir, testVDir, state, null, null, 1);
+    await syncPopulation(populationFile, testVerseDir, testVDir, state, null, null, 1);
 
     // Verify Instance-1 has transitioned to sleep state in memory
     const inst1 = state.agents.find(a => a.id === "Instance-1");
@@ -118,7 +118,7 @@ async function run() {
     console.log("  ✅ DND Emergency Override successfully verified via CLI output.");
 
     // Sync SQLite back into JS memory
-    syncPopulation(populationFile, testVerseDir, testVDir, state, null, null, 2);
+    await syncPopulation(populationFile, testVerseDir, testVDir, state, null, null, 2);
 
     const inst1_woke = state.agents.find(a => a.id === "Instance-1");
     assert.strictEqual(inst1_woke.sleep_state, 0); // Woken up!

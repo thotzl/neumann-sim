@@ -155,7 +155,7 @@ async function run() {
             state.actualRoundTicks = 0; // Initialize dynamic sequential tick count
             console.log(`\nCycle ${state.round}/${config.rounds}...`);
             
-            bootstrapper.syncPopulation(populationFile, universeDir, vDir, state, logger, logFile, state.round);
+            await bootstrapper.syncPopulation(populationFile, universeDir, vDir, state, logger, logFile, state.round, compressorBridge, config);
             stateManager.saveState(stateFile, state);
 
             // --- PHASE BATCHING (Turn 0: Soft Physics Collection) ---

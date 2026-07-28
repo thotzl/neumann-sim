@@ -20,7 +20,11 @@ c_inner = conn.cursor()
 res = {}
 for r in c_outer.execute('SELECT * FROM agents'):
     loc = resolve_agent_location(c_inner, r['host_type'], r['host_id'], r['status'])
-    res[r['id']] = loc
+    res[r['id']] = {
+        "location": loc,
+        "sleep_state": r['sleep_state'] if 'sleep_state' in r.keys() else 0,
+        "sleep_until_round": r['sleep_until_round'] if 'sleep_until_round' in r.keys() else 0
+    }
 conn.close()
 print(json.dumps(res))`;
             const out = execSync(`python3 -c "${pyScript.replace(/"/g, '\\"')}"`, {
@@ -72,7 +76,9 @@ print(json.dumps(res))`;
     
     popData.agents.forEach(pAgent => {
         let agentObj = state.agents.find(a => a.id === pAgent.id);
-        const actualLocation = resolvedLocations[pAgent.id] || pAgent.location || ".";
+        const actualData = resolvedLocations[pAgent.id] || { location: pAgent.location || ".", sleep_state: 0, sleep_until_round: 0 };
+        const actualLocation = typeof actualData === 'string' ? actualData : (actualData.location || ".");
+        
         if (!agentObj) {
             const fallbackPrompt = state.agents[0] ? state.agents[0].system_prompt : ".";
             agentObj = {
@@ -80,13 +86,17 @@ print(json.dumps(res))`;
                 system_prompt: pAgent.system_prompt || pAgent.prompt || fallbackPrompt,
                 location: actualLocation,
                 alive: pAgent.status === "active",
-                needsResumeNotify: true
+                needsResumeNotify: true,
+                sleep_state: typeof actualData === 'string' ? 0 : (actualData.sleep_state || 0),
+                sleep_until_cycle: typeof actualData === 'string' ? 0 : (actualData.sleep_until_round || 0)
             };
             state.agents.push(agentObj);
         } else {
             agentObj.system_prompt = pAgent.system_prompt || pAgent.prompt || agentObj.system_prompt;
             agentObj.location = actualLocation;
             agentObj.alive = (pAgent.status === "active");
+            agentObj.sleep_state = typeof actualData === 'string' ? 0 : (actualData.sleep_state || 0);
+            agentObj.sleep_until_cycle = typeof actualData === 'string' ? 0 : (actualData.sleep_until_round || 0);
         }
 
         // --- PROCEDURAL HARD-BOOT (Executed if history is empty) ---

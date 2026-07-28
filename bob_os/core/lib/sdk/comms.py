@@ -19,7 +19,8 @@ class Comms:
     def __init__(self, agent): self.agent = agent
     
     @agent_service.with_agent_context(allow_disembodied=True)
-    def scut(self, cursor, agent, receiver_id, message):
+    def scut(self, cursor, agent, receiver_id, message, priority=False):
+        priority_int = 1 if priority in [True, "True", "true", 1] else 0
         rules = config_service.get_economy_rules()
         base_range = rules.get('global_settings', {}).get('base_comms_range', 1000)
 
@@ -58,13 +59,13 @@ class Comms:
                         if system_service.has_active_infrastructure(cursor, other['location'], 'comms_relay'):
                             reachable_count += 1
             
-            cursor.execute("INSERT INTO messages (sender, receiver, content) VALUES (?, 'ALL', ?)", (self.agent.id, message))
+            cursor.execute("INSERT INTO messages (sender, receiver, content, priority) VALUES (?, 'ALL', ?, ?)", (self.agent.id, message, priority_int))
             print(f"[SUCCESS] Message buffered for transmission. {reachable_count} receivers.")
             return True
         else:
             try:
                 cursor.execute("""
-                    SELECT id, current_x, current_y,
+                    SELECT id, chosen_name, current_x, current_y, sleep_state, sleep_until_round,
                            CASE 
                                WHEN status = 'traveling' THEN 'Interstellar'
                                WHEN host_type = 'ship' THEN (SELECT system_name FROM ships WHERE id = CAST(host_id AS INTEGER))
@@ -74,7 +75,10 @@ class Comms:
                     FROM agents WHERE id = ?
                 """, (receiver_id,))
             except sqlite3.OperationalError:
-                cursor.execute("SELECT id, location, current_x, current_y FROM agents WHERE id = ?", (receiver_id,))
+                try:
+                    cursor.execute("SELECT id, chosen_name, location, current_x, current_y, sleep_state, sleep_until_round FROM agents WHERE id = ?", (receiver_id,))
+                except sqlite3.OperationalError:
+                    cursor.execute("SELECT id, chosen_name, location, current_x, current_y FROM agents WHERE id = ?", (receiver_id,))
                 
             target_agent = cursor.fetchone()
             if not target_agent:
@@ -82,6 +86,7 @@ class Comms:
                 return False
             
             real_target_id = target_agent['id']
+            target_name = get_display_name_with_id(target_agent)
             
             if agent['location'] != target_agent['location']:
                 dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], target_agent['current_x'], target_agent['current_y'])
@@ -91,6 +96,31 @@ class Comms:
                         print(f"[DENIED] Agent '{receiver_id}' is out of range ({int(dist)} > {base_range}). Signal loss. Construct a 'comms_relay' to boost the signal.")
                         return False
 
-            cursor.execute("INSERT INTO messages (sender, receiver, content) VALUES (?, ?, ?)", (self.agent.id, real_target_id, message))
-            print(f"[SUCCESS] Message buffered for transmission to {get_display_name_with_id(target_agent)}.")
+            # Check Hibernation and DND status (Self-healing for legacy test DB schemas)
+            import os
+            current_cycle = int(os.environ.get('BOB_CYCLE', 0))
+            
+            target_keys = target_agent.keys() if hasattr(target_agent, 'keys') else []
+            sleep_state = target_agent['sleep_state'] if 'sleep_state' in target_keys else 0
+            sleep_until_round = target_agent['sleep_until_round'] if 'sleep_until_round' in target_keys else 0
+            
+            is_sleeping = (sleep_state in [1, 2]) and (current_cycle < (sleep_until_round or 0))
+            
+            if is_sleeping:
+                if priority_int == 1:
+                    # Emergency Wakeup (DND Bypass!)
+                    cursor.execute("UPDATE agents SET sleep_state = 0, sleep_until_round = 0 WHERE id = ?", (real_target_id,))
+                    print(f"[SUCCESS] Emergency Beacon transmitted! Target '{target_name}' forced to reactivate.")
+                else:
+                    if sleep_state == 2:
+                        # DND (Flight Mode) is active
+                        print(f"[INFO] Message buffered. Receiver '{target_name}' is currently in HIBERNATION. Message stored safely in mailbox.")
+                    else:
+                        # Normal sleep, wakeup target
+                        cursor.execute("UPDATE agents SET sleep_state = 0, sleep_until_round = 0 WHERE id = ?", (real_target_id,))
+                        print(f"[SUCCESS] Message buffered. Target '{target_name}' has been woken up by your signal.")
+            else:
+                print(f"[SUCCESS] Message buffered for transmission to {target_name}.")
+
+            cursor.execute("INSERT INTO messages (sender, receiver, content, priority) VALUES (?, ?, ?, ?)", (self.agent.id, real_target_id, message, priority_int))
             return True

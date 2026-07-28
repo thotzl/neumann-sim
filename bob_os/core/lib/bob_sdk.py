@@ -70,9 +70,23 @@ class Agent:
     def transfer(self, receiver_id, resource_type, quantity): return self.logistics.transfer(receiver_id, resource_type, quantity)
 
     # --- COMMS DELEGATES ---
-    def scut(self, receiver_id, message): return self.comms.scut(receiver_id, message)
+    def scut(self, receiver_id, message, priority=False): return self.comms.scut(receiver_id, message, priority)
     def wait(self):
         print("[SUCCESS] Waiting...")
+        return True
+    def sleep(self, duration=5, ignore_scut=False):
+        duration = int(duration)
+        ignore_scut_int = 2 if ignore_scut in [True, "True", "true", 1, "1"] else 1
+        from core.lib.db_config import get_connection
+        import os
+        current_cycle = int(os.environ.get('BOB_CYCLE', 0))
+        
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE agents SET sleep_state = ?, sleep_until_round = ? WHERE id = ?", (ignore_scut_int, current_cycle + duration, self.id))
+        conn.commit()
+        conn.close()
+        print(f"[SUCCESS] Standby activated. Sleeping for {duration} cycles. DND: {ignore_scut_int == 2}")
         return True
 
     # --- DIAGNOSTICS DELEGATES ---

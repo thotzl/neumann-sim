@@ -133,8 +133,9 @@ def main():
         elif method == "deposit": agent.deposit(quantity=safe_int(params.get('quantity'), 'quantity', 100), resource_type=params.get('resource_type', 'matter'))
         elif method == "withdraw": agent.withdraw(resource_type=params.get('resource_type', 'energy'), quantity=safe_int(params.get('quantity'), 'quantity', 50))
         elif method == "transfer": agent.transfer(receiver_id=params.get('receiver_id'), resource_type=params.get('resource_type'), quantity=safe_int(params.get('quantity'), 'quantity'))
-        elif method == "scut": agent.scut(receiver_id=params.get('receiver_id'), message=params.get('message'))
+        elif method == "scut": agent.scut(receiver_id=params.get('receiver_id'), message=params.get('message'), priority=params.get('priority'))
         elif method == "wait": agent.wait()
+        elif method == "sleep": agent.sleep(duration=safe_int(params.get('duration'), 'duration', 5), ignore_scut=params.get('ignore_scut'))
         elif method == "_poll":
             res = agent._internal_poll()
             if res: print(res)

@@ -23,7 +23,8 @@ c.execute("""
     CREATE TABLE agents (
         id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, status TEXT, host_type TEXT, host_id TEXT, active_ship_id INTEGER,
         raw_matter_inventory INTEGER DEFAULT 0, refined_matter_inventory INTEGER DEFAULT 0, energy_inventory INTEGER DEFAULT 100,
-        matter_storage_capacity INTEGER DEFAULT 1000, last_seen_event_id INTEGER DEFAULT 0
+        matter_storage_capacity INTEGER DEFAULT 1000, last_seen_event_id INTEGER DEFAULT 0,
+        sleep_state INTEGER DEFAULT 0, sleep_until_round INTEGER DEFAULT 0
     )
 """)
 c.execute("""
@@ -35,7 +36,13 @@ c.execute("""
 """)
 c.execute("""
     CREATE TABLE messages (
-        rowid INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT, receiver TEXT, content TEXT
+        rowid INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT, receiver TEXT, content TEXT, priority INTEGER DEFAULT 0
+    )
+""")
+c.execute("""
+    CREATE TABLE ships (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, chassis TEXT, pilot_id TEXT, system_name TEXT,
+        energy_capacity INTEGER DEFAULT 10000, energy_inventory INTEGER DEFAULT 0
     )
 """)
 c.execute("INSERT INTO agents (id, chosen_name, location, status) VALUES ('Instance-1', 'Robert', 'SYS_A', 'active')")

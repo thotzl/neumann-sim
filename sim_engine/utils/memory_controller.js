@@ -25,7 +25,7 @@ async function handleDistillation(agentId, state, config, apiUrl) {
         const reason = totalTokens >= hardLimit ? "HARD-LIMIT" : "Interval";
         console.log(`[MEMORY] Agent ${agentId} distilling (${reason}). Total: ~${totalTokens} Tokens, New: ~${estimatedFreshTokens} Tokens.`);
         
-        const compressed = await stateManager.runIndividualDistillation(apiUrl, state.histories[agentId], agentId);
+        const compressed = await stateManager.runIndividualDistillation(apiUrl, state.histories[agentId], agentId, config);
         if (compressed) {
             state.histories[agentId] = [{ agent: 'System', text: `[MEMORY-EXTRACT]: ${compressed}` }];
         }

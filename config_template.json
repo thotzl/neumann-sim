@@ -7,12 +7,18 @@
   "roles": {
     "agent": {
       "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
-      "model": "gemini-1.5-flash"
+      "model": "gemini-2.5-flash"
     },
     "compressor": {
       "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
-      "model": "gemini-1.5-flash"
+      "model": "gemini-2.5-pro"
     }
+  },
+  "memory": {
+    "soft_token_limit": 10000,
+    "hard_token_limit": 30000,
+    "recursive_compression": true,
+    "max_compression_output_tokens": 1200
   },
   "config_override": {
     "token_limit": 10000

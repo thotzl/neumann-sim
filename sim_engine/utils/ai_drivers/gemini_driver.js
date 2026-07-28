@@ -29,12 +29,21 @@ const GeminiDriver = {
         const model = config.config_override?.model || config.model || "gemini-3.6-flash";
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
+        const reqBody = { ...payload };
+        const maxTokens = config.memory?.max_compression_output_tokens || config.config_override?.max_compression_output_tokens || config.max_compression_output_tokens;
+        if (maxTokens) {
+            reqBody.generationConfig = {
+                maxOutputTokens: parseInt(maxTokens),
+                temperature: 0.1
+            };
+        }
+
         for (let i = 0; i < retries; i++) {
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(reqBody)
                 });
 
                 const data = await response.json();

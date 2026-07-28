@@ -37,11 +37,12 @@ const DeepinfraDriver = {
         const endpoint = config.deepinfra_endpoint || "https://api.deepinfra.com/v1/openai/chat/completions";
         const model = config.model || "meta-llama/Meta-Llama-3.1-8B-Instruct";
 
+        const maxTokens = config.memory?.max_compression_output_tokens || config.config_override?.max_compression_output_tokens || config.max_compression_output_tokens;
         const requestBody = {
             model: model,
             messages: payload.messages,
             temperature: 0.2,
-            max_tokens: 4096 // Explicitly set to bypass the DeepInfra server default bug (65536)!
+            max_tokens: maxTokens ? parseInt(maxTokens) : 4096 // Enforces specific budget or bypasses server bug!
         };
 
         for (let i = 0; i < retries; i++) {

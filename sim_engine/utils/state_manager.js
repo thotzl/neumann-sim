@@ -68,10 +68,38 @@ async function finalizeSimulation(bridge, state, memoryFile, logFile, errorOccur
     console.log("Finalization completed.");
 }
 
-async function runIndividualDistillation(bridge, history, agentId) {
-    console.log(`Performing individual distillation for ${agentId}...`);
+async function runIndividualDistillation(bridge, history, agentId, config) {
+    console.log(`Führe individuelle Destillation für ${agentId} durch...`);
     
-    const prompt = `You are an autonomous memory module for the Neumann probe ${agentId}.
+    const isRecursive = config?.memory?.recursive_compression !== false;
+    
+    let prompt = "";
+    if (isRecursive) {
+        // Split previous memory extract from fresh logs for recursive/cascading consolidation (Hebel 4)
+        const previousExtractEntry = history.find(h => h.text.startsWith('[MEMORY-EXTRACT]'));
+        const previousExtract = previousExtractEntry ? previousExtractEntry.text : "None (This is your first era).";
+        const freshLogs = history.filter(h => !h.text.startsWith('[MEMORY-EXTRACT]'));
+        
+        prompt = `You are an autonomous memory module for the Neumann probe ${agentId}.
+    Your task: Recursively consolidate your PREVIOUS ERA MEMORY with your RECENT SECTOR EVENTS into an updated, dense long-term memory.
+    
+    GUIDELINES:
+    1. Symmetrically merge previous facts with recent events into a single, seamless, and extremely dense chronicle.
+    2. Retain all crucial long-term rules, milestones, ship classes, and active goals.
+    3. Condense older details and eliminate redundant logs.
+    4. Answer in the first-person perspective (as ${agentId}).
+    5. Do not mention the compression process. Output ONLY the raw consolidated memory text.
+    
+    PREVIOUS ERA MEMORY:
+    ${previousExtract}
+    
+    RECENT SECTOR EVENTS (JSON):
+    ${JSON.stringify(freshLogs)}
+    
+    YOUR CONSOLIDATED MEMORY:`;
+    } else {
+        // Legacy linear compression
+        prompt = `You are an autonomous memory module for the Neumann probe ${agentId}.
     Your task: Compress the provided history of your experiences into a dense, precise long-term memory.
     
     GUIDELINES:
@@ -85,6 +113,7 @@ async function runIndividualDistillation(bridge, history, agentId) {
     ${JSON.stringify(history)}
     
     YOUR COMPRESSED MEMORY:`;
+    }
 
     try {
         // Purely symmetrical, decoupled API call via the Bridge!

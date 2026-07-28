@@ -10,7 +10,9 @@ function writeLogHeader(logFile, config, isResumed = false) {
     
     const resumeMarker = isResumed ? " (RESUMED)" : "";
     const resolvedModel = config.roles?.agent?.model || config.model || "gemini-2.5-flash";
-    const header = `# Log ${logFile}${resumeMarker}\n**Model:** ${resolvedModel}\n**Token Limit:** ${config.token_limit || 15000}\n\n### INITIAL SYSTEM PROMPT\n> ${fullSystemPrompt.trim().replace(/\n/g, '\n> ')}\n\n---\n`;
+    const softLimit = config.memory?.soft_token_limit || 12000;
+    const hardLimit = config.memory?.hard_token_limit || 25000;
+    const header = `# Log ${logFile}${resumeMarker}\n**Model:** ${resolvedModel}\n**Token Limit:** ${softLimit} (Soft) / ${hardLimit} (Hard)\n\n### INITIAL SYSTEM PROMPT\n> ${fullSystemPrompt.trim().replace(/\n/g, '\n> ')}\n\n---\n`;
     fs.writeFileSync(logFile, header);
 }
 
@@ -46,18 +48,10 @@ function appendBirthLog(logFile, round, agentId, parentId, fullContextBlock) {
     logEntry += `## 🧬 BIRTH: ${agentId} (Cycle ${round})\n`;
     logEntry += `- **Lineage:** Replicant of ${parentId || 'Unknown'}\n\n`;
 
-    let truncatedBlock = fullContextBlock;
-    if (truncatedBlock) {
-        // Compress superfluous whitespace for compact log
-        truncatedBlock = truncatedBlock.replace(/\s+/g, ' ');
-        if (truncatedBlock.length > 500) {
-            truncatedBlock = "[... TRUNCATED INITIAL CONTEXT ...] " + truncatedBlock.slice(-500);
-        }
-    }
-    
-    logEntry += `**Initial Context to Agent (Tail):**\n> ${truncatedBlock.replace(/\n/g, '\n> ')}\n`;
+    let truncatedBlock = fullContextBlock || "No initial context.";
+
+    logEntry += `**Initial Context to Agent:**\n> ${truncatedBlock.replace(/\n/g, '\n> ')}\n`;
     logEntry += `---\n\n`;
-    
     fs.appendFileSync(logFile, logEntry);
 }
 

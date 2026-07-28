@@ -26,11 +26,12 @@ def calculate_scan_coordinates(origin_x, origin_y, distance, angle_degrees, grid
     
     return snap_x, snap_y
 
-def calculate_upgrade_cost(base_cost, upgrade_multiplier):
+def calculate_upgrade_cost(base_cost, upgrade_multiplier, current_level):
     """
     Calculates the absolute matter cost for an infrastructure upgrade.
+    Upgrade costs increase exponentially with each level (base_cost * (upgrade_multiplier ** current_level)).
     """
-    return int(base_cost * upgrade_multiplier)
+    return int(base_cost * (upgrade_multiplier ** current_level))
 
 def validate_module_connectivity(matrix):
     """

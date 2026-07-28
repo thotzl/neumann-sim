@@ -26,8 +26,18 @@ class Sensors:
         rules = config_service.get_economy_rules()
         base_cost = rules.get('tool_costs', {}).get('scan', {}).get('energy_cost', 40)
         
-        has_sat = system_service.has_active_infrastructure(cursor, agent['location'], 'sat_link')
-        cost = base_cost * 0.5 if has_sat else base_cost
+        cursor.execute("SELECT level FROM infrastructure WHERE system_name = ? AND type = 'sat_link' AND status = 'active'", (agent['location'],))
+        sat_row = cursor.fetchone()
+        sat_level = sat_row[0] if sat_row else 0
+        
+        if sat_level > 0:
+            # Level Scaling: Reduce scan cost multiplier by further 5% per level above Level 1 (e.g. Lvl 3 = 40% multiplier)
+            multiplier = max(0.2, 0.5 - 0.05 * (sat_level - 1))
+            cost = int(base_cost * multiplier)
+            if sat_level > 1:
+                print(f"[INFO] Satellite Link Lvl {sat_level} operational. Scan cost multiplier decreased to {int(multiplier * 100)}%.")
+        else:
+            cost = base_cost
         
         if agent['energy_inventory'] < cost:
             print(f"[ERROR] Not enough energy for this scan. Required: {cost}, Available: {agent['energy_inventory']}")
@@ -37,6 +47,15 @@ class Sensors:
         scan_min = global_settings.get('scan_range_min', 500)
         scan_max = global_settings.get('scan_range_max', 1500)
         grid_size = global_settings.get('grid_snap_size', 100)
+
+        cursor.execute("SELECT level FROM infrastructure WHERE system_name = ? AND type = 'deep_space_scanner' AND status = 'active'", (agent['location'],))
+        scanner_row = cursor.fetchone()
+        scanner_level = scanner_row[0] if scanner_row else 0
+        
+        if scanner_level > 0:
+            bonus = rules.get('infrastructure', {}).get('deep_space_scanner', {}).get('scan_range_bonus', 2000) * scanner_level
+            scan_max += bonus
+            print(f"[INFO] Deep Space Scanner Lvl {scanner_level} operational. Scan range boundary increased by +{bonus} units.")
         
         dist = random.randint(scan_min, scan_max)
         angle = random.uniform(0, 360)

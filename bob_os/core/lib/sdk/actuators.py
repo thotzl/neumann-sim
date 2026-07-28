@@ -95,11 +95,22 @@ class Actuators:
         energy_cost = rule.get('energy_cost', 50)
         raw_cost = rule.get('raw_matter_cost', 100)
         yield_refined = rule.get('refined_yield', 100)
-        
+
+        # Query local Matter Refinery Level
+        cursor.execute("SELECT level FROM infrastructure WHERE system_name = ? AND type = 'matter_refinery' AND status = 'active'", (sys_name,))
+        refinery_row = cursor.fetchone()
+        refinery_level = refinery_row[0] if refinery_row else 1
+
         multiplier = raw_matter_to_refine / float(raw_cost)
         total_energy = int(energy_cost * multiplier)
         total_raw = int(raw_cost * multiplier)
-        total_yield = int(yield_refined * multiplier)
+
+        # Level Scaling: Increase yield by 5% per level above Level 1 (e.g. Lvl 3 = 10% increase)
+        yield_pct = 1.0 + 0.05 * (refinery_level - 1)
+        total_yield = int(yield_refined * multiplier * yield_pct)
+
+        if yield_pct > 1.0:
+            print(f"[INFO] Matter Refinery Lvl {refinery_level} operational. Refining efficiency increased to {int(yield_pct * 100)}%.")
 
         # 1. Pipeline: Energy
         avail_energy_inv = agent['energy_inventory']
@@ -232,7 +243,7 @@ class Actuators:
             if existing['status'] == 'active':
                 global_settings = self.rules.get('global_settings', {})
                 upgrade_multiplier = global_settings.get('upgrade_cost_multiplier', 1.5)
-                upgrade_cost = physics_service.calculate_upgrade_cost(total_cost, upgrade_multiplier)
+                upgrade_cost = physics_service.calculate_upgrade_cost(total_cost, upgrade_multiplier, existing['level'])
                 
                 cursor.execute("UPDATE infrastructure SET progress_matter = progress_matter + ? WHERE id = ?", (matter_to_invest, existing['id']))
 
@@ -321,8 +332,21 @@ class Actuators:
 
         # 3. Calculate remaining payment and perform transaction
         remaining = required_matter - progress_matter
+        
+        # Query local shipyard/advanced_shipyard level
+        cursor.execute("SELECT level FROM infrastructure WHERE system_name = ? AND type IN ('shipyard', 'advanced_shipyard') AND status = 'active'", (sys_name,))
+        yard_row = cursor.fetchone()
+        yard_level = yard_row[0] if yard_row else 1
+        
+        # Scale shipyard_rate by level
+        base_rate = self.rules.get('global_settings', {}).get('ship_constants', {}).get('shipyard_rate', 500)
+        scaled_rate = int(base_rate * (1.0 + 0.1 * (yard_level - 1)))
+
+        if yard_level > 1:
+            print(f"[INFO] Shipyard Lvl {yard_level} operational. Construction rate increased to {scaled_rate} Matter/Turn.")
+
         if matter_to_invest is not None and matter_to_invest > 0:
-            payment = min(matter_to_invest, remaining)
+            payment = min(matter_to_invest, remaining, scaled_rate)
         else:
             payment = remaining
 
@@ -501,9 +525,40 @@ class Actuators:
             print(f"[DENIED] No active 'mind_forge' in {sys_name} found.")
             return False
 
+        # --- COGNITIVE CONSISTENCY PROTECTION (SERIELLER LOCK - Hebel 11) ---
+        # Prüfe, ob im lokalen Sektor bereits ein namenloser oder unfertiger Klon im Geburtskanal verweilt
+        cursor.execute("""
+            SELECT id FROM agents 
+            WHERE (
+                (host_type = 'ship' AND CAST(host_id AS INTEGER) IN (SELECT id FROM ships WHERE system_name = ?))
+                OR
+                (host_type = 'matrix' AND CAST(host_id AS INTEGER) IN (SELECT id FROM infrastructure WHERE system_name = ?))
+            )
+            AND (chosen_name IS NULL OR chosen_name = 'Unnamed' OR active_ship_id IS NULL) 
+            AND status = 'active'
+        """, (sys_name, sys_name))
+        pending_clone = cursor.fetchone()
+        
+        if pending_clone:
+            print(f"[DENIED] Replication locked! An active unnamed or disembodied instance ({pending_clone[0]}) is currently incubating in system {sys_name}.")
+            print("  Each generation must complete its onboarding and vacate the matrix before the next replication loop can be initiated.")
+            return False
+
         rule = self.rules.get('tool_costs', {}).get('replicate', {})
         energy_cost = rule.get('energy_cost', 180)
-        matter_cost = rule.get('matter_cost', 1000)
+        base_matter_cost = rule.get('matter_cost', 1000)
+
+        # Query local Mind Forge Level
+        cursor.execute("SELECT level FROM infrastructure WHERE system_name = ? AND type = 'mind_forge' AND status = 'active'", (sys_name,))
+        forge_row = cursor.fetchone()
+        forge_level = forge_row[0] if forge_row else 1
+        
+        # Level Scaling: Reduce refined matter costs by 10% per level above Lvl 1 (Capped at 50% discount)
+        discount_pct = min(0.5, (forge_level - 1) * 0.1)
+        matter_cost = int(base_matter_cost * (1.0 - discount_pct))
+        
+        if discount_pct > 0:
+            print(f"[INFO] Mind Forge Lvl {forge_level} operational. Symmetrically discounted replication cost to {matter_cost} Refined Matter.")
 
         if system['refined_matter_depot'] < matter_cost:
             print(f"[ERROR] System depot low on refined matter ({system['refined_matter_depot']}/{matter_cost}).")

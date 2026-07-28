@@ -21,8 +21,15 @@ class Comms:
     @agent_service.with_agent_context(allow_disembodied=True)
     def scut(self, cursor, agent, receiver_id, message, priority=False):
         priority_int = 1 if priority in [True, "True", "true", 1] else 0
+        cursor.execute("SELECT level FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (agent['location'],))
+        relay_row = cursor.fetchone()
+        relay_level = relay_row[0] if relay_row else 1
+
         rules = config_service.get_economy_rules()
-        base_range = rules.get('global_settings', {}).get('base_comms_range', 1000)
+        base_range = rules.get('global_settings', {}).get('base_comms_range', 1000) * relay_level
+
+        if relay_level > 1:
+            print(f"[INFO] Comms Relay Lvl {relay_level} operational. Communication range increased to {base_range} units.")
 
         sender_has_relay = system_service.has_active_infrastructure(cursor, agent['location'], 'comms_relay')
 

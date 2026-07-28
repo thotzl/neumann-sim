@@ -341,20 +341,6 @@ print(json.dumps({"messages": msgs, "names": names}))`;
             } else {
                 console.log(`  [SLEEPING] ${agent.id} is in deep sleep mode (Until cycle: ${agent.sleep_until_cycle}).`);
                 
-                // Low-Power-Regenerations-Bonus (+15 energy) - Physically routed (Pillar 1)
-                let rewardQuery = "";
-                if (agent.host_type === 'ship') {
-                    rewardQuery = `UPDATE ships SET energy_inventory = MIN(energy_capacity, energy_inventory + 15) WHERE id = CAST('${agent.host_id}' AS INTEGER)`;
-                } else if (agent.location !== 'Interstellar') {
-                    rewardQuery = `UPDATE systems SET energy_depot = energy_depot + 15 WHERE name = '${agent.location}'`;
-                }
-                
-                if (rewardQuery) {
-                    require('child_process').execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath.replace(/\\/g, '\\\\')}'); conn.cursor().execute(\\\"${rewardQuery}\\\"); conn.commit(); conn.close();"`, {
-                        env: { ...process.env, PYTHONPATH: path.resolve(universeDir, '..') }
-                    });
-                }
-                
                 fs.appendFileSync(logFile, `### [STANDBY] Replicant ${agent.id} is in deep sleep mode (Current cycle: ${state.round}).\n\n`);
                 
                 state.currentTurnIndex++;

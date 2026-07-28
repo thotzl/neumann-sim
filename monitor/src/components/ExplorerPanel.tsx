@@ -49,6 +49,29 @@ export const ExplorerPanel = ({ state, selection, setSelection, focusBounds }: E
             {state.agents.map(a => {
               const isASel = selection?.type === 'agent' && selection.id === a.id;
               const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : 'Unnamed';
+              
+              const remaining = a.sleep_state && a.sleep_state > 0 && a.sleep_until_cycle
+                ? Math.max(0, a.sleep_until_cycle - state.tick)
+                : 0;
+                
+              let dotColor = a.status === 'active' ? '#10b981' : '#f59e0b';
+              let dotShadow = a.status === 'active' ? '0 0 10px #10b981' : 'none';
+              
+              if (a.sleep_state === 1) {
+                dotColor = '#38bdf8'; // Standby Blue
+                dotShadow = '0 0 10px #38bdf8';
+              } else if (a.sleep_state === 2) {
+                dotColor = '#a855f7'; // Hibernate Purple
+                dotShadow = '0 0 10px #a855f7';
+              }
+              
+              let statusText = a.status === 'traveling' ? 'Transit' : (a.location || 'Unknown');
+              if (a.sleep_state === 1) {
+                statusText = `Standby (💤 ${remaining}C)`;
+              } else if (a.sleep_state === 2) {
+                statusText = `DND Sleep (🌙 ${remaining}C)`;
+              }
+
               return (
                 <div 
                   key={a.id} 
@@ -71,10 +94,10 @@ export const ExplorerPanel = ({ state, selection, setSelection, focusBounds }: E
                     transition: 'all 0.1s'
                   }}
                 >
-                  <span style={{width: '6px', height: '6px', borderRadius: '50%', background: a.status === 'active' ? '#10b981' : '#f59e0b', marginRight: '12px', boxShadow: a.status === 'active' ? '0 0 10px #10b981' : 'none'}}></span> 
+                  <span style={{width: '6px', height: '6px', borderRadius: '50%', background: dotColor, marginRight: '12px', boxShadow: dotShadow}}></span> 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                     <span style={{fontWeight: isASel ? 700 : 500}}>{displayName}</span>
-                    <span className="mono-text" style={{ fontSize: '0.7rem', color: isASel ? '#38bdf8' : '#64748b' }}>{a.id} • {a.status === 'traveling' ? 'Transit' : (a.location || 'Unknown')}</span>
+                    <span className="mono-text" style={{ fontSize: '0.7rem', color: isASel ? '#38bdf8' : '#64748b' }}>{a.id} • {statusText}</span>
                   </div>
                 </div>
               )

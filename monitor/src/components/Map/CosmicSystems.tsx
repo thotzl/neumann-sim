@@ -51,15 +51,36 @@ export const CosmicSystems = ({ state, selection, setSelection }: CosmicSystemsP
                             const isUnderConstruction = ship.pilot_id === "UNDER_CONSTRUCTION";
                             const pilot = bobsHere.find(a => a.active_ship_id === ship.id);
                             const isASel = selection?.type === 'agent' && pilot && selection.id === pilot.id;
-                            
-                            const shipColor = isUnderConstruction ? '#f59e0b' : (pilot ? (isASel ? '#fff' : '#0ea5e9') : '#64748b');
+                            const pilotSleeping = pilot && pilot.sleep_state && pilot.sleep_state > 0;
+
+                            let shipColor = isUnderConstruction ? '#f59e0b' : (pilot ? (isASel ? '#fff' : '#0ea5e9') : '#64748b');
+                            if (pilot && pilot.sleep_state === 1) {
+                              shipColor = '#3b82f6'; // Standby Blue
+                            } else if (pilot && pilot.sleep_state === 2) {
+                              shipColor = '#a855f7'; // Hibernate Purple
+                            }
+
                             const tooltip = isUnderConstruction 
                                 ? `${ship.name || 'Unnamed Vessel'} [DRY DOCK: ${Math.round((ship.progress_matter / (ship.required_matter || 1)) * 100)}%]`
-                                : `${ship.name} ${pilot ? '(Crewed)' : '(Empty)'}`;
+                                : `${ship.name} ${pilot ? `(Crewed - Pilot: ${pilot.id}${pilotSleeping ? ` [💤 ${pilot.sleep_state === 1 ? 'STANDBY' : 'DND'}]` : ''})` : '(Empty)'}`;
 
                             return (
-                                <div key={`ship-${ship.id}`} title={tooltip} onClick={(e) => { e.stopPropagation(); if (pilot) setSelection({type: 'agent', id: pilot.id}); }} style={{ cursor: pilot ? 'pointer' : 'default', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                   <div style={{ width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderBottom: `12px solid ${shipColor}`, filter: `drop-shadow(0 0 4px ${shipColor})`, transform: isASel ? 'scale(1.2)' : 'scale(1)' }} />
+                                <div 
+                                  key={`ship-${ship.id}`} 
+                                  title={tooltip} 
+                                  onClick={(e) => { e.stopPropagation(); if (pilot) setSelection({type: 'agent', id: pilot.id}); }} 
+                                  style={{ 
+                                    cursor: pilot ? 'pointer' : 'default', 
+                                    width: '16px', 
+                                    height: '16px', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    opacity: pilotSleeping ? 0.6 : 1,
+                                    transition: 'opacity 0.2s'
+                                  }}
+                                >
+                                   <div style={{ width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderBottom: `12px solid ${shipColor}`, filter: `drop-shadow(0 0 4px ${shipColor})`, transition: 'all 0.2s', transform: isASel ? 'scale(1.2)' : 'scale(1)' }} />
                                 </div>
                             );
                         })}
@@ -71,8 +92,33 @@ export const CosmicSystems = ({ state, selection, setSelection }: CosmicSystemsP
                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', alignContent: 'flex-start', gap: '6px', padding: '6px', background: 'rgba(56,189,248,0.1)', borderRadius: '6px', border: '1px solid rgba(56,189,248,0.3)', width: '60px' }}>
                         {bobsHere.filter(a => !a.active_ship_id).map(a => {
                           const isASel = selection?.id === a.id;
+                          const isSleeping = a.sleep_state && a.sleep_state > 0;
+                          
+                          let bobColor = isASel ? '#fff' : '#38bdf8';
+                          if (a.sleep_state === 1) {
+                            bobColor = '#3b82f6'; // Standby Blue
+                          } else if (a.sleep_state === 2) {
+                            bobColor = '#a855f7'; // Hibernate Purple
+                          }
+                          
+                          const tooltip = `Matrix: ${a.id}${a.sleep_state === 1 ? ' [💤 STANDBY]' : (a.sleep_state === 2 ? ' [🌙 HIBERNATING]' : '')}`;
                           return (
-                             <div key={a.id} title={`Matrix: ${a.id}`} onClick={(e) => { e.stopPropagation(); setSelection({type: 'agent', id: a.id}); }} style={{ width: '10px', height: '10px', background: isASel ? '#fff' : '#38bdf8', border: '1px solid rgba(255,255,255,0.5)', cursor: 'pointer', transition: 'all 0.2s', transform: isASel ? 'scale(1.3)' : 'scale(1)', boxShadow: `0 0 5px ${isASel ? '#fff' : '#38bdf8'}` }} />
+                             <div 
+                               key={a.id} 
+                               title={tooltip} 
+                               onClick={(e) => { e.stopPropagation(); setSelection({type: 'agent', id: a.id}); }} 
+                               style={{ 
+                                 width: '10px', 
+                                 height: '10px', 
+                                 background: bobColor, 
+                                 border: '1px solid rgba(255,255,255,0.5)', 
+                                 cursor: 'pointer', 
+                                 transition: 'all 0.2s', 
+                                 transform: isASel ? 'scale(1.3)' : 'scale(1)', 
+                                 boxShadow: `0 0 5px ${bobColor}`,
+                                 opacity: isSleeping ? 0.55 : 1
+                               }} 
+                             />
                           );
                         })}
                     </div>

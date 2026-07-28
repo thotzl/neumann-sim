@@ -108,7 +108,18 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
                   <h2 style={{ margin: '0 0 10px 0', color: '#fff', fontSize: '1.5rem' }}>{selectedAgent.chosen_name || selectedAgent.sensors?.chosen_name || selectedAgent.id}</h2>
                   <div className="mono-text" style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '15px', lineHeight: '1.8' }}>
                       ID: <span style={{ color: '#fff' }}>{selectedAgent.id}</span><br/>
-                      STATUS: <span style={{ color: selectedAgent.status === 'active' ? '#10b981' : '#f59e0b' }}>{(selectedAgent.status || 'unknown').toUpperCase()}</span><br/>
+                      STATUS: {(() => {
+                        const remaining = selectedAgent.sleep_state && selectedAgent.sleep_state > 0 && selectedAgent.sleep_until_cycle
+                          ? Math.max(0, selectedAgent.sleep_until_cycle - state.tick)
+                          : 0;
+                        if (selectedAgent.sleep_state === 1) {
+                          return <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>● STANDBY ({remaining} Cycles)</span>;
+                        } else if (selectedAgent.sleep_state === 2) {
+                          return <span style={{ color: '#a855f7', fontWeight: 'bold' }}>● DND / HIBERNATING ({remaining} Cycles)</span>;
+                        } else {
+                          return <span style={{ color: selectedAgent.status === 'active' ? '#10b981' : '#f59e0b' }}>● {(selectedAgent.status || 'unknown').toUpperCase()}</span>;
+                        }
+                      })()}<br/>
                       LOCATION: {selectedAgent.location || 'DEEP SPACE'}<br/>
                   </div>
                   

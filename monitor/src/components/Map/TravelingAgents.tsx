@@ -19,12 +19,28 @@ export const TravelingAgents = ({ state, selection, setSelection }: TravelingAge
         const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : a.id;
         const shipColor = isSel ? '#fff' : '#0ea5e9'; // Cyber-Blue
         
+        const isSleeping = a.sleep_state && a.sleep_state > 0;
         return (
           <div 
              key={a.id} className="agent-dot-container" 
              onClick={(e) => { e.stopPropagation(); setSelection({type: 'agent', id: a.id}); }} 
-             style={{ position: 'absolute', left: a.current_x * SCALE, top: a.current_y * SCALE, transform: 'translate(-50%, -50%)', zIndex: 5, cursor: 'pointer' }}
+             style={{ 
+               position: 'absolute', 
+               left: a.current_x * SCALE, 
+               top: a.current_y * SCALE, 
+               transform: 'translate(-50%, -50%)', 
+               zIndex: 5, 
+               cursor: 'pointer',
+               opacity: isSleeping ? 0.55 : 1,
+               transition: 'opacity 0.2s'
+             }}
           >
+             {/* Sleep Indicator Overlay */}
+             {isSleeping && (
+               <div style={{ position: 'absolute', top: '-14px', right: '-12px', fontSize: '9px', pointerEvents: 'none', textShadow: '0 0 4px rgba(0,0,0,0.8)' }}>
+                 {a.sleep_state === 1 ? '💤' : '🌙'}
+               </div>
+             )}
              {/* Triangle Hack via Borders */}
              <div style={{ 
                 width: 0, height: 0, 
@@ -35,7 +51,7 @@ export const TravelingAgents = ({ state, selection, setSelection }: TravelingAge
                 filter: `drop-shadow(0 0 8px ${shipColor})`,
                 transition: 'all 0.1s' 
              }} />
-             <div className="agent-tooltip">{displayName}</div>
+             <div className="agent-tooltip">{displayName}{isSleeping ? ' [SLEEPING]' : ''}</div>
           </div>
         );
       })}

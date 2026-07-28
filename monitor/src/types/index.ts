@@ -16,6 +16,8 @@ export type Agent = {
   active_ship_id: number | null;
   host_id?: string | null;
   host_type?: 'ship' | 'matrix' | null;
+  sleep_state?: number;
+  sleep_until_cycle?: number;
   sensors?: {
     inventory?: {
       raw_matter_inventory: number;

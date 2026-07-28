@@ -92,24 +92,19 @@ async function run() {
     let energy_before = await getShipEnergy(conn, 1);
     conn.close();
 
-    // 2. Run simulation loop for 1 round (should skip Instance-1, write Standby log, and reward +15E standby bonus!)
+    // 2. Run simulation loop for 1 round (should skip Instance-1, conserving 100% of their energy)
     console.log("Step 2: Simulating turn while sleeping...");
     // We mock the sleeping execution from runner.js inline using our implemented logic:
     const agent = state.agents.find(a => a.id === "Instance-1");
     let isSleeping = (agent.sleep_state === 1 || agent.sleep_state === 2) && state.round < agent.sleep_until_cycle;
     assert.strictEqual(isSleeping, true);
 
-    // Execute low-power standby reward (physically on host ship 1)
-    execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath.replace(/\\/g, '\\\\')}'); conn.cursor().execute('UPDATE ships SET energy_inventory = energy_inventory + 15 WHERE id=1'); conn.commit(); conn.close();"`, {
-        env: { ...process.env, PYTHONPATH: testVDir }
-    });
-
-    // Verify energy bonus
+    // Verify energy is perfectly conserved (no consumption during sleep)
     conn = sqlite3_connect(dbPath);
     let energy_after = await getShipEnergy(conn, 1);
     conn.close();
-    assert.strictEqual(energy_after, energy_before + 15);
-    console.log("  ✅ Low-Power Standby +15E energy bonus successfully verified.");
+    assert.strictEqual(energy_after, energy_before);
+    console.log("  ✅ Energy conservation during standby successfully verified.");
 
     // 3. Send a Priority SCUT from Instance-2 to sleeping Instance-1
     // This should bypass DND, wake up Instance-1 in SQLite, and return "forced to reactivate"

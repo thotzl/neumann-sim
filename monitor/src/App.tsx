@@ -25,8 +25,17 @@ export default function App() {
   
   const dragStart = useRef({ x: 0, y: 0 });
   const mapRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const [vogMsg, setVogMsg] = useState("");
+
+  const updateTransformDOM = useCallback(() => {
+    if (containerRef.current) {
+      const activeDrag = isDraggingSignal.peek();
+      containerRef.current.style.transform = `translate(calc(-50% + ${cameraX.peek()}px), calc(-50% + ${cameraY.peek()}px)) scale(${zoom.peek()})`;
+      containerRef.current.style.transition = activeDrag ? 'none' : 'transform 0.15s ease-out';
+    }
+  }, []);
 
   const focusBounds = (coords: {x: number, y: number}[]) => {
     if (!mapRef.current || coords.length === 0) return;
@@ -35,6 +44,7 @@ export default function App() {
        cameraX.value = -coords[0].x * SCALE;
        cameraY.value = -coords[0].y * SCALE;
        zoom.value = 1.2;
+       updateTransformDOM();
        return;
     }
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -51,6 +61,7 @@ export default function App() {
     cameraX.value = -centerX;
     cameraY.value = -centerY;
     zoom.value = newZoom;
+    updateTransformDOM();
   };
 
   const focusAllBobs = () => {
@@ -68,7 +79,8 @@ export default function App() {
      cameraX.value = 0;
      cameraY.value = 0;
      zoom.value = 1;
-  }, []);
+     updateTransformDOM();
+  }, [updateTransformDOM]);
 
   const tick = state?.tick;
   useEffect(() => {
@@ -79,6 +91,13 @@ export default function App() {
         return () => clearTimeout(timer);
      }
   }, [tick, focusHome]);
+
+  // Keep DOM updated when state loads or updates
+  useEffect(() => {
+    if (state) {
+      updateTransformDOM();
+    }
+  }, [state, updateTransformDOM]);
 
   useEffect(() => {
     let socket: WebSocket | null = null;
@@ -145,18 +164,21 @@ export default function App() {
   const handleWheel = (e: React.WheelEvent) => {
     if (!mapRef.current) return;
     const zoomFactor = -e.deltaY * 0.001;
-    const newZoom = Math.min(Math.max(0.1, zoom.value + zoomFactor), 4);
+    const newZoom = Math.min(Math.max(0.1, zoom.peek() + zoomFactor), 4);
     zoom.value = newZoom;
+    updateTransformDOM();
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     isDraggingSignal.value = true;
-    dragStart.current = { x: e.clientX - cameraX.value, y: e.clientY - cameraY.value };
+    dragStart.current = { x: e.clientX - cameraX.peek(), y: e.clientY - cameraY.peek() };
+    updateTransformDOM();
   };
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDraggingSignal.value) return;
+    if (!isDraggingSignal.peek()) return;
     cameraX.value = e.clientX - dragStart.current.x;
     cameraY.value = e.clientY - dragStart.current.y;
+    updateTransformDOM();
   };
 
   if (!state) return <div style={{color: '#38bdf8', background: '#020203', height: '100vh', padding: '40px', fontFamily: 'monospace'}}>INITIALIZING C2 LINK...</div>;
@@ -180,12 +202,12 @@ export default function App() {
           mapRef={mapRef}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
-          onMouseUp={() => { isDraggingSignal.value = false; }}
-          onMouseLeave={() => { isDraggingSignal.value = false; }}
+          onMouseUp={() => { isDraggingSignal.value = false; updateTransformDOM(); }}
+          onMouseLeave={() => { isDraggingSignal.value = false; updateTransformDOM(); }}
           onWheel={handleWheel}
         >
           <div className="cosmic-stars" />
-          <MapContainer>
+          <MapContainer containerRef={containerRef}>
             <TransitLines state={state} />
             <TravelingAgents state={state} selection={selection} setSelection={setSelection} />
             <CosmicSystems state={state} selection={selection} setSelection={setSelection} />

@@ -23,13 +23,75 @@ export const useC2Store = create<C2Store>((set) => ({
   
   initializeLogs: (history) => {
     if (!history) return;
-    const parsedLogs: LogEntry[] = history.map((d: HistoryEntry, i: number) => {
+    const parsedLogs: LogEntry[] = [];
+    
+    history.forEach((d: HistoryEntry, i: number) => {
       const agentId = d.agent || d.agentId || 'System';
       const isSystem = agentId === 'System' || agentId === 'Creator' || agentId === 'Observer';
       const agentName = agentId === 'Bob' ? 'Robert' : agentId;
-      const type: LogCategory = isSystem ? 'system' : 'thought';
-      return { id: `hist-${i}`, tick: d.tick === "?" ? 0 : Number(d.tick), agentId: agentId, agentName: agentName, type, text: d.text.trim() };
+      const tickNum = d.tick === "?" ? 0 : Number(d.tick);
+      const rawText = d.text.trim();
+      
+      if (isSystem) {
+        parsedLogs.push({
+          id: `hist-${i}-sys`,
+          tick: tickNum,
+          agentId,
+          agentName,
+          type: 'system',
+          text: rawText
+        });
+        return;
+      }
+      
+      // Parse agent manifestation
+      const raw = rawText.replace(/^\[SELF-IMPULSE\]:\s*/i, '');
+      const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ACTION\s*[：:]*(?:\*\*|\*)?/i;
+      const match = raw.match(actionRegex);
+      
+      let rawThought: string;
+      let action = '';
+      if (match && match.index !== undefined) {
+        rawThought = raw.substring(0, match.index).trim();
+        action = raw.substring(match.index + match[0].length).trim();
+      } else {
+        const runMatch = raw.indexOf('[RUN:');
+        if (runMatch !== -1) {
+          rawThought = raw.substring(0, runMatch).trim();
+          action = raw.substring(runMatch).trim();
+        } else {
+          rawThought = raw;
+        }
+      }
+      
+      const thought = rawThought
+        .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '')
+        .trim();
+        
+      if (thought) {
+        parsedLogs.push({
+          id: `hist-${i}-thought`,
+          tick: tickNum,
+          agentId,
+          agentName,
+          type: 'thought',
+          text: thought
+        });
+      }
+      
+      if (action) {
+        const isScut = action.includes('scut(') || action.includes('scut') || action.includes('SCUT');
+        parsedLogs.push({
+          id: `hist-${i}-action`,
+          tick: tickNum,
+          agentId,
+          agentName,
+          type: isScut ? 'scut' : 'action',
+          text: action
+        });
+      }
     });
+    
     set({ logs: parsedLogs });
   },
 
@@ -131,7 +193,12 @@ export const useC2Store = create<C2Store>((set) => ({
           
       if (sortedEvents.length > 0) {
         sortedEvents.forEach(e => {
-          const isScut = e.description.includes('scut(') || e.description.includes('gemeldet') || e.description.includes('nachricht') || e.description.includes('SCUT');
+          const descLower = e.description.toLowerCase();
+          const isScut = descLower.includes('scut') || 
+                         descLower.includes('message') || 
+                         descLower.includes('transmission') || 
+                         descLower.includes('broadcast') || 
+                         descLower.includes('radio');
           const matchingAgent = data.agents?.find(ag => ag.id === e.actor_id);
           const agentName = matchingAgent ? (matchingAgent.chosen_name || matchingAgent.id) : e.actor_id;
           newEntries.push({

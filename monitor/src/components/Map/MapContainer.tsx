@@ -1,18 +1,28 @@
 import React from 'react';
-import { cameraX, cameraY, zoom, isDraggingSignal } from '../../store/mapSignals';
+import { cameraX, cameraY, zoom } from '../../store/mapSignals';
 
 interface MapContainerProps {
   children: React.ReactNode;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export const MapContainer = ({ children }: MapContainerProps) => {
-  const x = cameraX.value;
-  const y = cameraY.value;
-  const z = zoom.value;
-  const activeDrag = isDraggingSignal.value;
+export const MapContainer = ({ children, containerRef }: MapContainerProps) => {
+  const x = cameraX.peek();
+  const y = cameraY.peek();
+  const z = zoom.peek();
   
   return (
-    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${z})`, transformOrigin: 'center center', transition: activeDrag ? 'none' : 'transform 0.15s ease-out' }}>
+    <div 
+      ref={containerRef}
+      style={{ 
+        position: 'absolute', 
+        top: '50%', 
+        left: '50%', 
+        transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${z})`, 
+        transformOrigin: 'center center', 
+        transition: 'transform 0.15s ease-out' 
+      }}
+    >
       {children}
     </div>
   );

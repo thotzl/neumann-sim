@@ -20,6 +20,7 @@ export default function App() {
   const setReady = useC2Store((store) => store.setReady);
   const initializeLogs = useC2Store((store) => store.initializeLogs);
   const updateState = useC2Store((store) => store.updateState);
+  const appendRealtimeLogs = useC2Store((store) => store.appendRealtimeLogs);
 
   const [filters, setFilters] = useState<Record<LogCategory, boolean>>({ thought: true, action: true, system: true, scut: true });
   
@@ -136,6 +137,11 @@ export default function App() {
               updateState(msg.state);
             }
           }
+          else if (msg.type === 'REALTIME_LOGS') {
+            if (msg.logs && Array.isArray(msg.logs)) {
+              appendRealtimeLogs(msg.logs);
+            }
+          }
         } catch (e) {
           console.error('[C2-Websocket] Error processing frame:', e);
         }
@@ -159,7 +165,7 @@ export default function App() {
       if (socket) socket.close();
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
-  }, [initializeLogs, setReady, updateState]);
+  }, [initializeLogs, setReady, updateState, appendRealtimeLogs]);
 
   const handleWheel = (e: React.WheelEvent) => {
     if (!mapRef.current) return;

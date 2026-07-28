@@ -67,7 +67,7 @@ ACTION:
         process.env.E2E_MOCK_RESPONSE_INSTANCE1 = `
 ANALYZE: Waiting.
 ACTION:
-[RUN: me wait()]`;
+[RUN: me sleep(duration=1)]`;
 
         execSync(`node sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 

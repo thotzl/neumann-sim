@@ -25,6 +25,32 @@ const envManager = require('./utils/environment');
 const apiClient = require('./utils/api_client');
 const { execSync } = require('child_process');
 
+function getSimpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash).toString(36);
+}
+
+function postRealtimeEvents(events) {
+    if (!events || events.length === 0) return;
+    try {
+        const { spawnSync } = require('child_process');
+        const broadcastPort = process.env.C2_PORT || 3001;
+        spawnSync('curl', [
+            '-s',
+            '-X', 'POST',
+            '-H', 'Content-Type: application/json',
+            '-d', JSON.stringify(events),
+            `http://localhost:${broadcastPort}/api/events`
+        ]);
+    } catch (e) {
+        // Silent failure in case of network issues
+    }
+}
+
 function getSectorSnapshot(location, agentId, dbPath, universeDir) {
     if (!location || location === 'Interstellar') return null;
     try {
@@ -34,8 +60,15 @@ conn = sqlite3.connect('${dbPath.replace(/\\/g, '\\\\')}')
 conn.row_factory = sqlite3.Row
 cursor = conn.cursor()
 
-# 1. Bobs count
-cursor.execute("SELECT COUNT(*) FROM agents WHERE location = ? AND id != ?", ('''${location}''', '''${agentId}'''))
+# 1. Bobs count (Resolving virtual location via physical hosts)
+cursor.execute("""
+    SELECT COUNT(*) FROM agents 
+    WHERE id != ? AND (
+        (host_type = 'ship' AND CAST(host_id AS INTEGER) IN (SELECT id FROM ships WHERE system_name = ?))
+        OR
+        (host_type = 'matrix' AND CAST(host_id AS INTEGER) IN (SELECT id FROM infrastructure WHERE system_name = ?))
+    )
+""", ('''${agentId}''', '''${location}''', '''${location}'''))
 bobs = cursor.fetchone()[0]
 
 # 2. Ships count (excluding own)
@@ -420,12 +453,63 @@ print(json.dumps({"messages": msgs, "names": names}))`;
             const thoughts = analyseMatch ? "1. ANALYSIS:\n" + analyseMatch[1].trim() : responseText;
             state.histories[agent.id].push({ agent: agent.id, text: thoughts });
             
+            const turnEvents = [];
+
+            // Real-Time Event Stream: Collect Thoughts
+            const cleanedThoughts = thoughts.replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '').trim();
+            if (cleanedThoughts) {
+                turnEvents.push({
+                    tick: state.round,
+                    agentId: agent.id,
+                    agentName: agent.chosen_name || agent.id,
+                    type: 'thought',
+                    text: cleanedThoughts,
+                    id: `t-${state.round}-${agent.id}-${getSimpleHash(cleanedThoughts)}`
+                });
+            }
+            
             // Store the raw action and engine resonance transiently in the global inbox for the next turn
             if (!state.global_inbox[agent.id]) state.global_inbox[agent.id] = [];
             
             const actionPart = responseText.match(/2\.\s*ACTION:[\s\S]*/i) 
                                ? responseText.match(/2\.\s*ACTION:[\s\S]*/i)[0] 
                                : (responseText.match(/ACTION:[\s\S]*/i) ? responseText.match(/ACTION:[\s\S]*/i)[0] : "No action.");
+            
+            // Real-Time Event Stream: Collect Actions (Line-by-Line)
+            const cleanedAction = actionPart.replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ACTION\s*[：:]*(?:\*\*|\*)?/i, '').trim();
+            if (cleanedAction) {
+                const lines = cleanedAction.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0 && !line.startsWith('#'));
+                    
+                lines.forEach((line, lineIdx) => {
+                    const isScut = line.toLowerCase().includes('scut');
+                    turnEvents.push({
+                        tick: state.round,
+                        agentId: agent.id,
+                        agentName: agent.chosen_name || agent.id,
+                        type: isScut ? 'scut' : 'action',
+                        text: line,
+                        id: `a-${state.round}-${agent.id}-${lineIdx}-${getSimpleHash(line)}`
+                    });
+                });
+            }
+
+            // Real-Time Event Stream: Collect Feedback (System resonance)
+            const cleanedFeedback = feedback.trim();
+            if (cleanedFeedback) {
+                turnEvents.push({
+                    tick: state.round,
+                    agentId: agent.id,
+                    agentName: agent.chosen_name || agent.id,
+                    type: 'system',
+                    text: cleanedFeedback,
+                    id: `s-${state.round}-${agent.id}-${getSimpleHash(cleanedFeedback)}`
+                });
+            }
+
+            // Synchronously Post Bundled Realtime Events
+            postRealtimeEvents(turnEvents);
             
             state.global_inbox[agent.id].push({
                 type: 'resonance',

@@ -1,5 +1,14 @@
 import { create } from 'zustand';
-import { WorldState, LogEntry, Selection, HistoryEntry } from '../types';
+import { WorldState, LogEntry, Selection, LogCategory, HistoryEntry } from '../types';
+
+const getSimpleHash = (str: string): string => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+};
 
 interface C2Store {
   state: WorldState | null;
@@ -10,6 +19,7 @@ interface C2Store {
   setReady: (ready: boolean) => void;
   initializeLogs: (history: HistoryEntry[]) => void;
   updateState: (data: WorldState) => void;
+  appendRealtimeLogs: (events: Array<{ tick: number; agentId: string; agentName?: string; type: LogCategory; text: string; id?: string }>) => void;
 }
 
 export const useC2Store = create<C2Store>((set) => ({
@@ -20,6 +30,25 @@ export const useC2Store = create<C2Store>((set) => ({
   
   setSelection: (sel) => set({ selection: sel }),
   setReady: (ready) => set({ isReady: ready }),
+  
+  appendRealtimeLogs: (events) => set((prev) => {
+    if (!events || events.length === 0) return {};
+    const newEntries = events.map(event => {
+      const logId = event.id || `live-${event.tick}-${event.agentId}-${getSimpleHash(event.text)}`;
+      return {
+        id: logId,
+        tick: event.tick,
+        agentId: event.agentId,
+        agentName: event.agentName || event.agentId,
+        type: event.type,
+        text: event.text
+      };
+    });
+    const finalLogs = [...prev.logs, ...newEntries]
+      .filter((ne, index, self) => self.findIndex(p => p.id === ne.id) === index)
+      .sort((a, b) => a.tick - b.tick);
+    return { logs: finalLogs };
+  }),
   
   initializeLogs: (history) => {
     if (!history) return;
@@ -70,7 +99,7 @@ export const useC2Store = create<C2Store>((set) => ({
         
       if (thought) {
         parsedLogs.push({
-          id: `hist-${i}-thought`,
+          id: `hist-${i}-thought-${getSimpleHash(thought)}`,
           tick: tickNum,
           agentId,
           agentName,
@@ -80,14 +109,20 @@ export const useC2Store = create<C2Store>((set) => ({
       }
       
       if (action) {
-        const isScut = action.includes('scut(') || action.includes('scut') || action.includes('SCUT');
-        parsedLogs.push({
-          id: `hist-${i}-action`,
-          tick: tickNum,
-          agentId,
-          agentName,
-          type: isScut ? 'scut' : 'action',
-          text: action
+        const lines = action.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0 && !line.startsWith('#'));
+          
+        lines.forEach((line, lineIdx) => {
+          const isScut = line.toLowerCase().includes('scut');
+          parsedLogs.push({
+            id: `hist-${i}-action-${lineIdx}-${getSimpleHash(line)}`,
+            tick: tickNum,
+            agentId,
+            agentName,
+            type: isScut ? 'scut' : 'action',
+            text: line
+          });
         });
       }
     });
@@ -124,60 +159,8 @@ export const useC2Store = create<C2Store>((set) => ({
       });
     }
 
-    // 2. Parse new thoughts and actions per tick
+    // 2. Clear newEntries, relying on the real-time event stream for agent thoughts and actions
     const newEntries: LogEntry[] = [];
-    
-    if (data && data.agents && Array.isArray(data.agents)) {
-      data.agents.forEach(a => {
-        if (a.last_manifestation?.trim()) {
-          const raw = a.last_manifestation.trim().replace(/^\[SELF-IMPULSE\]:\s*/i, '');
-          const actionRegex = /(?:\n|^)(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ACTION\s*[：:]*(?:\*\*|\*)?/i;
-          const match = raw.match(actionRegex);
-          
-          let rawThought: string;
-          let action = '';
-          if (match && match.index !== undefined) {
-            rawThought = raw.substring(0, match.index).trim();
-            action = raw.substring(match.index + match[0].length).trim();
-          } else {
-            const runMatch = raw.indexOf('[RUN:');
-            if (runMatch !== -1) {
-              rawThought = raw.substring(0, runMatch).trim();
-              action = raw.substring(runMatch).trim();
-            } else {
-              rawThought = raw;
-            }
-          }
-          
-          const thought = rawThought
-            .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '')
-            .trim();
-              
-          if (thought) {
-            newEntries.push({ 
-              id: `t-${data.tick}-${a.id}`, 
-              tick: data.tick, 
-              agentId: a.id, 
-              agentName: a.chosen_name || a.id,
-              type: 'thought', 
-              text: thought 
-            });
-          }
-          
-          if (action) {
-            const isScut = action.includes('scut(') || action.includes('scut') || action.includes('SCUT');
-            newEntries.push({ 
-              id: `a-${data.tick}-${a.id}`, 
-              tick: data.tick, 
-              agentId: a.id, 
-              agentName: a.chosen_name || a.id,
-              type: isScut ? 'scut' : 'action', 
-              text: action 
-            });
-          }
-        }
-      });
-    }
 
     // 3. Process visual events from the database
     if (data && data.visual_events && Array.isArray(data.visual_events)) {

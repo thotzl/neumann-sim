@@ -71,13 +71,16 @@ class Agent:
 
     # --- COMMS DELEGATES ---
     def scut(self, receiver_id, message, priority=False): return self.comms.scut(receiver_id, message, priority)
-    def wait(self):
-        print("[SUCCESS] Waiting...")
-        return True
     def sleep(self, duration=5, ignore_scut=False):
         duration = int(duration)
         ignore_scut_int = 2 if ignore_scut in [True, "True", "true", 1, "1"] else 1
-        from core.lib.db_config import get_connection
+        try:
+            from core.lib.db_config import get_connection
+        except ImportError:
+            try:
+                from lib.db_config import get_connection
+            except ImportError:
+                from bob_os.core.lib.db_config import get_connection
         import os
         current_cycle = int(os.environ.get('BOB_CYCLE', 0))
         

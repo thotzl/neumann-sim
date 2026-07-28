@@ -37,7 +37,7 @@ class TestV105ComposedFacade(unittest.TestCase):
             "mine", "build", "refine", "repair", "deconstruct", "move", "replicate",
             "set_name", "rename_system", "board", "exit_ship", "build_ship", "deconstruct_ship",
             "scan", "storage", "dashboard", "local_system", "entities", "inspect",
-            "deposit", "withdraw", "transfer", "scut", "wait", "fs", "list_files",
+            "deposit", "withdraw", "transfer", "scut", "fs", "list_files",
             "memo", "docs", "design_blueprint", "save_blueprint", "list_blueprints", "delete_blueprint"
         ]
         for m in expected_methods:

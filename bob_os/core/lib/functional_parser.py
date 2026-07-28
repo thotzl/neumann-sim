@@ -19,7 +19,6 @@ METHOD_META = {
     "scut": {"params": ["receiver_id", "message", "priority"], "greedy": "message"},
     "memo": {"params": ["action", "content", "id", "query", "status"], "greedy": "content"},
     "docs": {"params": ["action", "title", "content", "id", "query"], "greedy": "content"},
-    "wait": {"params": [], "greedy": None},
     "sleep": {"params": ["duration", "ignore_scut"], "greedy": None},
     "storage": {"params": [], "greedy": None},
     "dashboard": {"params": [], "greedy": None, "internal": True},

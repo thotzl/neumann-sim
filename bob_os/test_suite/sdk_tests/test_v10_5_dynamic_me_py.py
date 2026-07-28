@@ -113,7 +113,7 @@ print(f"RAW_MATTER:{status.host.inventory.raw_matter}")
 print(f"DEPOT_ENERGY:{status.depots.energy}")
 
 # 2. Test actuator running natively (inherited from Agent)
-me.wait()
+me.sleep(duration=1)
 
 # 3. Test dynamic binding of previously missing methods (e.g. scan)
 me.scan()
@@ -135,7 +135,7 @@ me.scan()
         self.assertIn("ENERGY:120", out)
         self.assertIn("RAW_MATTER:40", out)
         self.assertIn("DEPOT_ENERGY:250", out)
-        self.assertIn("[SUCCESS] Waiting...", out) # Natively printed by inherited bob_sdk.Agent!
+        self.assertIn("[SUCCESS] Standby activated.", out) # Natively printed by inherited bob_sdk.Agent!
         self.assertIn("[SCAN] Detected:", out) # Natively printed by me.scan()!
 
 if __name__ == '__main__':

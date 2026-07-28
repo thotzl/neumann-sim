@@ -60,6 +60,45 @@ const server = http.createServer((req, res) => {
             }
         });
     }
+    // Real-Time Granular Event Log Entry point (Supports single event or array of events)
+    else if (req.method === 'POST' && (req.url === '/api/events' || req.url === '/api/event')) {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                const payload = JSON.parse(body);
+                const events = Array.isArray(payload) ? payload : [payload];
+                
+                events.forEach(event => {
+                    latestHistory.push({
+                        tick: event.tick,
+                        agentId: event.agentId,
+                        agentName: event.agentName,
+                        type: event.type,
+                        text: event.text
+                    });
+                });
+
+                // Broadcast the array of events to all browser clients in-order
+                const eventMsg = JSON.stringify({
+                    type: 'REALTIME_LOGS',
+                    logs: events
+                });
+
+                clients.forEach(client => {
+                    if (client.readyState === 1) { // 1 is OPEN
+                        client.send(eventMsg);
+                    }
+                });
+
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ status: 'success', message: 'Events broadcasted.' }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ status: 'error', message: e.message }));
+            }
+        });
+    }
     // Existing Voice of God msg injector
     else if (req.method === 'POST' && req.url === '/vog') {
         let body = '';

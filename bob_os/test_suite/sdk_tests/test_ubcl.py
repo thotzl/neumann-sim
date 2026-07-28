@@ -73,13 +73,13 @@ class TestUBCL(unittest.TestCase):
         result = subprocess.run(cmd, capture_output=True, text=True, env=env)
         self.assertIn('energy_inventory: 100', result.stdout)
 
-    def test_cli_wait(self):
+    def test_cli_sleep(self):
         env = os.environ.copy()
         env['PYTHONPATH'] = BASE_DIR
         env['BOB_ID'] = 'Bob-Alpha'
-        cmd = [sys.executable, os.path.join(BASE_DIR, 'core', 'bin', 'bob.py'), 'wait()']
+        cmd = [sys.executable, os.path.join(BASE_DIR, 'core', 'bin', 'bob.py'), 'sleep(duration=1)']
         result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-        self.assertIn('[SUCCESS] Waiting...', result.stdout)
+        self.assertIn('[SUCCESS] Standby activated.', result.stdout)
 
 if __name__ == '__main__':
     unittest.main()

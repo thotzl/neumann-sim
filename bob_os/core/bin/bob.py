@@ -35,7 +35,6 @@ DESCRIPTIONS = {
     "withdraw": "Withdraws energy or matter from the local sector depot.",
     "transfer": "Transfers resources directly to another instance in the same sector.",
     "scut": "Sends a radio message. Range > 1000 or broadcasts to 'ALL' require an active 'comms_relay'.",
-    "wait": "Pauses for one turn to regenerate energy or standby.",
     "storage": "Displays the current fill level of your inventory.",
     "entities": "Scans for other active instances in the current sector.",
     "fs": "Lists the files (scripts) in your local filesystem.",
@@ -56,6 +55,7 @@ DESCRIPTIONS = {
     "network": "Queries active replicants. Masked as Unknown if out of range with no active comms_relay.",
     "memo": "Manage your private memos, diary entries, and logs (Actions: add, check, uncheck, remove, list, find; Optional list filter: status='all').",
     "docs": "Manage sector documents and public relics (Actions: add, list, find, remove).",
+    "sleep": "Enters stateful standby. Suspends physical systems instantly; must be placed at the end of your action sequence.",
 }
 
 from core.lib.utils.formatting import clean_dict
@@ -134,7 +134,6 @@ def main():
         elif method == "withdraw": agent.withdraw(resource_type=params.get('resource_type', 'energy'), quantity=safe_int(params.get('quantity'), 'quantity', 50))
         elif method == "transfer": agent.transfer(receiver_id=params.get('receiver_id'), resource_type=params.get('resource_type'), quantity=safe_int(params.get('quantity'), 'quantity'))
         elif method == "scut": agent.scut(receiver_id=params.get('receiver_id'), message=params.get('message'), priority=params.get('priority'))
-        elif method == "wait": agent.wait()
         elif method == "sleep": agent.sleep(duration=safe_int(params.get('duration'), 'duration', 5), ignore_scut=params.get('ignore_scut'))
         elif method == "_poll":
             res = agent._internal_poll()

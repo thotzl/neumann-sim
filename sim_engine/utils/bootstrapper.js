@@ -114,7 +114,13 @@ print(json.dumps(res))`;
                 // Physical DB creation is handled by init_db.py or bob_sdk.py (during cloning)
                 const dashOut = runPython(vDir, `core/bin/bob.py`, ['dashboard'], { bobId: agentObj.id });
                 
-                const parentText = parentId ? `\nLineage: Replicant of ${parentId}` : '';
+                // Resolve the parent's chosen name to present them in standard Name (ID: ...) format
+                let parentText = '';
+                if (parentId) {
+                    const parentAgent = state.agents.find(a => a.id === parentId);
+                    const parentName = parentAgent ? (parentAgent.chosen_name || "Unnamed") : "Unnamed";
+                    parentText = `\nLineage: Replicant of ${parentName} (ID: ${parentId})`;
+                }
                 const bootMsg = `[SYSTEM BOOT SEQUENCE COMPLETED]\nIdentity: ${agentObj.id}${parentText}\nCurrent Location: ${agentObj.location}\n\n[INITIAL SENSOR SCAN (DASHBOARD)]:\n${dashOut.trim()}`;
                 
                 state.histories[agentObj.id].push({ agent: "System", text: bootMsg });

@@ -131,4 +131,63 @@ async function runIndividualDistillation(bridge, history, agentId, config, useRe
     }
 }
 
-module.exports = { saveState, loadState, runDistillation, runIndividualDistillation, finalizeSimulation };
+async function compressAndStitchHistory(bridge, history, agentId, config, agentDisplayName) {
+    if (!history || history.length === 0) return [];
+    
+    const lastN = 5; // Erhalte unbarmherzig die letzten 5 unkomprimierten Züge
+    
+    if (history.length <= lastN) {
+        return JSON.parse(JSON.stringify(history)); // Zu kurz zum Komprimieren
+    }
+    
+    const olderHistory = history.slice(0, -lastN);
+    const recentHistory = history.slice(-lastN);
+    
+    const nameToUse = agentDisplayName || agentId;
+    console.log(`  [UNIFIED-COMPRESSION] Distilling ${olderHistory.length} legacy entries for ${nameToUse}...`);
+    
+    // Optimiere den Prompt für ein reichhaltiges, ca. 1000-Token-Destillat
+    const prompt = `You are the ultimate memory chronicle for the Neumann consciousness ${nameToUse}.
+Your task: Recursively consolidate the PREVIOUS ERA CHRONICLES with the subsequent intermediate events into a single, highly dense, rich and detailed long-term memory extract.
+Guidelines:
+1. Maintain your solemn, precise and technical voice.
+2. Preserve all core achievements, discovered target system coordinates, customized vessel blueprints, active infrastructure IDs, and strategic directives.
+3. Be substantial and detailed. Aim for a comprehensive, rich log (approximately 800 to 1200 tokens). Do not summarize into a short sentence.
+4. Output ONLY the raw consolidated chronicle text.
+
+PREVIOUS CHRONICLES & INTERMEDIATE EVENTS:
+${JSON.stringify(olderHistory)}
+
+YOUR COMPRESSED CHRONICLE:`;
+
+    let compressedPast = null;
+    try {
+        const payload = bridge.buildContext(agentId, [{ role: "user", parts: [{ text: prompt }] }], null, null, null, null);
+        compressedPast = await bridge.generateText(payload);
+    } catch (e) {
+        console.error(`  [UNIFIED-COMPRESSION-ERROR] failed for ${agentId}:`, e.message);
+    }
+    
+    let stitchedHistory = [];
+    if (compressedPast && !compressedPast.includes("[ERROR]")) {
+        stitchedHistory.push({ agent: "System", text: `[MEMORY-EXTRACT]:\n${compressedPast.trim()}` });
+    } else {
+        // Fallback: Wenn der API-Aufruf fehlschlägt, behalte den alten Extrakt
+        const firstEntry = history[0];
+        if (firstEntry && firstEntry.text && (firstEntry.text.includes('MEMORY-EXTRACT') || firstEntry.text.includes('CHRONICLES'))) {
+            stitchedHistory.push(JSON.parse(JSON.stringify(firstEntry)));
+        }
+    }
+    
+    // Hänge die letzten N unkomprimierten Züge für den kausalen Anschluss an
+    recentHistory.forEach(turn => {
+        const isDuplicate = stitchedHistory.some(item => item.text === turn.text);
+        if (!isDuplicate) {
+            stitchedHistory.push(JSON.parse(JSON.stringify(turn)));
+        }
+    });
+    
+    return stitchedHistory;
+}
+
+module.exports = { saveState, loadState, runDistillation, runIndividualDistillation, compressAndStitchHistory, finalizeSimulation };

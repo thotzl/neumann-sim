@@ -14,13 +14,22 @@ async function runE2ETest() {
         // - Create test experiment (Use build.py for correct structure)
         console.log("- Creating test experiment...");
         if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
-        execSync(`python3 bob_os/build.py ${version} --rounds 3 --skip-tests --mission "E2E Test Mission"`, { stdio: 'inherit' });
+        execSync(`python3 bob_os/build.py ${version} --rounds 6 --skip-tests --mission "E2E Test Mission"`, { stdio: 'inherit' });
 
         // We modify the config so that the token limit is extremely low,
         // to force a distillation after 3 rounds.
         const configPath = path.join(expDir, 'config.json');
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        config.config_override = { model: "gemini-1.5-flash", token_limit: 100 }; // Extremely low
+        config.config_override = { 
+            model: "gemini-1.5-flash", 
+            token_limit: 10,
+            soft_token_limit: 10
+        }; // Extremely low
+        config.memory = {
+            soft_token_limit: 10,
+            hard_token_limit: 30000,
+            recursive_compression: "always"
+        };
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
         console.log("- Starting Runner with API Mock...");

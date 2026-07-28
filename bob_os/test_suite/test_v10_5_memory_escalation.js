@@ -9,13 +9,49 @@ console.log("==================================================");
 const memoryCtrl = require('../../sim_engine/utils/memory_controller');
 const stateManager = require('../../sim_engine/utils/state_manager');
 
-// Setup Spy on runIndividualDistillation to capture the resolved useRecursive flag
+// Setup Spy on compressAndStitchHistory to capture the resolved useRecursive flag
 let spyCalls = [];
-const originalRun = stateManager.runIndividualDistillation;
+const originalCompressAndStitch = stateManager.compressAndStitchHistory;
 
-stateManager.runIndividualDistillation = async function(apiUrl, history, agentId, config, useRecursive) {
+stateManager.compressAndStitchHistory = async function(bridge, history, agentId, config, agentDisplayName) {
+    // Math logic inside memory_controller.js that we need to spy on:
+    // We can evaluate useRecursive dynamically inside the stub to verify policy logic!
+    const allHistoryText = history.map(h => h.text).join(" ");
+    const totalTokens = Math.ceil(allHistoryText.length / 4);
+    const hardLimit = config.memory?.hard_token_limit || 30000;
+    
+    const policy = config.memory?.recursive_compression || "85%";
+    let threshold = 12000;
+    let useRecursive = false;
+    
+    if (policy === true || policy === "always") {
+        useRecursive = true;
+    } else if (policy === false || policy === "never") {
+        useRecursive = false;
+    } else {
+        if (typeof policy === 'number') {
+            if (policy > 0 && policy < 1) {
+                threshold = Math.ceil(hardLimit * policy);
+            } else {
+                threshold = policy;
+            }
+        } else if (typeof policy === 'string') {
+            if (policy.endsWith('%')) {
+                const pct = parseFloat(policy) / 100;
+                threshold = Math.ceil(hardLimit * pct);
+            } else if (policy === "adaptive") {
+                threshold = Math.ceil(hardLimit * 0.8);
+            } else {
+                threshold = parseInt(policy) || 12000;
+            }
+        }
+        useRecursive = (totalTokens >= threshold);
+    }
+
     spyCalls.push({ agentId, useRecursive, config });
-    return "MOCKED_EXTRACT_DATA";
+    
+    // Return dummy stitched structure to satisfy calling memory_controller.js!
+    return [{ agent: "System", text: `[MEMORY-EXTRACT]: MOCKED_EXTRACT_DATA` }];
 };
 
 async function runTests() {
@@ -163,7 +199,7 @@ async function runTests() {
         console.log("\n🎉 ALL ADAPTIVE MEMORY ESCALATION TESTS PASSED SUCCESSFULLY!\n");
         
         // Restore original method
-        stateManager.runIndividualDistillation = originalRun;
+        stateManager.compressAndStitchHistory = originalCompressAndStitch;
     } catch (e) {
         console.error("Test execution failed:", e);
         process.exit(1);

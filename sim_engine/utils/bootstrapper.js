@@ -104,42 +104,18 @@ print(json.dumps(res))`;
             const parentId = pAgent.parent_id;
             
             if (parentId && state.histories[parentId]) {
-                // 🧬 Deep-copy progenitor's history
-                const inherited = JSON.parse(JSON.stringify(state.histories[parentId]));
-                
-                // Dynamic resolution of parent Name (ID: ...) for standard compliant interfacing
+                const parentHistory = state.histories[parentId];
                 const chosenParentName = state.agentNames?.[parentId] || "Unnamed";
                 const parentDisplayName = `${chosenParentName} (ID: ${parentId})`;
 
-                let stitchedHistory = inherited;
-
-                if (inherited.length > 5) {
-                    const pastHistory = inherited.slice(0, inherited.length - 5);
-                    const recentFaden = inherited.slice(inherited.length - 5);
-
-                    console.log(`  [DECENTRALIZED COMPRESSION] Compressing ${pastHistory.length} legacy entries for new Instance ${agentObj.id}...`);
-
-                    try {
-                        const stateManager = require('./state_manager');
-                        const compressedPast = await stateManager.runIndividualDistillation(
-                            compressorBridge,
-                            pastHistory,
-                            parentId,
-                            config,
-                            true,
-                            parentDisplayName
-                        );
-
-                        if (compressedPast) {
-                            stitchedHistory = [
-                                { agent: "System", text: `[MEMORY-EXTRACT]: ${compressedPast}` },
-                                ...recentFaden
-                            ];
-                        }
-                    } catch (e) {
-                        console.error(`  [COMPRESSION-ERROR] Distillation for new Instance ${agentObj.id} failed:`, e.message);
-                    }
-                }
+                const stateManager = require('./state_manager');
+                let stitchedHistory = await stateManager.compressAndStitchHistory(
+                    compressorBridge,
+                    parentHistory,
+                    parentId,
+                    config,
+                    parentDisplayName
+                );
 
                 // 1. Insert the Immersive Temporal Barrier (The Separator - Hard Sci-Fi)
                 stitchedHistory.push({

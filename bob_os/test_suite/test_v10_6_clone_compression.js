@@ -54,13 +54,22 @@ async function runTests() {
         fs.writeFileSync(populationFile, JSON.stringify(dummyPop, null, 2));
 
         // 1. Stub the distillation engine to mock the API compression offline
-        const originalDistill = stateManager.runIndividualDistillation;
-        stateManager.runIndividualDistillation = async function(bridge, history, agentId, config, useRecursive, agentDisplayName) {
-            // Verify history passed to compressor has been cleanly split (exactly 3 legacy entries left!)
-            assert.strictEqual(history.length, 3);
+        const originalCompressAndStitch = stateManager.compressAndStitchHistory;
+        stateManager.compressAndStitchHistory = async function(bridge, history, agentId, config, agentDisplayName) {
+            // Verify history passed to compressor has been cleanly split (exactly 8 legacy entries input!)
+            assert.strictEqual(history.length, 8);
             assert.strictEqual(history[0].text, "Legacy action 1");
-            assert.strictEqual(history[2].text, "Legacy action 3");
-            return "[MOCK COMPRESSED CHRONICLE]";
+            assert.strictEqual(history[7].text, "Uncompressed turn 5");
+            
+            // Return dummy stitched structure directly to satisfy modular symmetry!
+            return [
+                { agent: "System", text: "[MEMORY-EXTRACT]:\n[MOCK COMPRESSED CHRONICLE]" },
+                { agent: "Instance-1", text: "Uncompressed turn 1" },
+                { agent: "Instance-1", text: "Uncompressed turn 2" },
+                { agent: "Instance-1", text: "Uncompressed turn 3" },
+                { agent: "Instance-1", text: "Uncompressed turn 4" },
+                { agent: "Instance-1", text: "Uncompressed turn 5" }
+            ];
         };
 
         // 2. Execute asynchronous syncPopulation
@@ -84,7 +93,7 @@ async function runTests() {
         assert.ok(childHistory.length >= 8); // 1 extract + 5 recent + 1 barrier + 1 onboarding + 1 bootMsg
 
         // Check Stitch Component A: The compressed past
-        assert.strictEqual(childHistory[0].text, "[MEMORY-EXTRACT]: [MOCK COMPRESSED CHRONICLE]");
+        assert.strictEqual(childHistory[0].text, "[MEMORY-EXTRACT]:\n[MOCK COMPRESSED CHRONICLE]");
 
         // Check Stitch Component B: The 5 recent uncompressed turns
         assert.strictEqual(childHistory[1].text, "Uncompressed turn 1");
@@ -100,7 +109,7 @@ async function runTests() {
         console.log("  ✅ Dynamic parent Name (ID: Instance-1) successfully interpolated inside awakening logs.");
 
         // Restore original distillation engine & clean up
-        stateManager.runIndividualDistillation = originalDistill;
+        stateManager.compressAndStitchHistory = originalCompressAndStitch;
         if (fs.existsSync(populationFile)) fs.unlinkSync(populationFile);
         if (fs.existsSync(logFile)) fs.unlinkSync(logFile);
 

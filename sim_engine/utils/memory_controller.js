@@ -70,9 +70,10 @@ async function handleDistillation(agentId, state, config, apiUrl) {
         const chosenName = (state.agents && state.agents.find(a => a.id === agentId)?.chosen_name) || "Unnamed";
         const agentDisplayName = `${chosenName} (ID: ${agentId})`;
 
-        const compressed = await stateManager.runIndividualDistillation(apiUrl, state.histories[agentId], agentId, config, useRecursive, agentDisplayName);
-        if (compressed) {
-            state.histories[agentId] = [{ agent: 'System', text: `[MEMORY-EXTRACT]: ${compressed}` }];
+        const stitched = await stateManager.compressAndStitchHistory(apiUrl, state.histories[agentId], agentId, config, agentDisplayName);
+        if (stitched && stitched.length > 0) {
+            state.histories[agentId] = stitched;
+            console.log(`  [MEMORY-STITCH] Unified Causal Stitching applied for ${agentId}. Saved last 5 turns uncompressed.`);
         }
     }
 }

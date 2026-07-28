@@ -68,10 +68,10 @@ async function finalizeSimulation(bridge, state, memoryFile, logFile, errorOccur
     console.log("Finalization completed.");
 }
 
-async function runIndividualDistillation(bridge, history, agentId, config) {
+async function runIndividualDistillation(bridge, history, agentId, config, useRecursive) {
     console.log(`Führe individuelle Destillation für ${agentId} durch...`);
     
-    const isRecursive = config?.memory?.recursive_compression !== false;
+    const isRecursive = useRecursive !== false;
     
     let prompt = "";
     if (isRecursive) {

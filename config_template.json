@@ -17,7 +17,7 @@
   "memory": {
     "soft_token_limit": 10000,
     "hard_token_limit": 30000,
-    "recursive_compression": true,
+    "recursive_compression": "85%",
     "max_compression_output_tokens": 1200
   },
   "config_override": {

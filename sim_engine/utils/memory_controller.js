@@ -25,7 +25,7 @@ async function handleDistillation(agentId, state, config, apiUrl) {
         const reason = totalTokens >= hardLimit ? "HARD-LIMIT" : "Interval";
         
         // Polymorphic Adaptive Memory Resolution (Hebel 4 & 5)
-        const policy = config.memory?.recursive_compression; // true, false, "always", "never", "adaptive", 12000, 0.8, "80%"
+        const policy = config.memory?.recursive_compression || "85%"; // Default to 85% relative threshold
         let useRecursive = false;
         
         if (policy === true || policy === "always") {

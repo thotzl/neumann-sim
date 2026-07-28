@@ -62,10 +62,10 @@ async function runTests() {
         assert.strictEqual(spyCalls[0].useRecursive, false);
         console.log("  ✅ 'never' policy correctly stayed in linear mode.");
 
-        // --- TEST 3: PERCENTAGE-BASED ADAPTIVE ESCALATION (80%) ---
-        console.log("Test 3: Verifying percentage-based adaptive escalation (80% / 0.8)...");
+        // --- TEST 3: PERCENTAGE-BASED ADAPTIVE ESCALATION (85%) ---
+        console.log("Test 3: Verifying percentage-based adaptive escalation (85% / 0.85)...");
         
-        // A. Below threshold: 5,000 tokens (~20,000 characters) - Limit is 24,000 (80% of 30,000)
+        // A. Below threshold: 5,000 tokens (~20,000 characters) - Limit is 25,500 (85% of 30,000)
         spyCalls = [];
         let state3A = {
             histories: {
@@ -76,24 +76,24 @@ async function runTests() {
             memory: {
                 soft_token_limit: 10,
                 hard_token_limit: 30000,
-                recursive_compression: "80%"
+                recursive_compression: "85%"
             }
         };
         await memoryCtrl.handleDistillation("Instance-1", state3A, config3, null);
         assert.strictEqual(spyCalls.length, 1);
         assert.strictEqual(spyCalls[0].useRecursive, false); // Staying linear below threshold
         
-        // B. Above threshold: 25,000 tokens (~100,000 characters) - Limit is 24,000
+        // B. Above threshold: 27,500 tokens (~110,000 characters) - Limit is 25,500
         spyCalls = [];
         let state3B = {
             histories: {
-                "Instance-1": [{ agent: "Instance-1", text: "A".repeat(100000) }] // ~25,000 tokens
+                "Instance-1": [{ agent: "Instance-1", text: "A".repeat(110000) }] // ~27,500 tokens
             }
         };
         await memoryCtrl.handleDistillation("Instance-1", state3B, config3, null);
         assert.strictEqual(spyCalls.length, 1);
         assert.strictEqual(spyCalls[0].useRecursive, true); // Escalating recursively above threshold
-        console.log("  ✅ Percentage-based adaptive escalation (80%) successfully verified.");
+        console.log("  ✅ Percentage-based adaptive escalation (85%) successfully verified.");
 
         // --- TEST 4: FLOAT PERCENTAGE-BASED ADAPTIVE ESCALATION (0.5 / 50%) ---
         console.log("Test 4: Verifying float percentage adaptive escalation (0.5 / 50%)...");

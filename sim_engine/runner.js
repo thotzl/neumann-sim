@@ -275,8 +275,9 @@ print(json.dumps({"messages": msgs, "names": names}))`;
         }
 
         // Dashboard (Task 3: Automatic Injected Dashboard)
+        let dashboardOut = "";
         try {
-            const dashboardOut = runPython(vDir, `core/bin/bob.py`, ['dashboard()'], { bobId: agent.id, aclState: state.security?.acl || {} });
+            dashboardOut = runPython(vDir, `core/bin/bob.py`, ['dashboard()'], { bobId: agent.id, aclState: state.security?.acl || {} });
             if (dashboardOut && dashboardOut.trim()) {
                 promptText += `\n[CURRENT ENVIRONMENT (REALTIME)]:\n${dashboardOut.trim()}\n`;
             }
@@ -367,7 +368,8 @@ print(json.dumps({"messages": msgs, "names": names}))`;
                 text: `[NEURAL ECHO (LAST ACTION AND RESONANCE)]:\n${actionPart.trim()}\n\nRESONANCE:\n${feedback.trim()}`
             });
             
-            logger.appendTurnLog(logFile, fractionalStardate, agent.id, state.totalTurns, state.histories[agent.id].length, responseText, feedback, false, preTurnEvents);
+            const myWalletStr = JSON.stringify(state.security?.wallets?.[agent.id] || {});
+            logger.appendTurnLog(logFile, fractionalStardate, agent.id, state.totalTurns, state.histories[agent.id].length, responseText, feedback, false, preTurnEvents, dashboardOut, myWalletStr);
             stateExporter.exportWorldState(universeDir, state, agent.id);
             agent.last_location = agent.location;
             stateManager.saveState(stateFile, state);

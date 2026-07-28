@@ -14,20 +14,30 @@ function writeLogHeader(logFile, config, isResumed = false) {
     fs.writeFileSync(logFile, header);
 }
 
-function appendTurnLog(logFile, stardate, agentId, totalTurns, historyLength, manifestation, feedback, isResumed = false, preTurnEvents = "") {
+function appendTurnLog(logFile, stardate, agentId, totalTurns, historyLength, manifestation, feedback, isResumed = false, preTurnEvents = "", dashboardText = "", keyringText = "") {
     const resumeMarker = isResumed ? " (RESUMED)" : "";
-    const logHeader = `\n\n### Stardate: ${stardate}${resumeMarker}\n`;
-    const stats = `**Total Turns:** ${totalTurns}\n**Perception:** [Short-Term Memory: ${historyLength} Turns]\n`;
+    const logHeader = `\n\n### Stardate: ${stardate}${resumeMarker} - Telemetry of ${agentId}\n`;
+    const stats = `**Total Turns:** ${totalTurns}\n**Chronicle Span:** [Short-Term Memory: ${historyLength} Eras]\n`;
+    
+    let sensorStr = "";
+    if (dashboardText && dashboardText.trim() !== "") {
+        sensorStr = `\n**Sensor Telemetry (Realtime Dashboard):**\n\`\`\`yaml\n${dashboardText.trim()}\n\`\`\`\n`;
+    }
+    
+    let keyStr = "";
+    if (keyringText && keyringText.trim() !== "" && keyringText !== "{}") {
+        keyStr = `**Cryptographic Keyring:** \`${keyringText.trim()}\`\n`;
+    }
     
     let preEventsStr = "";
     if (preTurnEvents && preTurnEvents.trim() !== "") {
-        preEventsStr = `\n**Pre-Turn Events:**\n${preTurnEvents.trim()}\n`;
+        preEventsStr = `\n**Pre-Turn Events (Inbox):**\n${preTurnEvents.trim()}\n`;
     }
     
     const manifestStr = typeof manifestation === 'string' ? manifestation : JSON.stringify(manifestation);
     const feedbackStr = typeof feedback === 'string' ? feedback : JSON.stringify(feedback);
 
-    const content = `${logHeader}${stats}${preEventsStr}\n**Manifestation:**\n> ${manifestStr.replace(/\n/g, '\n> ')}\n\n**Actions:**\n\`\`\`\n${feedbackStr || "*(No Actions)*"}\n\`\`\`\n`;
+    let content = `${logHeader}${stats}${sensorStr}${keyStr}${preEventsStr}\n**Manifestation (Cognitive Logs):**\n> ${manifestStr.replace(/\n/g, '\n> ')}\n\n**Actions (Resonance Feedback):**\n\`\`\`\n${feedbackStr || "*(No Actions)*"}\n\`\`\`\n`;
     fs.appendFileSync(logFile, content);
 }
 

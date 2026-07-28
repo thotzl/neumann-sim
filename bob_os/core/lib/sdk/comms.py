@@ -26,12 +26,17 @@ class Comms:
         relay_level = relay_row[0] if relay_row else 1
 
         rules = config_service.get_economy_rules()
-        base_range = rules.get('global_settings', {}).get('base_comms_range', 1000) * relay_level
-
-        if relay_level > 1:
-            print(f"[INFO] Comms Relay Lvl {relay_level} operational. Communication range increased to {base_range} units.")
-
+        base_comms_range = rules.get('global_settings', {}).get('base_comms_range', 1000)
+        
         sender_has_relay = system_service.has_active_infrastructure(cursor, agent['location'], 'comms_relay')
+        
+        if sender_has_relay:
+            base_range = base_comms_range * (1 + relay_level)
+        else:
+            base_range = base_comms_range
+
+        if relay_level > 1 and sender_has_relay:
+            print(f"[INFO] Comms Relay Lvl {relay_level} operational. Communication range increased to {base_range} units.")
 
         if receiver_id.upper() == 'ALL':
             if not sender_has_relay:
@@ -98,10 +103,8 @@ class Comms:
             if agent['location'] != target_agent['location']:
                 dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], target_agent['current_x'], target_agent['current_y'])
                 if dist > base_range:
-                    target_has_relay = system_service.has_active_infrastructure(cursor, target_agent['location'], 'comms_relay')
-                    if not sender_has_relay and not target_has_relay:
-                        print(f"[DENIED] Agent '{receiver_id}' is out of range ({int(dist)} > {base_range}). Signal loss. Construct a 'comms_relay' to boost the signal.")
-                        return False
+                    print(f"[DENIED] Agent '{receiver_id}' is out of range ({int(dist)} > {base_range}). Signal loss.")
+                    return False
 
             # Check Hibernation and DND status (Self-healing for legacy test DB schemas)
             import os

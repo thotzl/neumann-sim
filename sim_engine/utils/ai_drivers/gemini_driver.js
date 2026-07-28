@@ -48,15 +48,18 @@ const GeminiDriver = {
 
                 const data = await response.json();
 
-                // 2. Self-healing rate limit handling (HTTP 429 or Quota Exceeded)
+                // 2. Self-healing rate limit handling with Raw JSON Error Dump
                 if (data.error) {
                     const errMsg = data.error.message || "";
+                    console.error(`\n[Gemini API Error Detected] HTTP Status: ${response.status}`);
+                    console.error(`  - Full API Error Body: ${JSON.stringify(data.error, null, 2)}`);
+
                     if (response.status === 429 || errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("limit") || errMsg.toLowerCase().includes("rate")) {
                         console.warn(`\n[Gemini Rate-Limit] Rate limit or quota reached. Pausing for 10 seconds before attempt ${i + 1}/${retries}...`);
                         await new Promise(r => setTimeout(r, 10000));
                         continue; // Continue loop and send again!
                     }
-                    throw new Error(errMsg);
+                    throw new Error(`Gemini API Failed with Status ${response.status}: ${errMsg}`);
                 }
 
                 if (!data.candidates || data.candidates.length === 0) {

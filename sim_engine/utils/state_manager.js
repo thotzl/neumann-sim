@@ -162,10 +162,16 @@ YOUR COMPRESSED CHRONICLE:`;
 
     let compressedPast = null;
     try {
-        const payload = bridge.buildContext(agentId, [{ role: "user", parts: [{ text: prompt }] }], null, null, null, null);
+        // Compile a clean, flat history array compliant with buildContext's signature
+        const promptHistory = [{ agent: "System", text: prompt }];
+        const payload = bridge.buildContext(agentId, promptHistory, null, null, null, null);
+        
         compressedPast = await bridge.generateText(payload);
     } catch (e) {
-        console.error(`  [UNIFIED-COMPRESSION-ERROR] failed for ${agentId}:`, e.message);
+        console.error(`\n[UNIFIED-COMPRESSION-ERROR] API Call crashed for ${agentId}!`);
+        console.error(`  - Reason/Message: ${e.message}`);
+        if (e.stack) console.error(`  - Stack Trace: ${e.stack}`);
+        return null;
     }
     
     let stitchedHistory = [];

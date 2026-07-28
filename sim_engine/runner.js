@@ -23,6 +23,7 @@ if (fs.existsSync(envPath)) {
 const configLoader = require('./utils/config_loader');
 const envManager = require('./utils/environment');
 const apiClient = require('./utils/api_client');
+const wakeupManager = require('./utils/wakeup_manager');
 const { execSync } = require('child_process');
 
 function getSimpleHash(str) {
@@ -51,73 +52,6 @@ function postRealtimeEvents(events) {
     }
 }
 
-function getSectorSnapshot(location, agentId, dbPath, universeDir) {
-    if (!location || location === 'Interstellar') return null;
-    try {
-        const pyScript = `
-import sqlite3, json
-conn = sqlite3.connect('${dbPath.replace(/\\/g, '\\\\')}')
-conn.row_factory = sqlite3.Row
-cursor = conn.cursor()
-
-# 1. Bobs count (Resolving virtual location via physical hosts)
-cursor.execute("""
-    SELECT COUNT(*) FROM agents 
-    WHERE id != ? AND (
-        (host_type = 'ship' AND CAST(host_id AS INTEGER) IN (SELECT id FROM ships WHERE system_name = ?))
-        OR
-        (host_type = 'matrix' AND CAST(host_id AS INTEGER) IN (SELECT id FROM infrastructure WHERE system_name = ?))
-    )
-""", ('''${agentId}''', '''${location}''', '''${location}'''))
-bobs = cursor.fetchone()[0]
-
-# 2. Ships count (excluding own)
-cursor.execute("SELECT COUNT(*) FROM ships WHERE system_name = ? AND pilot_id != ?", ('''${location}''', '''${agentId}'''))
-ships = cursor.fetchone()[0]
-
-# 3. All infra
-cursor.execute("SELECT COUNT(*) FROM infrastructure WHERE system_name = ?", ('''${location}''',))
-infra = cursor.fetchone()[0]
-
-# 4. Active infra
-cursor.execute("SELECT COUNT(*) FROM infrastructure WHERE system_name = ? AND status = 'active'", ('''${location}''',))
-active_infra = cursor.fetchone()[0]
-
-# 5. Core matter
-cursor.execute("SELECT extractable_matter_in_core FROM systems WHERE name = ?", ('''${location}''',))
-row = cursor.fetchone()
-core = row[0] if row else 50000
-
-# 6. Any structure or ship below 80% HP?
-cursor.execute("SELECT COUNT(*) FROM infrastructure WHERE system_name = ? AND health < (max_health * 0.8)", ('''${location}''',))
-damaged_infra = cursor.fetchone()[0]
-
-cursor.execute("SELECT COUNT(*) FROM ships WHERE system_name = ? AND health < (max_health * 0.8)", ('''${location}''',))
-damaged_ships = cursor.fetchone()[0]
-
-# 7. Unread priority scut messages count
-cursor.execute("SELECT COUNT(*) FROM messages WHERE receiver = ? AND priority = 1", ('''${agentId}''',))
-priority_scuts = cursor.fetchone()[0]
-
-conn.close()
-print(json.dumps({
-    "bobs_count": bobs,
-    "ships_count": ships,
-    "infra_count": infra,
-    "active_infra_count": active_infra,
-    "core_matter": core,
-    "has_low_health": (damaged_infra + damaged_ships) > 0,
-    "priority_scuts": priority_scuts
-}))`;
-        const out = execSync(`python3 -c "${pyScript.replace(/"/g, '\\"')}"`, {
-            env: { ...process.env, PYTHONPATH: path.resolve(universeDir, '..') }
-        }).toString().trim();
-        return JSON.parse(out);
-    } catch (e) {
-        console.error("[SNAPSHOT-ERROR]", e.message);
-        return null;
-    }
-}
 const stateManager = require('./utils/state_manager');
 const logger = require('./utils/logger');
 const stateExporter = require('./utils/state_exporter');
@@ -278,110 +212,27 @@ print(json.dumps({"messages": msgs, "names": names}))`;
         const agentId = state.turnSequence[state.currentTurnIndex];
         const agent = state.agents.find(a => a.id === agentId);
 
+        // --- TIER I/V: FRACTIONAL STARDATE CALCULATOR ---
+        const totalTicks = state.turnSequence.length;
+        const currentTick = state.currentTurnIndex + 1; // 1-based index
+        const fractionalStardate = Number(`${state.round}.${currentTick}`);
+
+        // Set fractional stardate for child executions
+        process.env.BOB_CYCLE = String(fractionalStardate);
+
         if (!agent || !agent.alive) {
             state.currentTurnIndex++;
             if (state.currentTurnIndex >= state.turnSequence.length) state.currentTurnIndex = 0;
             return true;
         }
 
-        // --- PHASE 3: STATEFUL MATRIX-SLEEP ENGINE ---
+        // --- PHASE 3: STATEFUL MATRIX-SLEEP ENGINE (MODULAR) ---
         let isSleeping = (agent.sleep_state === 1 || agent.sleep_state === 2) && state.round < agent.sleep_until_cycle;
         if (isSleeping) {
             const dbPath = path.join(universeDir, 'universe.db');
-            const snapshot = getSectorSnapshot(agent.location, agent.id, dbPath, universeDir);
-            
-            // Initialize baselines if they don't exist yet (Freeze on sleep initiation)
-            if (!agent.sleep_baselines && snapshot) {
-                agent.sleep_baselines = {
-                    bobs_count: snapshot.bobs_count,
-                    ships_count: snapshot.ships_count,
-                    infra_count: snapshot.infra_count,
-                    active_infra_count: snapshot.active_infra_count,
-                    core_matter: snapshot.core_matter
-                };
-            }
-            
-            let wakeUp = false;
-            let wakeReason = "";
-            
-            // 1. SCUT Sensor (Comms check)
-            const myInbox = state.global_inbox[agent.id] || [];
-            const hasUnreadScut = myInbox.some(item => item.type === 'scut' || item.type === 'vog');
-            
-            // DND check: if sleep_state == 2, ignore normal scuts, only wake on priority!
-            const isDnd = agent.sleep_state === 2;
-            const hasPriorityScut = snapshot ? snapshot.priority_scuts > 0 : false;
-            
-            if (hasUnreadScut && !isDnd) {
-                wakeUp = true;
-                wakeReason = "Incoming radio transmission (SCUT/VOG).";
-            } else if (hasPriorityScut) {
-                wakeUp = true;
-                wakeReason = "Emergency Broadcast Beacon received with high priority!";
-            }
-            
-            // 2. NAVI Sensor (Arrival check)
-            if (!wakeUp && agent.location !== 'Interstellar' && agent.last_location === 'Interstellar') {
-                wakeUp = true;
-                wakeReason = "Transit complete. Reached destination system.";
-            }
-            
-            if (snapshot && !wakeUp && agent.location !== 'Interstellar') {
-                // 3. NEW_BOB (bobs_count inequality !=)
-                if (snapshot.bobs_count !== agent.sleep_baselines.bobs_count) {
-                    wakeUp = true;
-                    wakeReason = `Demographic contact! Sector population changed (Before: ${agent.sleep_baselines.bobs_count}, Current: ${snapshot.bobs_count}).`;
-                }
-                // 4. NEW_SHIP (ships_count inequality !=)
-                else if (snapshot.ships_count !== agent.sleep_baselines.ships_count) {
-                    wakeUp = true;
-                    wakeReason = `Radar contact! Local sector ship count changed (Before: ${agent.sleep_baselines.ships_count}, Current: ${snapshot.ships_count}).`;
-                }
-                // 5. CONSTR_START (infra_count inequality !=)
-                else if (snapshot.infra_count !== agent.sleep_baselines.infra_count) {
-                    wakeUp = true;
-                    wakeReason = `Industrial signal! Sector infrastructure list changed (Before: ${agent.sleep_baselines.infra_count}, Current: ${snapshot.infra_count}).`;
-                }
-                // 6. CONSTR_END (active_infra_count inequality !=)
-                else if (snapshot.active_infra_count !== agent.sleep_baselines.active_infra_count) {
-                    wakeUp = true;
-                    wakeReason = `Construction status update! Local structure operational states changed (Before: ${agent.sleep_baselines.active_infra_count}, Current: ${snapshot.active_infra_count}).`;
-                }
-                // 7. VAMPIR (HP < 80% check)
-                else if (snapshot.has_low_health) {
-                    wakeUp = true;
-                    wakeReason = "Structural distress! Low health signature (< 80%) registered on local assets.";
-                }
-                // 8. DEPLETION (Core matter == 0)
-                else if (snapshot.core_matter <= 0 && agent.sleep_baselines.core_matter > 0) {
-                    wakeUp = true;
-                    wakeReason = "Resource exhaustion! Sector core matter has been fully depleted.";
-                }
-            }
-            
-            if (wakeUp) {
-                console.log(`  [WAKE] Replicant ${agent.id} awakened! Reason: ${wakeReason}`);
-                agent.sleep_state = 0;
-                agent.sleep_until_cycle = 0;
-                agent.sleep_baselines = null;
-                
-                // Set in SQLite
-                require('child_process').execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath.replace(/\\/g, '\\\\')}'); conn.cursor().execute('UPDATE agents SET sleep_state=0, sleep_until_round=0 WHERE id=\\'${agent.id}\\''); conn.commit(); conn.close();"`, {
-                    env: { ...process.env, PYTHONPATH: path.resolve(universeDir, '..') }
-                });
-                
-                agent.wakeup_notification = `\n[SYSTEM NOTIFICATION]: Standby deactivated. Reason: ${wakeReason}\n`;
-            } else {
-                console.log(`  [SLEEPING] ${agent.id} is in deep sleep mode (Until cycle: ${agent.sleep_until_cycle}).`);
-                
-                fs.appendFileSync(logFile, `### [STANDBY] Replicant ${agent.id} is in deep sleep mode (Current cycle: ${state.round}).\n\n`);
-                
-                state.currentTurnIndex++;
-                if (state.currentTurnIndex >= state.turnSequence.length) state.currentTurnIndex = 0;
-                
-                stateManager.saveState(stateFile, state);
-                return true;
-            }
+            const logFile = path.join(vDir, config.log || 'log.md');
+            const skipped = await wakeupManager.handleStandby(agent, state, config, universeDir, logFile, dbPath);
+            if (skipped) return true; // Turn übersprungen, im Standby verblieben!
         }
 
         console.log(`  Turn: ${agent.id}`);
@@ -516,7 +367,7 @@ print(json.dumps({"messages": msgs, "names": names}))`;
                 text: `[NEURAL ECHO (LAST ACTION AND RESONANCE)]:\n${actionPart.trim()}\n\nRESONANCE:\n${feedback.trim()}`
             });
             
-            logger.appendTurnLog(logFile, state.round, agent.id, state.totalTurns, state.histories[agent.id].length, responseText, feedback, false, preTurnEvents);
+            logger.appendTurnLog(logFile, fractionalStardate, agent.id, state.totalTurns, state.histories[agent.id].length, responseText, feedback, false, preTurnEvents);
             stateExporter.exportWorldState(universeDir, state, agent.id);
             agent.last_location = agent.location;
             stateManager.saveState(stateFile, state);

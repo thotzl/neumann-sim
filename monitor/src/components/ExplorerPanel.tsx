@@ -20,7 +20,9 @@ export const ExplorerPanel = ({ state, selection, setSelection, focusBounds }: E
           <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', fontWeight: 600, letterSpacing: '1px' }}>TACTICAL COMMAND</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className="mono-text" style={{ fontSize: '1rem', color: '#10b981', fontWeight: 'bold' }}>T {state.tick}</div>
+          <div className="mono-text" style={{ fontSize: '1rem', color: '#10b981', fontWeight: 'bold' }}>
+            SD {state.stardate !== undefined ? state.stardate.toFixed(1) : state.tick}
+          </div>
           <div style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 700, marginTop: '4px' }}>{state.agents.length} UNITS</div>
         </div>
       </div>

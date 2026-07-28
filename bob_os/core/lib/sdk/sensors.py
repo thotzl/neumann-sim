@@ -366,9 +366,12 @@ class Sensors:
                     "modules": active_modules
                 }
 
+        current_stardate = float(os.environ.get('BOB_CYCLE', 0.0))
+
         return {
             "local_system": {
                 "name": sys_name,
+                "stardate": current_stardate,
                 "coordinates": f"X{system['x']}-Y{system['y']}",
                 "depots": {
                     "raw_matter": system['raw_matter_depot'],

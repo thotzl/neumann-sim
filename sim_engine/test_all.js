@@ -35,6 +35,7 @@ async function start() {
         { name: "JS Sandbox Isolation & NameError Fix", cmd: "node bob_os/test_suite/test_v10_5_sandbox_isolation.js" },
         { name: "JS Matrix-Sleep E2E", cmd: "node bob_os/test_suite/test_v10_5_matrix_sleep_e2e.js" },
         { name: "JS Adaptive Memory Escalation", cmd: "node bob_os/test_suite/test_v10_5_memory_escalation.js" },
+        { name: "JS Standby Wakeup Manager Unit", cmd: "node bob_os/test_suite/test_v10_6_wakeup_manager.js" },
         { name: "Meta-Pipeline (Build/Inject)", cmd: "node bob_os/test_suite/test_pipeline.js" },
         { name: "Runner Hard-Boot & Inheritance", cmd: "node bob_os/test_suite/test_runner_boot.js" },
         { name: "E2E Mock Simulation Loop", cmd: "node sim_engine/test_e2e.js" },

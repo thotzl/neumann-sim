@@ -14,9 +14,9 @@ function writeLogHeader(logFile, config, isResumed = false) {
     fs.writeFileSync(logFile, header);
 }
 
-function appendTurnLog(logFile, cycle, agentId, totalTurns, historyLength, manifestation, feedback, isResumed = false, preTurnEvents = "") {
+function appendTurnLog(logFile, stardate, agentId, totalTurns, historyLength, manifestation, feedback, isResumed = false, preTurnEvents = "") {
     const resumeMarker = isResumed ? " (RESUMED)" : "";
-    const logHeader = `\n\n### Cycle ${cycle} - Turn ${agentId}${resumeMarker}\n`;
+    const logHeader = `\n\n### Stardate: ${stardate}${resumeMarker}\n`;
     const stats = `**Total Turns:** ${totalTurns}\n**Perception:** [Short-Term Memory: ${historyLength} Turns]\n`;
     
     let preEventsStr = "";

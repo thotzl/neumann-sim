@@ -108,6 +108,7 @@ export type Blueprint = {
 
 export type WorldState = {
   tick: number; 
+  stardate?: number;
   total_turns: number; 
   last_agent: string; 
   timestamp: number;

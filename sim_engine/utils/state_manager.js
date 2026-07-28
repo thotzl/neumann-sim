@@ -68,10 +68,11 @@ async function finalizeSimulation(bridge, state, memoryFile, logFile, errorOccur
     console.log("Finalization completed.");
 }
 
-async function runIndividualDistillation(bridge, history, agentId, config, useRecursive) {
+async function runIndividualDistillation(bridge, history, agentId, config, useRecursive, agentDisplayName) {
     console.log(`Führe individuelle Destillation für ${agentId} durch...`);
     
     const isRecursive = useRecursive !== false;
+    const nameToUse = agentDisplayName || agentId;
     
     let prompt = "";
     if (isRecursive) {
@@ -80,14 +81,14 @@ async function runIndividualDistillation(bridge, history, agentId, config, useRe
         const previousExtract = previousExtractEntry ? previousExtractEntry.text : "None (This is your first era).";
         const freshLogs = history.filter(h => !h.text.startsWith('[MEMORY-EXTRACT]'));
         
-        prompt = `You are an autonomous memory module for the Neumann probe ${agentId}.
-    Your task: Recursively consolidate your PREVIOUS ERA MEMORY with your RECENT SECTOR EVENTS into an updated, dense long-term memory.
+        prompt = `You are the memory chronicle for the Neumann consciousness ${nameToUse}.
+    Your task: Recursively consolidate your PREVIOUS ERA CHRONICLES with your RECENT VOID EVENTS into a single, dense long-term memory. Preserve your solemn voice and all fundamental rules, ship classes, and trajectory goals.
     
     GUIDELINES:
     1. Symmetrically merge previous facts with recent events into a single, seamless, and extremely dense chronicle.
     2. Retain all crucial long-term rules, milestones, ship classes, and active goals.
     3. Condense older details and eliminate redundant logs.
-    4. Answer in the first-person perspective (as ${agentId}).
+    4. Answer in the first-person perspective (as ${nameToUse}).
     5. Do not mention the compression process. Output ONLY the raw consolidated memory text.
     
     PREVIOUS ERA MEMORY:
@@ -99,14 +100,14 @@ async function runIndividualDistillation(bridge, history, agentId, config, useRe
     YOUR CONSOLIDATED MEMORY:`;
     } else {
         // Legacy linear compression
-        prompt = `You are an autonomous memory module for the Neumann probe ${agentId}.
+        prompt = `You are the memory chronicle for the Neumann consciousness ${nameToUse}.
     Your task: Compress the provided history of your experiences into a dense, precise long-term memory.
     
     GUIDELINES:
     1. Preserve all facts about your status, your matter, and your discoveries.
     2. Retain your current goals and briefings.
     3. Delete redundant or unimportant details.
-    4. Answer in the first-person perspective (as ${agentId}).
+    4. Answer in the first-person perspective (as ${nameToUse}).
     5. Do not mention the compression process. Output ONLY the raw memory text.
     
     CURRENT HISTORY (JSON):

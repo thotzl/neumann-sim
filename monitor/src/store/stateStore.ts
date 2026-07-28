@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { WorldState, LogEntry, Selection, LogCategory, HistoryEntry } from '../types';
+import { WorldState, LogEntry, Selection, HistoryEntry } from '../types';
 
 interface C2Store {
   state: WorldState | null;

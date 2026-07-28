@@ -66,7 +66,11 @@ async function handleDistillation(agentId, state, config, apiUrl) {
         
         console.log(`[MEMORY] Agent ${agentId} distilling (${reason}). Total: ~${totalTokens} Tokens, New: ~${estimatedFreshTokens} Tokens. Recursive: ${useRecursive}`);
         
-        const compressed = await stateManager.runIndividualDistillation(apiUrl, state.histories[agentId], agentId, config, useRecursive);
+        // Dynamic name resolution for V10.6 Chronist Standard (Implicit Chronist Patch)
+        const chosenName = (state.agents && state.agents.find(a => a.id === agentId)?.chosen_name) || "Unnamed";
+        const agentDisplayName = `${chosenName} (ID: ${agentId})`;
+
+        const compressed = await stateManager.runIndividualDistillation(apiUrl, state.histories[agentId], agentId, config, useRecursive, agentDisplayName);
         if (compressed) {
             state.histories[agentId] = [{ agent: 'System', text: `[MEMORY-EXTRACT]: ${compressed}` }];
         }

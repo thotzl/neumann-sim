@@ -7,11 +7,11 @@
   "roles": {
     "agent": {
       "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
-      "model": "gemini-2.5-flash"
+      "model": "gemini-3.6-flash"
     },
     "compressor": {
       "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
-      "model": "gemini-2.5-pro"
+      "model": "gemini-3.6-flash"
     }
   },
   "memory": {

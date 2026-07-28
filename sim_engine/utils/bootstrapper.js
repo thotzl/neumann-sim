@@ -163,7 +163,7 @@ print(json.dumps(res))`;
                     if (!state.events) state.events = [];
                     state.events.push(`[Cycle ${currentRound}]: 🧬 ${agentObj.id} was replicated.`);
                 } else {
-                    const genesisLog = `### INITIAL BOOT: ${agentObj.id}\n**Location:** ${agentObj.location}\n\n**Mission:**\n> ${agentObj.system_prompt.replace(/\\n/g, '\n> ')}\n\n**Sensors:**\n\`\`\`json\n${dashOut.trim()}\n\`\`\`\n\n`;
+                    const genesisLog = `### INITIAL BOOT: ${agentObj.id}\n**Location:** ${agentObj.location}\n\n**Mission:**\n> ${agentObj.system_prompt.replace(/\\n/g, '\n> ')}\n\n`;
                     fs.appendFileSync(logFile, genesisLog);
                     if (!state.events) state.events = [];
                     state.events.push(`[Cycle ${currentRound}]: 🌍 ${agentObj.id} (Genesis) is online.`);

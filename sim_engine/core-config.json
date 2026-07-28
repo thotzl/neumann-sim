@@ -9,7 +9,7 @@
     "scan_range_max": 1500
   },
   "memory": {
-    "soft_token_limit": 6000,
-    "hard_token_limit": 18000
+    "soft_token_limit": 12000,
+    "hard_token_limit": 25000
   }
 }

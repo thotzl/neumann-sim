@@ -1,15 +1,9 @@
 const stateManager = require('./state_manager');
 
 async function handleDistillation(agentId, state, config, apiUrl) {
-    // 1. Get limits from config
-    let limit = config.memory?.soft_token_limit || 15000;
-    let hardLimit = config.memory?.hard_token_limit || 30000;
-    
-    if (config.config_override && config.config_override.token_limit) {
-        limit = config.config_override.token_limit;
-    } else if (config.token_limit) {
-        limit = config.token_limit;
-    }
+    // 1. Get limits from config memory standard (v10.6.26)
+    const limit = config.memory?.soft_token_limit || 12000;
+    const hardLimit = config.memory?.hard_token_limit || 25000;
 
     // 2. Token heuristic: Only count "fresh" history (without the already distilled extract)
     const allHistoryText = state.histories[agentId].map(h => h.text).join(" ");

@@ -2,7 +2,7 @@
  * Boot validator to ensure system integrity.
  */
 function validateConfig(config) {
-    const required = ['model', 'token_limit', 'root_name', 'global_system_instruction'];
+    const required = ['model', 'memory', 'root_name', 'global_system_instruction'];
     required.forEach(field => {
         if (config[field] === undefined) {
             throw new Error(`BOOT ERROR: Missing configuration field: ${field}`);

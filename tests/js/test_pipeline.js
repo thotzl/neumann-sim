@@ -44,7 +44,7 @@ try {
     const dummyFile = path.resolve('src/sim_engine/helpers/dummy_inject_test.txt');
     fs.writeFileSync(dummyFile, "INJECT_TEST");
     
-    execSync(`node src/sim_engine/inject.js ${expName} engine`, { stdio: 'ignore' });
+    execSync(`node scripts/inject.js ${expName} engine`, { stdio: 'ignore' });
     
     if (!fs.existsSync(path.join(expDir, 'sim_engine/helpers/dummy_inject_test.txt'))) {
         throw new Error("Inject.js did not synchronize the file to the experiment!");

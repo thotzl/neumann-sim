@@ -171,6 +171,16 @@ async function runPush(localTickets, githubIssues) {
                 body: JSON.stringify(payload)
             });
             console.log(`   └─ Successfully created: Issue #${newIssue.number}`);
+
+            // ATOMIC WORKAROUND: GitHub REST API creates issues as "open" by default on creation.
+            // If the ticket is locally closed, we must immediately follow up with a PATCH to close it!
+            if (githubState === 'closed') {
+                console.log(`   └─ Local ticket is closed. Instantly closing Issue #${newIssue.number} on GitHub...`);
+                await apiRequest(`/issues/${newIssue.number}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ state: 'closed' })
+                });
+            }
         } else {
             let needsUpdate = false;
             const updatePayload = {};

@@ -35,24 +35,34 @@ const server = http.createServer((req, res) => {
             try {
                 const data = JSON.parse(body);
                 
-                // Cache the latest snapshot in memory with robust in-memory merging (V13.4)
-                latestWorldState = latestWorldState ? { ...latestWorldState, ...data.state } : data.state;
-                if (data.history) {
-                    latestHistory = data.history;
-                }
-
-                // Broadcast live state updates immediately to all connected websocket clients
-                const broadcastMsg = JSON.stringify({
-                    type: 'LIVE_STATE_UPDATE',
-                    state: data.state,
-                    history: data.history
-                });
-
-                clients.forEach(client => {
-                    if (client.readyState === 1) { // 1 is OPEN
-                        client.send(broadcastMsg);
+                if (data.type === 'LIVE_STATE_UPDATE') {
+                    // Cache the latest snapshot in memory with robust in-memory merging (V13.4)
+                    latestWorldState = latestWorldState ? { ...latestWorldState, ...data.state } : data.state;
+                    if (data.history) {
+                        latestHistory = data.history;
                     }
-                });
+
+                    // Broadcast live state updates immediately to all connected websocket clients
+                    const broadcastMsg = JSON.stringify({
+                        type: 'LIVE_STATE_UPDATE',
+                        state: data.state,
+                        history: data.history
+                    });
+
+                    clients.forEach(client => {
+                        if (client.readyState === 1) { // 1 is OPEN
+                            client.send(broadcastMsg);
+                        }
+                    });
+                } else if (data.type === 'REALTIME_LOGS') {
+                    // Forward real-time logs immediately to all connected web clients (V13.5 RTES)
+                    const broadcastMsg = JSON.stringify(data);
+                    clients.forEach(client => {
+                        if (client.readyState === 1) { // 1 is OPEN
+                            client.send(broadcastMsg);
+                        }
+                    });
+                }
 
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ status: 'success', message: 'Broadcast successful.' }));

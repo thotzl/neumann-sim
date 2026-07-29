@@ -158,7 +158,7 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     }
     
     const myWalletStr = JSON.stringify(state.security?.wallets?.[agent.id] || {});
-    const fractionalStardate = state.round + (state.currentTurnIndex / (state.turnSequence ? state.turnSequence.length : 1));
+    const fractionalStardate = Number(process.env.BOB_CYCLE || (state.round + (state.currentTurnIndex / (state.turnSequence ? state.turnSequence.length : 1))));
     const totalTurns = state.totalTurns || 0;
     const historyLength = state.histories[agent.id].length;
 

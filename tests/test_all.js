@@ -31,6 +31,7 @@ async function start() {
         { name: "JS Parser Isolation", cmd: "node tests/js/test_environment_replace.js" },
         { name: "JS Diary-Only Memory", cmd: "node tests/js/test_diary_only.js" },
         { name: "JS Bracket-Counting Parser", cmd: "node tests/js/test_parser_brackets.js" },
+        { name: "JS Stardate & Round Counting Unit", cmd: "node tests/js/test_stardate_counting.js" },
         { name: "JS IO Helpers Unit", cmd: "node tests/js/test_io_helpers.js" },
         { name: "JS ACL Service Unit", cmd: "node tests/js/test_acl_service.js" },
         { name: "JS Action Parser Unit", cmd: "node tests/js/test_action_parser.js" },

@@ -112,6 +112,11 @@ async function run() {
             return true;
         }
 
+        // --- DYNAMIC SEQUENTIAL STARDATE CALCULATOR ---
+        state.actualRoundTicks = (state.actualRoundTicks || 0) + 1;
+        const fractionalStardate = Number(`${state.round}.${state.actualRoundTicks}`);
+        process.env.BOB_CYCLE = String(fractionalStardate);
+
         // Führe kognitiven Turn aus (Inklusive Standby-Prüfung)
         const skipped = await agentTurnService.executeTurn(agent, state, config, agentBridge, compressorBridge, vDir, universeDir);
         if (skipped) {

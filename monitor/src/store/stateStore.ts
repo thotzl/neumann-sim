@@ -131,21 +131,24 @@ export const useC2Store = create<C2Store>((set) => ({
   },
 
   updateState: (data) => set((prev) => {
-    // 1. Run self-healing coordinates and location resolution
-    if (data && data.agents && Array.isArray(data.agents)) {
-      data.agents.forEach(a => {
+    // Enable Event-Driven Partial State Merging (V13.4 SSoT Reactivity)
+    const mergedState = { ...prev.state, ...data };
+
+    // 1. Run self-healing coordinates and location resolution on mergedState
+    if (mergedState && mergedState.agents && Array.isArray(mergedState.agents)) {
+      mergedState.agents.forEach(a => {
         if (a.parent_id === undefined && a.sensors?.parent_id) {
           a.parent_id = a.sensors.parent_id;
         }
         if (a.status === 'traveling') {
           a.location = 'Interstellar';
         } else if (a.host_type === 'ship' && a.host_id) {
-          const ship = data.ships?.find(s => s.id.toString() === a.host_id?.toString());
+          const ship = mergedState.ships?.find(s => s.id.toString() === a.host_id?.toString());
           a.location = ship ? ship.system_name : 'Unknown';
         } else if (a.host_type === 'matrix' && a.host_id) {
           let systemName = 'Unknown';
-          if (data.systems) {
-            for (const sys of data.systems) {
+          if (mergedState.systems) {
+            for (const sys of mergedState.systems) {
               if (sys.infra && sys.infra.some(inf => inf.id.toString() === a.host_id?.toString())) {
                 systemName = sys.name;
                 break;
@@ -163,14 +166,14 @@ export const useC2Store = create<C2Store>((set) => ({
     const newEntries: LogEntry[] = [];
 
     // 3. Process visual events from the database
-    if (data && data.visual_events && Array.isArray(data.visual_events)) {
+    if (mergedState && mergedState.visual_events && Array.isArray(mergedState.visual_events)) {
       // Find the highest processed rowid
       const lastRowId = prev.logs
         .filter(l => l.id.startsWith('ve-'))
         .map(l => parseInt(l.id.replace('ve-', '')))
         .reduce((max, id) => id > max ? id : max, 0);
 
-      const sortedEvents = [...data.visual_events]
+      const sortedEvents = [...mergedState.visual_events]
         .filter(e => e.rowid > lastRowId)
         .sort((a, b) => a.rowid - b.rowid);
           
@@ -182,7 +185,7 @@ export const useC2Store = create<C2Store>((set) => ({
                          descLower.includes('transmission') || 
                          descLower.includes('broadcast') || 
                          descLower.includes('radio');
-          const matchingAgent = data.agents?.find(ag => ag.id === e.actor_id);
+          const matchingAgent = mergedState.agents?.find(ag => ag.id === e.actor_id);
           const agentName = matchingAgent ? (matchingAgent.chosen_name || matchingAgent.id) : e.actor_id;
           newEntries.push({
             id: `ve-${e.rowid}`,
@@ -202,7 +205,7 @@ export const useC2Store = create<C2Store>((set) => ({
       : prev.logs;
 
     return {
-      state: data,
+      state: mergedState,
       logs: finalLogs
     };
   })

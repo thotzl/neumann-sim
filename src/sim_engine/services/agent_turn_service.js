@@ -156,7 +156,10 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     }
 
     // Combine output feedback and inbox responses for history tracking
-    let preTurnEvents = inboxText ? inboxText.trim() : "";
+    let preTurnEvents = "";
+    if (inboxText) preTurnEvents += inboxText;
+    if (scutText) preTurnEvents += `\n[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${scutText}---\n`;
+    preTurnEvents = preTurnEvents.trim();
     let formattedTurnHistory = responseText;
     if (preTurnEvents) {
         formattedTurnHistory = `[INBOX EVENTS]:\n${preTurnEvents}\n\n${formattedTurnHistory}`;

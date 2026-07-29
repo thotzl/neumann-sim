@@ -12,6 +12,7 @@ const logger = require('../helpers/logger');
 const mailboxService = require('../services/mailbox_service');
 const agentTurnService = require('../services/agent_turn_service');
 const physicsRoundService = require('../services/physics_round_service');
+const broadcastService = require('../services/broadcast_service');
 
 async function run() {
     const version = process.argv[2];
@@ -121,8 +122,22 @@ async function run() {
         const skipped = await agentTurnService.executeTurn(agent, state, config, agentBridge, compressorBridge, vDir, universeDir);
         if (skipped) {
             stateManager.saveState(stateFile, state);
+            broadcastService.broadcastPartialState({
+                stardate: process.env.BOB_STARDATE,
+                last_agent: agentId,
+                total_turns: state.totalTurns,
+                tick: state.round
+            });
             return true;
         }
+
+        // Broadcast the new stardate instantly to the browser over WebSockets (100% disk-free)
+        broadcastService.broadcastPartialState({
+            stardate: process.env.BOB_STARDATE,
+            last_agent: agentId,
+            total_turns: state.totalTurns,
+            tick: state.round
+        });
 
         // Turn-Cursor inkrementieren & verarbeiten
         state.currentTurnIndex++;

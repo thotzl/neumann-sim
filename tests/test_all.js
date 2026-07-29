@@ -40,6 +40,7 @@ async function start() {
         { name: "JS Physics Round Service Unit", cmd: "node tests/js/test_physics_round_service.js" },
         { name: "JS Agent Turn Service Unit", cmd: "node tests/js/test_agent_turn_service.js" },
         { name: "JS Ship-Workflow E2E", cmd: "node tests/js/test_v10_5_ship_workflow_e2e.js" },
+        { name: "JS Interstellar Energy Stranding E2E", cmd: "node tests/js/test_v13_3_energy_stranding_e2e.js" },
         { name: "JS Staged Ship-Construction", cmd: "node tests/js/test_v10_5_staged_ship.js" },
         { name: "JS SCUT Name-First Inbox Formatting", cmd: "node tests/js/test_v10_5_scut_name_formatting.js" },
         { name: "JS Sandbox Isolation & NameError Fix", cmd: "node tests/js/test_v10_5_sandbox_isolation.js" },

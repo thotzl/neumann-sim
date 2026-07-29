@@ -23,6 +23,7 @@ async function start() {
         { name: "Python Bob SDK & Security", cmd: "PYTHONPATH=src/bob_os:src python3 -m unittest discover -s tests/python/sdk_tests -p 'test_*.py'" },
         { name: "Python Physics v3 (Geometry)", cmd: "PYTHONPATH=src/bob_os:src python3 -m unittest discover -s tests/python -p 'test_v3_*.py'" },
         { name: "Python Logistics v3.1 (Transit)", cmd: "PYTHONPATH=src/bob_os:src python3 tests/python/test_v3_1_logistics.py" },
+        { name: "Python Outsourced Binaries", cmd: "PYTHONPATH=src/bob_os:src python3 tests/python/test_outsourced_binaries.py" },
         { name: "Python Ship Balancing Simulation", cmd: "PYTHONPATH=src/bob_os:src python3 tests/balancing/verify_ship_balancing.py" },
         { name: "Python Economy Balancing Simulation", cmd: "PYTHONPATH=src/bob_os:src python3 tests/balancing/verify_economy_balancing.py" },
         { name: "JS Environment Core", cmd: "node tests/js/test_environment.js" },

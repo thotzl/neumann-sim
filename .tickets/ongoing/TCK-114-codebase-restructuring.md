@@ -2,7 +2,7 @@
 id: TCK-114
 title: "Großes Struktur- & Architektur-Refactoring (V13.0 Codebase Polish)"
 epic_phase: "V13.0 Clean Architecture"
-status: "open"
+status: "ongoing"
 priority: "high"
 created: 2026-07-28
 dependencies: []

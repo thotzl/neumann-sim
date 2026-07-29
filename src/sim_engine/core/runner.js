@@ -140,14 +140,13 @@ async function run() {
             return true;
         }
 
-        // Broadcast the new stardate instantly to the browser over WebSockets (100% disk-free)
-        broadcastService.broadcastPartialState({
-            stardate: process.env.BOB_STARDATE,
-            last_agent: agentId,
-            total_turns: state.totalTurns,
-            tick: state.round,
-            agents: state.agents
-        });
+        // Active turn completed! Broadcast the full updated world state immediately (100% disk-free)
+        // This ensures all newly generated visual_events, logs, and state updates flash instantly on the monitor!
+        try {
+            stateExporter.exportWorldState(universeDir, state, agentId);
+        } catch (e) {
+            // Fail silently
+        }
 
         // Turn-Cursor inkrementieren & verarbeiten
         state.currentTurnIndex++;

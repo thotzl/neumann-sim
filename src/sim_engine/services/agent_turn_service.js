@@ -170,10 +170,11 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     }
 
     // Save history (Diary-Only model: Extract and store ONLY the thoughts/ANALYSIS for permanent history)
+    let thoughts = responseText;
     if (responseText) {
         const analyseMatch = responseText.match(/1\.\s*ANALYSIS:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
                              || responseText.match(/ANALYSIS:([\s\S]*?)(?=ACTION:|$)/i);
-        const thoughts = analyseMatch ? "1. ANALYSIS:\n" + analyseMatch[1].trim() : responseText;
+        thoughts = analyseMatch ? "1. ANALYSIS:\n" + analyseMatch[1].trim() : responseText;
         state.histories[agent.id].push({ agent: agent.id, text: thoughts });
     }
 
@@ -181,6 +182,55 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     if (feedback) {
         const lines = feedback.trim().split('\n');
         lines.forEach(l => console.log(`    ${l}`));
+    }
+
+    // Real-Time Event Streaming: Broadcast thoughts, actions, and feedbacks immediately (100% disk-free)
+    try {
+        const realtimeLogs = [];
+        const agentName = agent.chosen_name || agent.id;
+        const salt = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+        if (thoughts) {
+            const cleanedThoughts = thoughts.replace("1. ANALYSIS:\n", "").trim();
+            realtimeLogs.push({
+                tick: state.round,
+                agentId: agent.id,
+                agentName: agentName,
+                type: 'thought',
+                text: cleanedThoughts,
+                id: `t-${state.round}-${agent.id}-${salt}`
+            });
+        }
+
+        const actionMatch = responseText && (responseText.match(/2\.\s*ACTION:[\s\S]*/i) || responseText.match(/ACTION:[\s\S]*/i));
+        const actionPart = actionMatch ? actionMatch[0].trim() : "";
+        if (actionPart && actionPart !== "No action.") {
+            realtimeLogs.push({
+                tick: state.round,
+                agentId: agent.id,
+                agentName: agentName,
+                type: 'action',
+                text: actionPart,
+                id: `a-${state.round}-${agent.id}-${salt}`
+            });
+        }
+
+        if (feedback && feedback.trim()) {
+            realtimeLogs.push({
+                tick: state.round,
+                agentId: agent.id,
+                agentName: agentName,
+                type: 'system',
+                text: feedback.trim(),
+                id: `s-${state.round}-${agent.id}-${salt}`
+            });
+        }
+
+        if (realtimeLogs.length > 0) {
+            broadcastService.broadcastRealtimeLogs(realtimeLogs);
+        }
+    } catch (e) {
+        console.error("    [LOGS-BROADCAST-ERROR] failed:", e.message);
     }
     
     const myWalletStr = JSON.stringify(state.security?.wallets?.[agent.id] || {});

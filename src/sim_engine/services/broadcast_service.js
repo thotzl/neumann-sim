@@ -43,4 +43,14 @@ function broadcastPartialState(partialState) {
     postToVogServer(payload);
 }
 
-module.exports = { broadcastPartialState };
+/**
+ * Reusable, high-performance Real-Time Logs Broadcasting hook.
+ * Streams thoughts, actions, and system logs instantly to the browser
+ * over WebSockets without doing any database queries or file operations (100% disk-free).
+ */
+function broadcastRealtimeLogs(logs) {
+    const payload = JSON.stringify({ type: 'REALTIME_LOGS', logs: logs });
+    postToVogServer(payload);
+}
+
+module.exports = { broadcastPartialState, broadcastRealtimeLogs };

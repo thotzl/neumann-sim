@@ -31,13 +31,6 @@ function executeSystemRound(vDir, universeDir, state, logger, logFile) {
             stdio: 'inherit'
         });
 
-        // 2. Run sub-etheric radio poller background daemon (comms check)
-        const radioScript = path.join(vDir, 'core', 'bin', 'poll_radio.py');
-        execSync(`python3 "${radioScript}" "${state.round}"`, {
-            env: { ...process.env, TEST_DB_PATH: dbPath, PYTHONPATH: vDir },
-            stdio: 'inherit'
-        });
-
         // 3. Export structured state for frontend and analysis
         stateExporter.exportWorldState(universeDir, state, state.round);
     } catch (e) {

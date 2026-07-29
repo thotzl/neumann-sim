@@ -47,6 +47,13 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     }
 
     // 2. --- INBOX GATHERING & CONTEXT ASSEMBLY ---
+    // Auto-Radio Poll (Sensory Sweep for incoming transmissions)
+    try {
+        runPython(vDir, 'core/bin/poll_radio.py', [agent.id]);
+    } catch (e) {
+        console.error(`    [RADIO-POLL-ERROR] ${agent.id} failed:`, e.message);
+    }
+
     console.log(`  Turn: ${agent.id}`);
     const inbox = state.global_inbox[agent.id] || [];
     let inboxText = "";

@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - master
-    paths:
-      - '.tickets/**'
-      - 'docs/EPIC_CONSOLIDATION_BACKLOG.md'
+      - main
+  pull_request:
+    branches:
+      - master
+      - main
+  workflow_dispatch: # Erlaubt das manuelle Ausführen im GitHub UI
 
 jobs:
   sync_tickets:

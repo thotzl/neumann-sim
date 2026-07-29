@@ -234,10 +234,12 @@ async function runPush(localTickets, githubIssues) {
                 needsUpdate = true;
             }
 
+            // High-precision semantic label diff check
             const currentLabels = existingIssue.labels.map(l => l.name);
+            const managedCurrentLabels = currentLabels.filter(l => l.startsWith('priority:') || l.startsWith('status:') || l.startsWith('epic:'));
+            
             const labelsChanged = expectedLabels.some(l => !currentLabels.includes(l)) || 
-                                  currentLabels.some(l => l.startsWith('priority:') || l.startsWith('status:') || l.startsWith('epic:')) && 
-                                  currentLabels.some(l => !expectedLabels.includes(l));
+                                  managedCurrentLabels.some(l => !expectedLabels.includes(l));
             if (labelsChanged) {
                 updatePayload.labels = expectedLabels;
                 needsUpdate = true;

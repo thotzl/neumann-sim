@@ -29,12 +29,20 @@ async function run() {
         process.exit(1);
     }
 
+    const universeDir = path.join(vDir, "_verse");
+    const stateFile = path.join(vDir, 'state.json');
+    const populationFile = path.join(universeDir, 'population.json');
+    const logFile = path.join(vDir, 'log.md');
+
+    process.env.TEST_DB_PATH = path.join(universeDir, 'universe.db');
+    process.env.TEST_STATE_PATH = stateFile;
+
     // 1. Initialisiere Config & State
     const config = configLoader.loadConfig(
         path.join(__dirname, '../config/core-config.json'),
         path.join(vDir, 'config.json')
     );
-    let state = stateManager.loadState(path.join(vDir, 'state.json'));
+    let state = stateManager.loadState(stateFile);
     if (!state) {
         console.log(`\n[PRERUN] Initializing world from config.json...`);
         try {
@@ -60,15 +68,9 @@ async function run() {
             currentTurnIndex: 0,
             global_inbox: {}
         };
+        // Log-Datei-Kopf schreiben
+        logger.writeLogHeader(logFile, config, false);
     }
-
-    const universeDir = path.join(vDir, "_verse");
-    const stateFile = path.join(vDir, 'state.json');
-    const populationFile = path.join(universeDir, 'population.json');
-    const logFile = path.join(vDir, 'log.md');
-
-    process.env.TEST_DB_PATH = path.join(universeDir, 'universe.db');
-    process.env.TEST_STATE_PATH = stateFile;
 
     const agentBridge = new AIBridge(config.roles?.agent || config);
     const compressorBridge = new AIBridge(config.roles?.compressor || config);

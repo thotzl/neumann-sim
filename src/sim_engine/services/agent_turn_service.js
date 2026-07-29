@@ -113,7 +113,7 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         contextArray,
         memory,
         null,
-        config.system_instruction || "",
+        config.global_system_instruction || "",
         agent.system_prompt || ""
     );
 

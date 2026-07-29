@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { checkAccess } = require('../services/acl_service');
+const { parseRunBlocks } = require('./action_parser');
 
 function getEnvState(universeDir) {
     const bobPath = path.join(universeDir, '..', 'core', 'bin', 'bob.py');
@@ -18,34 +20,6 @@ function getEnvState(universeDir) {
     } catch (e) {
         return "HARDWARE (Unified Command Line):\nUse the 'me' command for all hardware actions.\nSyntax: [RUN: me method(key=val)].";
     }
-}
-
-function checkAccess(filePath, action, agentId, state) {
-    if (!state.security) state.security = { acl: {}, wallets: {} };
-    const acl = state.security.acl[filePath];
-    if (!acl) return { granted: true };
-
-    const wallet = state.security.wallets[agentId] || {};
-    const myKeys = Object.values(wallet);
-
-    // Master Key overrides everything
-    if (acl.write_key && myKeys.includes(acl.write_key)) return { granted: true };
-
-    if (action === 'WRITE' || action === 'REPLACE' || action === 'DELETE') {
-        if (acl.write_key) {
-            return { granted: false, reason: `[DENIED: Cryptographic protection. You do not have a matching WRITE_KEY in your keyring. Contact the creator (${acl.owner}) via SCUT for access.]` };
-        } else if (acl.read_key) {
-            // If only READ_KEY is set, it also acts as a WRITE_KEY (Closed Circle)
-            if (!myKeys.includes(acl.read_key)) {
-                return { granted: false, reason: `[DENIED: Cryptographic protection. You do not have a matching KEY in your keyring. Contact the creator (${acl.owner}) via SCUT for access.]` };
-            }
-        }
-    } else if (action === 'READ' || action === 'RUN') {
-        if (acl.read_key && !myKeys.includes(acl.read_key)) {
-            return { granted: false, reason: `[DENIED: Cryptographic protection. You do not have a matching READ_KEY in your keyring. Contact the creator (${acl.owner}) via SCUT for access.]` };
-        }
-    }
-    return { granted: true };
 }
 
 function processActions(text, universeDir, agentId, state) {
@@ -187,31 +161,10 @@ function processActions(text, universeDir, agentId, state) {
     }
 
     // --- RUN (V10.5 Bracket-Counting Parser) ---
-    let pos = 0;
-    while (true) {
-        let startIdx = safeRunText.indexOf("[RUN:", pos);
-        if (startIdx === -1) break;
-
-        let braceCount = 1;
-        let endIdx = startIdx + 5;
-        while (endIdx < safeRunText.length && braceCount > 0) {
-            if (safeRunText[endIdx] === '[') braceCount++;
-            else if (safeRunText[endIdx] === ']') braceCount--;
-            endIdx++;
-        }
-
-        if (braceCount !== 0) {
-            // Unmatched brackets, slide forward to prevent hang
-            pos = startIdx + 5;
-            continue;
-        }
-
-        const fullBlock = safeRunText.substring(startIdx, endIdx);
-        let cmd = safeRunText.substring(startIdx + 5, endIdx - 1).trim().replace(/^`|`$/g, '');
-
-        // Splicing out the block (100% safe)
-        safeRunText = safeRunText.substring(0, startIdx) + safeRunText.substring(endIdx);
-        pos = startIdx; // Next startIdx search starts at the splice index
+    const { blocks } = parseRunBlocks(safeRunText);
+    
+    for (const block of blocks) {
+        let cmd = block.cmd;
 
         if (cmd === "..." || cmd === "" || cmd.startsWith("<")) continue;
 

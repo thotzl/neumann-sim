@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 
 /**
  * Safely reads a JSON file synchronously and parses it.
@@ -22,6 +23,30 @@ function safeReadJsonSync(filePath, fallback = null) {
     }
 }
 
+/**
+ * Safely writes an object to a JSON file synchronously.
+ * Creates parent directories automatically if they do not exist.
+ * 
+ * @param {string} filePath - Target file path.
+ * @param {*} data - Javascript object to serialize and save.
+ * @param {number} indent - Number of spaces to indent the JSON output.
+ * @returns {boolean} True if successfully written, false on failure.
+ */
+function safeWriteJsonSync(filePath, data, indent = 2) {
+    try {
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(filePath, JSON.stringify(data, null, indent), 'utf8');
+        return true;
+    } catch (error) {
+        console.error(`[IO ERROR] Failed to write JSON to: ${filePath}. Error: ${error.message}`);
+        return false;
+    }
+}
+
 module.exports = {
-    safeReadJsonSync
+    safeReadJsonSync,
+    safeWriteJsonSync
 };

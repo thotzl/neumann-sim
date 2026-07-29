@@ -20,10 +20,10 @@ if (fs.existsSync(envPath)) {
     });
 }
 
-const configLoader = require('./utils/config_loader');
-const envManager = require('./utils/environment');
-const apiClient = require('./utils/api_client');
-const wakeupManager = require('./utils/wakeup_manager');
+const configLoader = require('../helpers/config_loader');
+const envManager = require('../modules/environment');
+const apiClient = require('../helpers/api_client');
+const wakeupManager = require('../services/wakeup_manager');
 const { execSync } = require('child_process');
 
 function getSimpleHash(str) {
@@ -52,16 +52,16 @@ function postRealtimeEvents(events) {
     }
 }
 
-const stateManager = require('./utils/state_manager');
-const logger = require('./utils/logger');
-const stateExporter = require('./utils/state_exporter');
+const stateManager = require('../services/state_manager');
+const logger = require('../helpers/logger');
+const stateExporter = require('../services/state_exporter');
 
-// Services
-const bootstrapper = require('./utils/bootstrapper');
-const automation = require('./utils/automation');
-const vogService = require('./utils/vog');
-const memoryCtrl = require('./utils/memory_controller');
-const { runPython } = require('./utils/python_executor');
+// Services & Modules
+const bootstrapper = require('../services/bootstrapper');
+const automation = require('../modules/automation');
+const vogService = require('../modules/vog');
+const memoryCtrl = require('../services/memory_controller');
+const { runPython } = require('../modules/python_executor');
 
 async function run() {
     const version = process.argv[2];
@@ -79,7 +79,7 @@ async function run() {
     }
 
     const config = configLoader.loadConfig(
-        path.join(__dirname, './core-config.json'),
+        path.join(__dirname, '../config/core-config.json'),
         path.join(vDir, 'config.json')
     );
 
@@ -140,7 +140,7 @@ async function run() {
 
     logger.writeLogHeader(logFile, config, state.isResumed);
 
-    const AIBridge = require('./utils/ai_bridge');
+    const AIBridge = require('../drivers/ai_bridge');
     const agentConfig = config.roles?.agent || config;
     const compressorConfig = config.roles?.compressor || config;
 

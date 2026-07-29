@@ -48,7 +48,7 @@ async function runE2E() {
     // 3. Simulated run (only 1 round, to trigger prerun)
     console.log("- Starting Runner (Prerun should trigger)...");
     process.env.E2E_MOCK = 'true';
-    execSync(`node src/sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
+    execSync(`node src/sim_engine/core/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 
     // 4. Database Verification
     console.log("- Validating DB...");

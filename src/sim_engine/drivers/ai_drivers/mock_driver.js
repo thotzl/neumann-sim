@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { safeReadJsonSync } = require('../io_helpers');
+const { safeReadJsonSync } = require('../../helpers/io_helpers');
 
 const MockDriver = {
     /**

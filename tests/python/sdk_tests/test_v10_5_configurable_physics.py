@@ -9,7 +9,7 @@ from bob_os.core.lib import physics_service
 class TestV105ConfigurablePhysics(unittest.TestCase):
     def setUp(self):
         # Load balancing rules configuration
-        rules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src', 'sim_engine', 'balancing_rules.json'))
+        rules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src', 'sim_engine', 'config', 'balancing_rules.json'))
         with open(rules_path, 'r') as f:
             self.rules = json.load(f)
 

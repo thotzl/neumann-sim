@@ -51,7 +51,7 @@ try {
 
     // 7. Execute Runner (API-Mock)
     process.env.E2E_MOCK = 'true';
-    execSync(`node src/sim_engine/runner.js ${expName}`, { stdio: 'inherit' });
+    execSync(`node src/sim_engine/core/runner.js ${expName}`, { stdio: 'inherit' });
 
     console.log("✅ Runner Boot Sequence (Clone) Test successful!");
 
@@ -78,7 +78,7 @@ try {
         agents: [ { id: "Instance-1", location: "SYS_X0_Y0", status: "active", system_prompt: "Father" } ]
     }));
 
-    execSync(`node src/sim_engine/runner.js ${expName}`, { stdio: 'inherit' });
+    execSync(`node src/sim_engine/core/runner.js ${expName}`, { stdio: 'inherit' });
     
     console.log("✅ Runner Boot Sequence (Original-Bob) Test successful!");
     

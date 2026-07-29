@@ -109,7 +109,7 @@ def simulate_ship(name, matrix, rules):
     }
 
 def run_sim():
-    with open('src/sim_engine/balancing_rules.json', 'r') as f: rules = json.load(f)
+    with open('src/sim_engine/config/balancing_rules.json', 'r') as f: rules = json.load(f)
     
     # Components Helper
     LOG = {"type": "logic_core"}

@@ -1,4 +1,4 @@
-const { processActions } = require('../../src/sim_engine/utils/environment.js');
+const { processActions } = require('../../src/sim_engine/modules/environment.js');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
-const { safeReadJsonSync } = require('./io_helpers');
+const { safeReadJsonSync } = require('../helpers/io_helpers');
 
 function exportWorldState(universeDir, state, lastAgentId) {
     const dbPath = path.join(universeDir, 'universe.db');

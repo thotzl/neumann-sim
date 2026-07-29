@@ -9,7 +9,7 @@ if (!version) {
     process.exit(1);
 }
 
-const runnerPath = path.join(__dirname, '..', 'experiments', version, 'sim_engine', 'runner.js');
+const runnerPath = path.join(__dirname, '..', 'experiments', version, 'sim_engine', 'core', 'runner.js');
 
 if (!fs.existsSync(runnerPath)) {
     console.error(`\x1b[31m[ERROR]\x1b[0m Engine not found: ${runnerPath}`);

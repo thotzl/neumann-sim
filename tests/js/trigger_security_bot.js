@@ -23,7 +23,7 @@ print("geheim")
 
     console.log("Starting Round 1 (Creation & Key Add)...");
     process.env.E2E_MOCK = 'true';
-    execSync(`node src/sim_engine/runner.js ${version}`, { stdio: 'ignore' });
+    execSync(`node src/sim_engine/core/runner.js ${version}`, { stdio: 'ignore' });
 
     let state = JSON.parse(fs.readFileSync(path.join(expDir, 'state.json'), 'utf8'));
     if (state.security.wallets['Instance-1']['read_pass'] !== 'alpha') throw new Error("Key not in wallet!");
@@ -39,7 +39,7 @@ print("geheim")
     fs.writeFileSync(path.join(expDir, 'state.json'), JSON.stringify(state));
     
     // The engine does not parse actions in the mock itself; we use processActions directly for the isolated E2E test
-    const envManager = require('../../src/sim_engine/utils/environment.js');
+    const envManager = require('../../src/sim_engine/modules/environment.js');
     let feedback = envManager.processActions("ACTION:\n[READ: scripts/secret.py]", path.join(expDir, "_verse"), "Instance-1", state);
     if (!feedback.includes("DENIED")) throw new Error("Read without key was not blocked!");
 

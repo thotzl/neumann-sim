@@ -4,8 +4,9 @@ import sys
 import math
 
 def load_rules():
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    rules_path = os.path.join(base_dir, 'bob_os', 'core', 'lib', 'ECONOMY_RULES.json')
+    tests_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    project_root = os.path.dirname(tests_dir)
+    rules_path = os.path.join(project_root, 'src', 'bob_os', 'core', 'lib', 'ECONOMY_RULES.json')
     if not os.path.exists(rules_path):
         print(f"❌ Error: ECONOMY_RULES.json not found at {rules_path}")
         sys.exit(1)

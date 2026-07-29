@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { runPython } = require('./python_executor');
-const { safeReadJsonSync } = require('./io_helpers');
+const { runPython } = require('../modules/python_executor');
+const { safeReadJsonSync } = require('../helpers/io_helpers');
 
 async function syncPopulation(populationFile, universeDir, vDir, state, logger, logFile, currentRound, compressorBridge, config) {
     // Dynamically resolve actual locations from SQLite universe.db (Step 2)

@@ -1,4 +1,4 @@
-const environment = require('../../src/sim_engine/utils/environment');
+const environment = require('../../src/sim_engine/modules/environment');
 const assert = require('assert');
 const path = require('path');
 const fs = require('fs');

@@ -1,4 +1,4 @@
-const AIBridge = require('./ai_bridge');
+const AIBridge = require('../drivers/ai_bridge');
 
 async function callGemini(apiUrl, payload, retries = 3) {
     // Da alte Scripte die rohe Google-Struktur schicken, nutzen wir direkt die Bridge
@@ -9,12 +9,12 @@ async function callGemini(apiUrl, payload, retries = 3) {
         return await bridge.generateText(payload, retries);
     }
     
-    const GeminiDriver = require('./ai_drivers/gemini_driver');
+    const GeminiDriver = require('../drivers/ai_drivers/gemini_driver');
     return await GeminiDriver.generateText(payload, {}, retries);
 }
 
 function buildAgentContext(agentId, histories, memory, envState, globalInstr, systemPrompt, anonymity) {
-    const GeminiDriver = require('./ai_drivers/gemini_driver');
+    const GeminiDriver = require('../drivers/ai_drivers/gemini_driver');
     return GeminiDriver.buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt);
 }
 

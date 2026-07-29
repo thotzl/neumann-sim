@@ -70,7 +70,7 @@ async function run() {
     fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
 
     // Setup environment and simulation engine dependencies
-    const { syncPopulation } = require('../../src/sim_engine/utils/bootstrapper');
+    const { syncPopulation } = require('../../src/sim_engine/services/bootstrapper');
 
     // 1. Force Instance-1 to sleep with ignore_scut=True (sleep_state=2) via Python CLI
     console.log("Step 1: Activating DND sleep for Instance-1...");

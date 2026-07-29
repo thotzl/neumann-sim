@@ -7,8 +7,8 @@ console.log("🚀 STARTING STANDALONE WAKEUP MANAGER UNIT TESTS");
 console.log("==================================================");
 
 // Import components
-const wakeupManager = require('../../src/sim_engine/utils/wakeup_manager');
-const Database = require('../../src/sim_engine/utils/db');
+const wakeupManager = require('../../src/sim_engine/services/wakeup_manager');
+const Database = require('../../src/sim_engine/services/db');
 
 // Stub Database operations to prevent actual SQLite file writes during unit tests
 Database.prototype.run = async function(sql, params) {

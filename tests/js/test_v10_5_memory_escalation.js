@@ -6,8 +6,8 @@ console.log("🚀 STARTING ADAPTIVE MEMORY ESCALATION TESTS");
 console.log("==================================================");
 
 // Import components
-const memoryCtrl = require('../../src/sim_engine/utils/memory_controller');
-const stateManager = require('../../src/sim_engine/utils/state_manager');
+const memoryCtrl = require('../../src/sim_engine/services/memory_controller');
+const stateManager = require('../../src/sim_engine/services/state_manager');
 
 // Setup Spy on compressAndStitchHistory to capture the resolved useRecursive flag
 let spyCalls = [];

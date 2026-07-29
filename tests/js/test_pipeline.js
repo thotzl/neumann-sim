@@ -32,7 +32,7 @@ try {
     }
     
     // 3. Test: Were core and sim_engine copied?
-    if (!fs.existsSync(path.join(expDir, 'sim_engine/runner.js'))) {
+    if (!fs.existsSync(path.join(expDir, 'sim_engine/core/runner.js'))) {
         throw new Error("sim_engine was not copied to the experiment during build!");
     }
     if (!fs.existsSync(path.join(expDir, 'core/lib/db_config.py'))) {
@@ -41,12 +41,12 @@ try {
     console.log("  ✅ Self-contained Build (core & sim_engine copy) successful.");
 
     // 4. Test: Inject Tool
-    const dummyFile = path.resolve('src/sim_engine/utils/dummy_inject_test.txt');
+    const dummyFile = path.resolve('src/sim_engine/helpers/dummy_inject_test.txt');
     fs.writeFileSync(dummyFile, "INJECT_TEST");
     
     execSync(`node src/sim_engine/inject.js ${expName} engine`, { stdio: 'ignore' });
     
-    if (!fs.existsSync(path.join(expDir, 'sim_engine/utils/dummy_inject_test.txt'))) {
+    if (!fs.existsSync(path.join(expDir, 'sim_engine/helpers/dummy_inject_test.txt'))) {
         throw new Error("Inject.js did not synchronize the file to the experiment!");
     }
     console.log("  ✅ Injection (Engine Sync) successful.");

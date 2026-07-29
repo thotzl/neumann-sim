@@ -57,7 +57,7 @@ ACTION:
         config.rounds = 1; 
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-        execSync(`node src/sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
+        execSync(`node src/sim_engine/core/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 
         // Tick 2: Just waiting to observe the Grace Period and Core Regen in physics
         console.log("- Tick 2: Physics Loop Observer...");
@@ -69,7 +69,7 @@ ANALYZE: Waiting.
 ACTION:
 [RUN: me sleep(duration=1)]`;
 
-        execSync(`node src/sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
+        execSync(`node src/sim_engine/core/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 
         console.log("- Validating Data...");
         

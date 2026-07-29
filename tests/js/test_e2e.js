@@ -39,7 +39,7 @@ async function runE2ETest() {
         // The runner.js MUST create the agent from config.json via init_db.py --seed.
 
         try {
-            const runnerOutput = execSync(`node src/sim_engine/runner.js ${version}`, { encoding: 'utf8' });
+            const runnerOutput = execSync(`node src/sim_engine/core/runner.js ${version}`, { encoding: 'utf8' });
             if (runnerOutput.includes("ERROR") || runnerOutput.includes("Error")) {
                 console.error("Runner reports internal errors:\n", runnerOutput);
                 process.exit(1);

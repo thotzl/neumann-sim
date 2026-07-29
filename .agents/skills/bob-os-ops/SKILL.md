@@ -74,8 +74,8 @@ When work begins on a ticket (only upon explicit user directive):
 3. Update the status column in the index file `docs/EPIC_CONSOLIDATION_BACKLOG.md`.
 
 ### 4. GitHub Issues & Projects Direct Code Sync (TCK-TODO-115)
-When the synchronization script `sim_engine/utils/sync_github.js` is fully implemented:
-1. **Local Sync Trigger:** Running `node sim_engine/utils/sync_github.js` automatically parses all files under `.tickets/`, matches their YAML frontmatter with active GitHub Issues, and performs CRUD operations via the GitHub API (using `process.env.GITHUB_TOKEN`).
+When the synchronization script `.github/scripts/sync_github.js` is fully implemented:
+1. **Local Sync Trigger:** Running `node .github/scripts/sync_github.js` automatically parses all files under `.tickets/`, matches their YAML frontmatter with active GitHub Issues, and performs CRUD operations via the GitHub API (using `process.env.GITHUB_TOKEN`).
 2. **Board Column Sync:** 
    - Tickets in `/open/` map to Issue State `open` and Project Column `Todo`.
    - Tickets in `/ongoing/` map to Issue State `open` and Project Column `In Progress`.

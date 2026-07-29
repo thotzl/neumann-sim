@@ -54,11 +54,17 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         inboxText += "\n[INBOX (Events of the last cycle)]:\n";
         inbox.forEach(m => {
             if (m.type === 'scut') {
-                inboxText += `[SCUT] From ${state.agentNames?.[m.sender] || m.sender} (ID: ${m.sender}): ${m.content}\n`;
+                inboxText += `[SCUT] From ${state.agentNames?.[m.sender] || "Unnamed"} (ID: ${m.sender}): ${m.content}\n`;
             } else if (m.type === 'vog') {
                 inboxText += `[VOICE OF GOD]: ${m.text}\n`;
             } else if (m.type === 'system') {
-                inboxText += `[SYSTEM ALERT]: ${m.text}\n`;
+                (inboxText += `[SYSTEM ALERT]: ${m.text}\n`);
+            } else if (m.type === 'automation') {
+                inboxText += `[SYSTEM-AUTOMATION (LAST CYCLE)]:\n${m.text}\n`;
+            } else if (m.type === 'resonance') {
+                inboxText += `\n${m.text}\n`;
+            } else if (m.type === 'visual') {
+                inboxText += `\n[VISUAL DETECTION]: ${m.text}\n`;
             }
         });
     }

@@ -403,6 +403,28 @@ async function run() {
         }
         console.log(`✅ Loaded ${githubIssues.length} issues from GitHub.`);
 
+        // TEMPORARY CLEANUP ACTION: Delete all existing issues to start fresh with status-neutral IDs.
+        // Once this push runs once, this block can be safely removed.
+        if (!isPullMode && githubIssues.length > 0) {
+            console.log("⚠️ TEMPORARY CLEANUP: Deleting all existing issues on GitHub remote...");
+            for (const issue of githubIssues) {
+                console.log(`❌ Deleting Issue #${issue.number}: "${issue.title}"...`);
+                try {
+                    await apiRequest(`/issues/${issue.number}`, { method: 'DELETE' });
+                    console.log(`   └─ Successfully deleted.`);
+                } catch (err) {
+                    console.warn(`   ⚠️ Could not delete Issue #${issue.number}. Attempting to close/lock instead...`);
+                    try {
+                        await apiRequest(`/issues/${issue.number}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ state: 'closed', labels: [] })
+                        });
+                    } catch(e) {}
+                }
+            }
+            githubIssues = []; // Clear array since we deleted them on remote
+        }
+
         const localTickets = getLocalTickets();
         console.log(`📦 Loaded ${localTickets.length} local tickets from .tickets/.`);
 

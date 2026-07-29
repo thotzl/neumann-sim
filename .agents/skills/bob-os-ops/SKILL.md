@@ -40,10 +40,10 @@ To apply master changes to a running experiment without losing database progress
 - **Engine Update:** `npm run inject <EXP_NAME> engine` (Syncs `sim_engine/`).
 - **Tool/Physics Update:** `npm run inject <EXP_NAME> tools` (Syncs `core/` and `_verse/tools/`).
 
-### 4. Deployment Checklist
-Before every build or major inject, you MUST:
-1. Run the central test hub: `node sim_engine/test_all.js`.
-2. Ensure all 15+ test suites (Python & Node) are 100% GREEN.
+### 4. Deployment & CI Checklist (GitHub Actions)
+Before every build or major inject, you MUST verify the test status.
+- **Local Verification:** Run the central test hub: `node sim_engine/test_all.js` (Ensure all 15+ test suites are GREEN).
+- **Automated CI Workflow (`.github/workflows/test-ci.yml`):** Runs tests automatically on **every push on any branch** and on **every pull request** to master/main. This guarantees the build is never broken.
 
 ---
 
@@ -101,8 +101,9 @@ The local machine is fully configured with your private **SSH Key for GitHub**, 
 - Tickets in `/ongoing/` map to Issue State `open` and Project Column `In Progress`.
 - Tickets in `/closed/` map to Issue State `closed` and Project Column `Done`.
 
-#### Hook Automation:
-The GitHub Action `.github/workflows/sync-tickets.yml` runs automatically on master pushes, executing the PUSH sync to keep GitHub Project boards up-to-date with your codebase.
+#### GitOps Trigger Security (PR Guard):
+- **Pull Requests do NOT trigger Sync:** To prevent unmerged branch concepts or draft changes from cluttering your production Kanban board, pull requests only execute CI Tests.
+- **Sync strictly on push/merge to master/main:** The ticket synchronization workflow `.github/workflows/sync-tickets.yml` is strictly gated to direct pushes or merges on `master` or `main`.
 
 ---
 
@@ -110,7 +111,14 @@ The GitHub Action `.github/workflows/sync-tickets.yml` runs automatically on mas
 
 Closing a ticket and bumping a version must be treated as a single, atomic, semantic release step. **Never perform commits or releases automatically; only do so upon explicit user instruction.**
 
-### 1. Closing a Ticket (`open`/`ongoing` -> `closed`)
+### 1. Branching & Commit Conventions
+To maintain an unbreakable audit trail, tie every development step directly to the ticketing system:
+- **Branch Naming:** Format your feature and bugfix branches with the corresponding ticket ID:
+  `feature/TCK-101-slug-description` or `fix/TCK-102-bug-name`
+- **Commit Message Format:** Every commit message **must** refer explicitly to the ticket ID:
+  `feat(core): brief summary of change (ref TCK-101)`
+
+### 2. Closing a Ticket (`open`/`ongoing` -> `closed`)
 When a ticket is completed and verifiably tested (CI is green):
 1. **Propose the Close (Text-First):** Present the exact verification details and code changes as text in the chat.
 2. **Move File (Upon Directive):** Relocate the ticket file to `.tickets/closed/` as `TCK-<ID>-<slug>.md` (preferably using `git mv`).
@@ -121,13 +129,13 @@ When a ticket is completed and verifiably tested (CI is green):
 4. **Update Body:** Rename `## Verified Code Gap` to `## Verification (Code SSoT)` and document the exact files, methods, lines, and test suites that prove the feature works.
 5. **Update Index:** Update the ticket's status and link in `docs/EPIC_CONSOLIDATION_BACKLOG.md`.
 
-### 2. Updating the Central Changelog
+### 3. Updating the Central Changelog
 Whenever a ticket is closed, it must be recorded in the active changelog (`docs/CHANGELOG.md`):
 1. Locate the correct version section in `docs/CHANGELOG.md` (e.g., `### [v10.5] - YYYY-MM-DD`).
 2. Add a bullet point under `Added` or `Optimized` with a short summary, referencing the closed ticket ID with a relative markdown link (e.g., `- Feature Summary ([TCK-001](../.tickets/closed/...))`).
 3. If a version is ready to be released, update its status from `draft` to `RELEASED` in the Mittelfrist-Releaseplan table.
 
-### 3. Semantic Git Commit Protocol (Incremental Commits)
+### 4. Semantic Git Commit Protocol (Incremental Commits)
 When the user explicitly instructs you to commit or prepare a commit after completing a ticket:
 1. **Analyze changes:** Run `git status` and `git diff HEAD` to review modified files.
 2. **Stage files:** Stage only the specific ticket files, resources, and documentation indexes. Do NOT use `git add .` to avoid staging untracked files:

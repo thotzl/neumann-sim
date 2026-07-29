@@ -4,11 +4,7 @@ on:
   push:
     branches:
       - master
-      - main
-  pull_request:
-    branches:
-      - master
-      - main
+      - main # Synchronisiert NUR bei direktem Push oder Merge auf master/main
   workflow_dispatch: # Erlaubt das manuelle Ausführen im GitHub UI
 
 jobs:

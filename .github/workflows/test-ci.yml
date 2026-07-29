@@ -1,0 +1,30 @@
+name: Bob-OS Continuous Integration (CI Tests)
+
+on:
+  push:
+    branches:
+      - '**' # Läuft auf jedem Push auf jedem Branch
+  pull_request:
+    branches:
+      - master
+      - main # Läuft auf jedem Pull-Request gegen master/main
+
+jobs:
+  run_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Run Central Test Hub (CI)
+        run: |
+          node sim_engine/test_all.js

@@ -102,8 +102,25 @@ class Comms:
             
             if agent['location'] != target_agent['location']:
                 dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], target_agent['current_x'], target_agent['current_y'])
+                
+                target_has_relay = system_service.has_active_infrastructure(cursor, target_agent['location'], 'comms_relay')
+                
+                if sender_has_relay or target_has_relay:
+                    relay_level = 1
+                    if sender_has_relay:
+                        cursor.execute("SELECT level FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (agent['location'],))
+                        row = cursor.fetchone()
+                        if row: relay_level = max(relay_level, row[0])
+                    if target_has_relay:
+                        cursor.execute("SELECT level FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (target_agent['location'],))
+                        row = cursor.fetchone()
+                        if row: relay_level = max(relay_level, row[0])
+                    base_range = base_comms_range * (1 + relay_level)
+                else:
+                    base_range = base_comms_range
+
                 if dist > base_range:
-                    print(f"[DENIED] Agent '{receiver_id}' is out of range ({int(dist)} > {base_range}). Signal loss.")
+                    print(f"[DENIED] Agent '{receiver_id}' is out of range ({int(dist)} > {base_range}). Signal loss. Construct or upgrade 'comms_relay' to boost range.")
                     return False
 
             # Check Hibernation and DND status (Self-healing for legacy test DB schemas)

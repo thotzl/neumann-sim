@@ -142,3 +142,14 @@
 *   **Technische Umsetzung:** 
     *   Neue Spalte `components` (JSON) in der `agents` Tabelle.
     *   Die SDK-Klassen berechnen bei *jedem* Zugriff auf `speed`, `storage_limit` oder `comms_range` den Wert dynamisch aus der Summe der Komponenten plus der Basis-Werte.
+
+### 3. Der KMI-Hub für Autonomie-Skripte (Entkoppelte Software v10.6+)
+*   **Problem:** Derzeit fliegen Auto-Skripte (`scripts/active/auto.py`) mit dem Bob mit oder arbeiten direkt *für* einen bestimmten Bob. Verlässt dieser den Sektor oder klont er sich, bricht die lokale Automatisierungs-Kette ab.
+*   **Konzept (Der System-Hub):** Einführung des **KMI-Hubs** (Infrastruktur-Zusatz im Sektor). Skripte werden nicht mehr an den Bob gekoppelt, sondern gehören der lokalen Infrastruktur des Sektors. Sie laufen autonom im Hintergrund weiter, selbst wenn kein aktiver Bob physisch anwesend ist.
+*   **Die Symmetrie zum Schiff:** Dies folgt dem gleichen Prinzip wie die `logic_core`-Komponente für unbemannte, autonome Schiffe (Drohnen). Die Software wird vollständig von der Bob-Hardware entkoppelt.
+
+### 4. Modulare Schiffsupgrades an der Werft (The Expansion Invariant v10.6+)
+*   **Problem:** Schiffe werden derzeit starr nach Blueprints gebaut. Anpassungen erfordern oft die vollständige Zerlegung und den Neubau.
+*   **Konzept (Erhaltende Erweiterung):** Ermöglicht die Durchführung modularer Upgrades an bereits existierenden Schiffen direkt an der Werft (`shipyard`).
+*   **Die eiserne Regel (The Structural Invariant):** Es können **niemals** Hüllenteile entfernt oder weggeschnitten werden (keine strukturelle Materialzerstörung). Das physische Hüllen-Raster kann **ausschließlich erweitert** (neue Segmente anflanschen) oder bestehende Module aufgewertet/ausgetauscht werden (z. B. Upgrade `cargo_module` Lvl 1 -> Lvl 2). Anpassungen erfordern im Kern somit nur eine Hüllenerweiterung.
+

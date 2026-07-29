@@ -18,10 +18,8 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "devDependencies": {
-    "jest": "^30.3.0"
-  },
   "dependencies": {
+    "js-yaml": "^4.1.0",
     "sqlite3": "^6.0.1",
     "ws": "^8.21.1"
   }

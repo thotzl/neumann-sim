@@ -6,11 +6,11 @@
   "reproduction": true,
   "roles": {
     "agent": {
-      "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
+      "driver_path": "./src/sim_engine/drivers/ai_drivers/gemini_driver",
       "model": "gemini-3.6-flash"
     },
     "compressor": {
-      "driver_path": "./sim_engine/utils/ai_drivers/gemini_driver",
+      "driver_path": "./src/sim_engine/drivers/ai_drivers/gemini_driver",
       "model": "gemini-3.6-flash"
     }
   },

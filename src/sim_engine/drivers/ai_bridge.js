@@ -5,7 +5,7 @@ class AIBridge {
     constructor(roleConfig) {
         this.config = roleConfig || {};
         // Get the driver path from the config. Default is the backward-compatible Gemini path
-        this.driverPath = this.config.driver_path || './sim_engine/utils/ai_drivers/gemini_driver';
+        this.driverPath = this.config.driver_path || './src/sim_engine/drivers/ai_drivers/gemini_driver';
         this.driver = this._loadDriver();
     }
 

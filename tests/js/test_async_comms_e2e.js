@@ -68,7 +68,7 @@ fs.writeFileSync(path.join(vDir, 'sim_engine', 'utils', 'api_client.js'), mockAp
 fs.writeFileSync(path.join(vDir, 'creator_msg.txt'), "This is the Voice of God.");
 
 try {
-    execSync('node sim_engine/runner.js', { cwd: vDir, stdio: 'pipe' });
+    execSync('node sim_engine/core/runner.js', { cwd: vDir, stdio: 'pipe' });
 } catch (e) {}
 
 if (fs.existsSync(path.join(vDir, 'fail.txt'))) {

@@ -64,7 +64,7 @@ print(f"[SDK DEBUG] Hit: {count}")
     // 4. Start simulation for 1 round (with 2 agents)
     // With O(N²) the script would run 2 times. In a system round, only once.
     try {
-        execSync(`node run.js ${version}`, { stdio: 'ignore', timeout: 30000 });
+        execSync(`node scripts/run.js ${version}`, { stdio: 'ignore', timeout: 30000 });
     } catch (e) {}
 
     // 5. Validate counter

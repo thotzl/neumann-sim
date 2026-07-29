@@ -23,7 +23,7 @@ try {
     fs.writeFileSync(path.join(expDir, 'config.json'), JSON.stringify(config, null, 2));
 
     console.log("Starting Engine for 5 rounds (Real-time LLM test)...");
-    execSync(`node run.js ${version}`, { stdio: 'inherit' });
+    execSync(`node scripts/run.js ${version}`, { stdio: 'inherit' });
 
     console.log("\n--- VALIDATION ---");
     // Check the actual effects on the database

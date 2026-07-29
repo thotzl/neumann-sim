@@ -6,7 +6,7 @@ const assert = require('assert');
 console.log("🚀 Starting Async Comms E2E Test (Inbox/Batching)...");
 
 const expName = 'async_comms_test';
-const vDir = path.join(__dirname, '../experiments', expName);
+const vDir = path.join(__dirname, '../../experiments', expName);
 
 if (fs.existsSync(vDir)) fs.rmSync(vDir, { recursive: true, force: true });
 execSync(`python3 bob_os/build.py ${expName} --skip-tests --mission "Comms Test" --rounds 2`, { stdio: 'pipe' });

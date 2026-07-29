@@ -6,7 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 async function runSwarmE2E() {
     console.log("🚀 Starting V9.0 Swarm E2E Test...");
     const version = 'swarm_e2e_test';
-    const expDir = path.join(__dirname, '../experiments', version);
+    const expDir = path.join(__dirname, '../../experiments', version);
     const dbPath = path.join(expDir, '_verse', 'universe.db');
 
     const runSql = (db, sql) => new Promise((res, rej) => db.run(sql, (err) => err ? rej(err) : res()));

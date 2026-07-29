@@ -19,7 +19,7 @@ async function run() {
     fs.mkdirSync(testVerseDir, { recursive: true });
 
     // Copy core directly
-    const srcCore = path.resolve(__dirname, '../core');
+    const srcCore = path.resolve(__dirname, '../../bob_os/core');
     const destCore = path.join(testVDir, 'core');
     execSync(`cp -r ${srcCore} ${destCore}`);
 

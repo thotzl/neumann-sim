@@ -19,7 +19,7 @@ if (fs.existsSync(testVDir)) {
 fs.mkdirSync(activeScriptsDir, { recursive: true });
 
 // Copy core/ directly to testVDir/core exactly like a real build!
-const srcCore = path.resolve(__dirname, '../core');
+const srcCore = path.resolve(__dirname, '../../bob_os/core');
 const destCoreDirect = path.join(testVDir, 'core');
 execSync(`cp -r ${srcCore} ${destCoreDirect}`);
 

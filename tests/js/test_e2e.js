@@ -6,7 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 async function runE2ETest() {
     console.log("🚀 Starting E2E Mock-Loop Test...");
     const version = 'e2e_test_run';
-    const expDir = path.join(__dirname, '../experiments', version);
+    const expDir = path.join(__dirname, '../../experiments', version);
     const dbPath = path.join(expDir, '_verse', 'universe.db');
     const statePath = path.join(expDir, 'state.json');
 

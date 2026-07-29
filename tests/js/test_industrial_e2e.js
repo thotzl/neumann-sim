@@ -30,7 +30,7 @@ function runSql(dbPath, sql) {
 async function runIndustrialE2E() {
     console.log("🚀 Starting V9.5 Industrial E2E Test (Core Regen, Grace Period, Tier-2)...");
     const version = "industrial_e2e_test";
-    const expDir = path.join(__dirname, '..', 'experiments', version);
+    const expDir = path.join(__dirname, '..', '..', 'experiments', version);
     const dbPath = path.join(expDir, '_verse', 'universe.db');
 
     try {

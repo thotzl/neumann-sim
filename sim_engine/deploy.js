@@ -6,7 +6,7 @@ function deploy(targetVersion) {
     const baseDir = path.resolve(__dirname, '..');
     const experimentsDir = path.join(baseDir, 'experiments');
     const sourceTools = path.join(baseDir, 'bob_os', '_verse', 'tools');
-    const testHub = path.join(__dirname, 'test_all.js');
+    const testHub = path.join(baseDir, 'tests', 'test_all.js');
 
     console.log("==========================================");
     console.log("   BOB-OS DEPLOYMENT SYSTEM               ");

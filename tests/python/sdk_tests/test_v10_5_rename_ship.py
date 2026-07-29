@@ -10,8 +10,8 @@ sys.path.insert(0, BASE_DIR)
 from core.lib import bob_sdk
 from core.lib import db_config
 
-TEST_DB = os.path.join(BASE_DIR, 'bob_os', 'test_suite', 'sdk_tests', 'test_universe.db')
-TEST_POP = os.path.join(BASE_DIR, 'bob_os', 'test_suite', 'sdk_tests', 'test_population.json')
+TEST_DB = os.path.join(BASE_DIR, 'tests', 'python', 'sdk_tests', 'test_universe.db')
+TEST_POP = os.path.join(BASE_DIR, 'tests', 'python', 'sdk_tests', 'test_population.json')
 
 class TestV105RenameShip(unittest.TestCase):
     def setUp(self):

@@ -32,7 +32,7 @@ def build_experiment(args):
     if not args.skip_tests:
         print("\n[CI] Starting pre-build tests...")
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        test_hub = os.path.join(base_dir, 'sim_engine', 'test_all.js')
+        test_hub = os.path.join(base_dir, 'tests', 'test_all.js')
         
         result = subprocess.run(['node', test_hub])
         if result.returncode != 0:

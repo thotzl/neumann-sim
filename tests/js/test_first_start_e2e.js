@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const version = 'first_start_e2e_test';
-const expDir = path.join(__dirname, '..', 'experiments', version);
+const expDir = path.join(__dirname, '..', '..', 'experiments', version);
 const dbPath = path.join(expDir, '_verse', 'universe.db');
 
 async function runSql(db, query) {

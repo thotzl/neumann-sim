@@ -27,4 +27,4 @@ jobs:
 
       - name: Run Central Test Hub (CI)
         run: |
-          node sim_engine/test_all.js
+          node tests/test_all.js

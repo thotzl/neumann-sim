@@ -423,34 +423,6 @@ async function run() {
         }
         console.log(`✅ Loaded ${githubIssues.length} issues from GitHub.`);
 
-        // UNCOMPROMISING CLEANUP ACTION: Physically delete all existing remote issues to start fresh.
-        // Uses GitHub v4 GraphQL API deleteIssue mutation to perform true physical deletions.
-        if (!isPullMode && githubIssues.length > 0) {
-            console.log("⚠️ TEMPORARY CLEANUP: Deleting all existing issues on GitHub remote via GraphQL...");
-            for (const issue of githubIssues) {
-                console.log(`❌ Deleting Issue #${issue.number} (Node ID: ${issue.node_id}): "${issue.title}"...`);
-                try {
-                    const mutation = `
-                    mutation($issueId: ID!) {
-                      deleteIssue(input: {issueId: $issueId}) {
-                        clientMutationId
-                      }
-                    }`;
-                    await graphqlRequest(mutation, { issueId: issue.node_id });
-                    console.log(`   └─ Successfully deleted via GraphQL.`);
-                } catch (err) {
-                    console.warn(`   ⚠️ GraphQL delete failed: ${err.message}. Attempting REST close fallback...`);
-                    try {
-                        await apiRequest(`/issues/${issue.number}`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({ state: 'closed', labels: [] })
-                        });
-                    } catch(e) {}
-                }
-            }
-            githubIssues = []; // Clear array since we deleted them on remote
-        }
-
         const localTickets = getLocalTickets();
         console.log(`📦 Loaded ${localTickets.length} local tickets from .tickets/.`);
 

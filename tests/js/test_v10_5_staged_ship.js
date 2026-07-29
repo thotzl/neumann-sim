@@ -1,4 +1,4 @@
-const { processActions } = require('../../sim_engine/utils/environment.js');
+const { processActions } = require('../../src/sim_engine/utils/environment.js');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -12,13 +12,13 @@ fs.mkdirSync(rootMockDir, { recursive: true });
 fs.mkdirSync(mockDir, { recursive: true });
 
 // Create symlink to the core engine
-fs.symlinkSync(path.resolve('bob_os/core'), path.resolve(rootMockDir, 'core'), 'dir');
+fs.symlinkSync(path.resolve('src/bob_os/core'), path.resolve(rootMockDir, 'core'), 'dir');
 
 console.log("Starting incorruptible E2E workflow test for staged ship construction...");
 
 // 1. Initialize a fresh test database via init_db.py
 try {
-    execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=bob_os python3 bob_os/core/bin/init_db.py`, { stdio: 'pipe' });
+    execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=src/bob_os python3 src/bob_os/core/bin/init_db.py`, { stdio: 'pipe' });
 } catch (e) {
     console.error("Database initialization failed:", e.stderr ? e.stderr.toString() : e.message);
     process.exit(1);
@@ -26,7 +26,7 @@ try {
 
 // 2. Execute migration logic to verify columns for the staged construction system
 try {
-    execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=bob_os python3 -m core.lib.migrations`, { stdio: 'pipe' });
+    execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=src/bob_os python3 -m core.lib.migrations`, { stdio: 'pipe' });
     console.log("[SUCCESS] Database migration applied without errors.");
 } catch (e) {
     console.error("Database migration failed:", e.stderr ? e.stderr.toString() : e.message);
@@ -62,7 +62,7 @@ try {
 
 // Helper function to fire Bob commands
 function runBobAction(actionString) {
-    const pythonCmd = `TEST_DB_PATH=${dbPath} PYTHONPATH=bob_os:test_env_staged_ship/core VERSE_DIR=test_env_staged_ship BOB_CYCLE=1 BOB_ID=Instance-1 python3 -m core.bin.bob "${actionString}"`;
+    const pythonCmd = `TEST_DB_PATH=${dbPath} PYTHONPATH=src/bob_os:test_env_staged_ship/core VERSE_DIR=test_env_staged_ship BOB_CYCLE=1 BOB_ID=Instance-1 python3 -m core.bin.bob "${actionString}"`;
     try {
         const out = execSync(pythonCmd, { encoding: 'utf8' });
         return out;

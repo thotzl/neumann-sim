@@ -7,8 +7,8 @@ console.log("🚀 STARTING CLONE COMPRESSION (SPLIT & STITCH) UNIT TESTS");
 console.log("==========================================================");
 
 // Import components
-const bootstrapper = require('../../sim_engine/utils/bootstrapper');
-const stateManager = require('../../sim_engine/utils/state_manager');
+const bootstrapper = require('../../src/sim_engine/utils/bootstrapper');
+const stateManager = require('../../src/sim_engine/utils/state_manager');
 
 // Dummy file paths
 const populationFile = path.join(__dirname, 'dummy_population.json');

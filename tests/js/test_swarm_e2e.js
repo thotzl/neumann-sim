@@ -14,7 +14,7 @@ async function runSwarmE2E() {
 
     try {
         if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
-        execSync(`python3 bob_os/build.py ${version} --rounds 5 --skip-tests --mission "Swarm Test"`, { stdio: 'pipe' });
+        execSync(`python3 scripts/build.py ${version} --rounds 5 --skip-tests --mission "Swarm Test"`, { stdio: 'pipe' });
         
         const configPath = path.join(expDir, 'config.json');
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -39,7 +39,7 @@ async function runSwarmE2E() {
         process.env.E2E_MOCK_STEP_1_INSTANCE1 = "ANALYSE: Skript.\nAKTION:\n[WRITE: scripts/active/auto.py (READ_KEY: secret)]\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n[END]\n[RUN: me scut(receiver_id=Instance-2, message=secret)]";
         process.env.E2E_MOCK_STEP_2_INSTANCE2 = `ANALYSE: Move.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: me move(target_system=SYS_B)]`;
 
-        execSync(`node sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
+        execSync(`node src/sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 
         const bob1 = await getSql(db, "SELECT s.raw_matter_inventory FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='Instance-1'");
         if (bob1.raw_matter_inventory < 100) throw new Error("Automation failed!");

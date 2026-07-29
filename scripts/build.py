@@ -44,15 +44,15 @@ def build_experiment(args):
     exp_dir = os.path.join(base_dir, 'experiments', args.version)
     
     # Path Definitions
-    source_verse = os.path.join(base_dir, 'bob_os', '_verse')
-    source_core = os.path.join(base_dir, 'bob_os', 'core')
-    source_engine = os.path.join(base_dir, 'sim_engine')
+    source_verse = os.path.join(base_dir, 'src', 'bob_os', '_verse')
+    source_core = os.path.join(base_dir, 'src', 'bob_os', 'core')
+    source_engine = os.path.join(base_dir, 'src', 'sim_engine')
     
     target_verse = os.path.join(exp_dir, '_verse')
     target_core = os.path.join(exp_dir, 'core')
     target_engine = os.path.join(exp_dir, 'sim_engine')
     
-    template_path = os.path.join(base_dir, 'bob_os', 'templates', 'mission_template.json')
+    template_path = os.path.join(base_dir, 'src', 'bob_os', 'templates', 'mission_template.json')
 
     if os.path.exists(exp_dir):
         print(f"[WARNING] Experiment {args.version} already exists.")

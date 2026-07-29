@@ -37,7 +37,7 @@ async function runIndustrialE2E() {
         if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
 
         console.log("- Creating Experiment...");
-        execSync(`python3 bob_os/build.py ${version} --rounds 5 --skip-tests --mission "Industrial Test"`, { stdio: 'inherit' });
+        execSync(`python3 scripts/build.py ${version} --rounds 5 --skip-tests --mission "Industrial Test"`, { stdio: 'inherit' });
 
         // 1. Setup Infra
         console.log("- Phase 1: Setup...");
@@ -47,7 +47,7 @@ async function runIndustrialE2E() {
 
         // 2. Physics Update 1 (Decay & Regen)
         console.log("- Phase 2: Simulation Tick 1...");
-        execSync(`PYTHONPATH=bob_os TEST_DB_PATH=${dbPath} python3 bob_os/core/bin/physics_update.py`);
+        execSync(`PYTHONPATH=src/bob_os TEST_DB_PATH=${dbPath} python3 src/bob_os/core/bin/physics_update.py`);
 
         const row1 = await getSql(dbPath, "SELECT health FROM infrastructure WHERE type='matter_silo'");
         console.log(`  Health after 1 Tick: ${row1.health}/100`);
@@ -61,7 +61,7 @@ async function runIndustrialE2E() {
         // 3. Blackout Test
         console.log("- Phase 3: Blackout Simulation...");
         await runSql(dbPath, "UPDATE systems SET energy_depot = 0 WHERE name = 'SYS_X0_Y0'");
-        execSync(`PYTHONPATH=bob_os TEST_DB_PATH=${dbPath} python3 bob_os/core/bin/physics_update.py`);
+        execSync(`PYTHONPATH=src/bob_os TEST_DB_PATH=${dbPath} python3 src/bob_os/core/bin/physics_update.py`);
 
         const sys2 = await getSql(dbPath, "SELECT depot_matter_capacity FROM systems WHERE name='SYS_X0_Y0'");
         console.log(`  Blackout Cap: ${sys2.depot_matter_capacity}`);

@@ -24,8 +24,8 @@ try {
     }));
 
     // 3. Copy blueprints (Core only, as tools are gone)
-    execSync(`cp -r bob_os/core/* ${coreDir}/`);
-    execSync(`cp -r bob_os/_verse/population.json ${verseDir}/`);
+    execSync(`cp -r src/bob_os/core/* ${coreDir}/`);
+    execSync(`cp -r src/bob_os/_verse/population.json ${verseDir}/`);
 
     // 4. Initialize DB
     execSync(`python3 core/bin/init_db.py`, { 
@@ -51,7 +51,7 @@ try {
 
     // 7. Execute Runner (API-Mock)
     process.env.E2E_MOCK = 'true';
-    execSync(`node sim_engine/runner.js ${expName}`, { stdio: 'inherit' });
+    execSync(`node src/sim_engine/runner.js ${expName}`, { stdio: 'inherit' });
 
     console.log("✅ Runner Boot Sequence (Clone) Test successful!");
 
@@ -66,7 +66,7 @@ try {
         rounds: 1, config_override: { max_turns: 10, model: "gemini-2.5-flash" },
         agents: [{ id: "Instance-1", location: "SYS_X0_Y0", system_prompt: "Father" }]
     }));
-    execSync(`cp -r bob_os/core/* ${coreDir}/`);
+    execSync(`cp -r src/bob_os/core/* ${coreDir}/`);
     
     execSync(`python3 core/bin/init_db.py`, { 
         cwd: expDir, 
@@ -78,7 +78,7 @@ try {
         agents: [ { id: "Instance-1", location: "SYS_X0_Y0", status: "active", system_prompt: "Father" } ]
     }));
 
-    execSync(`node sim_engine/runner.js ${expName}`, { stdio: 'inherit' });
+    execSync(`node src/sim_engine/runner.js ${expName}`, { stdio: 'inherit' });
     
     console.log("✅ Runner Boot Sequence (Original-Bob) Test successful!");
     

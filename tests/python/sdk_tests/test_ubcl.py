@@ -6,7 +6,7 @@ import sqlite3
 
 # Root-Verzeichnis finden
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-BASE_DIR = os.path.join(PROJECT_ROOT, 'bob_os')
+BASE_DIR = os.path.join(PROJECT_ROOT, 'src', 'bob_os')
 sys.path.append(BASE_DIR)
 from core.lib import db_config
 

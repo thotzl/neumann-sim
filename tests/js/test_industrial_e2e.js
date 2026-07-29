@@ -36,7 +36,7 @@ async function runIndustrialE2E() {
     try {
         console.log("- Creating Experiment...");
         if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
-        execSync(`python3 bob_os/build.py ${version} --mission "Industrial Test" --skip-tests`, { stdio: 'inherit' });
+        execSync(`python3 scripts/build.py ${version} --mission "Industrial Test" --skip-tests`, { stdio: 'inherit' });
 
         // Setup DB: Empty core, some refined matter, and a slightly damaged Tier-2 structure
         await runSql(dbPath, "UPDATE systems SET extractable_matter_in_core = 0 WHERE name = 'SYS_X0_Y0'");
@@ -57,7 +57,7 @@ ACTION:
         config.rounds = 1; 
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-        execSync(`node sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
+        execSync(`node src/sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 
         // Tick 2: Just waiting to observe the Grace Period and Core Regen in physics
         console.log("- Tick 2: Physics Loop Observer...");
@@ -69,7 +69,7 @@ ANALYZE: Waiting.
 ACTION:
 [RUN: me sleep(duration=1)]`;
 
-        execSync(`node sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
+        execSync(`node src/sim_engine/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 
         console.log("- Validating Data...");
         

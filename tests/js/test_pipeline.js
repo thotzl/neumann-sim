@@ -12,7 +12,7 @@ try {
 
     // 1. Test: Build WITHOUT Mission MUST fail
     try {
-        execSync(`python3 bob_os/build.py ${expName} --rounds 1 --skip-tests`, { stdio: 'ignore' });
+        execSync(`python3 scripts/build.py ${expName} --rounds 1 --skip-tests`, { stdio: 'ignore' });
         throw new Error("Build without mission should have failed!");
     } catch (e) {
         if (!e.message.includes("should have failed")) {
@@ -24,7 +24,7 @@ try {
 
     // 2. Test: Normal Build
     try {
-        execSync(`python3 bob_os/build.py ${expName} --rounds 1 --skip-tests --mission "Test"`, { stdio: 'pipe' });
+        execSync(`python3 scripts/build.py ${expName} --rounds 1 --skip-tests --mission "Test"`, { stdio: 'pipe' });
     } catch (e) {
         console.error("Build Output (stderr):", e.stderr.toString());
         console.error("Build Output (stdout):", e.stdout.toString());
@@ -41,10 +41,10 @@ try {
     console.log("  ✅ Self-contained Build (core & sim_engine copy) successful.");
 
     // 4. Test: Inject Tool
-    const dummyFile = path.resolve('sim_engine/utils/dummy_inject_test.txt');
+    const dummyFile = path.resolve('src/sim_engine/utils/dummy_inject_test.txt');
     fs.writeFileSync(dummyFile, "INJECT_TEST");
     
-    execSync(`node sim_engine/inject.js ${expName} engine`, { stdio: 'ignore' });
+    execSync(`node src/sim_engine/inject.js ${expName} engine`, { stdio: 'ignore' });
     
     if (!fs.existsSync(path.join(expDir, 'sim_engine/utils/dummy_inject_test.txt'))) {
         throw new Error("Inject.js did not synchronize the file to the experiment!");

@@ -13,7 +13,7 @@ if (!expName || !sourcePath) {
     process.exit(1);
 }
 
-const expDir = path.join(__dirname, '../experiments', expName);
+const expDir = path.join(__dirname, '../../experiments', expName);
 if (!fs.existsSync(expDir)) {
     console.error(`[ERROR] Experiment '${expName}' does not exist.`);
     process.exit(1);
@@ -36,7 +36,7 @@ function copyRecursiveSync(src, dest) {
 
 if (sourcePath === 'engine') {
     console.log(`Injecting entire Node.js Engine into ${expName}...`);
-    copyRecursiveSync(path.join(__dirname, '../sim_engine'), path.join(expDir, 'sim_engine'));
+    copyRecursiveSync(__dirname, path.join(expDir, 'sim_engine'));
     console.log(`[SUCCESS] Engine synchronized.`);
 } else if (sourcePath === 'tools') {
     console.log(`Injecting Python Tools & Libs into ${expName}...`);
@@ -68,12 +68,17 @@ if (sourcePath === 'engine') {
         process.exit(1);
     }
     
-    const projectRoot = path.resolve(path.join(__dirname, '..'));
-    const relPath = path.relative(projectRoot, absoluteSrc);
+    const projectRoot = path.resolve(path.join(__dirname, '../..'));
+    let relPath = path.relative(projectRoot, absoluteSrc);
     
     if (relPath.startsWith('experiments')) {
         console.error("[ERROR] You cannot inject files from the experiments/ folder.");
         process.exit(1);
+    }
+
+    // Strip "src/" prefix if present to normalize relative paths for the sandbox
+    if (relPath.startsWith('src' + path.sep)) {
+        relPath = relPath.substring(4);
     }
 
     let targetRelPath = relPath;

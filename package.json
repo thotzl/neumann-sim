@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "sim": "node run.js",
-    "inject": "node sim_engine/inject.js",
-    "reset": "node reset.js",
+    "sim": "node scripts/run.js",
+    "inject": "node src/sim_engine/inject.js",
+    "reset": "node scripts/reset.js",
     "tickets:pull": "node .github/scripts/sync_github.js --pull",
     "tickets:push": "node .github/scripts/sync_github.js"
   },

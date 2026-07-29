@@ -122,7 +122,7 @@ me.scan()
             f.write(script_content)
 
         # 2. Execute the python script in a separate sub-process
-        env = { **os.environ, "PYTHONPATH": os.getcwd() }
+        env = { **os.environ, "PYTHONPATH": os.path.join(os.getcwd(), 'src') + os.path.pathsep + os.path.join(os.getcwd(), 'src', 'bob_os') + os.path.pathsep + os.getcwd() }
         res = subprocess.run([sys.executable, TEST_ME_SCRIPT], capture_output=True, text=True, env=env)
         
         # Verify output matches expected results!

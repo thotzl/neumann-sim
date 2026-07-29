@@ -1,4 +1,4 @@
-const { processActions } = require('../../sim_engine/utils/environment.js');
+const { processActions } = require('../../src/sim_engine/utils/environment.js');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -12,13 +12,13 @@ fs.mkdirSync(rootMockDir, { recursive: true });
 fs.mkdirSync(mockDir, { recursive: true });
 
 // Create symlink to the Core Engine to perfectly map the absolute path of the sandbox environment!
-fs.symlinkSync(path.resolve('bob_os/core'), path.resolve(rootMockDir, 'core'), 'dir');
+fs.symlinkSync(path.resolve('src/bob_os/core'), path.resolve(rootMockDir, 'core'), 'dir');
 
 console.log("Starting pure E2E workflow test for configurable grid ships...");
 
 // 1. Initialize a fresh test database via init_db.py
 try {
-    execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=bob_os python3 bob_os/core/bin/init_db.py`, { stdio: 'pipe' });
+    execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=src/bob_os python3 src/bob_os/core/bin/init_db.py`, { stdio: 'pipe' });
 } catch (e) {
     console.error("Database initialization failed:", e.stderr ? e.stderr.toString() : e.message);
     process.exit(1);

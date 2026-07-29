@@ -9,7 +9,7 @@ function reset() {
         process.exit(1);
     }
 
-    const expDir = path.join(__dirname, 'experiments', expName);
+    const expDir = path.join(__dirname, '..', 'experiments', expName);
     const configFile = path.join(expDir, 'config.json');
 
     if (!fs.existsSync(configFile)) {
@@ -28,7 +28,7 @@ function reset() {
     console.log(`[RESET] Building fresh structure with 'build.py'...`);
     try {
         // Create a temporary dummy experiment via the builder
-        execSync(`python3 bob_os/build.py ${expName} --rounds 1 --mission "temp" --skip-tests`, {
+        execSync(`python3 scripts/build.py ${expName} --rounds 1 --mission "temp" --skip-tests`, {
             stdio: 'inherit'
         });
     } catch (e) {

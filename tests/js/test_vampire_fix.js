@@ -15,7 +15,7 @@ async function testVampireFix() {
     if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
 
     // 1. Create experiment with 2 agents
-    execSync(`python3 bob_os/build.py ${version} --rounds 2 --mission 'Vampire Test' --skip-tests`, { stdio: 'ignore' });
+    execSync(`python3 scripts/build.py ${version} --rounds 2 --mission 'Vampire Test' --skip-tests`, { stdio: 'ignore' });
     
     const configPath = path.join(expDir, 'config.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));

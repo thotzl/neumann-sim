@@ -9,7 +9,7 @@ const expName = 'async_comms_test';
 const vDir = path.join(__dirname, '../../experiments', expName);
 
 if (fs.existsSync(vDir)) fs.rmSync(vDir, { recursive: true, force: true });
-execSync(`python3 bob_os/build.py ${expName} --skip-tests --mission "Comms Test" --rounds 2`, { stdio: 'pipe' });
+execSync(`python3 scripts/build.py ${expName} --skip-tests --mission "Comms Test" --rounds 2`, { stdio: 'pipe' });
 
 const configPath = path.join(vDir, 'config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));

@@ -66,7 +66,7 @@ function runVerification() {
     console.log("Starting inbox name verification test...");
     setupMockUniverse();
 
-    const envManager = require('../../sim_engine/utils/environment');
+    const envManager = require('../../src/sim_engine/utils/environment');
     
     // Simulate the state of the JS runner in memory
     const mockState = {

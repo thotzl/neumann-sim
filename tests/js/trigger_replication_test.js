@@ -10,7 +10,7 @@ try {
 
     console.log("Creating Replication Experiment...");
     // Use build without tests to get the basic structure
-    execSync(`python3 bob_os/build.py ${version} --rounds 3 --mission "DEBUG" --skip-tests`, { stdio: 'ignore' });
+    execSync(`python3 scripts/build.py ${version} --rounds 3 --mission "DEBUG" --skip-tests`, { stdio: 'ignore' });
 
     // Manipulate DB for instant replication (shipyard + matter)
     const dbPath = path.join(expDir, '_verse/universe.db');

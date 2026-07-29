@@ -9,11 +9,11 @@ if (!version) {
     process.exit(1);
 }
 
-const runnerPath = path.join(__dirname, 'experiments', version, 'sim_engine', 'runner.js');
+const runnerPath = path.join(__dirname, '..', 'experiments', version, 'sim_engine', 'runner.js');
 
 if (!fs.existsSync(runnerPath)) {
     console.error(`\x1b[31m[ERROR]\x1b[0m Engine not found: ${runnerPath}`);
-    console.error(`Have you built the experiment? (python3 bob_os/build.py ${version})`);
+    console.error(`Have you built the experiment? (python3 scripts/build.py ${version})`);
     process.exit(1);
 }
 

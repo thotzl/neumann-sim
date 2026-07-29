@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const logger = require('../../sim_engine/utils/logger.js');
+const logger = require('../../src/sim_engine/utils/logger.js');
 
 const logPath = path.resolve('test_birth.md');
 if (fs.existsSync(logPath)) fs.unlinkSync(logPath);

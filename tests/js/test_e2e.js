@@ -14,7 +14,7 @@ async function runE2ETest() {
         // - Create test experiment (Use build.py for correct structure)
         console.log("- Creating test experiment...");
         if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
-        execSync(`python3 bob_os/build.py ${version} --rounds 6 --skip-tests --mission "E2E Test Mission"`, { stdio: 'inherit' });
+        execSync(`python3 scripts/build.py ${version} --rounds 6 --skip-tests --mission "E2E Test Mission"`, { stdio: 'inherit' });
 
         // We modify the config so that the token limit is extremely low,
         // to force a distillation after 3 rounds.
@@ -39,7 +39,7 @@ async function runE2ETest() {
         // The runner.js MUST create the agent from config.json via init_db.py --seed.
 
         try {
-            const runnerOutput = execSync(`node sim_engine/runner.js ${version}`, { encoding: 'utf8' });
+            const runnerOutput = execSync(`node src/sim_engine/runner.js ${version}`, { encoding: 'utf8' });
             if (runnerOutput.includes("ERROR") || runnerOutput.includes("Error")) {
                 console.error("Runner reports internal errors:\n", runnerOutput);
                 process.exit(1);

@@ -1,6 +1,6 @@
 const assert = require('assert');
-const apiClient = require('../../sim_engine/utils/api_client');
-const stateExporter = require('../../sim_engine/utils/state_exporter');
+const apiClient = require('../../src/sim_engine/utils/api_client');
+const stateExporter = require('../../src/sim_engine/utils/state_exporter');
 const fs = require('fs');
 const path = require('path');
 

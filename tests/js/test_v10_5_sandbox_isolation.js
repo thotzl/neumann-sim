@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const { execSync } = require('child_process');
-const { runSystemAutomations } = require('../../sim_engine/utils/automation');
+const { runSystemAutomations } = require('../../src/sim_engine/utils/automation');
 
 const testVDir = path.resolve(__dirname, 'test_sandbox_isolation');
 const testVerseDir = path.join(testVDir, '_verse');
@@ -19,7 +19,7 @@ if (fs.existsSync(testVDir)) {
 fs.mkdirSync(activeScriptsDir, { recursive: true });
 
 // Copy core/ directly to testVDir/core exactly like a real build!
-const srcCore = path.resolve(__dirname, '../../bob_os/core');
+const srcCore = path.resolve(__dirname, '../../src/bob_os/core');
 const destCoreDirect = path.join(testVDir, 'core');
 execSync(`cp -r ${srcCore} ${destCoreDirect}`);
 

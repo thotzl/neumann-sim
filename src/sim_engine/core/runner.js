@@ -114,7 +114,7 @@ async function run() {
 
         // --- DYNAMIC SEQUENTIAL STARDATE CALCULATOR ---
         state.actualRoundTicks = (state.actualRoundTicks || 0) + 1;
-        const fractionalStardate = Number(`${state.round}.${state.actualRoundTicks}`);
+        const fractionalStardate = `${state.round}/${state.actualRoundTicks}`;
         process.env.BOB_CYCLE = String(fractionalStardate);
 
         // Führe kognitiven Turn aus (Inklusive Standby-Prüfung)

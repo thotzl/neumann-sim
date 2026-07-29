@@ -385,7 +385,11 @@ class Sensors:
                     "modules": active_modules
                 }
 
-        current_stardate = float(os.environ.get('BOB_CYCLE', 0.0))
+        current_stardate = os.environ.get('BOB_CYCLE', '0.0')
+        try:
+            current_stardate = float(current_stardate)
+        except ValueError:
+            pass # Keep as string (e.g. "2/5")
 
         return {
             "local_system": {
@@ -395,7 +399,9 @@ class Sensors:
                 "depots": {
                     "raw_matter": system['raw_matter_depot'],
                     "refined_matter": system['refined_matter_depot'],
-                    "energy": system['energy_depot']
+                    "energy": system['energy_depot'],
+                    "matter_capacity": system['depot_matter_capacity'],
+                    "energy_capacity": system['depot_energy_capacity']
                 },
                 "geology": {
                     "extractable_core_matter": system['extractable_matter_in_core']

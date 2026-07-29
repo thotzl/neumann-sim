@@ -33,35 +33,35 @@ try {
     assert.strictEqual(state.actualRoundTicks, 0, "actualRoundTicks should be reset to 0 at the start of a round!");
 
     // --- TEST 2: First Agent Turn (Turn Index 0) ---
-    console.log("Test 2: Verification of Turn 1.1 stardate calculations...");
+    console.log("Test 2: Verification of Turn 1/1 stardate calculations...");
     let agentId = state.turnSequence[state.currentTurnIndex];
     assert.strictEqual(agentId, "Instance-1");
 
     // Execute sequential stardate calculator as done in runner.js
     state.actualRoundTicks = (state.actualRoundTicks || 0) + 1;
-    let fractionalStardate = Number(`${state.round}.${state.actualRoundTicks}`);
+    let fractionalStardate = `${state.round}/${state.actualRoundTicks}`;
     process.env.BOB_CYCLE = String(fractionalStardate);
 
     assert.strictEqual(state.actualRoundTicks, 1, "actualRoundTicks should be 1 on first turn!");
-    assert.strictEqual(fractionalStardate, 1.1, "Stardate should be 1.1!");
-    assert.strictEqual(process.env.BOB_CYCLE, "1.1", "process.env.BOB_CYCLE must be set to '1.1'!");
+    assert.strictEqual(fractionalStardate, "1/1", "Stardate should be '1/1'!");
+    assert.strictEqual(process.env.BOB_CYCLE, "1/1", "process.env.BOB_CYCLE must be set to '1/1'!");
 
     // Increment turn cursor
     state.currentTurnIndex++;
 
     // --- TEST 3: Second Agent Turn (Turn Index 1) ---
-    console.log("Test 3: Verification of Turn 1.2 stardate calculations...");
+    console.log("Test 3: Verification of Turn 1/2 stardate calculations...");
     agentId = state.turnSequence[state.currentTurnIndex];
     assert.strictEqual(agentId, "Instance-2");
 
     // Execute sequential stardate calculator as done in runner.js
     state.actualRoundTicks = (state.actualRoundTicks || 0) + 1;
-    fractionalStardate = Number(`${state.round}.${state.actualRoundTicks}`);
+    fractionalStardate = `${state.round}/${state.actualRoundTicks}`;
     process.env.BOB_CYCLE = String(fractionalStardate);
 
     assert.strictEqual(state.actualRoundTicks, 2, "actualRoundTicks should be 2 on second turn!");
-    assert.strictEqual(fractionalStardate, 1.2, "Stardate should be 1.2!");
-    assert.strictEqual(process.env.BOB_CYCLE, "1.2", "process.env.BOB_CYCLE must be set to '1.2'!");
+    assert.strictEqual(fractionalStardate, "1/2", "Stardate should be '1/2'!");
+    assert.strictEqual(process.env.BOB_CYCLE, "1/2", "process.env.BOB_CYCLE must be set to '1/2'!");
 
     // Increment turn cursor and trigger end of round transition
     state.currentTurnIndex++;
@@ -83,12 +83,12 @@ try {
     // First Turn of Round 2
     agentId = state.turnSequence[state.currentTurnIndex];
     state.actualRoundTicks = (state.actualRoundTicks || 0) + 1;
-    fractionalStardate = Number(`${state.round}.${state.actualRoundTicks}`);
+    fractionalStardate = `${state.round}/${state.actualRoundTicks}`;
     process.env.BOB_CYCLE = String(fractionalStardate);
 
     assert.strictEqual(state.actualRoundTicks, 1, "actualRoundTicks should be 1 on Round 2 first turn!");
-    assert.strictEqual(fractionalStardate, 2.1, "Stardate should be 2.1!");
-    assert.strictEqual(process.env.BOB_CYCLE, "2.1", "process.env.BOB_CYCLE must be set to '2.1'!");
+    assert.strictEqual(fractionalStardate, "2/1", "Stardate should be '2/1'!");
+    assert.strictEqual(process.env.BOB_CYCLE, "2/1", "process.env.BOB_CYCLE must be set to '2/1'!");
 
     console.log("\n🎉 ALL TEMPORAL STARDATE & ROUND COUNTING UNIT TESTS PASSED SUCCESSFULLY!");
     process.exit(0);

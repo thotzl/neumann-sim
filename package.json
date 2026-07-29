@@ -6,9 +6,10 @@
   "scripts": {
     "test": "node tests/test_all.js",
     "build": "python3 scripts/build.py",
+    "analyze": "python3 scripts/analyze_run.py",
     "migrate": "node scripts/migrate.js",
     "sim": "node scripts/run.js",
-    "inject": "node src/sim_engine/inject.js",
+    "inject": "node scripts/inject.js",
     "reset": "node scripts/reset.js",
     "tickets:pull": "node .github/scripts/sync_github.js --pull",
     "tickets:push": "node .github/scripts/sync_github.js"

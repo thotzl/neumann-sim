@@ -7,13 +7,13 @@ const sourcePath = process.argv[3]; // Can be a path or "engine" or "tools"
 if (!expName || !sourcePath) {
     console.log("Syntax: npm run inject <experiment_name> <file_or_alias>");
     console.log("Examples:");
-    console.log("  npm run inject ONE sim_engine/utils/environment.js");
+    console.log("  npm run inject ONE src/sim_engine/helpers/api_client.js");
     console.log("  npm run inject ONE engine   (Copies entire sim_engine)");
     console.log("  npm run inject ONE tools    (Copies tools & system_libs)");
     process.exit(1);
 }
 
-const expDir = path.join(__dirname, '../../experiments', expName);
+const expDir = path.join(__dirname, '../experiments', expName);
 if (!fs.existsSync(expDir)) {
     console.error(`[ERROR] Experiment '${expName}' does not exist.`);
     process.exit(1);
@@ -36,22 +36,24 @@ function copyRecursiveSync(src, dest) {
 
 if (sourcePath === 'engine') {
     console.log(`Injecting entire Node.js Engine into ${expName}...`);
-    copyRecursiveSync(__dirname, path.join(expDir, 'sim_engine'));
+    // Copy the entire sim_engine from src/sim_engine/
+    const srcEngine = path.join(__dirname, '../src/sim_engine');
+    copyRecursiveSync(srcEngine, path.join(expDir, 'sim_engine'));
     console.log(`[SUCCESS] Engine synchronized.`);
 } else if (sourcePath === 'tools') {
     console.log(`Injecting Python Tools & Libs into ${expName}...`);
-    copyRecursiveSync(path.join(__dirname, '../bob_os/core'), path.join(expDir, 'core'));
+    copyRecursiveSync(path.join(__dirname, '../src/bob_os/core'), path.join(expDir, 'core'));
     console.log(`[SUCCESS] Python logic synchronized.`);
 } else if (sourcePath === 'migrate') {
     console.log(`Executing database migration for ${expName}...`);
     // Copy migrations
-    const srcMigrations = path.resolve(__dirname, '../bob_os/core/migrations');
+    const srcMigrations = path.resolve(__dirname, '../src/bob_os/core/migrations');
     const targetMigrations = path.join(expDir, 'core/migrations');
     copyRecursiveSync(srcMigrations, targetMigrations);
     try {
         const { execSync } = require('child_process');
         execSync(`node scripts/migrate.js experiments/${expName}/_verse/universe.db`, {
-            cwd: path.resolve(path.join(__dirname, '../..')),
+            cwd: path.resolve(path.join(__dirname, '..')),
             stdio: 'inherit'
         });
         console.log(`[SUCCESS] Migration applied successfully.`);
@@ -67,7 +69,7 @@ if (sourcePath === 'engine') {
         process.exit(1);
     }
     
-    const projectRoot = path.resolve(path.join(__dirname, '../..'));
+    const projectRoot = path.resolve(path.join(__dirname, '..'));
     let relPath = path.relative(projectRoot, absoluteSrc);
     
     if (relPath.startsWith('experiments')) {

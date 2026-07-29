@@ -10,25 +10,13 @@ async function syncPopulation(populationFile, universeDir, vDir, state, logger, 
     const dbPath = path.join(universeDir, 'universe.db');
     if (fs.existsSync(dbPath)) {
         try {
-            const pyScript = `
-import sqlite3, json
-from core.lib.agent_service import resolve_agent_location
-conn = sqlite3.connect('${dbPath.replace(/\\/g, '\\\\')}')
-conn.row_factory = sqlite3.Row
-c_outer = conn.cursor()
-c_inner = conn.cursor()
-res = {}
-for r in c_outer.execute('SELECT * FROM agents'):
-    loc = resolve_agent_location(c_inner, r['host_type'], r['host_id'], r['status'])
-    res[r['id']] = {
-        "location": loc,
-        "sleep_state": r['sleep_state'] if 'sleep_state' in r.keys() else 0,
-        "sleep_until_round": r['sleep_until_round'] if 'sleep_until_round' in r.keys() else 0
-    }
-conn.close()
-print(json.dumps(res))`;
-            const out = execSync(`python3 -c "${pyScript.replace(/"/g, '\\"')}"`, {
-                env: { ...process.env, PYTHONPATH: path.resolve(universeDir, '..') }
+            const scriptPath = path.join(vDir, 'core', 'bin', 'get_agent_location.py');
+            const out = execSync(`python3 "${scriptPath}"`, {
+                env: { 
+                    ...process.env, 
+                    TEST_DB_PATH: dbPath,
+                    PYTHONPATH: path.resolve(universeDir, '..') 
+                }
             }).toString().trim();
             resolvedLocations = JSON.parse(out);
         } catch (e) {

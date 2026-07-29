@@ -169,20 +169,8 @@ async function run() {
             }
 
             try {
-                const dbScript = `
-import sqlite3, json, os
-conn = sqlite3.connect(os.environ['TEST_DB_PATH'])
-conn.row_factory = sqlite3.Row
-c = conn.cursor()
-c.execute("SELECT sender, receiver, content FROM messages")
-msgs = [dict(r) for r in c.fetchall()]
-c.execute("DELETE FROM messages")
-c.execute("SELECT id, chosen_name FROM agents")
-names = {r['id']: r['chosen_name'] for r in c.fetchall()}
-conn.commit()
-conn.close()
-print(json.dumps({"messages": msgs, "names": names}))`;
-                const batchOut = require('child_process').execFileSync('python3', ['-c', dbScript], { env: { ...process.env, TEST_DB_PATH: path.join(universeDir, 'universe.db') }, encoding: 'utf8' });
+                const scriptPath = path.join(vDir, 'core', 'bin', 'fetch_messages.py');
+                const batchOut = require('child_process').execFileSync('python3', [scriptPath], { env: { ...process.env, TEST_DB_PATH: path.join(universeDir, 'universe.db') }, encoding: 'utf8' });
                 const batchData = JSON.parse(batchOut);
                 state.agentNames = batchData.names;
                 

@@ -37,8 +37,8 @@ def seed():
                 # First system at 0,0, others offset
                 x, y = (0, 0) if not created_systems else (random.randint(100, 500), random.randint(100, 500))
                 
-                # Normal Production Geology Seeding: Randomized between [50,000 - 500,000]
-                start_matter = random.randint(50000, 500000)
+                # Test/Mock Geology Seeding: Forced to exactly 100,000 matter
+                start_matter = 100000
                 cursor.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter) VALUES (?, ?, ?, ?, ?)", (location, x, y, start_matter, start_matter))
                 created_systems.add(location)
             
@@ -72,7 +72,7 @@ def seed():
 
     conn.commit()
     conn.close()
-    print("V10.0 Bootstrap Logic (Seeding) completed.")
+    print("V10.0 Bootstrap Logic (Test Seeding) completed.")
 
 if __name__ == "__main__":
     seed()

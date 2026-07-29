@@ -46,8 +46,13 @@ def init():
     print("Database initialized (Migrations).")
 
 def seed():
-    from core.bin.seed_db import seed as seed_db_seed
-    seed_db_seed()
+    is_test_mode = os.environ.get('TEST_FORCE_GEOLOGY_MOCK') == 'true' or os.environ.get('TEST_DB_PATH') is not None
+    if is_test_mode:
+        from core.bin.seed_test_db import seed as seed_test_db_seed
+        seed_test_db_seed()
+    else:
+        from core.bin.seed_db import seed as seed_db_seed
+        seed_db_seed()
 
 if __name__ == "__main__":
     import argparse

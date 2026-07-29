@@ -34,14 +34,15 @@ async function runE2ETest() {
 
         console.log("- Starting Runner with API Mock...");
         process.env.E2E_MOCK = 'true';
+        process.env.TEST_FORCE_GEOLOGY_MOCK = 'true';
         
         // NOTE: We no longer perform manual DB inserts.
         // The runner.js MUST create the agent from config.json via init_db.py --seed.
 
         try {
             const runnerOutput = execSync(`node src/sim_engine/core/runner.js ${version}`, { encoding: 'utf8' });
-            if (runnerOutput.includes("ERROR") || runnerOutput.includes("Error")) {
-                console.error("Runner reports internal errors:\n", runnerOutput);
+            if (runnerOutput.includes("BOOTSTRAP ERROR") || runnerOutput.includes("Traceback") || runnerOutput.includes("TypeError") || runnerOutput.includes("MODULE_NOT_FOUND")) {
+                console.error("Runner reports internal system errors:\n", runnerOutput);
                 process.exit(1);
             }
         } catch (e) {

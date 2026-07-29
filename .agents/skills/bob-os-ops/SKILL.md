@@ -73,14 +73,31 @@ When work begins on a ticket (only upon explicit user directive):
 2. Update the `status:` field in the YAML frontmatter to `"ongoing"`.
 3. Update the status column in the index file `docs/EPIC_CONSOLIDATION_BACKLOG.md`.
 
-### 4. GitHub Issues & Projects Direct Code Sync (TCK-TODO-115)
-When the synchronization script `.github/scripts/sync_github.js` is fully implemented:
-1. **Local Sync Trigger:** Running `node .github/scripts/sync_github.js` automatically parses all files under `.tickets/`, matches their YAML frontmatter with active GitHub Issues, and performs CRUD operations via the GitHub API (using `process.env.GITHUB_TOKEN`).
-2. **Board Column Sync:** 
-   - Tickets in `/open/` map to Issue State `open` and Project Column `Todo`.
-   - Tickets in `/ongoing/` map to Issue State `open` and Project Column `In Progress`.
-   - Tickets in `/closed/` map to Issue State `closed` and Project Column `Done`.
-3. **Hook Automation:** Ensure the Git post-commit hook `.git/hooks/post-commit` (or GitHub Actions) is configured to trigger this sync on every push/commit to keep local and cloud-based issue trackers perfectly unified.
+### 4. GitHub Issues & Projects Bidirectional Sync (TCK-DONE-014)
+We have a native, bidirectional synchronization engine to keep your local `.tickets/` repository and GitHub Issues/Projects completely in sync.
+
+#### Local Environment Auto-Loader
+The synchronization script `.github/scripts/sync_github.js` automatically finds and parses your local `.env` file upon execution, loading your `GITHUB_TOKEN` and repository paths without requiring manual terminal exports.
+
+#### Available Commands:
+- **PULL Sync (Remote ──> Local):**
+  Fetches all issues from GitHub, updates local frontmatter/descriptions, moves folders accordingly, and **automatically rebuilds the register index** `docs/EPIC_CONSOLIDATION_BACKLOG.md` to reflect any remote changes:
+  ```bash
+  npm run tickets:pull
+  ```
+- **PUSH Sync (Local ──> Remote):**
+  Parses local tickets and updates GitHub Issues (creating new ones, updating titles/body/labels, and closing completed ones):
+  ```bash
+  npm run tickets:push
+  ```
+
+#### Board Column Sync:
+- Tickets in `/open/` map to Issue State `open` and Project Column `Todo`.
+- Tickets in `/ongoing/` map to Issue State `open` and Project Column `In Progress`.
+- Tickets in `/closed/` map to Issue State `closed` and Project Column `Done`.
+
+#### Hook Automation:
+The GitHub Action `.github/workflows/sync-tickets.yml` runs automatically on master pushes, executing the PUSH sync to keep GitHub Project boards up-to-date with your codebase.
 
 ---
 

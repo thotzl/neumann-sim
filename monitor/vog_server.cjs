@@ -107,7 +107,7 @@ const server = http.createServer((req, res) => {
             try {
                 const data = JSON.parse(body);
                 if (data.message && fs.existsSync(experimentDir)) {
-                    const msgFile = path.join(experimentDir, 'creator_msg.txt');
+                    const msgFile = path.join(experimentDir, '_verse', 'creator_msg.txt');
                     // Schreibe die Nachricht in die Datei
                     fs.writeFileSync(msgFile, data.message);
                     res.writeHead(200, { 'Content-Type': 'application/json' });

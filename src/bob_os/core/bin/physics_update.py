@@ -43,15 +43,22 @@ def update(current_tick=1):
         travelers = cursor.fetchall()
         
     for t in travelers:
+        dist = physics_service.calc_distance(t['origin_x'], t['origin_y'], t['target_x'], t['target_y'])
+        total_energy_cost = physics_service.calc_travel_cost(dist, physics_config.get('energy_cost_per_distance', 0.1))
+        tick_cost = (total_energy_cost / t['transit_ticks_total']) + drain_idle
+        
+        # Interstellar Stranding: Suspended if propulsion battery is depleted (Pillar 1)
+        if t['energy_inventory'] <= 0:
+            cursor.execute("""
+                INSERT INTO visual_events (cycle, actor_id, description)
+                VALUES (?, ?, ?)
+            """, (current_tick, t['id'], f"[CRITICAL BLACKOUT] Interstellar transit suspended for {t['id']}. Propulsion grid offline due to complete energy depletion."))
+            continue # Halts coordinates and progress increments completely
+
         new_passed = t['transit_ticks_passed'] + 1
         progress = min(1.0, new_passed / t['transit_ticks_total'])
         cur_x = physics_service.linear_interpolate(t['origin_x'], t['target_x'], progress)
         cur_y = physics_service.linear_interpolate(t['origin_y'], t['target_y'], progress)
-        
-        dist = physics_service.calc_distance(t['origin_x'], t['origin_y'], t['target_x'], t['target_y'])
-        total_energy_cost = physics_service.calc_travel_cost(dist, physics_config.get('energy_cost_per_distance', 0.1))
-        tick_cost = (total_energy_cost / t['transit_ticks_total']) + drain_idle
-        new_energy = max(0, t['energy_inventory'] - tick_cost)
         
         if new_passed >= t['transit_ticks_total']:
             cursor.execute("UPDATE agents SET status='active', current_x=?, current_y=?, transit_ticks_passed=? WHERE id=?",
@@ -119,17 +126,17 @@ def update(current_tick=1):
             total_maintenance_cost += stats.get('maintenance_energy_cost', 1)
             
         # C. Check Energy Budget
-        if sys['energy_depot'] < total_maintenance_cost:
-            # Blackout!
-            # Capacities are retained (passive structures),
-            # active bonuses (production) are deactivated.
-            new_energy_rate = 0
+        # Solar energy is always produced at full nominal capacity regardless of blackout state
+        net_energy = new_energy_rate - total_maintenance_cost
+        final_energy = sys['energy_depot'] + net_energy
+        
+        if final_energy < 0:
+            # Blackout! Sektor has an energy deficit
+            final_energy = 0
+            # Active manufacturing (production) is deactivated during blackout
             new_matter_rate = 0
-            # Blackout deactivates manufacturing, but keeps a baseline survival solar/RTG regen (+5) active (Step 2)
-            final_energy = min(5, sys['energy_depot'] + 5)
         else:
-            final_energy = max(0, sys['energy_depot'] - total_maintenance_cost + new_energy_rate)
-            # Default cap for energy_depot is the energy_inventory limit of a standard probe if no batteries exist
+            # Normal operation: cap energy at depot limit
             energy_limit = new_energy_cap if new_energy_cap > 0 else agent_limits['energy']
             final_energy = min(energy_limit, final_energy)
             

@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-003
+id: TCK-003
 title: "Scope-Filtered Injected Dashboard (Token Pruning)"
 epic_phase: "Optimization Levers 1 & 3 (Language & Perception)"
 status: "closed"

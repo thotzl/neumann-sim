@@ -1,5 +1,5 @@
 ---
-id: TCK-TODO-107
+id: TCK-107
 title: "SSoT Sektor-Weichen: 'Ready for Goals' (Epic 4 Setup)"
 epic_phase: "Epic 4 / Runway"
 status: "open"

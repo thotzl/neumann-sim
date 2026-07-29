@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-013
+id: TCK-013
 title: "Runner-Level Auto-Radio-Poll"
 epic_phase: "System Design Update"
 status: "closed"

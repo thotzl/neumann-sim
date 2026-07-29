@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-010
+id: TCK-010
 title: "Modular LLM-Connector-Layer & AI-Bridge (OpenAI / Ollama / Gemini / GitHub Models)"
 epic_phase: "Epic 2 (V10.0) / AI-Kognition"
 status: "closed"

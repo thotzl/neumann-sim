@@ -1,5 +1,5 @@
 ---
-id: TCK-TODO-108
+id: TCK-108
 title: "SSoT Sektor-Weichen: 'Ready for Deeper Verse' (Epic 5 Setup)"
 epic_phase: "Epic 5 / Runway"
 status: "open"

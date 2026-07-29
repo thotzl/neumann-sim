@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-007
+id: TCK-007
 title: "Geological Planetary Core Regeneration"
 epic_phase: "Epic 1 (V9.5) / World Physics"
 status: "closed"

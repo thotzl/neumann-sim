@@ -1,5 +1,5 @@
 ---
-id: TCK-TODO-101
+id: TCK-101
 title: "Agent Hardware Upgrades & Leveling"
 epic_phase: "Epic 2 (V10.0) / Phase 2.5 (Agenten-Upgrades)"
 status: "open"

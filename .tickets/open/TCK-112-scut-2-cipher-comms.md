@@ -1,5 +1,5 @@
 ---
-id: TCK-TODO-112
+id: TCK-112
 title: "SCUT 2.0 & Cipher Comms (Diplomacy vs. Eavesdropping)"
 epic_phase: "Epic 3 (V11.0) / Factions"
 status: "open"

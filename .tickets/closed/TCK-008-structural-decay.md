@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-008
+id: TCK-008
 title: "Structural Decay & Maintenance Grace Period"
 epic_phase: "Epic 1 (V9.5) / World Physics"
 status: "closed"

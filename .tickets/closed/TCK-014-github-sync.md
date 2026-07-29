@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-014
+id: TCK-014
 title: "GitHub Issues & Projects Direct Code Sync Integration"
 epic_phase: "Developer Experience & CI"
 status: "closed"

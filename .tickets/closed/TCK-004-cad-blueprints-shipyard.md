@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-004
+id: TCK-004
 title: "Persistent CAD Blueprints & Shipyard Construction"
 epic_phase: "Epic 2 (V10.0) / Phase 2.0 (Freestyle Engineering)"
 status: "closed"

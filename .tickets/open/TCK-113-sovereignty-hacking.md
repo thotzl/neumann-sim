@@ -1,5 +1,5 @@
 ---
-id: TCK-TODO-113
+id: TCK-113
 title: "Sovereignty Hacking & Takeovers"
 epic_phase: "Epic 3 (V11.0) / Hacking"
 status: "open"

@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-006
+id: TCK-006
 title: "Sandbox Hardening & Directory Isolation (Security)"
 epic_phase: "Phase 2.6 (Security)"
 status: "closed"

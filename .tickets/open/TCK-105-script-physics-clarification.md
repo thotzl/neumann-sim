@@ -1,5 +1,5 @@
 ---
-id: TCK-TODO-105
+id: TCK-105
 title: "SSoT System Instructions Script-Physics Clarification"
 epic_phase: "System Design Update"
 status: "open"

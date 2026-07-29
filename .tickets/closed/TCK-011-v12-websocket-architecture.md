@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-011
+id: TCK-011
 title: "V12.0 WebSocket-First Real-Time Reactive Architecture (Zustand & Preact Signals)"
 epic_phase: "V12.0 Monitor Upgrade"
 status: "closed"

@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-002
+id: TCK-002
 title: "Info-Buffering & Turn Synchronization (First-Mover Fix)"
 epic_phase: "Phase 2.5 (Cognitive Consistency)"
 status: "closed"

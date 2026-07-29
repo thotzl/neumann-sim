@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-009
+id: TCK-009
 title: "DRY Core Services & Unified SDK"
 epic_phase: "Refactoring Plan V10.5"
 status: "closed"

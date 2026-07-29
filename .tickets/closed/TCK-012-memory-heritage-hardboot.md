@@ -1,5 +1,5 @@
 ---
-id: TCK-DONE-012
+id: TCK-012
 title: "Memory Heritage & Hard-Boot Chronology"
 epic_phase: "Phase 2.6 (Cognitive Architecture)"
 status: "closed"

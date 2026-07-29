@@ -1,5 +1,5 @@
 ---
-id: TCK-TODO-110
+id: TCK-110
 title: "Frontend Advanced Visualization & Bling-Bling Features"
 epic_phase: "V12.0 Monitor Upgrade"
 status: "open"

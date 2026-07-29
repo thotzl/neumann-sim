@@ -1,5 +1,5 @@
 ---
-id: TCK-TODO-106
+id: TCK-106
 title: "SSoT Sektor-Weichen: 'Ready for Factions' (Epic 3 Setup)"
 epic_phase: "Epic 3 (V11.0) / Runway"
 status: "open"

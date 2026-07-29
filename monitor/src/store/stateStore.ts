@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { WorldState, LogEntry, Selection, LogCategory, HistoryEntry } from '../types';
 
+// Event-Driven Throttled Batch-Buffer Module Scope Variables (V14.1 Reactive Damping)
+let pendingStateBuffer: any = null;
+let pendingLogsBuffer: any[] = [];
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 const getSimpleHash = (str: string): string => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -20,6 +25,7 @@ interface C2Store {
   initializeLogs: (history: HistoryEntry[]) => void;
   updateState: (data: WorldState) => void;
   appendRealtimeLogs: (events: Array<{ tick: number; agentId: string; agentName?: string; type: LogCategory; text: string; id?: string }>) => void;
+  enqueueLiveUpdate: (type: string, payload: any) => void;
 }
 
 export const useC2Store = create<C2Store>((set) => ({
@@ -216,5 +222,85 @@ export const useC2Store = create<C2Store>((set) => ({
       state: mergedState,
       logs: finalLogs
     };
-  })
+  }),
+
+  enqueueLiveUpdate: (type, payload) => {
+    if (type === 'LIVE_STATE_UPDATE') {
+      pendingStateBuffer = pendingStateBuffer ? { ...pendingStateBuffer, ...payload } : payload;
+    } else if (type === 'REALTIME_LOGS') {
+      if (payload && Array.isArray(payload)) {
+        pendingLogsBuffer.push(...payload);
+      }
+    }
+
+    if (!debounceTimer) {
+      // Butterweicher, flimmerfreier 150ms Dämpfungs-Takt im RAM (V14.1 Reactive Damping)
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+
+        // Führe atomares, synchronisiertes Zustand-Update aus
+        set((prev) => {
+          let nextState = prev.state;
+          if (pendingStateBuffer) {
+            // Wende reaktives SSoT Merging an
+            nextState = { ...prev.state, ...pendingStateBuffer };
+
+            // Schütze Agentennamen (V13.5 ID-Merging)
+            if (pendingStateBuffer.agents && Array.isArray(pendingStateBuffer.agents)) {
+              nextState.agents = pendingStateBuffer.agents.map((newAgent: any) => {
+                const prevAgent = prev.state?.agents?.find((a: any) => a.id === newAgent.id);
+                return prevAgent ? { ...prevAgent, ...newAgent } : newAgent;
+              });
+            }
+
+            // Koordinaten-Heilung im RAM
+            if (nextState && nextState.agents && Array.isArray(nextState.agents)) {
+              nextState.agents.forEach((a: any) => {
+                if (a.parent_id === undefined && a.sensors?.parent_id) {
+                  a.parent_id = a.sensors.parent_id;
+                }
+                if (a.host_type === 'ship' && a.host_id) {
+                  const ship = nextState.ships?.find((s: any) => s.id.toString() === a.host_id?.toString());
+                  a.location = ship ? ship.system_name : 'Unknown';
+                } else if (a.host_type === 'matrix' && a.host_id) {
+                  let systemName = 'Unknown';
+                  if (nextState.systems) {
+                    for (const sys of nextState.systems) {
+                      if (sys.infra && sys.infra.some((inf: any) => inf.id.toString() === a.host_id?.toString())) {
+                        systemName = sys.name;
+                        break;
+                      }
+                    }
+                  }
+                  a.location = systemName;
+                }
+              });
+            }
+            pendingStateBuffer = null;
+          }
+
+          let nextLogs = prev.logs;
+          if (pendingLogsBuffer.length > 0) {
+            const newEntries = pendingLogsBuffer.map(event => {
+              const logId = event.id || `live-${event.tick}-${event.agentId}-${getSimpleHash(event.text)}`;
+              return {
+                id: logId,
+                tick: event.tick,
+                agentId: event.agentId,
+                agentName: event.agentName || event.agentId,
+                type: event.type,
+                text: event.text
+              };
+            });
+            nextLogs = [...prev.logs, ...newEntries]
+              .filter((ne, index, self) => self.findIndex(p => p.id === ne.id) === index)
+              .sort((a, b) => a.tick - b.tick);
+            pendingLogsBuffer = [];
+          }
+
+          return { state: nextState, logs: nextLogs };
+        });
+      }, 150); // 150ms Dämpfungsfenster
+    }
+  }
 }));

@@ -21,6 +21,7 @@ export default function App() {
   const initializeLogs = useC2Store((store) => store.initializeLogs);
   const updateState = useC2Store((store) => store.updateState);
   const appendRealtimeLogs = useC2Store((store) => store.appendRealtimeLogs);
+  const enqueueLiveUpdate = useC2Store((store) => store.enqueueLiveUpdate);
 
   const [filters, setFilters] = useState<Record<LogCategory, boolean>>({ thought: true, action: true, system: true, scut: true });
   
@@ -134,12 +135,12 @@ export default function App() {
           else if (msg.type === 'LIVE_STATE_UPDATE') {
             console.log(`[C2-Websocket] Received real-time live update for tick: ${msg.state?.tick}`);
             if (msg.state) {
-              updateState(msg.state);
+              enqueueLiveUpdate(msg.type, msg.state);
             }
           }
           else if (msg.type === 'REALTIME_LOGS') {
             if (msg.logs && Array.isArray(msg.logs)) {
-              appendRealtimeLogs(msg.logs);
+              enqueueLiveUpdate(msg.type, msg.logs);
             }
           }
         } catch (e) {

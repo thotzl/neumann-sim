@@ -23,11 +23,18 @@ if (fs.existsSync(envPath)) {
 }
 
 // 1. Get GitHub credentials & repository info
-const token = process.env.GITHUB_TOKEN;
+let token = process.env.GITHUB_TOKEN;
 if (!token) {
     console.error("❌ GITHUB_TOKEN environment variable is missing. Synchronization aborted.");
     process.exit(1);
 }
+
+// Clean up any trailing/leading whitespaces or quote artifacts from the token
+token = token.trim();
+
+// Log token diagnostic info (secure, only prefix and length)
+const tokenPrefix = token.substring(0, 4);
+console.log(`🔑 Diagnostics: Token prefix="${tokenPrefix}", length=${token.length}`);
 
 let repository = process.env.GITHUB_REPOSITORY; // Injected automatically by GitHub Actions
 if (!repository) {
@@ -54,8 +61,15 @@ console.log(`🛰️ Mode: ${isPullMode ? 'PULL (Remote ──> Local)' : 'PUSH 
 console.log(`📂 Repository: https://github.com/${owner}/${repoName}`);
 
 const BASE_URL = `https://api.github.com/repos/${owner}/${repoName}`;
+
+// COMPATIBILITY WORKAROUND: Classic Personal Access Tokens (PATs) starting with ghp_ or older Classic Tokens
+// require 'token <token>' authorization header on classical GitHub APIs to prevent 404 unauthorized errors.
+const authHeader = (token.startsWith('ghp_') || token.startsWith('github_pat_'))
+    ? `token ${token}`
+    : `Bearer ${token}`;
+
 const HEADERS = {
-    'Authorization': `Bearer ${token}`,
+    'Authorization': authHeader,
     'Accept': 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
     'User-Agent': 'Bob-OS-Sync-Script'
@@ -255,8 +269,8 @@ async function runPull(localTickets, githubIssues) {
     });
 
     for (const issue of githubIssues) {
-        // Parse Title: "[TCK-TODO-101] Title"
-        const titleMatch = issue.title.match(/^\[(TCK-(?:TODO|DONE)-\d+)\]\s*(.*)$/);
+        // Parse Title: "[TCK-101] Title" (Now completely status-neutral!)
+        const titleMatch = issue.title.match(/^\[(TCK-\d+)\]\s*(.*)$/);
         if (!titleMatch) {
             // Ignore non-ticket issues
             continue;
@@ -429,7 +443,7 @@ async function run() {
                         const linkStr = `[Link](../.tickets/${m.folder_status}/${m.filename})`;
                         let resourceStr = '-';
                         if (m.dependencies && m.dependencies.length > 0) {
-                            resourceStr = m.dependencies.map(d => `\`${d}\``).join(', ');
+                            resourceStr = m.dependencies.map(d => `${d}`).join(', ');
                         }
                         tableRows.push(`| **${m.id}** | ${m.title} | ${m.epic_phase} | ${statusBadge} | \`${m.priority || 'medium'}\` | ${linkStr} | ${resourceStr} |`);
                     });

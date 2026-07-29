@@ -2,6 +2,26 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// Automatically load local .env variables if running locally (Dependency-Free!)
+const envPath = path.join(process.cwd(), '.env');
+if (fs.existsSync(envPath)) {
+    fs.readFileSync(envPath, 'utf-8').split(/\r?\n/).forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#')) {
+            const idx = trimmed.indexOf('=');
+            if (idx !== -1) {
+                const k = trimmed.substring(0, idx).trim();
+                let v = trimmed.substring(idx + 1).trim();
+                if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1);
+                if (v.startsWith("'") && v.endsWith("'")) v = v.slice(1, -1);
+                if (!process.env[k]) {
+                    process.env[k] = v;
+                }
+            }
+        }
+    });
+}
+
 // 1. Get GitHub credentials & repository info
 const token = process.env.GITHUB_TOKEN;
 if (!token) {

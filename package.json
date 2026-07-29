@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "sim": "node run.js",
     "inject": "node sim_engine/inject.js",
-    "reset": "node reset.js"
+    "reset": "node reset.js",
+    "tickets:pull": "node .github/scripts/sync_github.js --pull",
+    "tickets:push": "node .github/scripts/sync_github.js"
   },
   "keywords": [],
   "author": "",

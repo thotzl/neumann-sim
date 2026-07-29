@@ -47,13 +47,6 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     }
 
     // 2. --- INBOX GATHERING & CONTEXT ASSEMBLY ---
-    // Auto-Radio Poll (Sensory Sweep for incoming transmissions)
-    try {
-        runPython(vDir, 'core/bin/poll_radio.py', [agent.id]);
-    } catch (e) {
-        console.error(`    [RADIO-POLL-ERROR] ${agent.id} failed:`, e.message);
-    }
-
     console.log(`  Turn: ${agent.id}`);
     const inbox = state.global_inbox[agent.id] || [];
     let inboxText = "";
@@ -144,6 +137,16 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     let feedback = "";
     if (responseText) {
         feedback = envManager.processActions(responseText, universeDir, agent.id, state);
+
+        // Super-Critical Neural Echo: Save action and physical resonance feedback for Bob's next turn
+        if (feedback && feedback.trim()) {
+            const actionMatch = responseText.match(/2\.\s*ACTION:([\s\S]*?)$/i) || responseText.match(/ACTION:([\s\S]*?)$/i);
+            const actionPart = actionMatch ? actionMatch[1].trim() : responseText;
+            state.global_inbox[agent.id].push({
+                type: 'resonance',
+                text: `[NEURAL ECHO (LAST ACTION AND RESONANCE)]:\n${actionPart}\n\nRESONANCE:\n${feedback.trim()}`
+            });
+        }
     }
 
     // Combine output feedback and inbox responses for history tracking

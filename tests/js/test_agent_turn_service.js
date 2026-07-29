@@ -78,6 +78,11 @@ fs.mkdirSync(universeDir, { recursive: true });
         // Execute the turn (this will trigger our assertions inside mockBridge)
         await executeTurn(aliveAgent, state2, { global_system_instruction: "Global" }, mockBridge, mockBridge, testVDir, universeDir);
 
+        // Assert that the Super-Critical Neural Echo resonance was successfully generated and saved for the next turn
+        const nextInbox = state2.global_inbox["Pioneer-1"] || [];
+        const hasResonanceEcho = nextInbox.some(m => m.type === 'resonance' && m.text.includes("[NEURAL ECHO (LAST ACTION AND RESONANCE)]:"));
+        assert.ok(hasResonanceEcho, "Super-Critical Neural Echo resonance was not generated and saved in the inbox after turn completion!");
+
         // Clean up
         fs.rmSync(testVDir, { recursive: true, force: true });
 

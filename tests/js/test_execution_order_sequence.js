@@ -24,23 +24,22 @@ try {
 
     const agentTurnServiceMock = {
         executeTurn: async (agentId) => {
-            // Sequential Pre-Turn sensory sweeps & prompt compiling
-            executionTraces.push(`3. PRE_TURN_RADIO_POLLING_FOR_${agentId}`);
-            executionTraces.push(`4. HARDWARE_MANUAL_LOADED_FOR_${agentId}`);
-            executionTraces.push(`5. TELEMETRY_DASHBOARD_LOADED_FOR_${agentId}`);
-            executionTraces.push(`6. LLM_INVOCATION_FOR_${agentId}`);
-            executionTraces.push(`7. ACTION_PARSED_FOR_${agentId}`);
-            executionTraces.push(`8. MEMORY_DISTILLATION_FOR_${agentId}`);
-            executionTraces.push(`9. STATE_SAVED_FOR_${agentId}`);
+            // Sequential prompt compiling and execution (V13.1)
+            executionTraces.push(`3. HARDWARE_MANUAL_LOADED_FOR_${agentId}`);
+            executionTraces.push(`4. TELEMETRY_DASHBOARD_LOADED_FOR_${agentId}`);
+            executionTraces.push(`5. LLM_INVOCATION_FOR_${agentId}`);
+            executionTraces.push(`6. ACTION_PARSED_FOR_${agentId}`);
+            executionTraces.push(`7. MEMORY_DISTILLATION_FOR_${agentId}`);
+            executionTraces.push(`8. STATE_SAVED_FOR_${agentId}`);
         }
     };
 
     const physicsRoundServiceMock = {
         executeSystemRound: (roundNum) => {
-            executionTraces.push(`10. SYSTEM_AUTOMATIONS_EXECUTED_FOR_ROUND_${roundNum}`);
-            executionTraces.push(`11. SYSTEM_PHYSICS_DECAY_CALCULATED_FOR_ROUND_${roundNum}`);
-            executionTraces.push(`12. SIMULATION_THROTTLING_PAUSE_FOR_ROUND_${roundNum}`);
-            executionTraces.push(`13. FINAL_ROUND_STATE_SAVED_FOR_ROUND_${roundNum}`);
+            executionTraces.push(`9. SYSTEM_AUTOMATIONS_EXECUTED_FOR_ROUND_${roundNum}`);
+            executionTraces.push(`10. SYSTEM_PHYSICS_DECAY_CALCULATED_FOR_ROUND_${roundNum}`);
+            executionTraces.push(`11. SIMULATION_THROTTLING_PAUSE_FOR_ROUND_${roundNum}`);
+            executionTraces.push(`12. FINAL_ROUND_STATE_SAVED_FOR_ROUND_${roundNum}`);
         }
     };
 
@@ -67,26 +66,24 @@ try {
                 "1. SYNC_POPULATION",
                 "2. SCUT_VOG_ROUTING",
                 
-                "3. PRE_TURN_RADIO_POLLING_FOR_Instance-1",
-                "4. HARDWARE_MANUAL_LOADED_FOR_Instance-1",
-                "5. TELEMETRY_DASHBOARD_LOADED_FOR_Instance-1",
-                "6. LLM_INVOCATION_FOR_Instance-1",
-                "7. ACTION_PARSED_FOR_Instance-1",
-                "8. MEMORY_DISTILLATION_FOR_Instance-1",
-                "9. STATE_SAVED_FOR_Instance-1",
+                "3. HARDWARE_MANUAL_LOADED_FOR_Instance-1",
+                "4. TELEMETRY_DASHBOARD_LOADED_FOR_Instance-1",
+                "5. LLM_INVOCATION_FOR_Instance-1",
+                "6. ACTION_PARSED_FOR_Instance-1",
+                "7. MEMORY_DISTILLATION_FOR_Instance-1",
+                "8. STATE_SAVED_FOR_Instance-1",
                 
-                "3. PRE_TURN_RADIO_POLLING_FOR_Instance-2",
-                "4. HARDWARE_MANUAL_LOADED_FOR_Instance-2",
-                "5. TELEMETRY_DASHBOARD_LOADED_FOR_Instance-2",
-                "6. LLM_INVOCATION_FOR_Instance-2",
-                "7. ACTION_PARSED_FOR_Instance-2",
-                "8. MEMORY_DISTILLATION_FOR_Instance-2",
-                "9. STATE_SAVED_FOR_Instance-2",
+                "3. HARDWARE_MANUAL_LOADED_FOR_Instance-2",
+                "4. TELEMETRY_DASHBOARD_LOADED_FOR_Instance-2",
+                "5. LLM_INVOCATION_FOR_Instance-2",
+                "6. ACTION_PARSED_FOR_Instance-2",
+                "7. MEMORY_DISTILLATION_FOR_Instance-2",
+                "8. STATE_SAVED_FOR_Instance-2",
                 
-                "10. SYSTEM_AUTOMATIONS_EXECUTED_FOR_ROUND_1",
-                "11. SYSTEM_PHYSICS_DECAY_CALCULATED_FOR_ROUND_1",
-                "12. SIMULATION_THROTTLING_PAUSE_FOR_ROUND_1",
-                "13. FINAL_ROUND_STATE_SAVED_FOR_ROUND_1"
+                "9. SYSTEM_AUTOMATIONS_EXECUTED_FOR_ROUND_1",
+                "10. SYSTEM_PHYSICS_DECAY_CALCULATED_FOR_ROUND_1",
+                "11. SIMULATION_THROTTLING_PAUSE_FOR_ROUND_1",
+                "12. FINAL_ROUND_STATE_SAVED_FOR_ROUND_1"
             ];
 
             console.log("🧪 Executing deep chronological sequence validation...");

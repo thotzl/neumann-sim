@@ -164,6 +164,26 @@ async function apiRequest(endpoint, options = {}) {
     return await response.json();
 }
 
+// GraphQL Helper (Strictly requires Bearer header)
+async function graphqlRequest(query, variables = {}) {
+    const response = await fetch('https://api.github.com/graphql', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'User-Agent': 'Bob-OS-Sync-Script'
+        },
+        body: JSON.stringify({ query, variables })
+    });
+
+    const data = await response.json();
+    if (!response.ok || data.errors) {
+        const errs = data.errors ? data.errors.map(e => e.message).join(', ') : 'HTTP error';
+        throw new Error(`GraphQL Error: ${errs}`);
+    }
+    return data.data;
+}
+
 // Helper to sanitize filenames
 function sanitizeSlug(title) {
     return title.toLowerCase()
@@ -403,17 +423,23 @@ async function run() {
         }
         console.log(`✅ Loaded ${githubIssues.length} issues from GitHub.`);
 
-        // TEMPORARY CLEANUP ACTION: Delete all existing issues to start fresh with status-neutral IDs.
-        // Once this push runs once, this block can be safely removed.
+        // UNCOMPROMISING CLEANUP ACTION: Physically delete all existing remote issues to start fresh.
+        // Uses GitHub v4 GraphQL API deleteIssue mutation to perform true physical deletions.
         if (!isPullMode && githubIssues.length > 0) {
-            console.log("⚠️ TEMPORARY CLEANUP: Deleting all existing issues on GitHub remote...");
+            console.log("⚠️ TEMPORARY CLEANUP: Deleting all existing issues on GitHub remote via GraphQL...");
             for (const issue of githubIssues) {
-                console.log(`❌ Deleting Issue #${issue.number}: "${issue.title}"...`);
+                console.log(`❌ Deleting Issue #${issue.number} (Node ID: ${issue.node_id}): "${issue.title}"...`);
                 try {
-                    await apiRequest(`/issues/${issue.number}`, { method: 'DELETE' });
-                    console.log(`   └─ Successfully deleted.`);
+                    const mutation = `
+                    mutation($issueId: ID!) {
+                      deleteIssue(input: {issueId: $issueId}) {
+                        clientMutationId
+                      }
+                    }`;
+                    await graphqlRequest(mutation, { issueId: issue.node_id });
+                    console.log(`   └─ Successfully deleted via GraphQL.`);
                 } catch (err) {
-                    console.warn(`   ⚠️ Could not delete Issue #${issue.number}. Attempting to close/lock instead...`);
+                    console.warn(`   ⚠️ GraphQL delete failed: ${err.message}. Attempting REST close fallback...`);
                     try {
                         await apiRequest(`/issues/${issue.number}`, {
                             method: 'PATCH',

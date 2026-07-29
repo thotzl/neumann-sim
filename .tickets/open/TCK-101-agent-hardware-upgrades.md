@@ -19,7 +19,7 @@ Ermöglicht den physischen Aufstieg von Replicanten-Hüllen (nicht Schiffen!) in
 
 ## Synergies & Dependencies
 - **Dependencies:** `TCK-DONE-001` (Separation of Bob & Vessel).
-- **Synergies:** Die Timeouts für autonome Skripte in `runner.js` sollen direkt mit dem `core_level` des betreibenden Geists skalieren.
+- **Synergies:** Die Timeouts für autonome Skripte in `/src/sim_engine/modules/automation.js` und `/src/sim_engine/services/agent_turn_service.js` sollen direkt mit dem `core_level` des betreibenden Geists skalieren.
 
 ## References
 - Source: [IDEAS_AND_TASKS.md](../resources/todo/IDEAS_AND_TASKS.md)

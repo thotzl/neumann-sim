@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.0** | **2026-07-29** | `RELEASED` | V13.0 Clean Architecture & Modular Services | `[TCK-114]` |
 | **v12.0** | **2026-07-28** | `RELEASED` | WebSocket-First Real-Time Architecture | `[TCK-011]` |
 | **v11.0** | *In Planung (Q4 2026)* | `draft` | Factions & Fog of War (RTS-Evolution) | `[TCK-106]`, `[TCK-112]`, `[TCK-113]` |
 | **v10.6** | **2026-07-28** | `RELEASED` | Cognitive Heritage (Gedächtnis-Vererbung) | `[TCK-012]` |
@@ -17,6 +18,17 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.0] - 2026-07-29
+*Das "Modulare Clean-Architecture" Upgrade. Dieser Meilenstein entkoppelt den ehemals monolithischen Runner in wiederverwendbare, logisch isolierte Domänen-Services, eliminiert sämtlichen Inline-Fremdcode aus dem System und spaltet den Datenbank-Seeder physisch in Normal- und Test-Betriebsmodi auf.*
+
+#### Added (Neue Features)
+- **V13.0 Clean Architecture Decoupled Loop:** Volle Entkoppelung des Zyklen-Orchestrators in drei isolierte Core-Services (`mailbox_service.js`, `physics_round_service.js`, `agent_turn_service.js`) unter `/src/sim_engine/services/`.
+  - *Ticket:* `[TCK-114]` ([Link](../.tickets/closed/TCK-114-codebase-restructuring.md))
+- **Physical Seeder Separation (DRY):** Spaltung des Datenbank-Seeders in `seed_db.py` (Zufallsgeologien für Produktivruns) und `seed_test_db.py` (deterministische 100k Geologie für Testzwecke) mitsamt Weichenstellung in `init_db.py` und dedizierten Seeder-Tests.
+  - *Ticket:* `[TCK-114]` ([Link](../.tickets/closed/TCK-114-codebase-restructuring.md))
+
+---
 
 ### [v12.0] - 2026-07-28
 *Das "Echtzeit-Kommando" Upgrade. Dieser Meilenstein bricht den alten zyklischen SSD-Schreiblast-Zyklus des Runners auf und führt einen asynchronen Web-Broadcast-Stream ein, welcher Turn-Daten, Gedanken und Ereignisse in Millisekunden über WebSockets an das Zustand & Signals Frontend meldet.*

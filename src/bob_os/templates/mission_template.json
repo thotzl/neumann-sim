@@ -1,0 +1,38 @@
+{
+  "log": "log.md",
+  "report": "report.md",
+  "state": "state.json",
+  "rounds": 50,
+  "reproduction": true,
+  "roles": {
+    "agent": {
+      "driver_path": "./src/sim_engine/drivers/ai_drivers/gemini_driver",
+      "model": "gemini-3.6-flash"
+    },
+    "compressor": {
+      "driver_path": "./src/sim_engine/drivers/ai_drivers/gemini_driver",
+      "model": "gemini-3.6-flash"
+    }
+  },
+  "memory": {
+    "soft_token_limit": 12000,
+    "hard_token_limit": 25000,
+    "recursive_compression": "85%",
+    "max_compression_output_tokens": 1200
+  },
+  "physics_constants": {
+    "travel_speed_per_tick": 300,
+    "energy_cost_per_distance": 0.1,
+    "idle_drain": 5,
+    "scan_range_min": 500,
+    "scan_range_max": 1500
+  },
+  "agents": [
+    {
+      "id": "Instance-1",
+      "location": "SYS_X0_Y0",
+      "initial_trigger": "System online. Mission gestartet.",
+      "system_prompt": ""
+    }
+  ]
+}

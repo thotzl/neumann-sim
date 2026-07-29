@@ -146,8 +146,8 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
 
         // Super-Critical Neural Echo: Save action and physical resonance feedback for Bob's next turn
         if (feedback && feedback.trim()) {
-            const actionMatch = responseText.match(/2\.\s*ACTION:([\s\S]*?)$/i) || responseText.match(/ACTION:([\s\S]*?)$/i);
-            const actionPart = actionMatch ? actionMatch[1].trim() : responseText;
+            const actionMatch = responseText.match(/2\.\s*ACTION:[\s\S]*/i) || responseText.match(/ACTION:[\s\S]*/i);
+            const actionPart = actionMatch ? actionMatch[0].trim() : "No action.";
             state.global_inbox[agent.id].push({
                 type: 'resonance',
                 text: `[NEURAL ECHO (LAST ACTION AND RESONANCE)]:\n${actionPart}\n\nRESONANCE:\n${feedback.trim()}`

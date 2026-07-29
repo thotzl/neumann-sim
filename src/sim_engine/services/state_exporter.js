@@ -171,7 +171,7 @@ function exportWorldState(universeDir, state, lastAgentId) {
 
         const worldState = {
             tick: state.round,
-            stardate: process.env.BOB_CYCLE || `${state.round}::0`,
+            stardate: process.env.BOB_STARDATE || `${state.round}::${state.actualRoundTicks || 1}`,
             total_turns: state.totalTurns,
             timestamp: Date.now(),
             systems: systems,

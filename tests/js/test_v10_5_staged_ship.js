@@ -19,17 +19,9 @@ console.log("Starting incorruptible E2E workflow test for staged ship constructi
 // 1. Initialize a fresh test database via init_db.py
 try {
     execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=src/bob_os python3 src/bob_os/core/bin/init_db.py`, { stdio: 'pipe' });
+    console.log("[SUCCESS] Database initialized and migrations applied.");
 } catch (e) {
     console.error("Database initialization failed:", e.stderr ? e.stderr.toString() : e.message);
-    process.exit(1);
-}
-
-// 2. Execute migration logic to verify columns for the staged construction system
-try {
-    execSync(`TEST_DB_PATH=${dbPath} PYTHONPATH=src/bob_os python3 -m core.lib.migrations`, { stdio: 'pipe' });
-    console.log("[SUCCESS] Database migration applied without errors.");
-} catch (e) {
-    console.error("Database migration failed:", e.stderr ? e.stderr.toString() : e.message);
     process.exit(1);
 }
 

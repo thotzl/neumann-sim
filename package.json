@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node tests/test_all.js",
     "build": "python3 scripts/build.py",
+    "migrate": "node scripts/migrate.js",
     "sim": "node scripts/run.js",
     "inject": "node src/sim_engine/inject.js",
     "reset": "node scripts/reset.js",

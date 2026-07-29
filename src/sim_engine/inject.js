@@ -44,15 +44,14 @@ if (sourcePath === 'engine') {
     console.log(`[SUCCESS] Python logic synchronized.`);
 } else if (sourcePath === 'migrate') {
     console.log(`Executing database migration for ${expName}...`);
-    // Copy migrations.py
-    const srcMigrate = path.resolve(__dirname, '../bob_os/core/lib/migrations.py');
-    const targetMigrate = path.join(expDir, 'core/lib/migrations.py');
-    fs.copyFileSync(srcMigrate, targetMigrate);
+    // Copy migrations
+    const srcMigrations = path.resolve(__dirname, '../bob_os/core/migrations');
+    const targetMigrations = path.join(expDir, 'core/migrations');
+    copyRecursiveSync(srcMigrations, targetMigrations);
     try {
         const { execSync } = require('child_process');
-        execSync('python3 -m core.lib.migrations', {
-            cwd: expDir,
-            env: { ...process.env, PYTHONPATH: expDir },
+        execSync(`node scripts/migrate.js experiments/${expName}/_verse/universe.db`, {
+            cwd: path.resolve(path.join(__dirname, '../..')),
             stdio: 'inherit'
         });
         console.log(`[SUCCESS] Migration applied successfully.`);

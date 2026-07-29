@@ -164,6 +164,26 @@ async function apiRequest(endpoint, options = {}) {
     return await response.json();
 }
 
+// GraphQL Helper (Strictly requires Bearer header)
+async function graphqlRequest(query, variables = {}) {
+    const response = await fetch('https://api.github.com/graphql', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'User-Agent': 'Bob-OS-Sync-Script'
+        },
+        body: JSON.stringify({ query, variables })
+    });
+
+    const data = await response.json();
+    if (!response.ok || data.errors) {
+        const errs = data.errors ? data.errors.map(e => e.message).join(', ') : 'HTTP error';
+        throw new Error(`GraphQL Error: ${errs}`);
+    }
+    return data.data;
+}
+
 // Helper to sanitize filenames
 function sanitizeSlug(title) {
     return title.toLowerCase()
@@ -179,9 +199,8 @@ async function runPush(localTickets, githubIssues) {
         const expectedTitlePrefix = `[${meta.id}]`;
         const fullTitle = `${expectedTitlePrefix} ${meta.title}`;
 
-        // TEMPORARY BYPASS: Force all issues to be created/updated as OPEN first on GitHub
-        // so that the Project Board's native "Auto-add" rule registers and adds them to "Todo".
-        const githubState = 'open'; 
+        // Map folder status to GitHub states and labels
+        const githubState = meta.folder_status === 'closed' ? 'closed' : 'open';
         const expectedLabels = [
             `priority:${meta.priority || 'medium'}`,
             `status:${meta.folder_status}`
@@ -206,8 +225,16 @@ async function runPush(localTickets, githubIssues) {
                 body: JSON.stringify(payload)
             });
             console.log(`   └─ Successfully created: Issue #${newIssue.number}`);
-            
-            // Bypass the instant close workaround for this step!
+
+            // ATOMIC WORKAROUND: GitHub REST API creates issues as "open" by default on creation.
+            // If the ticket is locally closed, we must immediately follow up with a PATCH to close it!
+            if (githubState === 'closed') {
+                console.log(`   └─ Local ticket is closed. Instantly closing Issue #${newIssue.number} on GitHub...`);
+                await apiRequest(`/issues/${newIssue.number}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ state: 'closed' })
+                });
+            }
         } else {
             let needsUpdate = false;
             const updatePayload = {};

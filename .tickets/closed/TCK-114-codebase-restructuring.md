@@ -2,9 +2,11 @@
 id: TCK-114
 title: "Großes Struktur- & Architektur-Refactoring (V13.0 Codebase Polish)"
 epic_phase: "V13.0 Clean Architecture"
-status: "ongoing"
+status: "closed"
 priority: "high"
 created: 2026-07-28
+completed: 2026-07-29
+version: "v13.0"
 dependencies: []
 ---
 
@@ -26,12 +28,11 @@ Umfassende Bereinigung der Projektstruktur und Modularisierung der Codebase. Das
    - Es darf keinen Inline-Python-Code in JS/TS geben und umgekehrt. Ebenfalls keine harten Inline-Shell-Skripte.
    - Solcher Code muss sauber in eigenständige Dateien (`.py`, `.sh`) ausgelagert und über typsichere externe Aufrufe getriggert werden.
 
-## Verified Code Gap
-- **Code Path:**
-  - `sim_engine/runner.js` (und verwandte Dateien) sind zu monolithisch und beinhalten Geschäftslogik sowie inline Strings für externe Aufrufe.
-  - Tests liegen dezentral in `bob_os/test_suite/` (Python/JS gemischt) und in `sim_engine/`.
-  - Müll-Dateien wie `legacy_runner.js`, `runner.js.bak`, Python Cache-Ordner (`__pycache__`) liegen unaufgeräumt in der Codebase.
-  - Kein zentraler `src/` Architektur-Einstiegspunkt.
+## Verification (Code SSoT)
+- **Directory Structure:** All engine modules are centralized under `/src/sim_engine/` and core Python code under `/src/bob_os/core/`.
+- **Decoupled Services:** Monolithic runner logic is modularized into `mailbox_service.js`, `physics_round_service.js`, and `agent_turn_service.js` under `/src/sim_engine/services/`.
+- **Seeder Separation:** Separated normal randomized geology (`seed_db.py`) from test-deterministic geology (`seed_test_db.py`).
+- **Test Coverage:** All new services are verified by newly created standalone unit test suites in `tests/test_all.js` (including `test_mailbox_service.js`, `test_physics_round_service.js`, `test_agent_turn_service.js`, and `test_seeder.py`). All 22+ suites are completely green.
 
 ## Synergies & Dependencies
 - **Dependencies:** Keine.

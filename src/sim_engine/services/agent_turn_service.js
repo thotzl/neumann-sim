@@ -49,16 +49,19 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     // 2. --- INBOX GATHERING & CONTEXT ASSEMBLY ---
     console.log(`  Turn: ${agent.id}`);
     const inbox = state.global_inbox[agent.id] || [];
+    const fractionalStardate = process.env.BOB_STARDATE || `${state.round}::${state.actualRoundTicks || 1}`;
     let inboxText = "";
+    let scutText = "";
     if (inbox.length > 0) {
-        inboxText += "\n[INBOX (Events of the last cycle)]:\n";
         inbox.forEach(m => {
             if (m.type === 'scut') {
-                inboxText += `[SCUT] From ${state.agentNames?.[m.sender] || "Unnamed"} (ID: ${m.sender}): ${m.content}\n`;
+                const chosenName = (state.agentNames && state.agentNames[m.sender]) || "Unnamed";
+                const senderName = `${chosenName} (ID: ${m.sender})`;
+                scutText += `---\n[Stardate: ${fractionalStardate}] From ${senderName}: ${m.content}\n`;
             } else if (m.type === 'vog') {
                 inboxText += `[VOICE OF GOD]: ${m.text}\n`;
             } else if (m.type === 'system') {
-                (inboxText += `[SYSTEM ALERT]: ${m.text}\n`);
+                inboxText += `[SYSTEM ALERT]: ${m.text}\n`;
             } else if (m.type === 'automation') {
                 inboxText += `[SYSTEM-AUTOMATION (LAST CYCLE)]:\n${m.text}\n`;
             } else if (m.type === 'resonance') {
@@ -82,7 +85,10 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     // Prepare Payload (Sensory & Perceptual Prompts Assembly)
     let promptText = "";
     if (inboxText) {
-        promptText += inboxText;
+        promptText += `\n[INBOX (Events of the last cycle)]:\n${inboxText}`;
+    }
+    if (scutText) {
+        promptText += `\n[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${scutText}---\n`;
     }
 
     let contextArray = [...state.histories[agent.id]];
@@ -174,7 +180,6 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     }
     
     const myWalletStr = JSON.stringify(state.security?.wallets?.[agent.id] || {});
-    const fractionalStardate = process.env.BOB_STARDATE || `${state.round}::${state.actualRoundTicks || 1}`;
     const totalTurns = state.totalTurns || 0;
     const historyLength = state.histories[agent.id].length;
 

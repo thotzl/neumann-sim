@@ -134,6 +134,14 @@ export const useC2Store = create<C2Store>((set) => ({
     // Enable Event-Driven Partial State Merging (V13.4 SSoT Reactivity)
     const mergedState = { ...prev.state, ...data };
 
+    // Safely merge incoming agents by ID with previous agents to preserve database properties like chosen_name (V13.5)
+    if (data.agents && Array.isArray(data.agents)) {
+      mergedState.agents = data.agents.map((newAgent: any) => {
+        const prevAgent = prev.state?.agents?.find((a: any) => a.id === newAgent.id);
+        return prevAgent ? { ...prevAgent, ...newAgent } : newAgent;
+      });
+    }
+
     // 1. Run self-healing coordinates and location resolution on mergedState
     if (mergedState && mergedState.agents && Array.isArray(mergedState.agents)) {
       mergedState.agents.forEach(a => {

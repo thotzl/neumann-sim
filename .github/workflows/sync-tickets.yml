@@ -14,6 +14,9 @@ on:
 jobs:
   sync_tickets:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write      # Zwingend erforderlich für das automatische Erstellen/Schließen von Issues
+      contents: read     # Erforderlich für den Checkout des Repositories
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

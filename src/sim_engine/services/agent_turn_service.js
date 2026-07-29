@@ -5,6 +5,7 @@ const memoryCtrl = require('./memory_controller');
 const wakeupManager = require('./wakeup_manager');
 const logger = require('../helpers/logger');
 const { runPython } = require('../modules/python_executor');
+const broadcastService = require('./broadcast_service');
 
 /**
  * Agent Turn Service
@@ -198,6 +199,12 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         config,
         compressorBridge
     );
+
+    // Broadcast newly compressed histories instantly to the browser (100% disk-free)
+    broadcastService.broadcastPartialState({
+        histories: state.histories
+    });
+
     return false;
 }
 

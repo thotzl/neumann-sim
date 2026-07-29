@@ -35,9 +35,11 @@ const server = http.createServer((req, res) => {
             try {
                 const data = JSON.parse(body);
                 
-                // Cache the latest snapshot in memory (0% SSD IO)
-                latestWorldState = data.state;
-                latestHistory = data.history;
+                // Cache the latest snapshot in memory with robust in-memory merging (V13.4)
+                latestWorldState = latestWorldState ? { ...latestWorldState, ...data.state } : data.state;
+                if (data.history) {
+                    latestHistory = data.history;
+                }
 
                 // Broadcast live state updates immediately to all connected websocket clients
                 const broadcastMsg = JSON.stringify({

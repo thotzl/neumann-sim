@@ -76,6 +76,14 @@ async function run() {
     const agentBridge = new AIBridge(config.roles?.agent || config);
     const compressorBridge = new AIBridge(config.roles?.compressor || config);
 
+    // Initial Prerun Broadcast: Send full seeded world state immediately to VoG-Server at startup (V13.4 SSoT)
+    const stateExporter = require('../services/state_exporter');
+    try {
+        stateExporter.exportWorldState(universeDir, state, 'System');
+    } catch (e) {
+        // Fail silently
+    }
+
     // 2. Der reine, unbestechliche Runden- & Turn-Orchestrator (State-Machine)
     async function executeTurn() {
         if (state.round >= config.rounds && state.currentTurnIndex === 0) return false;
@@ -126,7 +134,8 @@ async function run() {
                 stardate: process.env.BOB_STARDATE,
                 last_agent: agentId,
                 total_turns: state.totalTurns,
-                tick: state.round
+                tick: state.round,
+                agents: state.agents
             });
             return true;
         }
@@ -136,7 +145,8 @@ async function run() {
             stardate: process.env.BOB_STARDATE,
             last_agent: agentId,
             total_turns: state.totalTurns,
-            tick: state.round
+            tick: state.round,
+            agents: state.agents
         });
 
         // Turn-Cursor inkrementieren & verarbeiten

@@ -385,11 +385,7 @@ class Sensors:
                     "modules": active_modules
                 }
 
-        current_stardate = os.environ.get('BOB_CYCLE', '0.0')
-        try:
-            current_stardate = float(current_stardate)
-        except ValueError:
-            pass # Keep as string (e.g. "2/5")
+        current_stardate = os.environ.get('BOB_STARDATE', '1::1')
 
         return {
             "local_system": {

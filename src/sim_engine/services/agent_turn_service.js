@@ -171,7 +171,7 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     }
     
     const myWalletStr = JSON.stringify(state.security?.wallets?.[agent.id] || {});
-    const fractionalStardate = process.env.BOB_CYCLE || `${state.round}/${state.actualRoundTicks || 1}`;
+    const fractionalStardate = process.env.BOB_STARDATE || `${state.round}::${state.actualRoundTicks || 1}`;
     const totalTurns = state.totalTurns || 0;
     const historyLength = state.histories[agent.id].length;
 

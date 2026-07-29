@@ -42,8 +42,33 @@ To apply master changes to a running experiment without losing database progress
 
 ### 4. Deployment & CI Checklist (GitHub Actions)
 Before every build or major inject, you MUST verify the test status.
-- **Local Verification:** Run the central test hub: `node sim_engine/test_all.js` (Ensure all 15+ test suites are GREEN).
+- **Local Verification:** Run the central test hub: `npm test` (Ensure all 15+ test suites are GREEN).
 - **Automated CI Workflow (`.github/workflows/test-ci.yml`):** Runs tests automatically on **every push on any branch** and on **every pull request** to master/main. This guarantees the build is never broken.
+
+### 5. Database Schema & Migrations System
+Bob-OS utilizes a framework-free, transactional, SQL-file-based migration system to manage the SQLite `universe.db` schema across all lifecycle stages.
+
+#### Structure of Migrations
+All baseline and incremental schema definitions reside in the centralized migrations folder:
+- **Location:** `src/bob_os/core/migrations/`
+- **Ground Zero Baseline:** `0001_ground_zero.sql` (defines the foundational schema for systems, agents, ships, blueprints, infrastructure, etc.)
+- **Incremental Migrations:** Created sequentially as `0002_add_feature_name.sql`, `0003_another_change.sql`, etc.
+
+#### How to Add a Schema Change (Migration Flow)
+When implementing a feature that requires database schema modifications (e.g., adding a new table or altering column fields):
+1. **Create the Migration File:** Write a clean SQL script named sequentially (e.g., `src/bob_os/core/migrations/0002_add_cargo_slots.sql`).
+2. **Write Pure SQL:** Use native SQLite queries (such as `ALTER TABLE` or `CREATE TABLE`).
+3. **Tracking Version:** Applied version file names are automatically inserted into the database's `schema_migrations` table for persistence tracking.
+
+#### Executing Database Migrations
+Migrations are automatically triggered across various operations scripts, so developers do not need to initialize databases manually:
+- **Build (`npm run build` or `python3 scripts/build.py`):** Dynamically provisions a fresh database, executes all sorted migrations, and triggers `seed_db.py` to populate starting systems, agents, and vessels.
+- **Injections (`npm run inject <exp_name> migrate`):** Hot-patches a running sandbox by copying new SQL files to the experiment's folder and executing migrations on the live database.
+- **Testing (`npm test`):** Executes all Python SDK/JS tests against transactional dynamic databases initialized via the Python wrapper `init_db.py` which dynamically applies the migration files.
+- **Manual Migration Command:** Run migrations on an existing experiment's database manually:
+  ```bash
+  npm run migrate experiments/<EXP_NAME>/_verse/universe.db
+  ```
 
 ---
 

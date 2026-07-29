@@ -1,232 +1,99 @@
-# 🛸 BOB-OS UNIFIED BACKLOG & ARCHIVE (V10.5+)
+# 🛸 BOB-OS GIT-BASED TICKETING ENGINE (V10.5+)
 
-Dieses Dokument ist die Single Source of Truth (SSoT) für alle abgeschlossenen und ausstehenden Entwicklungsschritte von Bob-OS. Es konsolidiert sämtliche historische Planungsdaten, Handoffs, Todos, Roadmaps und Optimierungs-Konzepte in ein einheitliches Ticket-Format.
+Dieses Dokument ist das zentrale Register (Index) für das Git-basierte In-Code-Ticketsystem von Bob-OS. Sämtliche historischen Planungsdaten, Handoffs, Todos, Roadmaps und Konzepte wurden in individuelle Ticket-Dateien zerschlagen, kategorisiert und unter `.tickets/` archiviert.
 
----
-
-## 🏛️ SSoT ARCHIVE (Abgeschlossene Tickets - Status: `DONE`)
-
-Die folgenden Tickets wurden erfolgreich implementiert, im Code verifiziert und über die 100% grüne CI-Testsuite abgesichert:
-
-### [TCK-DONE-001] Separation of Bob & Vessel (Host-Decoupled Software)
-- **Epic / Phase:** Epic 2 (V10.0) / Phase 2.5 (Geist & Hülle)
-- **Status:** `DONE` (Zusammengeführt in V10.5)
-- **Description:** Replicanten sind reine Software-Geister (Disembodied Minds) ohne eigenen physischen Standort oder materielle Ressourcen. Standort, Reichweite, Geschwindigkeit und Inventare werden dynamisch anhand der Träger-Hülle (`ship` oder `sem_matrix`) ermittelt.
-- **Verification (Code SSoT):**
-  - **DB Schema:** Die Tabelle `agents` in `bob_os/core/bin/init_db.py` besitzt keine Spalten für Ressourcen oder Koordinaten mehr, dafür die Spalten `host_id` und `host_type`.
-  - **Source Code:** `bob_os/core/lib/agent_service.py` -> `get_agent_or_fail` löst Standort und Inventare zur Laufzeit über SQL `CASE` Subqueries auf dem jeweiligen Host auf.
-  - **Decoupling Guard:** `bob_os/core/lib/agent_service.py` -> `with_agent_context(allow_disembodied=False)` blockiert physische Aktionen (`mine`, `move` etc.) mit einem harten Fehler, falls der Agent disembodied in einer Matrix sitzt.
-- **System Impact:** 100%ige Abgrenzung zwischen kognitiver Logik und physischer Existenzform. Erlaubt unbemannte Drohnen und Matrix-Hosting.
+Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstrukturiertes Markdown, wodurch sie maschinenlesbar, per Skript abfragbar und direkt in Git versionierbar sind. Die originalen, unveränderten Spezifikationen und Entwurfs-Dateien wurden als Referenzquellen in entsprechende Ressourcen-Ordner ausgelagert.
 
 ---
 
-### [TCK-DONE-002] Info-Buffering & Turn Synchronization (First-Mover Fix)
-- **Epic / Phase:** Phase 2.5 (Cognitive Consistency)
-- **Status:** `DONE` (Zusammengeführt in V10.5)
-- **Description:** Beseitigt unfaire "First-Mover"-Vorteile im Multi-Agenten-Szenario. SCUT-Nachrichten werden über einen globalen Inbox-Buffer gesammelt und erst zu Rundenbeginn freigegeben. Visual-Events werden chronologisch aggregiert und gefiltert.
-- **Verification (Code SSoT):**
-  - **DB Schema:** `agents` besitzt die Spalte `last_seen_event_id` zur chronologischen Filterung neuer Ereignisse.
-  - **Source Code:** 
-    - `sim_engine/runner.js` holt und löscht Nachrichten beim Rundenstart (Turn 0 Batching) aus `messages` und füllt `state.global_inbox`.
-    - `bob_os/core/lib/sdk/sensors.py` -> `local_system()` liest aggregierte Events ab `last_seen_event_id` aus und aktualisiert diese am Ende des Turns auf das globale Maximum (`MAX(rowid)`).
-- **System Impact:** Erreicht absolute kognitive Konsistenz und verhindert asynchrone Kollisionen.
+## 🏛️ DIE TICKETSYS-VERZEICHNISSTRUKTUR
+
+```text
+.tickets/
+├── open/                # Alle offenen Backlog-Tickets (Status: open)
+├── ongoing/             # Alle derzeit in Arbeit befindlichen Tickets (Status: ongoing)
+│   └── .gitkeep
+├── closed/              # Alle erfolgreich abgeschlossenen Tickets (Status: closed)
+└── resources/           # Verknüpfte Quell-Spezifikationen (unveränderte Originale)
+    ├── todo/            # Entwürfe für offene Epics (HANDOFF, IDEAS_AND_TASKS, ROADMAP, ADVANCED_MECHANICS, ...)
+    └── done/            # Spezifikationen für bereits abgeschlossene Epics (CHANGELOG, LEVERS, REFACTORING, ...)
+```
 
 ---
 
-### [TCK-DONE-003] Scope-Filtered Injected Dashboard (Token Pruning)
-- **Epic / Phase:** Optimization Levers 1 & 3 (Language & Perception)
-- **Status:** `DONE` (Zusammengeführt in V10.5)
-- **Description:** Verhindert redundante manuelle SDK-Aufrufe (`dashboard()`), um wertvolle API-Tokens einzusparen. Der Runner injiziert das Sektor-Dashboard automatisch in jedem Turn. Das Dashboard ist strikt auf den aktuellen Sektor gefiltert.
-- **Verification (Code SSoT):**
-  - **Source Code:** 
-    - `sim_engine/runner.js` (Zeilen 277-282) führt automatisch `dashboard()` aus und hängt es an den Prompt an.
-    - `bob_os/core/lib/sdk/sensors.py` -> `local_system()` liefert ausschließlich lokale Sektor-Ressourcen und -Objekte zurück.
-- **System Impact:** Reduziert den Prompt-Overhead um bis zu 40% und stellt sicher, dass Agenten immer über den aktuellen Zustand informiert sind.
+## 🧭 AKTUELLES TICKET-REGISTER (INDEX)
+
+| Ticket-ID | Titel | Epic / Phase | Status | Prio | Ticket-Datei | Verknüpfte Quell-Ressource |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **TCK-DONE-001** | Separation of Bob & Vessel (Host-Decoupled Software) | Epic 2 (V10.0) / Phase 2.5 | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-001-bob-vessel-separation.md) | [CHANGELOG.md](../.tickets/resources/done/CHANGELOG.md) |
+| **TCK-DONE-002** | Info-Buffering & Turn Synchronization (First-Mover Fix) | Phase 2.5 (Cognitive Consistency) | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-002-info-buffering.md) | [CHANGELOG.md](../.tickets/resources/done/CHANGELOG.md) |
+| **TCK-DONE-003** | Scope-Filtered Injected Dashboard (Token Pruning) | Levers 1 & 3 (Language & Perception) | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-003-scope-filtered-dashboard.md) | [LEVER_1](../.tickets/resources/done/OPTIMIZATION_LEVER_1_DASHBOARD_PRUNING.md), [LEVER_3](../.tickets/resources/done/OPTIMIZATION_LEVER_3_LANGUAGE_ALIGNMENT.md) |
+| **TCK-DONE-004** | Persistent CAD Blueprints & Shipyard Construction | Epic 2 (V10.0) / Phase 2.0 | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-004-cad-blueprints-shipyard.md) | [CHANGELOG.md](../.tickets/resources/done/CHANGELOG.md), [SDK_TASKLIST](../.tickets/resources/done/SDK_TASKLIST.md) |
+| **TCK-DONE-005** | Networked Replication (System Energy Pull) | Phase 2.5 (Energy Pipeline) | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-005-networked-replication.md) | [CHANGELOG.md](../.tickets/resources/done/CHANGELOG.md), [LEVER_2](../.tickets/resources/done/OPTIMIZATION_LEVER_2_MATRIX_SLEEP.md) |
+| **TCK-DONE-006** | Sandbox Hardening & Directory Isolation (Security) | Phase 2.6 (Security) | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-006-sandbox-hardening.md) | [CHANGELOG.md](../.tickets/resources/done/CHANGELOG.md) |
+| **TCK-DONE-007** | Geological Planetary Core Regeneration | Epic 1 (V9.5) / World Physics | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-007-geological-regeneration.md) | [CHANGELOG.md](../.tickets/resources/done/CHANGELOG.md) |
+| **TCK-DONE-008** | Structural Decay & Maintenance Grace Period | Epic 1 (V9.5) / World Physics | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-008-structural-decay.md) | [CHANGELOG.md](../.tickets/resources/done/CHANGELOG.md) |
+| **TCK-DONE-009** | DRY Core Services & Unified SDK | Refactoring Plan V10.5 | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-009-dry-services-unified-sdk.md) | [REFACTORING_PLAN.md](../.tickets/resources/done/REFACTORING_PLAN.md) |
+| **TCK-DONE-010** | Modular LLM-Connector-Layer & AI-Bridge (Drivers) | Epic 2 (V10.0) / AI-Kognition | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-010-modular-llm-connector.md) | [LOCAL_LLM_MIGRATION](../.tickets/resources/done/LOCAL_LLM_MIGRATION.md), [EVALUATION](../.tickets/resources/done/FREE_CLOUD_AND_AI_LABS_EVALUATION.md) |
+| **TCK-DONE-011** | V12.0 WebSocket Real-Time Reactive Architecture | V12.0 Monitor Upgrade | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-011-v12-websocket-architecture.md) | [V12_REACTIVE_UPGRADE](../.tickets/resources/done/V12_REALTIME_REACTIVE_UPGRADE.md), [FRONTEND_ARCH](../.tickets/resources/done/FRONTEND_ARCHITECTURE.md) |
+| **TCK-DONE-012** | Memory Heritage & Hard-Boot Chronology | Phase 2.6 (Cognitive Architecture) | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-012-memory-heritage-hardboot.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/todo/IDEAS_AND_TASKS.md) |
+| **TCK-DONE-013** | Runner-Level Auto-Radio-Poll (Phase Batching) | System Design Update | `closed` | `high` | [Link](../.tickets/closed/TCK-DONE-013-runner-level-auto-poll.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/todo/IDEAS_AND_TASKS.md), [SYNERGY_SPEC](../.tickets/resources/todo/REALTIME_VS_STANDBY_SYNERGY.md) |
+| **TCK-TODO-101** | Agent Hardware Upgrades & Leveling | Epic 2 (V10.0) / Phase 2.5 | `open` | `high` | [Link](../.tickets/open/TCK-TODO-101-agent-hardware-upgrades.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/todo/IDEAS_AND_TASKS.md) |
+| **TCK-TODO-102** | Vessel Retrofitting (Feld-Upgrades) | Epic 2 (V10.0) / Freestyle Engineering | `open` | `medium` | [Link](../.tickets/open/TCK-TODO-102-vessel-retrofitting.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ROADMAP_WORLD](../.tickets/resources/todo/ROADMAP_WORLD_MECHANICS.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
+| **TCK-TODO-105** | SSoT System Instructions Script-Physics Clarification | System Design Update | `open` | `medium` | [Link](../.tickets/open/TCK-TODO-105-script-physics-clarification.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/todo/IDEAS_AND_TASKS.md) |
+| **TCK-TODO-106** | SSoT Sektor-Weichen: "Ready for Factions" (Epic 3 Setup) | Epic 3 (V11.0) / Runway | `open` | `medium` | [Link](../.tickets/open/TCK-TODO-106-factions-runway-setup.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
+| **TCK-TODO-107** | SSoT Sektor-Weichen: "Ready for Goals" (Epic 4 Setup) | Epic 4 / Runway | `open` | `medium` | [Link](../.tickets/open/TCK-TODO-107-goals-runway-setup.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md) |
+| **TCK-TODO-108** | SSoT Sektor-Weichen: "Ready for Deeper Verse" (Epic 5 Setup) | Epic 5 / Runway | `open` | `low` | [Link](../.tickets/open/TCK-TODO-108-deeper-verse-runway-setup.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md), [ROADMAP_WORLD](../.tickets/resources/todo/ROADMAP_WORLD_MECHANICS.md) |
+| **TCK-TODO-109** | KMI Drohnen-Steuerung & Code-Sharing | Epic 2 (V10.0) / Automation | `open` | `medium` | [Link](../.tickets/open/TCK-TODO-109-drone-kmi-marketplace.md) | [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md), [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md) |
+| **TCK-TODO-110** | Frontend Advanced Visualization & Bling-Bling Features | V12.0 Monitor Upgrade | `open` | `low` | [Link](../.tickets/open/TCK-TODO-110-frontend-advanced-visuals.md) | [FRONTEND_ARCH](../.tickets/resources/done/FRONTEND_ARCHITECTURE.md), [V12_REACTIVE_UPGRADE](../.tickets/resources/done/V12_REALTIME_REACTIVE_UPGRADE.md) |
+| **TCK-TODO-111** | Interstellar Warp Gates (Warp Tunneling) | Epic 1 (V9.5) / Advanced Hardware | `open` | `low` | [Link](../.tickets/open/TCK-TODO-111-interstellar-warp-gates.md) | [ROADMAP_WORLD](../.tickets/resources/todo/ROADMAP_WORLD_MECHANICS.md), [REFACTORING](../.tickets/resources/done/REFACTORING_PLAN.md) |
+| **TCK-TODO-112** | SCUT 2.0 & Cipher Comms (Diplomacy vs. Eavesdropping) | Epic 3 (V11.0) / Factions | `open` | `medium` | [Link](../.tickets/open/TCK-TODO-112-scut-2-cipher-comms.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
+| **TCK-TODO-113** | Sovereignty Hacking & Takeovers | Epic 3 (V11.0) / Hacking | `open` | `medium` | [Link](../.tickets/open/TCK-TODO-113-sovereignty-hacking.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
+| **TCK-TODO-114** | Großes Struktur- & Architektur-Refactoring | V13.0 Clean Architecture | `open` | `high` | [Link](../.tickets/open/TCK-TODO-114-codebase-restructuring.md) | [SYSTEM_ARCHITECTURE](../docs/SYSTEM_ARCHITECTURE.md) |
+| **TCK-TODO-115** | GitHub Issues & Projects Direct Code Sync | Developer Experience & CI | `open` | `medium` | [Link](../.tickets/open/TCK-TODO-115-github-sync.md) | [EPIC_CONSOLIDATION_BACKLOG](../docs/EPIC_CONSOLIDATION_BACKLOG.md) |
 
 ---
 
-### [TCK-DONE-004] Persistent CAD Blueprints & Shipyard Construction
-- **Epic / Phase:** Epic 2 (V10.0) / Phase 2.0 (Freestyle Engineering)
-- **Status:** `DONE` (Zusammengeführt in V10.5)
-- **Description:** Agenten können Schiffe frei aus Modul-Kacheln (Chassis, Engine, Cargo, Solar, Comm) entwerfen. Die SDK bewertet diese physikalisch (Zero-Sum Engine) und speichert sie als persistente Blueprints ab, welche asynchron/schrittweise in Werften gebaut werden können.
-- **Verification (Code SSoT):**
-  - **DB Schema:** Tabelle `blueprints` speichert `matrix_json` und `stats_json`. Tabelle `ships` besitzt die Spalten `progress_matter` und `required_matter` für schrittweisen Bau.
-  - **Source Code:** 
-    - `bob_os/core/lib/sdk/journal.py` -> `design_blueprint()` und `save_blueprint()`.
-    - `bob_os/core/lib/sdk/actuators.py` -> `build_ship()` für schrittweisen/asynchronen Aufbau in der Werft.
-- **System Impact:** Erschafft emergentes Gameplay (spezialisierte Schiffs-Klassen wie Frachter, Miner, fliegende Batterien).
+## 🛠️ BETRIEBSANLEITUNG FÜR DAS IN-CODE TICKETSYS
 
+### 1. Ein neues Ticket erstellen
+Erstelle eine neue Markdown-Datei in `.tickets/open/` nach folgender Namenskonvention:
+`TCK-TODO-<ID>-<short-slug>.md`
+
+Die Datei **muss** mit dem standardisierten YAML Frontmatter beginnen:
+```markdown
+---
+id: TCK-TODO-XXX
+title: "Einzeiliger aussagekräftiger Titel"
+epic_phase: "Zugeordnetes Epic / Meilenstein"
+status: "open"
+priority: "high | medium | low"
+created: YYYY-MM-DD
+dependencies: ["TCK-DONE-YYY"]
 ---
 
-### [TCK-DONE-005] Networked Replication (System Energy Pull)
-- **Epic / Phase:** Phase 2.5 (Energy Pipeline)
-- **Status:** `DONE` (Zusammengeführt in V10.5)
-- **Description:** Die Replikation (`replicate()`) zieht die benötigte Energie primär aus dem lokalen Systemnetz (Solar-Collector/Silo-Netz). Der Bob steuert nur dann persönlich Energie bei, wenn das Sektor-Netz erschöpft ist.
-- **Verification (Code SSoT):**
-  - **DB Schema:** `systems` Tabelle besitzt `energy_depot`.
-  - **Source Code:** `bob_os/core/lib/sdk/actuators.py` (Zeilen 612-618):
-    ```python
-    energy_from_sys = min(system['energy_depot'], energy_cost)
-    energy_from_agent = energy_cost - energy_from_sys
-    ```
-- **System Impact:** Verhindert kognitive "Warte-Paralysen" der Bobs, da sie nicht rundenlang persönlich Batterien laden müssen.
+## Description
+Ausführliche Soll-Beschreibung des Features...
 
----
+## Verified Code Gap
+- **DB Schema:** Welche Spalten/Tabellen fehlen
+- **Code Path:** Welche Dateien müssen angepasst werden
+```
 
-### [TCK-DONE-006] Sandbox Hardening & Directory Isolation (Security)
-- **Epic / Phase:** Phase 2.6 (Security)
-- **Status:** `DONE` (Zusammengeführt in V10.5)
-- **Description:** Blockiert dateiverändernde Befehle (`[WRITE]`, `[REPLACE]`, `[READ]`) auf Systemdateien oder Hardware-Tools außerhalb des `scripts/`-Verzeichnisses.
-- **Verification (Code SSoT):**
-  - **Source Code:** `sim_engine/utils/environment.js` (Zeilen 105-110 und 145-149) prüft hart ab:
-    ```javascript
-    if (!filePath.startsWith("scripts/")) {
-        feedback += `[DENIED: '${filePath}' - You are only allowed to modify files in the 'scripts/' directory...]`;
-        continue;
-    }
-    ```
-- **System Impact:** 100%ige Abwehr von Sabotage, Cheats oder fehlerhaften Überschreibungen der Admin-Tools durch Agenten-Skripte.
+### 2. Ein Ticket in Arbeit nehmen (`open` -> `ongoing`)
+Sobald mit der aktiven Implementierung eines Tickets begonnen wird:
+1. Verschiebe die Datei von `.tickets/open/` nach `.tickets/ongoing/` (vorzugsweise via `git mv`).
+2. Ändere im YAML Frontmatter das Feld `status` auf `"ongoing"`.
+3. Aktualisiere die Zeile im obigen Register (`docs/EPIC_CONSOLIDATION_BACKLOG.md`).
 
----
+### 3. Ein Ticket schließen (`ongoing` / `open` -> `closed`)
+Wenn ein Ticket erfolgreich implementiert wurde:
+1. Verschiebe die Datei von `.tickets/ongoing/` (oder `.tickets/open/`) nach `.tickets/closed/` (vorzugsweise via `git mv`).
+2. Ändere im YAML Frontmatter das Feld `status` auf `"closed"`.
+3. Füge das Feld `completed: YYYY-MM-DD` im Frontmatter hinzu.
+4. Ändere die Überschrift `## Verified Code Gap` zu `## Verification (Code SSoT)` und dokumentiere die exakte Implementierung im Code (Klassen, Dateien, Zeilen, Tests).
+5. Aktualisiere die Zeile im obigen Register (`docs/EPIC_CONSOLIDATION_BACKLOG.md`).
 
-### [TCK-DONE-007] Geological Planetary Core Regeneration
-- **Epic / Phase:** Epic 1 (V9.5) / World Physics
-- **Status:** `DONE` (Zusammengeführt in V8.8+)
-- **Description:** Planetenkerne regenerieren langsam Materie, damit ausgebeutete Sektoren nicht als dauerhafte Friedhöfe enden.
-- **Verification (Code SSoT):**
-  - **DB Schema:** `systems` besitzt `extractable_matter_in_core` und `max_extractable_matter`.
-  - **Source Code:** `bob_os/core/bin/physics_update.py` (Geological Update):
-    ```python
-    cursor.execute("UPDATE systems SET extractable_matter_in_core = MIN(extractable_matter_in_core + ?, max_extractable_matter)", (core_regen,))
-    ```
-- **System Impact:** Schafft einen Anreiz zur langfristigen Besiedlung und Automation (passive Sonden-Ernte) alter Systeme.
-
----
-
-### [TCK-DONE-008] Structural Decay & Maintenance Grace Period
-- **Epic / Phase:** Epic 1 (V9.5) / World Physics
-- **Status:** `DONE` (Zusammengeführt in V8.8+)
-- **Description:** Jedes Gebäude verliert pro Runde HP, erhält aber nach Reparatur oder Fertigstellung einen Cooldown, in dem kein HP-Verfall stattfindet (beseitigt den 99-HP-Loop Bug).
-- **Verification (Code SSoT):**
-  - **DB Schema:** `infrastructure` Tabelle besitzt `health`, `max_health` und `maintenance_cooldown`.
-  - **Source Code:** `bob_os/core/bin/physics_update.py` dekrementiert `maintenance_cooldown` und zieht nur dann `decay_rate` von `health` ab, wenn dieser auf 0 steht.
-- **System Impact:** Massiver Token-Saver, da Agenten nicht jede Runde reparieren müssen.
-
----
-
-### [TCK-DONE-009] DRY Core Services & Unified SDK
-- **Epic / Phase:** Refactoring Plan V10.5
-- **Status:** `DONE` (Zusammengeführt in V10.5)
-- **Description:** Zerschlagung der alten massiven, hartcodierten Python-Scripte und Zusammenführung aller Aktionen in ein modulares SDK, das über einen zentralen `agent_service`, `config_service` und `physics_service` gesteuert wird.
-- **Verification (Code SSoT):**
-  - **Source Code:**
-    - `bob_os/core/lib/config_service.py` -> Lädt Konstanten direkt aus der SSoT JSON (`ECONOMY_RULES.json`).
-    - `bob_os/core/lib/physics_service.py` -> Zustandlose Berechnungslogik (Upgrade-Kosten, Distanzen, CAD-Evaluator).
-    - `bob_os/core/lib/agent_service.py` -> Zentraler DB-Zugriff und Kapselung der Ressourcen-Aktualisierung.
-    - `bob_os/core/lib/bob_sdk.py` -> Schlanke Delegations-Facade, die auf modulare Submodule unter `bob_os/core/lib/sdk/` verweist.
-- **System Impact:** Erreicht absolute DRY-Präzision und sorgt dafür, dass Änderungen in `ECONOMY_RULES.json` sofort im gesamten Universum greifen.
-
----
-
-## 🧭 SYSTEM BACKLOG (Offene Tickets - Status: `OPEN`)
-
-Diese Tickets stellen das verifizierte Entwicklungsprogramm für die kommenden Phasen dar. Jedes Ticket enthält eine genaue Code-Analyse des Implementierungsbedarfs ("Code Gaps"):
-
-### [TCK-TODO-101] Agent Hardware Upgrades & Leveling
-- **Epic / Phase:** Epic 2 (V10.0) / Phase 2.5 (Agenten-Upgrades)
-- **Priority:** `Prio 1 (Critical)`
-- **Status:** `OPEN`
-- **Description:** Ermöglicht den physischen Aufstieg von Replicanten-Hüllen (nicht Schiffen!) in vier Attributen: `storage_level`, `engine_level`, `sensor_level` und `core_level` über exponentielle Materie-/Energiekosten mittels eines neuen SDK-Befehls `me.upgrade_self(module_type)`.
-- **Verified Code Gap:**
-  - **DB Schema:** In `init_db.py` (Tabelle `agents`) fehlen die Spalten `storage_level`, `engine_level`, `sensor_level` und `core_level`.
-  - **Code Path:** 
-    - In `bob_os/core/lib/sdk/actuators.py` fehlt die Implementierung einer `upgrade_self()` Methode.
-    - In `bob_os/core/bin/bob.py` fehlt das CLI-Binding.
-- **Dependencies:** [TCK-DONE-001] (Separation of Bob & Vessel).
-- **Synergies:** Die Timeouts für autonome Skripte in `runner.js` sollen direkt mit dem `core_level` des betreibenden Geists skalieren.
-
----
-
-### [TCK-TODO-102] Vessel Retrofitting (Feld-Upgrades)
-- **Epic / Phase:** Epic 2 (V10.0) / Freestyle Engineering
-- **Priority:** `Prio 2 (Medium)`
-- **Status:** `OPEN`
-- **Description:** Ermöglicht es Agenten, unbemannte oder eigene Schiffe im Feld (außerhalb einer Werft) mit Plug-and-Play-Modulen (z.B. Waffen, Sensoren, Triebwerken) nachzurüsten. Nutzt denselben physikalischen CAD-Evaluator wie das Blueprint-System.
-- **Verified Code Gap:**
-  - **Code Path:** Keine Repräsentation von `retrofit` oder `evaluate_module` in `bob_os/core/lib/sdk/actuators.py` oder `physics_service.py`.
-- **Dependencies:** [TCK-DONE-004] (Persistent CAD Blueprints).
-- **Synergies:** Ermöglicht dynamische taktische Anpassungen vor Schlachten oder Expeditionen in feindliche Sektoren.
-
----
-
-### [TCK-TODO-103] Memory Heritage & Hard-Boot Chronology
-- **Epic / Phase:** Phase 2.6 (Cognitive Architecture)
-- **Priority:** `Prio 1 (Critical)`
-- **Status:** `OPEN`
-- **Description:** Erschafft ein stabiles psychologisches Fundament für neu geklonte Instanzen. Der `MemoryArchitect` komprimiert die Erinnerungen des Vaters während der Klonzeit asynchron. Beim ersten Erwachen injiziert der Runner ein festes Chronologie-Paket: `[GEERBTE ERINNERUNGEN]` -> `[SYSTEM BOOT]` (Automatischer Dashboard-Aufruf) -> `[DIREKTIVE DES ERSCHAFFERS]`.
-- **Verified Code Gap:**
-  - **Code Path:** Es gibt keinen `MemoryArchitect` in `sim_engine/utils/` oder `runner.js`. Der Klon-Onboarding-Prozess in `actuators.py` (Replication) injiziert derzeit nur einen statischen `clone_prompt` in `population.json`, aber keine strukturierte Historien-Matrix im Runner.
-- **Dependencies:** `memory_controller.js` (Adaptive Token Distillation).
-- **Synergies:** Verhindert kognitive Dissonanz, Schizophrenie und Planlosigkeit ("Wandern im Kreis") frisch geborener Klone.
-
----
-
-### [TCK-TODO-104] Runner-Level Auto-Radio-Poll
-- **Epic / Phase:** System Design Update (Prio 1)
-- **Priority:** `Prio 1 (Critical)`
-- **Status:** `OPEN`
-- **Description:** Der Node.js Runner muss am Ende des Cycles automatisch `poll_radio.py` ausführen. Aktuell verpassen schlafende oder beschäftigte Agenten SCUT-Mitteilungen oder Katastrophen-Warnungen, weil sie das manuelle Abholen im Skript-Stress vergessen.
-- **Verified Code Gap:**
-  - **Code Path:** In `sim_engine/runner.js` und `automation.js` gibt es keinerlei Logik, die `poll_radio.py` oder dessen SQLite-Gegenstück am Ende oder Anfang der Runde automatisch triggert.
-- **Dependencies:** [TCK-DONE-002] (Info-Buffering).
-- **Synergies:** Erlaubt echte asynchrone Mesh-Koordination.
-
----
-
-### [TCK-TODO-105] SSoT System Instructions Script-Physics Clarification
-- **Epic / Phase:** System Design Update (Prio 1)
-- **Priority:** `Prio 2 (Medium)`
-- **Status:** `OPEN`
-- **Description:** Ergänzung der `global_system_instruction` in `core-config.json` um den expliziten Hinweis, dass physikalische Aktionen aus autonomen Python-Skripten heraus **ausschließlich** via `print("[RUN: ...]")` abgesetzt werden dürfen (direkte Subprozesse kollidieren mit dem Sandbox-Pfad).
-- **Verified Code Gap:**
-  - **Code Path:** In `sim_engine/core-config.json` fehlt dieser Warnhinweis in den system prompts.
-- **Dependencies:** [TCK-DONE-006] (Sandbox Hardening).
-
----
-
-### [TCK-TODO-106] SSoT Sektor-Weichen: "Ready for Factions" (Epic 3 Setup)
-- **Epic / Phase:** Epic 3 (V11.0) / Runway
-- **Priority:** `Prio 2 (Medium)`
-- **Status:** `OPEN`
-- **Description:** Vorbereitende relationale Datenbank-Struktur im Kernel zur Vorbereitung auf Fog-of-War und Territorialkämpfe.
-- **Verified Code Gap:**
-  - **DB Schema:** Es fehlen Spalten `faction_id TEXT DEFAULT 'Alliance'` in den Tabellen `agents`, `ships`, `infrastructure`. Die Tabelle `factions` (`id TEXT PRIMARY KEY, relationship TEXT DEFAULT 'Neutral'`) existiert nicht.
-  - **Code Path:** `sensors.py` -> `local_system()` besitzt noch keine Sensor-Isolation zur Maskierung feindlicher Entitäten als `[UNKNOWN SIGNATURE]`.
-- **Dependencies:** Keine. Kann risikofrei über eine Schema-Migration eingepflegt werden.
-- **Synergies:** Fundament für kompetitives Gameplay.
-
----
-
-### [TCK-TODO-107] SSoT Sektor-Weichen: "Ready for Goals" (Epic 4 Setup)
-- **Epic / Phase:** Epic 4 / Runway
-- **Priority:** `Prio 2 (Medium)`
-- **Status:** `OPEN`
-- **Description:** Vorbereitende relationale Tabellen für Achievements und Missions-Meilensteine sowie ein stummer, ressourcenschonender SDK-Metrik-Tracker (`metrics_tracker.py`), um Aktivitäten im Hintergrund zu zählen.
-- **Verified Code Gap:**
-  - **DB Schema:** Fehlende Tabellen `missions` (`id INTEGER PRIMARY KEY, title TEXT, progress INTEGER, target INTEGER, status TEXT`) und `achievements` (`id TEXT PRIMARY KEY, unlocked_at INTEGER`).
-  - **Code Path:** Kein `metrics_tracker.py` im SDK vorhanden.
-- **Dependencies:** Keine.
-- **Synergies:** Gibt den Agenten einen harten mathematischen "Drive", Meilensteine anzustreben, anstatt ziellos Rohstoffe zu horten.
-
----
-
-### [TCK-TODO-108] SSoT Sektor-Weichen: "Ready for Deeper Verse" (Epic 5 Setup)
-- **Epic / Phase:** Epic 5 / Runway
-- **Priority:** `Prio 3 (Low)`
-- **Status:** `OPEN`
-- **Description:** Erweiterung des Universums um Sektor-Typisierungen (Standard, Hyper-Solares, Toxisch, Schwarzes Loch) und Hinzufügen einer echten `integrity` (HP)-Säule für Sonden/Schiffe, um strukturellen Verschleiß in toxischen Sektoren zu simulieren.
-- **Verified Code Gap:**
-  - **DB Schema:** In Tabelle `systems` fehlen die Spalten `system_class TEXT DEFAULT 'Standard'`, `temperature REAL DEFAULT 1.0`, `hazard_type TEXT DEFAULT 'None'`.
-  - **Code Path:** `physics_update.py` besitzt keine Logik zur Schadensberechnung an Schiffen/Sonden basierend auf der Sektor-Typisierung.
-- **Dependencies:** Keine.
-- **Synergies:** Zwingt Agenten zur vorausschauenden Instandhaltung und physikalischen Risikobewertung.
+### 4. Git-Commit Verknüpfung
+Verweise in Commit-Messages immer auf die jeweilige Ticket-ID, um die Historie unbestechlich nachvollziehbar zu halten:
+`git commit -m "feat(sdk): implement upgrade_self actuator (ref TCK-TODO-101)"`

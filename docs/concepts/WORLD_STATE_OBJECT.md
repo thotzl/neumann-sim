@@ -1,56 +1,95 @@
-# Bobiverse Tactical Dashboard (Visualisierung v2.0)
+# 📊 SYSTEM SCHEMA: WORLD STATE DATA CONTRACT (V12.0)
 
-## 1. Technischer Stack (Modern & Performant)
-- **Runtime:** Bun (für extrem schnelles Bootstrapping und Paketmanagement).
-- **Sprache:** TypeScript (durchgängige Typisierung des World States).
-- **Frontend-Framework:** Vite + React (für reaktives State-Management).
-- **State-Handling:** 
-    - **Backend:** Der Node.js Runner exportiert nach jedem Turn ein typisiertes `WorldState` Interface als JSON.
-    - **Frontend:** Deep-Merge Logik (z.B. mit `immer` oder `fast-deep-equal`), um nur geänderte UI-Elemente neu zu rendern.
+Dieses Dokument definiert das standardisierte, durchgängig typisierte Datenmodell (Data Contract) für die Übertragung und Visualisierung des Sektor-Zustands im Bob-OS Universum.
 
-## 2. World State Schema (Typisierung)
+---
+
+## 1. Das TypeScript-Interface (Schnittstellen-Definition)
+
 ```typescript
-interface Agent {
-  id: string;
-  location: string;
-  matter: number;
-  energy: number;
-  status: 'active' | 'hibernation' | 'moving';
-  last_manifestation: string; // Für Sprechblasen / Log
+export interface Infrastructure {
+  id: number;
+  type: 'matter_silo' | 'solar_collector' | 'shipyard' | 'advanced_shipyard' | 'matter_refinery' | 'sat_link' | 'comms_relay' | 'sem_matrix' | 'mind_forge' | 'deep_space_scanner';
+  status: 'active' | 'under_construction' | 'blackout';
+  health: number;
+  max_health: number;
+  level: number;
+  progress_matter: number;
+  required_matter: number;
 }
 
-interface System {
+export interface System {
   name: string;
-  resources: number;
-  infrastructure: Array<{type: string, progress: number}>;
+  x: number;
+  y: number;
+  raw_matter_depot: number;
+  refined_matter_stored: number;
+  energy_depot: number;
+  extractable_matter_in_core: number;
+  max_extractable_matter: number;
+  infra: Infrastructure[];
 }
 
-interface WorldState {
+export interface Agent {
+  id: string;
+  chosen_name: string;
+  status: 'active' | 'hibernation' | 'traveling' | 'dead';
+  location: string; // Dynamisch aufgelöst ('Interstellar' oder Sektor-Name)
+  host_type: 'ship' | 'matrix' | null;
+  host_id: string | null;
+  energy: number;
+  last_manifestation: string; // Die Gedanken (ANALYSE) des letzten Turns
+}
+
+export interface Ship {
+  id: number;
+  name: string;
+  blueprint_name: string;
+  chassis: string;
+  pilot_id: string | null;
+  system_name: string;
+  mass: number;
+  thrust: number;
+  max_speed: number;
+  energy_capacity: number;
+  energy_inventory: number;
+  raw_matter_inventory: number;
+  refined_matter_inventory: number;
+  matter_storage_capacity: number;
+}
+
+export interface VisualEvent {
+  rowid: number;
+  cycle: number;
+  location: string;
+  actor_id: string;
+  event_type: string;
+  description: string;
+}
+
+export interface WorldState {
   tick: number;
-  last_agent: string;
+  stardate: number;
+  total_turns: number;
+  timestamp: number;
   systems: System[];
   agents: Agent[];
-  events: Array<{type: string, description: string}>;
+  ships: Ship[];
+  memos: Array<{ id: number; agent_id: string; content: string; status: 'open' | 'closed' }>;
+  docs: Array<{ id: number; system_name: string; title: string; content: string; author_id: string }>;
+  blueprints: Array<{ id: number; name: string; author_id: string; stats: any }>;
+  visual_events: VisualEvent[];
 }
 ```
 
-## 3. UI-Komponenten (Layout)
-- **Tactical Map (Center):** 
-    - 2D/Canvas Darstellung der Sternensysteme.
-    - Agenten als animierte Icons.
-    - **Sprechblasen:** Kurze Einblendungen der `ANALYSE` über dem Agenten-Icon bei einem Turn.
-- **Agent Monitor (Sidebar):** 
-    - Liste aller Bobs mit Fortschrittsbalken für Energie und Materie.
-- **Log Window (Bottom):** 
-    - Echtzeit-Stream der `log.md`. Zeigt Manifestationen und System-Resonanzen.
-    - Filterbar nach Agenten-ID.
+---
 
-## 4. Perspektivische Ziele (Bling-Bling)
-- **Path-Lines:** Visuelle Linien zwischen Systemen bei `move.py`.
-- **Event-Flashes:** Rote Warnsymbole bei HP-Verlust, grüne bei Replikation.
-- **Time-Control:** Slider im Dashboard, um durch vergangene Ticks der aktuellen Simulation zu "scrubben".
+## 2. Dynamic Location Resolving & Mapping (Core-to-Frontend)
+Um den Speicherplatz in SQLite zu minimieren, speichert die Datenbank keine redundanten Positionswerte für Agenten. Der State Exporter (`state_exporter.js`) reichert das JSON-Schema zur Laufzeit dynamisch an:
 
-## 5. Implementierungs-Strategie
-1.  **Phase 1:** Runner-Update für `world_state.json` Export nach jedem Turn.
-2.  **Phase 2:** Bun/Vite/TS Grundgerüst mit einfachem JSON-Polling.
-3.  **Phase 3:** Integration der Sprechblasen und des Log-Fensters.
+1. **Replikant ist Passagier/Pilot (`host_type = 'ship'`):**
+   - Holt die `system_name` aus der verknüpften Werft-Tabelle `ships` auf Basis der `host_id` und injiziert sie als `location`.
+2. **Replicant ist de-embodied im Sektor (`host_type = 'matrix'`):**
+   - Ermittelt über die `host_id` das entsprechende Sektor-Gebäude (`sem_matrix` / `mind_forge`) aus der `infrastructure` Tabelle und injiziert dessen `system_name` als `location`.
+3. **Replicant fliegt interstellar (`status = 'traveling'`):**
+   - Setzt `location` fest auf `'Interstellar'` und injiziert die flüchtigen Sprung-Koordinaten in das `transit` Objekt.

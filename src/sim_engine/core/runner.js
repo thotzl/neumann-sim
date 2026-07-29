@@ -20,7 +20,10 @@ async function run() {
         process.exit(1);
     }
 
-    const vDir = path.join(__dirname, '../../../experiments', version);
+    const vDir = __dirname.includes('experiments')
+        ? path.resolve(__dirname, '..', '..')
+        : path.resolve(__dirname, '../../../experiments', version);
+        
     if (!fs.existsSync(vDir)) {
         console.error(`Experiment directory not found: ${vDir}`);
         process.exit(1);

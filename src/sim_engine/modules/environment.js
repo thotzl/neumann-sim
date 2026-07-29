@@ -176,6 +176,11 @@ function processActions(text, universeDir, agentId, state) {
             const safeFuncPart = funcPart.replace(/'/g, "'\\''");
             const aclState = state.security?.acl || {};
             cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py '${safeFuncPart}'`;
+        } else if (cmd.startsWith("me.")) {
+            const funcPart = cmd.replace(/^me\./, "").trim();
+            const safeFuncPart = funcPart.replace(/'/g, "'\\''");
+            const aclState = state.security?.acl || {};
+            cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py '${safeFuncPart}'`;
         } else if (cmd.startsWith("me(")) {
             const safeFuncPart = cmd.substring(2).replace(/'/g, "'\\''");
             const aclState = state.security?.acl || {};

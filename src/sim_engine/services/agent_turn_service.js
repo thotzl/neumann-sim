@@ -50,15 +50,18 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     console.log(`  Turn: ${agent.id}`);
     const inbox = state.global_inbox[agent.id] || [];
     let inboxText = "";
-    inbox.forEach(m => {
-        if (m.type === 'scut') {
-            inboxText += `[SCUT] From ${state.agentNames?.[m.sender] || m.sender} (ID: ${m.sender}): ${m.content}\n`;
-        } else if (m.type === 'vog') {
-            inboxText += `[VOICE OF GOD]: ${m.text}\n`;
-        } else if (m.type === 'system') {
-            inboxText += `[SYSTEM ALERT]: ${m.text}\n`;
-        }
-    });
+    if (inbox.length > 0) {
+        inboxText += "\n[INBOX (Events of the last cycle)]:\n";
+        inbox.forEach(m => {
+            if (m.type === 'scut') {
+                inboxText += `[SCUT] From ${state.agentNames?.[m.sender] || m.sender} (ID: ${m.sender}): ${m.content}\n`;
+            } else if (m.type === 'vog') {
+                inboxText += `[VOICE OF GOD]: ${m.text}\n`;
+            } else if (m.type === 'system') {
+                inboxText += `[SYSTEM ALERT]: ${m.text}\n`;
+            }
+        });
+    }
     // Flush processed inbox messages
     state.global_inbox[agent.id] = [];
 
@@ -66,26 +69,53 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     let dashboardOut = "";
     try {
         dashboardOut = runPython(vDir, `core/bin/bob.py`, ['dashboard()'], { bobId: agent.id, aclState: state.security?.acl || {} });
-        if (dashboardOut && dashboardOut.trim()) {
-            inboxText += `\n[CURRENT ENVIRONMENT (REALTIME)]:\n${dashboardOut.trim()}\n`;
-        }
     } catch (e) {
         console.error(`    [DASHBOARD-ERROR] ${agent.id} failed:`, e.message);
     }
 
-    // Pre-boot local hardware states
-    const hardwareInfo = envManager.getEnvState(universeDir);
+    // Prepare Payload (Sensory & Perceptual Prompts Assembly)
+    let promptText = "";
+    if (inboxText) {
+        promptText += inboxText;
+    }
 
-    // Build LLM Payload (Pillar 1 Prompting)
-    const payload = {
-        agentId: agent.id,
-        histories: state.histories[agent.id],
-        memory: memory,
-        envState: hardwareInfo,
-        globalInstr: config.system_instruction || "",
-        systemPrompt: agent.system_prompt || "",
-        inboxContent: inboxText
-    };
+    let contextArray = [...state.histories[agent.id]];
+
+    if (agent.needsResumeNotify) {
+        promptText += `\n[SYSTEM NOTIFICATION]: Spacetime interferences stabilized. Sensor feeds reactivated.\n`;
+        agent.needsResumeNotify = false;
+    }
+
+    if (agent.wakeup_notification) {
+        promptText += agent.wakeup_notification;
+        agent.wakeup_notification = ""; // Clear
+    }
+
+    if (dashboardOut && dashboardOut.trim()) {
+        promptText += `\n[CURRENT ENVIRONMENT (REALTIME)]:\n${dashboardOut.trim()}\n`;
+    }
+
+    const myWallet = state.security?.wallets?.[agent.id] || {};
+    promptText += `\n[YOUR KEYRING]: ${Object.keys(myWallet).length > 0 ? JSON.stringify(myWallet) : "Empty."}\n`;
+    
+    // Retrieve static hardware/system state (coordinates, depots, local ship registries)
+    const envState = envManager.getEnvState(universeDir);
+    promptText += `\nCurrent Environment:\n${envState}\n`;
+    
+    // System formatting constraints
+    promptText += `\nRespond strictly in protocol format (1. ANALYSIS followed by 2. ACTION).\n`;
+    
+    contextArray.push({ agent: "System", text: promptText });
+
+    // Build official model-specific payload via AIBridge buildContext
+    const payload = agentBridge.buildContext(
+        agent.id,
+        contextArray,
+        memory,
+        null,
+        config.system_instruction || "",
+        agent.system_prompt || ""
+    );
 
     // 3. --- LLM GATEWAY INTERACTION ---
     let responseText = "";
@@ -94,7 +124,7 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         responseText = await agentBridge.generateText(payload);
     } catch (err) {
         console.error(`    [LLM-ERROR] ${agent.id} failed:`, err.message);
-        responseText = "[RUN: me.wait()]"; // Graceful fail-safe fallback
+        responseText = "1. ANALYSIS:\nI am waiting.\n2. ACTION:\n[RUN: me.sleep(duration=1)]"; // Graceful fail-safe fallback (deprecated wait equivalent)
     }
 
     // 4. --- ACTIONS PARSING & SIMULATION EXECUTION ---
@@ -113,8 +143,13 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         formattedTurnHistory = `${formattedTurnHistory}\n\n[ACTIONS FEEDBACK]:\n${feedback.trim()}`;
     }
 
-    // Save history
-    state.histories[agent.id].push({ agent: agent.id, text: formattedTurnHistory });
+    // Save history (Diary-Only model: Extract and store ONLY the thoughts/ANALYSIS for permanent history)
+    if (responseText) {
+        const analyseMatch = responseText.match(/1\.\s*ANALYSIS:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
+                             || responseText.match(/ANALYSIS:([\s\S]*?)(?=ACTION:|$)/i);
+        const thoughts = analyseMatch ? "1. ANALYSIS:\n" + analyseMatch[1].trim() : responseText;
+        state.histories[agent.id].push({ agent: agent.id, text: thoughts });
+    }
 
     // Console Logging & File Log writes
     if (feedback) {

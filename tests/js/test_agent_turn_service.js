@@ -61,7 +61,7 @@ fs.mkdirSync(universeDir, { recursive: true });
                 const promptText = contextArray[contextArray.length - 1].text;
                 
                 // Assert all 6 message types are correctly parsed and formatted
-                assert.ok(promptText.includes("[Stardate: 1::1] From Unnamed (ID: Instance-2): scut_msg"), "SCUT formatting mismatch!");
+                assert.ok(promptText.includes("[SCUT] From Unnamed (ID: Instance-2) at 1::1: scut_msg"), "SCUT formatting mismatch!");
                 assert.ok(promptText.includes("[VOICE OF GOD]: vog_msg"), "VoG formatting mismatch!");
                 assert.ok(promptText.includes("[SYSTEM ALERT]: system_msg"), "System alert formatting mismatch!");
                 assert.ok(promptText.includes("[SYSTEM-AUTOMATION (LAST CYCLE)]:\nautomation_msg"), "Automation report formatting mismatch!");

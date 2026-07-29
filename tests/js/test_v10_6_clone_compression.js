@@ -18,8 +18,8 @@ const logFile = path.join(__dirname, 'dummy_birth.log');
 let state = {
     round: 1,
     agents: [
-        { id: "Instance-1", chosen_name: "Sovereign-Parent", alive: true, location: "SYS_X0_Y0" },
-        { id: "Instance-2", chosen_name: "Unnamed", alive: true, location: "SYS_X0_Y0" }
+        { id: "Instance-1", alive: true, location: "SYS_X0_Y0" },
+        { id: "Instance-2", alive: true, location: "SYS_X0_Y0" }
     ],
     agentNames: {
         "Instance-1": "Sovereign-Parent",

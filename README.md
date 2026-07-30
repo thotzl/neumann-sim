@@ -16,7 +16,7 @@ The simulation requires NodeJS (recommended: v11.11.0) due to native SQLite NAPI
 npm install
 
 # 2. Build a clean, isolated experiment sandbox
-python3 scripts/build.py expanse_2 --rounds 1500 --mission "Establish permanent colonization cradle."
+npm run build -- expanse_2 --rounds 1500 --mission "Establish permanent colonization cradle."
 
 # 3. Start the turn-based simulation loop
 npm run sim expanse_2

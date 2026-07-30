@@ -500,7 +500,9 @@ export class CanvasController {
         this.ctx.shadowBlur = isSelected ? glowRadius * 2.2 : glowRadius;
 
         // --- MINIATURE PLANETARY ORBITS & ROTATION (Phase 1) ---
-        if (s.system && s.system.planets.length > 0 && zoom > 0.32) {
+        // Gated aggressively to zoom > 0.55 (55%) so that orbit math and draw calls
+        // are skipped entirely when planets are too small to be recognized.
+        if (s.system && s.system.planets.length > 0 && zoom > 0.55) {
           const time = Date.now() * 0.00015; // smooth real-time tick
           
           s.system.planets.forEach((p) => {
@@ -522,7 +524,9 @@ export class CanvasController {
             // 2. Draw tiny Keplerian rotating planet
             const px = screenPos.x + Math.cos(angle) * orbitRadiusScreen;
             const py = screenPos.y + Math.sin(angle) * orbitRadiusScreen;
-            const pRadius = Math.max(0.6, p.radius * 0.45 * Math.max(0.5, Math.min(1.5, zoom)));
+            
+            // Scaled planet radius: minimum 1.2px for crisp visibility, capped at 3.2px for massive gas giants
+            const pRadius = Math.max(1.2, Math.min(3.2, p.radius * 0.65 * zoom));
 
             let pColor = '#a8a29e'; // default rocky grey
             if (p.type === 'Vulcanian') pColor = '#ef4444';

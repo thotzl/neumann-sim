@@ -29,7 +29,16 @@ export default function App() {
     maxJitter: 75,      // Chaos spacing (default 75 LY)
     minStellarMass: 0.08, // IMF boundary (default 0.08)
     maxStellarMass: 40.0, // IMF boundary (default 40.0)
-    stellarMassImf: 3.0   // Salpeter IMF Exponent curve skew (default 3.0)
+    stellarMassImf: 3.0,  // Salpeter IMF Exponent curve skew (default 3.0)
+    remnantChance: 0.001, // Stellar remnants chance (default 0.1%)
+    remnantPulsarLimit: 15.0, // Mass threshold between Pulsar and BlackHole (default 15.0 M_sun)
+    planetMinCount: 2,    // Standard minimum planet count (default 2)
+    planetMaxCount: 8,    // Standard maximum planet count (default 8)
+    planetTbOffset: 0.22, // Titius-Bode starting orbit distance offset (default 0.22)
+    planetTbSpacing: 1.45, // Titius-Bode spacing multiplier (default 1.45)
+    biomeBubbleChance: 0.09, // HIM Supernova bubble spawn probability (default 9%)
+    biomeGwellChance: 0.08, // Spacetime Gravity Well spawn probability (default 8%)
+    biomeGwellMult: 2.0   // Gravity Well mass/matter condensation multiplier (default 2.0)
   });
 
   // Real-time Visual HUD Tuning constants (only affects the Map presentation layer, not the simulation!)
@@ -55,6 +64,15 @@ export default function App() {
     UniverseGenerator.MIN_STELLAR_MASS = physics.minStellarMass;
     UniverseGenerator.MAX_STELLAR_MASS = physics.maxStellarMass;
     UniverseGenerator.STELLAR_MASS_IMF = physics.stellarMassImf;
+    UniverseGenerator.REMNANT_CHANCE = physics.remnantChance;
+    UniverseGenerator.REMNANT_PULSAR_LIMIT = physics.remnantPulsarLimit;
+    UniverseGenerator.PLANET_MIN_COUNT = physics.planetMinCount;
+    UniverseGenerator.PLANET_MAX_COUNT = physics.planetMaxCount;
+    UniverseGenerator.PLANET_TB_OFFSET = physics.planetTbOffset;
+    UniverseGenerator.PLANET_TB_SPACING = physics.planetTbSpacing;
+    UniverseGenerator.BIOME_BUBBLE_CHANCE = physics.biomeBubbleChance;
+    UniverseGenerator.BIOME_GWELL_CHANCE = physics.biomeGwellChance;
+    UniverseGenerator.BIOME_GWELL_MULT = physics.biomeGwellMult;
   }, [physics]);
 
   // Dynamically calculate starting system on seed/density changes, center camera on it, and reveal/select it!
@@ -403,7 +421,16 @@ export default function App() {
       maxJitter: 75,
       minStellarMass: 0.08,
       maxStellarMass: 40.0,
-      stellarMassImf: 3.0
+      stellarMassImf: 3.0,
+      remnantChance: 0.001,
+      remnantPulsarLimit: 15.0,
+      planetMinCount: 2,
+      planetMaxCount: 8,
+      planetTbOffset: 0.22,
+      planetTbSpacing: 1.45,
+      biomeBubbleChance: 0.09,
+      biomeGwellChance: 0.08,
+      biomeGwellMult: 2.0
     });
     setVisualTuning({
       sizeScale: 0.25,
@@ -741,6 +768,132 @@ export default function App() {
             step="0.1"
             value={physics.stellarMassImf}
             onChange={(e) => setPhysics(prev => ({ ...prev, stellarMassImf: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Remnants Spawn Probability */}
+        <div className="control-group">
+          <label>REMNANT_SPAWN_CHANCE: <strong>{(physics.remnantChance * 100).toFixed(2)}%</strong></label>
+          <input
+            type="range"
+            min="0.0005"
+            max="0.005"
+            step="0.0005"
+            value={physics.remnantChance}
+            onChange={(e) => setPhysics(prev => ({ ...prev, remnantChance: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Remnant Pulsar / BlackHole Limit */}
+        <div className="control-group">
+          <label>REMNANT_PULSAR_MASS_LIMIT: <strong>{physics.remnantPulsarLimit.toFixed(1)} M_sun</strong></label>
+          <input
+            type="range"
+            min="10.0"
+            max="25.0"
+            step="0.5"
+            value={physics.remnantPulsarLimit}
+            onChange={(e) => setPhysics(prev => ({ ...prev, remnantPulsarLimit: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Planet Min Orbits */}
+        <div className="control-group">
+          <label>PLANETS_MIN_COUNT: <strong>{physics.planetMinCount}</strong></label>
+          <input
+            type="range"
+            min="0"
+            max="4"
+            step="1"
+            value={physics.planetMinCount}
+            onChange={(e) => setPhysics(prev => ({ ...prev, planetMinCount: parseInt(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Planet Max Orbits */}
+        <div className="control-group">
+          <label>PLANETS_MAX_COUNT: <strong>{physics.planetMaxCount}</strong></label>
+          <input
+            type="range"
+            min="4"
+            max="12"
+            step="1"
+            value={physics.planetMaxCount}
+            onChange={(e) => setPhysics(prev => ({ ...prev, planetMaxCount: parseInt(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Planet TB Orbit Starting Offset */}
+        <div className="control-group">
+          <label>PLANET_TB_START_OFFSET_MULT: <strong>{physics.planetTbOffset.toFixed(2)} AU</strong></label>
+          <input
+            type="range"
+            min="0.10"
+            max="0.45"
+            step="0.01"
+            value={physics.planetTbOffset}
+            onChange={(e) => setPhysics(prev => ({ ...prev, planetTbOffset: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Planet TB Orbit Spacing Gamma */}
+        <div className="control-group">
+          <label>PLANET_TB_SPACING_GAMMA: <strong>{physics.planetTbSpacing.toFixed(2)}</strong></label>
+          <input
+            type="range"
+            min="1.20"
+            max="2.20"
+            step="0.05"
+            value={physics.planetTbSpacing}
+            onChange={(e) => setPhysics(prev => ({ ...prev, planetTbSpacing: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Biome Bubble Chance */}
+        <div className="control-group">
+          <label>BIOME_SN_BUBBLE_CHANCE: <strong>{(physics.biomeBubbleChance * 100).toFixed(0)}%</strong></label>
+          <input
+            type="range"
+            min="0.01"
+            max="0.30"
+            step="0.01"
+            value={physics.biomeBubbleChance}
+            onChange={(e) => setPhysics(prev => ({ ...prev, biomeBubbleChance: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Biome Gravity Well Chance */}
+        <div className="control-group">
+          <label>BIOME_GWELL_CHANCE: <strong>{(physics.biomeGwellChance * 100).toFixed(0)}%</strong></label>
+          <input
+            type="range"
+            min="0.01"
+            max="0.25"
+            step="0.01"
+            value={physics.biomeGwellChance}
+            onChange={(e) => setPhysics(prev => ({ ...prev, biomeGwellChance: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Biome Gravity Well Multiplier */}
+        <div className="control-group">
+          <label>BIOME_GWELL_MASS_MULTIPLIER: <strong>{physics.biomeGwellMult.toFixed(1)}x</strong></label>
+          <input
+            type="range"
+            min="1.0"
+            max="4.0"
+            step="0.1"
+            value={physics.biomeGwellMult}
+            onChange={(e) => setPhysics(prev => ({ ...prev, biomeGwellMult: parseFloat(e.target.value) }))}
             className="hud-slider"
           />
         </div>

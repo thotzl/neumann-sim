@@ -194,6 +194,31 @@ export class UniverseGenerator {
   static MAX_STELLAR_MASS = 40.0;   // Massive stellar giant (O-giant)
   static STELLAR_MASS_IMF = 3.0;    // Salpeter IMF exponent curve skew (default 3.0)
 
+  // Spacetime Remnants parameters (Phase 4 / 5)
+  static REMNANT_CHANCE = 0.001;    // Chance of neutron star / black hole remnant (default 0.1%)
+  static REMNANT_PULSAR_LIMIT = 15.0; // Boundary between Pulsar and Black Hole remnants in Solar Masses
+
+  // Planetary Orbit Parameters (Phase 1)
+  static PLANET_MIN_COUNT = 2;      // Standard minimum planet count
+  static PLANET_MAX_COUNT = 8;      // Standard maximum planet count
+  static PLANET_TB_OFFSET = 0.22;   // Titius-Bode starting orbit baseline offset multiplier
+  static PLANET_TB_SPACING = 1.45;  // Titius-Bode exponential spacing base index gamma (TB base: 1.45 to 1.7)
+
+  // Planetary Albedos (Albedo/Reflectance index coefficients)
+  static PLANET_ALBEDO_VULCAN = 0.12;  // Absorptive lava basalt (default 0.12)
+  static PLANET_ALBEDO_ROCKY = 0.20;   // Grey dusty rock (default 0.20)
+  static PLANET_ALBEDO_HAB = 0.30;     // Earth cloud/ocean greenhouse reflection (default 0.30)
+  static PLANET_ALBEDO_DESERT = 0.25;  // Mars-like iron soil (default 0.25)
+  static PLANET_ALBEDO_GAS = 0.35;     // Thick methane/helium cloud (default 0.35)
+  static PLANET_ALBEDO_ICE = 0.40;     // Solid surface nitrogen ice (default 0.40)
+
+  // Cosmic Occurrence ISM parameters (Phase 5)
+  static BIOME_BUBBLE_SIZE = 64000;  // HIM Supernova bubble voxel cellular size (default 64,000 LY)
+  static BIOME_BUBBLE_CHANCE = 0.09; // HIM Supernova bubble spawn probability (default 9%)
+  static BIOME_GWELL_SIZE = 75000;   // Spacetime Gravity Well cell size (default 75,000 LY)
+  static BIOME_GWELL_CHANCE = 0.08;  // Spacetime Gravity Well spawn probability (default 8%)
+  static BIOME_GWELL_MULT = 2.0;     // Gravity Well mass/matter condensation compression factor (default 2.0x)
+
   /**
    * Evaluates a super-cell coordinate (scx, scy) to see if a Galaxy exists there.
    */
@@ -394,7 +419,7 @@ export class UniverseGenerator {
    * Low-frequency 60,000 LY grid checking.
    */
   static getBubbleAt(wx: number, wy: number, seed: number): { x: number; y: number; r: number } | null {
-    const size = 64000;
+    const size = this.BIOME_BUBBLE_SIZE;
     const bx = Math.floor(wx / size);
     const by = Math.floor(wy / size);
 
@@ -402,7 +427,7 @@ export class UniverseGenerator {
     const cellSeed = (Math.imul(bx, 12853) ^ Math.imul(by, 28351) ^ seed + 5555) & 0xffffffff;
     const prng = new Mulberry32(cellSeed);
 
-    if (prng.next() > 0.09) return null; // 9% chance of bubble in this 64k LY voxel
+    if (prng.next() > this.BIOME_BUBBLE_CHANCE) return null; // configurable chance of bubble per cell
 
     // Displace center within cell
     const cx = bx * size + size / 2 + (prng.next() - 0.5) * 0.45 * size;
@@ -431,7 +456,7 @@ export class UniverseGenerator {
    * Cellular grid checking of 75,000 LY.
    */
   static getGravityWellAt(wx: number, wy: number, seed: number): { x: number; y: number; r: number } | null {
-    const size = 75000;
+    const size = this.BIOME_GWELL_SIZE;
     const bx = Math.floor(wx / size);
     const by = Math.floor(wy / size);
 
@@ -439,7 +464,7 @@ export class UniverseGenerator {
     const cellSeed = (Math.imul(bx, 19349) ^ Math.imul(by, 83931) ^ seed + 9999) & 0xffffffff;
     const prng = new Mulberry32(cellSeed);
 
-    if (prng.next() > 0.08) return null; // 8% chance of gravity well in this 75k cell
+    if (prng.next() > this.BIOME_GWELL_CHANCE) return null; // configurable gravity well chance
 
     const cx = bx * size + size / 2 + (prng.next() - 0.5) * 0.45 * size;
     const cy = by * size + size / 2 + (prng.next() - 0.5) * 0.45 * size;
@@ -476,8 +501,8 @@ export class UniverseGenerator {
     const asteroidBelts: number[] = [];
 
     // O-giants have massive stellar winds (fewer stable planets), M-dwarfs have compact tightly packed orbits
-    let maxPlanets = 8;
-    let minPlanets = 2;
+    let maxPlanets = this.PLANET_MAX_COUNT;
+    let minPlanets = this.PLANET_MIN_COUNT;
     if (starMass > 15) {
       maxPlanets = 3;
       minPlanets = 0;
@@ -492,12 +517,14 @@ export class UniverseGenerator {
     }
 
     // Exponent factor for Titius-Bode spacing
-    const gamma = 1.45 + prng.next() * 0.25; // exponential base 1.45 to 1.7
+    const gamma = this.PLANET_TB_SPACING + prng.next() * 0.25; // exponential base
     const props = getStellarProperties(starMass);
 
     for (let i = 1; i <= planetCount; i++) {
       // Titius-Bode Orbit distance calculation in Astronomical Units (AU)
-      const distance = 0.22 * Math.pow(gamma, i) + (prng.next() - 0.5) * 0.05;
+      // tbOffset scales continuously with the Central Star's mass (thermal/wind expansion)
+      const tbOffset = this.PLANET_TB_OFFSET * Math.sqrt(starMass);
+      const distance = tbOffset * Math.pow(gamma, i) + (prng.next() - 0.5) * 0.05;
 
       // Deterministic Orbit Asteroid Debris Belt roll
       if (prng.next() < 0.15 && i > 1 && i < planetCount) {
@@ -507,47 +534,57 @@ export class UniverseGenerator {
 
       // Calculate Planet temperature based on Inverse-Square Law & Albedo
       // T_p = 278 * L^0.25 / sqrt(a)
-      const temperature = Math.round((278 * Math.pow(props.luminosity, 0.25)) / Math.sqrt(distance));
+      const baseTemp = (278 * Math.pow(props.luminosity, 0.25)) / Math.sqrt(distance);
 
       // Classify planet type based on temperature boundaries
       let type: PlanetType = 'Rocky';
       let radius = 1.0;
       let mass = 1.0;
       let moonsCount = 0;
+      let albedo = this.PLANET_ALBEDO_ROCKY; // default albedo
 
-      if (temperature >= 600) {
+      if (baseTemp >= 600) {
         type = 'Vulcanian'; // Geschmolzenes Gestein, massive resources
+        albedo = this.PLANET_ALBEDO_VULCAN;
         radius = 0.4 + prng.next() * 0.7; // Mercury size
         mass = Math.pow(radius, 3.0) * (0.85 + prng.next() * 0.2);
         moonsCount = 0; // Too close to star for stable moons
-      } else if (temperature >= 380) {
+      } else if (baseTemp >= 380) {
         type = 'Rocky'; // barren/warm desert worlds
+        albedo = this.PLANET_ALBEDO_ROCKY;
         radius = 0.5 + prng.next() * 0.8;
         mass = Math.pow(radius, 3.0) * (0.9 + prng.next() * 0.2);
         moonsCount = prng.next() < 0.2 ? 1 : 0;
-      } else if (temperature >= 245) {
+      } else if (baseTemp >= 245) {
         // Goldilocks zone!
         type = 'Habitable'; 
+        albedo = this.PLANET_ALBEDO_HAB;
         radius = 0.8 + prng.next() * 0.8; // Earth/Super-Earth size
         mass = Math.pow(radius, 3.0) * (1.0 + prng.next() * 0.15);
         moonsCount = Math.floor(prng.next() * 3); // 0 to 2 moons
-      } else if (temperature >= 140) {
+      } else if (baseTemp >= 140) {
         type = 'Desert'; // cool mars-like frozen soil/desert
+        albedo = this.PLANET_ALBEDO_DESERT;
         radius = 0.5 + prng.next() * 0.6;
         mass = Math.pow(radius, 3.0) * (0.8 + prng.next() * 0.2);
         moonsCount = Math.floor(prng.next() * 3);
-      } else if (temperature >= 70) {
+      } else if (baseTemp >= 70) {
         // Frost-boundary Gas giants
         type = 'GasGiant';
+        albedo = this.PLANET_ALBEDO_GAS;
         radius = 3.5 + prng.next() * 7.5; // Jupiter size
         mass = Math.pow(radius, 2.2) * (0.15 + prng.next() * 0.15); // gas density
         moonsCount = Math.floor(4 + prng.next() * 12); // numerous moons
       } else {
         type = 'IceGiant'; // frozen nitrogen/methane outer giant
+        albedo = this.PLANET_ALBEDO_ICE;
         radius = 2.8 + prng.next() * 4.5; // Neptune size
         mass = Math.pow(radius, 2.3) * (0.2 + prng.next() * 0.1);
         moonsCount = Math.floor(2 + prng.next() * 8);
       }
+
+      // Re-calculate precise surface temperature incorporating specific planet-type Albedo SSoT
+      const temperature = Math.round(baseTemp * Math.pow(1.0 - albedo, 0.25));
 
       const id = `SYS_X${x}_Y${y}-P${i}`;
 
@@ -620,12 +657,11 @@ export class UniverseGenerator {
       energyDepot = 0;
       matterDepot = 2500000; // Gigantic matter core
     } else {
-      // Draw deterministic mass based on IMF exponent skew
       const classVal = prng.next();
-      if (classVal < 0.001) {
+      if (classVal < this.REMNANT_CHANCE) {
         mass = 8.0 + prng.next() * 15.0; // Stellar remnant mass: 8-23 solar masses
         energyDepot = 0;
-        if (mass < 15.0) {
+        if (mass < this.REMNANT_PULSAR_LIMIT) {
           // Neutron star collapse begets a rapidly spinning Pulsar
           spectralClass = 'Pulsar';
           matterDepot = 300000;
@@ -711,7 +747,7 @@ export class UniverseGenerator {
       anomaly = 'GravityWell';
       // Heavy dark matter / gravitational compression doubles mass and heavy matter condensation!
       mass = mass * 2.0;
-      matterDepot = Math.round(matterDepot * 2.0);
+      matterDepot = Math.round(matterDepot * this.BIOME_GWELL_MULT);
     }
 
     // --- DETERMINISTIC KIPER/DEBRIS DISK REMNANTS (Phase 5) ---

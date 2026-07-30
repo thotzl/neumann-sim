@@ -440,10 +440,6 @@ export class UniverseGenerator {
       energyDepot = 0;
       matterDepot = 2500000; // Gigantic matter core
     } else {
-      // Draw deterministic mass based on IMF exponent skew
-      const massRoll = prng.next();
-      mass = this.MIN_STELLAR_MASS + (this.MAX_STELLAR_MASS - this.MIN_STELLAR_MASS) * Math.pow(massRoll, this.STELLAR_MASS_IMF);
-
       const classVal = prng.next();
       if (classVal < 0.001) {
         // Exceptionally rare stellar-mass black hole (0.1% chance)
@@ -452,15 +448,22 @@ export class UniverseGenerator {
         energyDepot = 0;
         matterDepot = 600000;
       } else {
+        // --- CONTINUOUS DOUBLE-EXPONENTIAL IMF MASS EQUATION (STUFENLOS) ---
+        // Maps the seed float u in [0, 1] smoothly to mass in [M_min, M_max] using pure calculus.
+        // Formula: M(u) = M_min * exp( ln(M_max / M_min) * u^p )
+        // Exponent 'p' controls the mass skew (favoring red dwarfs over massive giants).
+        const u = prng.next();
+        const massFactor = Math.pow(u, this.STELLAR_MASS_IMF);
+        mass = this.MIN_STELLAR_MASS * Math.exp(Math.log(this.MAX_STELLAR_MASS / this.MIN_STELLAR_MASS) * massFactor);
+
         // Derive all main sequence properties from mass SSoT
         const props = getStellarProperties(mass);
         spectralClass = getSpectralClassFromTemp(props.temperature);
         
-        // Energy output scales directly with luminosity L: E = L * 120k E (Sun default is 120k)
+        // Energy output scales directly with luminosity L: E = L * 120k E
         energyDepot = Math.round(props.luminosity * 120000);
         
         // Matter resources collect in denser, more stable stars. Inversely proportional to mass.
-        // M-dwarf (0.1M) yields ~400k Matter. Giant (30M) yields ~32k.
         matterDepot = Math.round(Math.pow(1.0 / mass, 0.45) * 180000);
       }
     }

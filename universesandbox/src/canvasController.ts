@@ -221,8 +221,15 @@ export class CanvasController {
   /**
    * Renders the visible sectors.
    */
-  drawSectors(sectors: Sector[], camera: Camera, selectedId: string | null, revealedSectors: Set<string>) {
+  drawSectors(
+    sectors: Sector[], 
+    camera: Camera, 
+    selectedId: string | null, 
+    revealedSectors: Set<string>,
+    visualTuning?: { sizeScale: number; brightnessScale: number; colorShift: number }
+  ) {
     const zoom = camera.zoom;
+    const tuning = visualTuning || { sizeScale: 1.0, brightnessScale: 1.0, colorShift: 0 };
 
     sectors.forEach((s) => {
       const screenPos = this.worldToScreen(s.x, s.y, camera);
@@ -238,13 +245,13 @@ export class CanvasController {
 
       if (s.spectralClass === 'BlackHole') {
         // --- 1. SPECIAL RENDER: BLACK HOLE ---
-        const eventHorizonRadius = Math.max(1.5, (s.mass > 100 ? 12 : 2.5) * zoom);
+        const eventHorizonRadius = Math.max(1.5, (s.mass > 100 ? 12 : 2.5) * zoom) * tuning.sizeScale;
         const diskRadius = eventHorizonRadius * (s.mass > 100 ? 1.6 : 1.8);
 
         // Draw glowing violet Accretion Disk (thin line)
         this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.7)';
         this.ctx.shadowColor = 'rgba(168, 85, 247, 0.85)';
-        this.ctx.shadowBlur = isSelected ? 30 : 15;
+        this.ctx.shadowBlur = (isSelected ? 30 : 15) * tuning.brightnessScale;
         this.ctx.lineWidth = s.mass > 100 ? Math.max(1.5, 3.5 * zoom) : Math.max(0.8, 1.2 * zoom);
         
         this.ctx.beginPath();
@@ -269,17 +276,44 @@ export class CanvasController {
         // --- 2. MAIN SEQUENCE PHYSICAL STAR RENDER (SSoT) ---
         const props = getStellarProperties(s.mass);
         
-        // Base star visual radius scales directly with calculated physical radius R
-        // We multiply by a standard scaler (3.8) and keep it clamped to reasonable pixel ranges [2px, 16px]
-        const coreRadius = Math.max(2.0, Math.min(16.0, props.radius * 3.8 * Math.max(0.4, Math.min(2.5, zoom))));
+        // --- COMPACT SIZE DAMPING (Logarithmic scaling to prevent screen clutter) ---
+        // Red dwarf yields ~3.4px. Sun yields ~4.5px. O-giant yields ~7.6px, scaled by visual sizeScale!
+        const baseSize = 3.1 + Math.pow(props.radius, 0.4) * 1.4;
+        const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom)) * tuning.sizeScale;
 
-        // Color string
-        const colorStr = `rgb(${props.color.r}, ${props.color.g}, ${props.color.b})`;
-        const glowStr = `rgba(${props.color.r}, ${props.color.g}, ${props.color.b}, 0.65)`;
+        // --- SPECULAR TEMPERATURE SHIFT ---
+        // Shift color temperature visually based on slider (Kelvin offset)
+        const adjustedTemp = Math.max(1000, Math.min(40000, props.temperature + tuning.colorShift));
+        
+        // Dynamic color palette determined by shifted temperature
+        let colorStr = '#ffffff';
+        let glowStr = 'rgba(255, 255, 255, 0.5)';
 
-        // Stellar Bloom / Glow is directly proportional to its physical Luminosity L (brightness)
-        // L ranges from 0.005 (M-zwerg) up to 300,000 (O-giant). We compress using log-scaling
-        const glowRadius = Math.max(4.0, Math.min(32.0, 7 + Math.log(props.luminosity + 1.1) * 3.0));
+        if (adjustedTemp < 3700) {
+          colorStr = '#ef4444'; // M Red Dwarf
+          glowStr = 'rgba(239, 68, 68, 0.5)';
+        } else if (adjustedTemp < 5200) {
+          colorStr = '#f97316'; // K Orange
+          glowStr = 'rgba(249, 115, 22, 0.5)';
+        } else if (adjustedTemp < 6000) {
+          colorStr = '#eab308'; // G Yellow
+          glowStr = 'rgba(234, 179, 8, 0.55)';
+        } else if (adjustedTemp < 7500) {
+          colorStr = '#fef08a'; // F Yellow-White
+          glowStr = 'rgba(254, 240, 138, 0.45)';
+        } else if (adjustedTemp < 10000) {
+          colorStr = '#f8fafc'; // A White
+          glowStr = 'rgba(248, 250, 252, 0.45)';
+        } else if (adjustedTemp < 30000) {
+          colorStr = '#06b6d4'; // B Neon Cyan
+          glowStr = 'rgba(6, 182, 212, 0.55)';
+        } else {
+          colorStr = '#2563eb'; // O Kobalt Blue
+          glowStr = 'rgba(37, 99, 235, 0.65)';
+        }
+
+        // Stellar Bloom scales logarithmically with physical luminosity (brightness), multiplied by tuning brightnessScale
+        const glowRadius = Math.max(3.0, Math.min(24.0, 5 + Math.log(props.luminosity + 1.1) * 2.2)) * tuning.brightnessScale;
 
         this.ctx.shadowColor = glowStr;
         this.ctx.shadowBlur = isSelected ? glowRadius * 2.2 : glowRadius;

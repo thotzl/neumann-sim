@@ -32,6 +32,13 @@ export default function App() {
     stellarMassImf: 3.0   // Salpeter IMF Exponent curve skew (default 3.0)
   });
 
+  // Real-time Visual HUD Tuning constants (only affects the Map presentation layer, not the simulation!)
+  const [visualTuning, setVisualTuning] = useState({
+    sizeScale: 1.0,         // scales star core radius on-screen
+    brightnessScale: 1.0,   // scales bloom glow radius on-screen
+    colorShift: 0,          // offsets Kelvin color temperature visually (+- Kelvin offset)
+  });
+
   // Sync state to static fields of UniverseGenerator
   useEffect(() => {
     UniverseGenerator.SUPER_CELL_SIZE = physics.superCellSize;
@@ -137,7 +144,8 @@ export default function App() {
         renderedSectors,
         cameraRef.current,
         selectedSector?.id || null,
-        revealedSectorsRef.current
+        revealedSectorsRef.current,
+        visualTuning
       );
 
       // Render tool brush overlay if painting
@@ -171,7 +179,7 @@ export default function App() {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [selectedSector, config.seed, config.density, showUnmapped]); // Re-bind on critical config / selection change
+  }, [selectedSector, config.seed, config.density, showUnmapped, visualTuning]); // Re-bind on critical config / selection change
 
   // Mouse drag-to-pan & brush painting actions
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -385,6 +393,11 @@ export default function App() {
       minStellarMass: 0.08,
       maxStellarMass: 40.0,
       stellarMassImf: 3.0
+    });
+    setVisualTuning({
+      sizeScale: 1.0,
+      brightnessScale: 1.0,
+      colorShift: 0,
     });
     // Centering, FOW reset, and start node selection will trigger automatically in useEffect reacting to seed/density state reset!
   };
@@ -698,6 +711,52 @@ export default function App() {
             step="0.1"
             value={physics.stellarMassImf}
             onChange={(e) => setPhysics(prev => ({ ...prev, stellarMassImf: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        <div className="divider" />
+        <h2 className="panel-title">🎨 VISUAL HUD TUNING</h2>
+        <div className="divider" style={{ marginBottom: '15px' }} />
+
+        {/* Visual Size Scale */}
+        <div className="control-group">
+          <label>MAP_STAR_RENDER_SIZE: <strong>{(visualTuning.sizeScale * 100).toFixed(0)}%</strong></label>
+          <input
+            type="range"
+            min="0.3"
+            max="3.0"
+            step="0.1"
+            value={visualTuning.sizeScale}
+            onChange={(e) => setVisualTuning(prev => ({ ...prev, sizeScale: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Visual Glow Scale */}
+        <div className="control-group">
+          <label>MAP_STAR_GLOW_BLOOM: <strong>{(visualTuning.brightnessScale * 100).toFixed(0)}%</strong></label>
+          <input
+            type="range"
+            min="0.0"
+            max="3.0"
+            step="0.1"
+            value={visualTuning.brightnessScale}
+            onChange={(e) => setVisualTuning(prev => ({ ...prev, brightnessScale: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Color Shift Kelvin offset */}
+        <div className="control-group">
+          <label>MAP_SPECTRAL_COLOR_SHIFT: <strong>{visualTuning.colorShift > 0 ? `+${visualTuning.colorShift}` : visualTuning.colorShift} K</strong></label>
+          <input
+            type="range"
+            min="-6000"
+            max="6000"
+            step="200"
+            value={visualTuning.colorShift}
+            onChange={(e) => setVisualTuning(prev => ({ ...prev, colorShift: parseInt(e.target.value) }))}
             className="hud-slider"
           />
         </div>

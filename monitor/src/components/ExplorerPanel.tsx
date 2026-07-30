@@ -21,7 +21,7 @@ export const ExplorerPanel = ({ state, selection, setSelection, focusBounds }: E
         </div>
         <div style={{ textAlign: 'right' }}>
           <div className="mono-text" style={{ fontSize: '1rem', color: '#10b981', fontWeight: 'bold' }}>
-            SD {state.stardate !== undefined ? state.stardate.toFixed(1) : state.tick}
+            SD {state.stardate !== undefined ? state.stardate : state.tick}
           </div>
           <div style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 700, marginTop: '4px' }}>{state.agents.length} UNITS</div>
         </div>

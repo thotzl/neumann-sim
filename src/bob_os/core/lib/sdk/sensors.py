@@ -79,8 +79,23 @@ class Sensors:
 
     @agent_service.with_agent_context(allow_disembodied=True)
     def storage(self, cursor, agent):
+        host_type = agent.get('host_type', 'matrix')
+        host_id = agent.get('host_id')
+        energy_capacity = 100
+        
+        if host_type == 'ship' and host_id:
+            cursor.execute("SELECT energy_capacity FROM ships WHERE id = CAST(? AS INTEGER)", (host_id,))
+            s_row = cursor.fetchone()
+            if s_row:
+                energy_capacity = s_row['energy_capacity']
+        elif host_type == 'matrix':
+            system = system_service.get_system_or_fail(cursor, agent['location'])
+            if system:
+                energy_capacity = system['depot_energy_capacity']
+
         return {
             "energy_inventory": agent['energy_inventory'],
+            "energy_capacity": energy_capacity,
             "raw_matter_inventory": agent['raw_matter_inventory'],
             "refined_matter_inventory": agent['refined_matter_inventory'],
             "matter_storage_capacity": agent['matter_storage_capacity']
@@ -145,7 +160,7 @@ class Sensors:
             
         # 3. Target C: Sector Geology & Wiki Espionage
         elif system_name is not None:
-            cursor.execute("SELECT name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot FROM systems WHERE name = ?", (system_name,))
+            cursor.execute("SELECT name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot, depot_matter_capacity, depot_energy_capacity FROM systems WHERE name = ?", (system_name,))
             row = cursor.fetchone()
             if not row:
                 print(f"[ERROR] Sector '{system_name}' not mapped.")
@@ -334,18 +349,21 @@ class Sensors:
         host_type = agent.get('host_type', 'Unknown')
         host_id = agent.get('host_id', 'Unknown')
         storage_capacity = agent['matter_storage_capacity']
+        energy_capacity = 100 # Default fallback
         current_inventory_host = "Unknown"
 
         if host_type == 'ship':
             ship_name = "Unknown"
-            cursor.execute("SELECT name FROM ships WHERE id = CAST(? AS INTEGER)", (host_id,))
+            cursor.execute("SELECT name, energy_capacity FROM ships WHERE id = CAST(? AS INTEGER)", (host_id,))
             s_row = cursor.fetchone()
             if s_row:
                 ship_name = s_row['name']
+                energy_capacity = s_row['energy_capacity']
             current_inventory_host = f"ship '{ship_name}' (ID: {host_id})"
         elif host_type == 'matrix':
             # Dynamic override: Match capacity with Sector Depot limit to prevent inventory overflow paradox!
             storage_capacity = system['depot_matter_capacity']
+            energy_capacity = system['depot_energy_capacity']
             current_inventory_host = f"system depot '{system['name']}'"
 
         # Load Host Ship Data cleanly in advance (Pillar 1 & 3: SSoT Telemetry Aggregation)
@@ -385,7 +403,7 @@ class Sensors:
                     "modules": active_modules
                 }
 
-        current_stardate = float(os.environ.get('BOB_CYCLE', 0.0))
+        current_stardate = os.environ.get('BOB_STARDATE', '1::1')
 
         return {
             "local_system": {
@@ -395,7 +413,9 @@ class Sensors:
                 "depots": {
                     "raw_matter": system['raw_matter_depot'],
                     "refined_matter": system['refined_matter_depot'],
-                    "energy": system['energy_depot']
+                    "energy": system['energy_depot'],
+                    "matter_capacity": system['depot_matter_capacity'],
+                    "energy_capacity": system['depot_energy_capacity']
                 },
                 "geology": {
                     "extractable_core_matter": system['extractable_matter_in_core']
@@ -417,6 +437,7 @@ class Sensors:
                     "energy": agent['energy_inventory']
                 },
                 "storage_capacity": storage_capacity,
+                "energy_capacity": energy_capacity,
                 "status": agent['status'],
                 "memos_open": len(memos_list),
                 "host": host_telemetry

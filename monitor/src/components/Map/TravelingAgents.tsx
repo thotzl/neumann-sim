@@ -35,7 +35,7 @@ export const TravelingAgents = ({ state, selection, setSelection }: TravelingAge
                zIndex: 5, 
                cursor: 'pointer',
                opacity: isSleeping ? 0.55 : 1,
-               transition: 'opacity 0.2s'
+               transition: 'left 0.3s linear, top 0.3s linear, opacity 0.2s'
              }}
           >
              {/* Sleep Indicator Overlay */}

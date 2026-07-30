@@ -131,7 +131,7 @@ async function syncPopulation(populationFile, universeDir, vDir, state, logger, 
                 let parentText = '';
                 if (parentId) {
                     const parentAgent = state.agents.find(a => a.id === parentId);
-                    const parentName = parentAgent ? (parentAgent.chosen_name || "Unnamed") : "Unnamed";
+                    const parentName = state.agentNames?.[parentId] || (parentAgent ? parentAgent.chosen_name : "Unnamed") || "Unnamed";
                     parentText = `\nLineage: Replicant of ${parentName} (ID: ${parentId})`;
                 }
                 const bootMsg = `[SYSTEM BOOT SEQUENCE COMPLETED]\nIdentity: ${agentObj.id}${parentText}\nCurrent Location: ${agentObj.location}\n\n[INITIAL SENSOR SCAN (DASHBOARD)]:\n${dashOut.trim()}`;

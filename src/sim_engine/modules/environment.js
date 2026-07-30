@@ -13,7 +13,9 @@ function getEnvState(universeDir) {
         }).toString();
         
         const parts = out.split("-".repeat(50));
-        if (parts.length >= 2) {
+        if (parts.length >= 3) {
+            return "AVAILABLE HARDWARE (V8.0 UNIFIED LOGIC):\n" + parts[1].trim() + "\n\n" + parts[2].trim();
+        } else if (parts.length >= 2) {
             return "AVAILABLE HARDWARE (V8.0 UNIFIED LOGIC):\n" + parts[1].trim();
         }
         return out;

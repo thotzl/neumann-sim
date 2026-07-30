@@ -87,12 +87,13 @@ class TestV105EmergencyPowerTechTree(unittest.TestCase):
         # 2. Trigger physics update tick during blackout
         physics_update.update()
         
-        # 3. Verify system energy depot is set to 5 (survival solar bypass) instead of staying at 0!
+        # 3. Verify system energy depot is set to 95 (Surplus: 100 solar regen - 5 maintenance)
+        # Sektor successfully avoids false blackout traps!
         conn = db_config.get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         system = system_service.get_system_or_fail(cursor, 'SYS_A')
-        self.assertEqual(system['energy_depot'], 5) # Blackout solar bypass active!
+        self.assertEqual(system['energy_depot'], 95)
         conn.close()
 
 if __name__ == '__main__':

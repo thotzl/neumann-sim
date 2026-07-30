@@ -26,14 +26,7 @@ function executeSystemRound(vDir, universeDir, state, logger, logFile) {
 
         // 2. Run physical turn-loop update (decay, mineral regen, power grids)
         const physicsScript = path.join(vDir, 'core', 'bin', 'physics_update.py');
-        execSync(`python3 "${physicsScript}"`, {
-            env: { ...process.env, TEST_DB_PATH: dbPath, PYTHONPATH: vDir },
-            stdio: 'inherit'
-        });
-
-        // 2. Run sub-etheric radio poller background daemon (comms check)
-        const radioScript = path.join(vDir, 'core', 'bin', 'poll_radio.py');
-        execSync(`python3 "${radioScript}"`, {
+        execSync(`python3 "${physicsScript}" "${state.round}"`, {
             env: { ...process.env, TEST_DB_PATH: dbPath, PYTHONPATH: vDir },
             stdio: 'inherit'
         });

@@ -47,6 +47,8 @@ class DepotsObject:
         self.raw_matter = depots.get('raw_matter', 0)
         self.refined_matter = depots.get('refined_matter', 0)
         self.energy = depots.get('energy', 0)
+        self.matter_capacity = depots.get('matter_capacity', 0)
+        self.energy_capacity = depots.get('energy_capacity', 0)
 
 class StatusWrapper:
     def __init__(self, dash):

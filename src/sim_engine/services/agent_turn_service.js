@@ -5,6 +5,7 @@ const memoryCtrl = require('./memory_controller');
 const wakeupManager = require('./wakeup_manager');
 const logger = require('../helpers/logger');
 const { runPython } = require('../modules/python_executor');
+const broadcastService = require('./broadcast_service');
 
 /**
  * Agent Turn Service
@@ -49,16 +50,25 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     // 2. --- INBOX GATHERING & CONTEXT ASSEMBLY ---
     console.log(`  Turn: ${agent.id}`);
     const inbox = state.global_inbox[agent.id] || [];
+    const fractionalStardate = process.env.BOB_STARDATE || `${state.round}::${state.actualRoundTicks || 1}`;
     let inboxText = "";
+    let scutText = "";
     if (inbox.length > 0) {
-        inboxText += "\n[INBOX (Events of the last cycle)]:\n";
         inbox.forEach(m => {
             if (m.type === 'scut') {
-                inboxText += `[SCUT] From ${state.agentNames?.[m.sender] || m.sender} (ID: ${m.sender}): ${m.content}\n`;
+                const chosenName = (state.agentNames && state.agentNames[m.sender]) || "Unnamed";
+                const senderName = `${chosenName} (ID: ${m.sender})`;
+                scutText += `---\n[SCUT] From ${senderName} at ${fractionalStardate}: ${m.content}\n`;
             } else if (m.type === 'vog') {
                 inboxText += `[VOICE OF GOD]: ${m.text}\n`;
             } else if (m.type === 'system') {
                 inboxText += `[SYSTEM ALERT]: ${m.text}\n`;
+            } else if (m.type === 'automation') {
+                inboxText += `[SYSTEM-AUTOMATION (LAST CYCLE)]:\n${m.text}\n`;
+            } else if (m.type === 'resonance') {
+                inboxText += `\n${m.text}\n`;
+            } else if (m.type === 'visual') {
+                inboxText += `\n[VISUAL DETECTION]: ${m.text}\n`;
             }
         });
     }
@@ -76,7 +86,10 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     // Prepare Payload (Sensory & Perceptual Prompts Assembly)
     let promptText = "";
     if (inboxText) {
-        promptText += inboxText;
+        promptText += `\n[INBOX (Events of the last cycle)]:\n${inboxText}`;
+    }
+    if (scutText) {
+        promptText += `\n[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${scutText}---\n`;
     }
 
     let contextArray = [...state.histories[agent.id]];
@@ -131,10 +144,23 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     let feedback = "";
     if (responseText) {
         feedback = envManager.processActions(responseText, universeDir, agent.id, state);
+
+        // Super-Critical Neural Echo: Save action and physical resonance feedback for Bob's next turn
+        if (feedback && feedback.trim()) {
+            const actionMatch = responseText.match(/2\.\s*ACTION:[\s\S]*/i) || responseText.match(/ACTION:[\s\S]*/i);
+            const actionPart = actionMatch ? actionMatch[0].trim() : "No action.";
+            state.global_inbox[agent.id].push({
+                type: 'resonance',
+                text: `[NEURAL ECHO (LAST ACTION AND RESONANCE)]:\n${actionPart}\n\nRESONANCE:\n${feedback.trim()}`
+            });
+        }
     }
 
     // Combine output feedback and inbox responses for history tracking
-    let preTurnEvents = inboxText ? inboxText.trim() : "";
+    let preTurnEvents = "";
+    if (inboxText) preTurnEvents += inboxText;
+    if (scutText) preTurnEvents += `\n[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${scutText}---\n`;
+    preTurnEvents = preTurnEvents.trim();
     let formattedTurnHistory = responseText;
     if (preTurnEvents) {
         formattedTurnHistory = `[INBOX EVENTS]:\n${preTurnEvents}\n\n${formattedTurnHistory}`;
@@ -144,10 +170,11 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     }
 
     // Save history (Diary-Only model: Extract and store ONLY the thoughts/ANALYSIS for permanent history)
+    let thoughts = responseText;
     if (responseText) {
         const analyseMatch = responseText.match(/1\.\s*ANALYSIS:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
                              || responseText.match(/ANALYSIS:([\s\S]*?)(?=ACTION:|$)/i);
-        const thoughts = analyseMatch ? "1. ANALYSIS:\n" + analyseMatch[1].trim() : responseText;
+        thoughts = analyseMatch ? "1. ANALYSIS:\n" + analyseMatch[1].trim() : responseText;
         state.histories[agent.id].push({ agent: agent.id, text: thoughts });
     }
 
@@ -156,9 +183,57 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         const lines = feedback.trim().split('\n');
         lines.forEach(l => console.log(`    ${l}`));
     }
+
+    // Real-Time Event Streaming: Broadcast thoughts, actions, and feedbacks immediately (100% disk-free)
+    try {
+        const realtimeLogs = [];
+        const agentName = agent.chosen_name || agent.id;
+        const salt = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+        if (thoughts) {
+            const cleanedThoughts = thoughts.replace("1. ANALYSIS:\n", "").trim();
+            realtimeLogs.push({
+                tick: state.round,
+                agentId: agent.id,
+                agentName: agentName,
+                type: 'thought',
+                text: cleanedThoughts,
+                id: `t-${state.round}-${agent.id}-${salt}`
+            });
+        }
+
+        const actionMatch = responseText && (responseText.match(/2\.\s*ACTION:[\s\S]*/i) || responseText.match(/ACTION:[\s\S]*/i));
+        const actionPart = actionMatch ? actionMatch[0].trim() : "";
+        if (actionPart && actionPart !== "No action.") {
+            realtimeLogs.push({
+                tick: state.round,
+                agentId: agent.id,
+                agentName: agentName,
+                type: 'action',
+                text: actionPart,
+                id: `a-${state.round}-${agent.id}-${salt}`
+            });
+        }
+
+        if (feedback && feedback.trim()) {
+            realtimeLogs.push({
+                tick: state.round,
+                agentId: agent.id,
+                agentName: agentName,
+                type: 'system',
+                text: feedback.trim(),
+                id: `s-${state.round}-${agent.id}-${salt}`
+            });
+        }
+
+        if (realtimeLogs.length > 0) {
+            broadcastService.broadcastRealtimeLogs(realtimeLogs);
+        }
+    } catch (e) {
+        console.error("    [LOGS-BROADCAST-ERROR] failed:", e.message);
+    }
     
     const myWalletStr = JSON.stringify(state.security?.wallets?.[agent.id] || {});
-    const fractionalStardate = state.round + (state.currentTurnIndex / (state.turnSequence ? state.turnSequence.length : 1));
     const totalTurns = state.totalTurns || 0;
     const historyLength = state.histories[agent.id].length;
 
@@ -174,6 +249,12 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         config,
         compressorBridge
     );
+
+    // Broadcast newly compressed histories instantly to the browser (100% disk-free)
+    broadcastService.broadcastPartialState({
+        histories: state.histories
+    });
+
     return false;
 }
 

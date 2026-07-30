@@ -12,6 +12,7 @@ const logger = require('../helpers/logger');
 const mailboxService = require('../services/mailbox_service');
 const agentTurnService = require('../services/agent_turn_service');
 const physicsRoundService = require('../services/physics_round_service');
+const broadcastService = require('../services/broadcast_service');
 
 async function run() {
     const version = process.argv[2];
@@ -75,6 +76,14 @@ async function run() {
     const agentBridge = new AIBridge(config.roles?.agent || config);
     const compressorBridge = new AIBridge(config.roles?.compressor || config);
 
+    // Initial Prerun Broadcast: Send full seeded world state immediately to VoG-Server at startup (V13.4 SSoT)
+    const stateExporter = require('../services/state_exporter');
+    try {
+        stateExporter.exportWorldState(universeDir, state, 'System');
+    } catch (e) {
+        // Fail silently
+    }
+
     // 2. Der reine, unbestechliche Runden- & Turn-Orchestrator (State-Machine)
     async function executeTurn() {
         if (state.round >= config.rounds && state.currentTurnIndex === 0) return false;
@@ -112,11 +121,31 @@ async function run() {
             return true;
         }
 
+        // --- DYNAMIC SEQUENTIAL STARDATE CALCULATOR ---
+        state.actualRoundTicks = (state.actualRoundTicks || 0) + 1;
+        process.env.BOB_CYCLE = String(state.round);
+        process.env.BOB_STARDATE = `${state.round}::${state.actualRoundTicks}`;
+
         // Führe kognitiven Turn aus (Inklusive Standby-Prüfung)
         const skipped = await agentTurnService.executeTurn(agent, state, config, agentBridge, compressorBridge, vDir, universeDir);
         if (skipped) {
             stateManager.saveState(stateFile, state);
+            broadcastService.broadcastPartialState({
+                stardate: process.env.BOB_STARDATE,
+                last_agent: agentId,
+                total_turns: state.totalTurns,
+                tick: state.round,
+                agents: state.agents
+            });
             return true;
+        }
+
+        // Active turn completed! Broadcast the full updated world state immediately (100% disk-free)
+        // This ensures all newly generated visual_events, logs, and state updates flash instantly on the monitor!
+        try {
+            stateExporter.exportWorldState(universeDir, state, agentId);
+        } catch (e) {
+            // Fail silently
         }
 
         // Turn-Cursor inkrementieren & verarbeiten

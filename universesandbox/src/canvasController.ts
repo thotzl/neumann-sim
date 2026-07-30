@@ -1,5 +1,5 @@
 import { Camera, Sector } from './types';
-import { Galaxy, getStellarProperties } from './generator';
+import { Galaxy, getStellarProperties, UniverseGenerator } from './generator';
 
 export class CanvasController {
   private canvas: HTMLCanvasElement;
@@ -165,6 +165,59 @@ export class CanvasController {
       this.ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
       this.ctx.fill();
     });
+
+    this.ctx.restore();
+  }
+
+  /**
+   * Renders a beautiful high-tech vector wind map representing interstellar warp currents.
+   * Leverages precise Screen-to-World mapping and LOD-gating to run at 60 FPS.
+   */
+  drawWarpCurrents(camera: Camera, seed: number) {
+    const zoom = camera.zoom;
+    // Gated to medium interstellar zoom level for pristine map readability
+    if (zoom < 0.005 || zoom > 0.28) return;
+
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+    const spacing = 64; // Grid spacing in screen pixels
+
+    this.ctx.save();
+    this.ctx.lineWidth = 1.2;
+
+    for (let sx = spacing / 2; sx < width; sx += spacing) {
+      for (let sy = spacing / 2; sy < height; sy += spacing) {
+        // Convert screen pixel coordinate to absolute infinite world LY coordinates
+        const worldPos = this.screenToWorld(sx, sy, camera);
+        
+        // Calculate deterministic vector fields
+        const flow = UniverseGenerator.getWarpCurrentAt(worldPos.x, worldPos.y, seed);
+
+        // Render directed vector dash
+        this.ctx.strokeStyle = `rgba(6, 182, 212, ${flow.magnitude * 0.16})`; // futuristic neon cyan
+        this.ctx.beginPath();
+        this.ctx.moveTo(sx, sy);
+        
+        const length = 12 * flow.magnitude;
+        const ex = sx + Math.cos(flow.angle) * length;
+        const ey = sy + Math.sin(flow.angle) * length;
+        this.ctx.lineTo(ex, ey);
+        this.ctx.stroke();
+
+        // Render fine directed arrowhead
+        this.ctx.strokeStyle = `rgba(6, 182, 212, ${flow.magnitude * 0.28})`;
+        this.ctx.beginPath();
+        const headAngle = Math.PI / 6; // 30 degrees
+        const arrowX1 = ex - 3 * Math.cos(flow.angle - headAngle);
+        const arrowY1 = ey - 3 * Math.sin(flow.angle - headAngle);
+        const arrowX2 = ex - 3 * Math.cos(flow.angle + headAngle);
+        const arrowY2 = ey - 3 * Math.sin(flow.angle + headAngle);
+        this.ctx.moveTo(arrowX1, arrowY1);
+        this.ctx.lineTo(ex, ey);
+        this.ctx.lineTo(arrowX2, arrowY2);
+        this.ctx.stroke();
+      }
+    }
 
     this.ctx.restore();
   }

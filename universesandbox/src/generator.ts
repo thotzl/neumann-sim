@@ -417,6 +417,17 @@ export class UniverseGenerator {
   }
 
   /**
+   * Deterministically calculates the 2D Warp Current flow vector (angle and magnitude)
+   * at any coordinate (wx, wy) based on the world seed.
+   */
+  static getWarpCurrentAt(wx: number, wy: number, seed: number): { angle: number; magnitude: number } {
+    // Large wave cycle (scale) spanning 40,000 LY
+    const angle = Math.sin(wx * 0.000025 + seed) * Math.cos(wy * 0.000025 - seed) * Math.PI * 2;
+    const magnitude = Math.abs(Math.sin(wx * 0.000015 - wy * 0.000015) * Math.cos(wx * 0.000008 + wy * 0.000008));
+    return { angle, magnitude: Math.min(1.0, Math.max(0.0, magnitude)) };
+  }
+
+  /**
    * Deterministically generates a beautiful, Kepler-aligned Solar System 
    * around a star based purely on its gehashten coordinate seed and physical mass/luminosity.
    */
@@ -646,6 +657,7 @@ export class UniverseGenerator {
     }
 
     const system = this.generateSolarSystem(x, y, mass, seed);
+    const warpCurrent = this.getWarpCurrentAt(x, y, seed);
 
     const id = `SYS_X${x}_Y${y}`;
 
@@ -658,7 +670,8 @@ export class UniverseGenerator {
       occurrence,
       energyDepot,
       matterDepot,
-      system
+      system,
+      warpCurrent
     };
   }
 

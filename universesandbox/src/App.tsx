@@ -113,6 +113,8 @@ export default function App() {
 
       // Fetch deterministic systems inside visible bounding box
       const currentConfig = configRef.current;
+      const seedHash = hashStringToInt(currentConfig.seed);
+
       const visibleSectors = UniverseGenerator.getSectorsInArea(
         topLeft.x,
         bottomRight.x,
@@ -133,8 +135,10 @@ export default function App() {
       // 2. Draw Grid lines
       controller.drawGrid(cameraRef.current);
 
+      // 3. Draw high-tech Warp Vector Currents flow field
+      controller.drawWarpCurrents(cameraRef.current, seedHash);
+
       // Fetch and render visible Galaxies
-      const seedHash = hashStringToInt(currentConfig.seed);
       const visibleGalaxies = UniverseGenerator.getOverlappingGalaxies(
         topLeft.x,
         bottomRight.x,
@@ -409,6 +413,20 @@ export default function App() {
   };
 
 
+
+  const getHeadingName = (angle: number) => {
+    // Normalize angle to 0 - 2PI range
+    const norm = (angle + Math.PI) % (Math.PI * 2);
+    const deg = (norm * 180) / Math.PI;
+    if (deg >= 337.5 || deg < 22.5) return 'East';
+    if (deg >= 22.5 && deg < 67.5) return 'North-East';
+    if (deg >= 67.5 && deg < 112.5) return 'North';
+    if (deg >= 112.5 && deg < 157.5) return 'North-West';
+    if (deg >= 157.5 && deg < 202.5) return 'West';
+    if (deg >= 202.5 && deg < 247.5) return 'South-West';
+    if (deg >= 247.5 && deg < 292.5) return 'South';
+    return 'South-East';
+  };
 
   const isSelectedSectorRevealed = selectedSector && revealedSectorsRef.current.has(selectedSector.id);
 
@@ -862,6 +880,23 @@ export default function App() {
                       : `${selectedSector.mass.toFixed(2)} M_sun`}
                   </span>
                 </div>
+
+                {selectedSector.warpCurrent && (
+                  <>
+                    <div className="field-row">
+                      <span className="field-label">WARP_CURRENT_HEADING:</span>
+                      <span className="field-value" style={{ color: '#22d3ee', fontWeight: 'bold' }}>
+                        {Math.round(selectedSector.warpCurrent.angle * 180 / Math.PI + 180) % 360}° ({getHeadingName(selectedSector.warpCurrent.angle)})
+                      </span>
+                    </div>
+                    <div className="field-row">
+                      <span className="field-label">WARP_CURRENT_POWER:</span>
+                      <span className="field-value" style={{ color: '#22d3ee' }}>
+                        {selectedSector.warpCurrent.magnitude.toFixed(2)} ({selectedSector.warpCurrent.magnitude > 0.7 ? 'High-Flow' : selectedSector.warpCurrent.magnitude > 0.3 ? 'Mid-Flow' : 'Low-Flow'})
+                      </span>
+                    </div>
+                  </>
+                )}
 
                 {props && (
                   <>

@@ -36,6 +36,7 @@ export interface Sector {
   energyDepot: number;
   matterDepot: number;
   system?: SolarSystem; // Dynamically generated solar system orbits (Phase 1)
+  warpCurrent?: { angle: number; magnitude: number }; // Interstellar warp currents vector field (Phase 2)
 }
 
 export interface SandboxConfig {

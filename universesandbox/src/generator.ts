@@ -1,11 +1,10 @@
-import { Sector, SpectralClass } from './types';
+import { Sector, SpectralClass, CosmicOccurrence } from './types';
 
 /**
  * Converts a Planck color temperature in Kelvin to an RGB object
  * using Tanner Helland's high-quality curve-fit approximation (1,000K to 40,000K).
  */
 export function kelvinToRGB(kelvin: number): { r: number; g: number; b: number } {
-  // Clamp kelvin to valid algorithm boundaries
   const k = Math.max(1000, Math.min(40000, kelvin));
   let temp = k / 100;
   let r = 0, g = 0, b = 0;
@@ -60,6 +59,7 @@ export interface StellarProps {
   luminosity: number;   // in L_sun (Sun-scaled luminosity)
   temperature: number;  // in Kelvin (surface temperature)
   density: number;      // in solar densities (mass / volume)
+  gravity: number;      // surface gravity in solar gravities (g_sun = M / R^2)
   hazardLevel: number;  // radiation in relative Rad/cycle units
   color: { r: number; g: number; b: number };
 }
@@ -93,17 +93,20 @@ export function getStellarProperties(mass: number): StellarProps {
   // T = T_sun * (L / R^2)^1/4
   const temperature = Math.round(5778 * Math.pow(luminosity / Math.pow(radius, 2), 0.25));
 
-  // 5. Calculate Plasma Density (rho) relative to Sun
+  // 5. Calculate Plasma Density (rho) relative to Sun: rho = M / V
   const density = mass / volume;
 
-  // 6. Calculate ionizing radiation (Hazard Level)
+  // 6. Calculate Surface Gravity (g) relative to Sun: g = M / R^2 (PURE SSoT DERIVATION)
+  const gravity = mass / (radius * radius);
+
+  // 7. Calculate ionizing radiation (Hazard Level)
   // Highly concentrated on ultraviolet stellar giants: scales steeply with temperature
   const hazardLevel = Math.pow(temperature / 5778, 4.5);
 
-  // 7. Calculate RGB Chromaticity using blackbody Plank curve-fitting
+  // 8. Calculate RGB Chromaticity using blackbody Plank curve-fitting
   const color = kelvinToRGB(temperature);
 
-  return { radius, volume, luminosity, temperature, density, hazardLevel, color };
+  return { radius, volume, luminosity, temperature, density, gravity, hazardLevel, color };
 }
 
 /**
@@ -189,7 +192,7 @@ export class UniverseGenerator {
   // SSoT Stellar Generation config
   static MIN_STELLAR_MASS = 0.08;   // Smallest fusiable mass (M-dwarf)
   static MAX_STELLAR_MASS = 40.0;   // Massive stellar giant (O-giant)
-  static STELLAR_MASS_IMF = 3.0;    // Salpeter IMF exponent skew (lower mass is favored)
+  static STELLAR_MASS_IMF = 3.0;    // Salpeter IMF exponent curve skew (default 3.0)
 
   /**
    * Evaluates a super-cell coordinate (scx, scy) to see if a Galaxy exists there.
@@ -387,6 +390,33 @@ export class UniverseGenerator {
   }
 
   /**
+   * Deterministically calculates if a giant HIM Supernova Bubble overlaps (wx, wy).
+   * Low-frequency 60,000 LY grid checking.
+   */
+  static getBubbleAt(wx: number, wy: number, seed: number): { x: number; y: number; r: number } | null {
+    const size = 64000;
+    const bx = Math.floor(wx / size);
+    const by = Math.floor(wy / size);
+
+    // Seed cell uniquely
+    const cellSeed = (Math.imul(bx, 12853) ^ Math.imul(by, 28351) ^ seed + 5555) & 0xffffffff;
+    const prng = new Mulberry32(cellSeed);
+
+    if (prng.next() > 0.09) return null; // 9% chance of bubble in this 64k LY voxel
+
+    // Displace center within cell
+    const cx = bx * size + size / 2 + (prng.next() - 0.5) * 0.45 * size;
+    const cy = by * size + size / 2 + (prng.next() - 0.5) * 0.45 * size;
+    const r = 8000 + prng.next() * 12000; // 8k to 20k LY bubble
+
+    const d = Math.sqrt((wx - cx) ** 2 + (wy - cy) ** 2);
+    if (d < r) {
+      return { x: cx, y: cy, r };
+    }
+    return null;
+  }
+
+  /**
    * Generates a single sector deterministically for a given cell coordinate (cx, cy)
    * if it exists under the current world seed and local density waves.
    */
@@ -440,6 +470,7 @@ export class UniverseGenerator {
       energyDepot = 0;
       matterDepot = 2500000; // Gigantic matter core
     } else {
+      // Draw deterministic mass based on IMF exponent skew
       const classVal = prng.next();
       if (classVal < 0.001) {
         // Exceptionally rare stellar-mass black hole (0.1% chance)
@@ -449,9 +480,6 @@ export class UniverseGenerator {
         matterDepot = 600000;
       } else {
         // --- CONTINUOUS DOUBLE-EXPONENTIAL IMF MASS EQUATION (STUFENLOS) ---
-        // Maps the seed float u in [0, 1] smoothly to mass in [M_min, M_max] using pure calculus.
-        // Formula: M(u) = M_min * exp( ln(M_max / M_min) * u^p )
-        // Exponent 'p' controls the mass skew (favoring red dwarfs over massive giants).
         const u = prng.next();
         const massFactor = Math.pow(u, this.STELLAR_MASS_IMF);
         mass = this.MIN_STELLAR_MASS * Math.exp(Math.log(this.MAX_STELLAR_MASS / this.MIN_STELLAR_MASS) * massFactor);
@@ -468,6 +496,52 @@ export class UniverseGenerator {
       }
     }
 
+    // --- DETERMINISTIC COSMIC OCCURRENCES (BIOMES) ---
+    let occurrence: CosmicOccurrence = 'Normal';
+    
+    // 1. Check Supernova HIM Bubble (takes absolute priority as shockwave blows gas away)
+    const activeBubble = this.getBubbleAt(x, y, seed);
+    if (activeBubble) {
+      occurrence = 'SupernovaBubble';
+      matterDepot = Math.round(matterDepot * 0.25); // Matter blown away
+      energyDepot = Math.round(energyDepot * 0.50);  // High ionization blocks collectors
+    } else {
+      // 2. Check Cold Dust Lanes (S/SB Galaxies only, inner compressed edge of arm)
+      let inDustLane = false;
+      nearbyGalaxies.forEach((g) => {
+        if (g.type === 'S' || g.type === 'SB') {
+          const rx = x - g.x;
+          const ry = y - g.y;
+          const gr = Math.sqrt(rx * rx + ry * ry);
+          const rEffCore = g.radius * 0.12;
+
+          if (gr > rEffCore && gr < g.radius) {
+            const gTheta = Math.atan2(ry, rx);
+            const phi = gTheta - Math.log(gr / rEffCore) / g.b - g.rotation;
+            // Phase offset parallel to arms
+            if (Math.sin(g.numArms * phi - 0.52) > 0.82) {
+              inDustLane = true;
+            }
+          }
+        }
+      });
+
+      if (inDustLane) {
+        occurrence = 'DustLane';
+        matterDepot = Math.round(matterDepot * 2.20);  // Dense asteroid/debris aggregation
+        energyDepot = Math.round(energyDepot * 0.40);  // Obscured solar rays
+      } else {
+        // 3. Check HII Stellar Nursery (molecular nebulae gas cluster)
+        // Uses a continuous low-frequency gas-field function spanning 5k LY
+        const nurseryNoise = Math.sin(x * 0.0005) * Math.cos(y * 0.0005);
+        if (baseDensity > 0.08 && nurseryNoise > 0.58) {
+          occurrence = 'StellarNursery';
+          energyDepot = Math.round(energyDepot * 1.35);  // ionized gas energy enhancement
+          matterDepot = Math.round(matterDepot * 1.25);  // thick star-forming nurseries
+        }
+      }
+    }
+
     const id = `SYS_X${x}_Y${y}`;
 
     return {
@@ -476,6 +550,7 @@ export class UniverseGenerator {
       y,
       mass,
       spectralClass,
+      occurrence,
       energyDepot,
       matterDepot,
     };
@@ -490,7 +565,7 @@ export class UniverseGenerator {
     const homeGalaxy = this.getGalaxyInSuperCell(0, 0, seed);
     
     if (!homeGalaxy) {
-      return { id: 'SYS_X0_Y0', x: 0, y: 0, mass: 1.0, spectralClass: 'G', energyDepot: 120000, matterDepot: 180000 };
+      return { id: 'SYS_X0_Y0', x: 0, y: 0, mass: 1.0, spectralClass: 'G', occurrence: 'Normal', energyDepot: 120000, matterDepot: 180000 };
     }
 
     const centerCx = Math.floor(homeGalaxy.x / this.CELL_SIZE);
@@ -522,6 +597,7 @@ export class UniverseGenerator {
         ...selected,
         mass: 1.0,
         spectralClass: 'G',
+        occurrence: 'Normal', // Starter is in normal interstellar medium (ambient)
         energyDepot: 120000,
         matterDepot: 180000
       };
@@ -535,6 +611,7 @@ export class UniverseGenerator {
       y: fallbackY,
       mass: 1.0,
       spectralClass: 'G',
+      occurrence: 'Normal',
       energyDepot: 120000,
       matterDepot: 180000
     };

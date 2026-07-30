@@ -106,9 +106,6 @@ export default function App() {
       // Prepare viewport
       controller.clear(width, height);
 
-      // Draw Grid lines
-      controller.drawGrid(cameraRef.current);
-
       // Query visible world bounds
       const topLeft = controller.screenToWorld(0, 0, cameraRef.current);
       const bottomRight = controller.screenToWorld(width, height, cameraRef.current);
@@ -128,6 +125,12 @@ export default function App() {
       const renderedSectors = showUnmapped 
         ? visibleSectors 
         : visibleSectors.filter(s => revealedSectorsRef.current.has(s.id));
+
+      // 1. Draw glowing Interstellar Medium (ISM) backgrounds (painted behind grid)
+      controller.drawCosmicBackground(renderedSectors, cameraRef.current);
+
+      // 2. Draw Grid lines
+      controller.drawGrid(cameraRef.current);
 
       // Fetch and render visible Galaxies
       const seedHash = hashStringToInt(currentConfig.seed);
@@ -854,6 +857,12 @@ export default function App() {
                     <span className="field-value">{props.density.toFixed(2)} Density_sun</span>
                   </div>
                   <div className="field-row">
+                    <span className="field-label">SURFACE_GRAVITY:</span>
+                    <span className="field-value" style={{ fontWeight: 'bold' }}>
+                      {props.gravity.toFixed(2)} g_sun
+                    </span>
+                  </div>
+                  <div className="field-row">
                     <span className="field-label">EFFECTIVE_TEMP:</span>
                     <span className="field-value" style={{ color: starColor }}>
                       {props.temperature.toLocaleString()} K
@@ -865,6 +874,23 @@ export default function App() {
                   </div>
                 </>
               )}
+
+              {/* Cosmic Occurrence / Biome Display */}
+              <div className="field-row">
+                <span className="field-label">COSMIC_ENVIRONMENT:</span>
+                <span className="field-value" style={{ 
+                  color: selectedSector.occurrence === 'StellarNursery' ? '#f472b6' : 
+                         selectedSector.occurrence === 'DustLane' ? '#fb923c' : 
+                         selectedSector.occurrence === 'SupernovaBubble' ? '#c084fc' : 
+                         '#4ade80',
+                  fontWeight: 'bold'
+                }}>
+                  {selectedSector.occurrence === 'StellarNursery' ? '🌌 HII_STELLAR_NURSERY' : 
+                   selectedSector.occurrence === 'DustLane' ? '🪐 COLD_DUST_LANE' : 
+                   selectedSector.occurrence === 'SupernovaBubble' ? '💥 SUPERNOVA_HIM_BUBBLE' : 
+                   '✨ AMBIENT_SPACE'}
+                </span>
+              </div>
 
               <div className="field-row">
                 <span className="field-label">SURFACE_STATUS:</span>
@@ -905,6 +931,21 @@ export default function App() {
                       {selectedSector.matterDepot.toLocaleString()} T
                     </span>
                   </div>
+
+                  {selectedSector.occurrence !== 'Normal' && (
+                    <div className="hud-warning-box" style={{ 
+                      marginTop: '12px',
+                      background: 'rgba(56, 189, 248, 0.04)',
+                      borderColor: 'rgba(56, 189, 248, 0.2)',
+                    }}>
+                      <span className="warning-title" style={{ color: 'var(--hud-text-bright)', fontSize: '0.7rem' }}>📡 ENVIRONMENT_TRAITS ACTIVE:</span>
+                      <span className="warning-text" style={{ color: 'var(--hud-text)', fontSize: '0.65rem', lineHeight: '1.4' }}>
+                        {selectedSector.occurrence === 'StellarNursery' && 'HII Region: Rich ionization amplifies solar collection potential (+35%) and matter condensation (+25%).'}
+                        {selectedSector.occurrence === 'DustLane' && 'Cold Dust Lane: Exceptional metallic debris condensation (+120%). Stellar light heavily obscured (-60%).'}
+                        {selectedSector.occurrence === 'SupernovaBubble' && 'Supernova HIM Bubble: Gas blown away, matter heavily depleted (-75%). High radiation storms block solar harvesting (-50%).'}
+                      </span>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="hud-warning-box">

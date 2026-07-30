@@ -121,6 +121,55 @@ export class CanvasController {
   }
 
   /**
+   * Renders the majestic, glowing procedural Interstellar Medium (ISM / Biomes) backgrounds.
+   * Draws layered soft radial gradients based on visible sectors' occurrences.
+   * Runs extremely fast since it only renders for currently visible nodes.
+   */
+  drawCosmicBackground(sectors: Sector[], camera: Camera) {
+    const zoom = camera.zoom;
+    if (zoom < 0.005) return; // Prevent render lag at extreme galactic zoomout
+
+    this.ctx.save();
+    // Use additive blending so overlapping nebulae merge into bright starburst nurseries
+    this.ctx.globalCompositeOperation = 'lighter';
+
+    sectors.forEach((s) => {
+      if (s.occurrence === 'Normal') return;
+
+      const pos = this.worldToScreen(s.x, s.y, camera);
+      
+      let radius = 180 * zoom;
+      let colorCenter = 'rgba(0, 0, 0, 0)';
+      
+      if (s.occurrence === 'StellarNursery') {
+        radius = 240 * zoom;
+        // Rich pink stellar nursery nebula glow
+        colorCenter = 'rgba(236, 72, 153, 0.015)'; // pink-500 soft
+      } else if (s.occurrence === 'DustLane') {
+        radius = 200 * zoom;
+        // Dark-brown absorbing cosmic dust lane glow
+        colorCenter = 'rgba(120, 113, 108, 0.02)'; // stone-500 warm grey
+      } else if (s.occurrence === 'SupernovaBubble') {
+        radius = 350 * zoom;
+        // Hot ionized blue-violet supernova shockwave rim glow
+        colorCenter = 'rgba(139, 92, 246, 0.012)'; // violet-500
+      }
+
+      // Draw radial gradient nebula cloud
+      const grad = this.ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, radius);
+      grad.addColorStop(0, colorCenter);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      this.ctx.fillStyle = grad;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+      this.ctx.fill();
+    });
+
+    this.ctx.restore();
+  }
+
+  /**
    * Renders the retro-style Sci-Fi coordinate grid.
    */
   drawGrid(camera: Camera) {

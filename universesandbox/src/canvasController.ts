@@ -499,6 +499,46 @@ export class CanvasController {
         this.ctx.shadowColor = glowStr;
         this.ctx.shadowBlur = isSelected ? glowRadius * 2.2 : glowRadius;
 
+        // --- MINIATURE PLANETARY ORBITS & ROTATION (Phase 1) ---
+        if (s.system && s.system.planets.length > 0 && zoom > 0.32) {
+          const time = Date.now() * 0.00015; // smooth real-time tick
+          
+          s.system.planets.forEach((p) => {
+            // Keplerian orbital speed scaling: speed proportional to a^-1.5 (Kepler's Third Law!)
+            const orbitSpeed = Math.pow(1.0 / p.distance, 1.5) * 0.5;
+            // Deterministic start phase offset by coordinate hash + time drift
+            const angle = (s.x * 17 + s.y * 31 + p.orbitIndex * 89 + time * orbitSpeed) % (Math.PI * 2);
+            
+            // Map AU distance to screen pixels (compact scale relative to core star size)
+            const orbitRadiusScreen = (coreRadius + 8 + p.distance * 14) * zoom;
+
+            // 1. Draw subtle concentric orbit line
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            this.ctx.lineWidth = 0.8;
+            this.ctx.beginPath();
+            this.ctx.arc(screenPos.x, screenPos.y, orbitRadiusScreen, 0, Math.PI * 2);
+            this.ctx.stroke();
+
+            // 2. Draw tiny Keplerian rotating planet
+            const px = screenPos.x + Math.cos(angle) * orbitRadiusScreen;
+            const py = screenPos.y + Math.sin(angle) * orbitRadiusScreen;
+            const pRadius = Math.max(0.6, p.radius * 0.45 * Math.max(0.5, Math.min(1.5, zoom)));
+
+            let pColor = '#a8a29e'; // default rocky grey
+            if (p.type === 'Vulcanian') pColor = '#ef4444';
+            else if (p.type === 'Habitable') pColor = '#10b981';
+            else if (p.type === 'Desert') pColor = '#fb923c';
+            else if (p.type === 'GasGiant') pColor = '#38bdf8';
+            else if (p.type === 'IceGiant') pColor = '#818cf8';
+
+            this.ctx.fillStyle = pColor;
+            this.ctx.shadowBlur = 0; // Disable shadow blur for micro planets to maintain maximum performance
+            this.ctx.beginPath();
+            this.ctx.arc(px, py, pRadius, 0, Math.PI * 2);
+            this.ctx.fill();
+          });
+        }
+
         // --- PROZEDURAL DEBRIS DISK / KIPER BELT RENDER (Phase 5) ---
         if (s.debrisBelt) {
           this.ctx.save();

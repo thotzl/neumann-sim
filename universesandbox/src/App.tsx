@@ -72,6 +72,7 @@ export default function App() {
   }, [config.seed, config.density, physics.superCellSize, physics.galaxyChance, physics.minGalaxyRadius, physics.maxGalaxyRadius, physics.minPitchAngle, physics.maxPitchAngle, physics.systemCellSize, physics.maxJitter]);
 
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
+  const [inspectorTab, setInspectorTab] = useState<'telemetry' | 'orbits'>('telemetry');
   const [viewportStats, setViewportStats] = useState({ x: 0, y: 0, count: 0, revealedCount: 0 });
 
   // High-frequency values held in refs to maintain 60 FPS under mouse drag & zoom
@@ -796,6 +797,25 @@ export default function App() {
 
         {selectedSector ? (
           <div className="inspector-content">
+            {/* Telemetry vs Orbits Tab switcher */}
+            <div className="tab-switcher" style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
+              <button 
+                onClick={() => setInspectorTab('telemetry')} 
+                className={`hud-btn ${inspectorTab === 'telemetry' ? 'active' : ''}`}
+                style={{ flex: 1, textAlign: 'center', padding: '6px', fontSize: '0.65rem' }}
+              >
+                🔬 TELEMETRY
+              </button>
+              <button 
+                onClick={() => setInspectorTab('orbits')} 
+                className={`hud-btn ${inspectorTab === 'orbits' ? 'active' : ''}`}
+                style={{ flex: 1, textAlign: 'center', padding: '6px', fontSize: '0.65rem' }}
+                disabled={selectedSector.spectralClass === 'BlackHole'}
+              >
+                🪐 SYSTEM ORBITS
+              </button>
+            </div>
+
             <div className="star-schematic">
               {/* Retro stylized visual representation based on real RGB temperature color */}
               <div 
@@ -816,144 +836,210 @@ export default function App() {
               {selectedSector.id}
             </h3>
 
-            <div className="inspector-fields">
-              <div className="field-row">
-                <span className="field-label">COORD_X:</span>
-                <span className="field-value">{selectedSector.x} LY</span>
-              </div>
-              <div className="field-row">
-                <span className="field-label">COORD_Y:</span>
-                <span className="field-value">{selectedSector.y} LY</span>
-              </div>
-              <div className="field-row">
-                <span className="field-label">SPECTRAL_CLASS:</span>
-                <span className="field-value" style={{ color: starColor, fontWeight: 'bold' }}>
-                  {selectedSector.spectralClass}
-                </span>
-              </div>
-              
-              {/* SSoT Physical properties readout */}
-              <div className="field-row">
-                <span className="field-label">STELLAR_MASS:</span>
-                <span className="field-value" style={{ color: '#fff', fontWeight: 'bold' }}>
-                  {selectedSector.spectralClass === 'BlackHole' && selectedSector.mass > 100 
-                    ? `${(selectedSector.mass / 100).toFixed(1)}B M_sun`
-                    : `${selectedSector.mass.toFixed(2)} M_sun`}
-                </span>
-              </div>
-
-              {props && (
-                <>
-                  <div className="field-row">
-                    <span className="field-label">STELLAR_RADIUS:</span>
-                    <span className="field-value">{props.radius.toFixed(2)} R_sun</span>
-                  </div>
-                  <div className="field-row">
-                    <span className="field-label">STELLAR_VOLUME:</span>
-                    <span className="field-value">{props.volume.toFixed(2)} V_sun</span>
-                  </div>
-                  <div className="field-row">
-                    <span className="field-label">PLASMA_DENSITY:</span>
-                    <span className="field-value">{props.density.toFixed(2)} Density_sun</span>
-                  </div>
-                  <div className="field-row">
-                    <span className="field-label">SURFACE_GRAVITY:</span>
-                    <span className="field-value" style={{ fontWeight: 'bold' }}>
-                      {props.gravity.toFixed(2)} g_sun
-                    </span>
-                  </div>
-                  <div className="field-row">
-                    <span className="field-label">EFFECTIVE_TEMP:</span>
-                    <span className="field-value" style={{ color: starColor }}>
-                      {props.temperature.toLocaleString()} K
-                    </span>
-                  </div>
-                  <div className="field-row">
-                    <span className="field-label">ABSOLUTE_LUMINOSITY:</span>
-                    <span className="field-value">{props.luminosity.toFixed(2)} L_sun</span>
-                  </div>
-                </>
-              )}
-
-              {/* Cosmic Occurrence / Biome Display */}
-              <div className="field-row">
-                <span className="field-label">COSMIC_ENVIRONMENT:</span>
-                <span className="field-value" style={{ 
-                  color: selectedSector.occurrence === 'StellarNursery' ? '#f472b6' : 
-                         selectedSector.occurrence === 'DustLane' ? '#fb923c' : 
-                         selectedSector.occurrence === 'SupernovaBubble' ? '#c084fc' : 
-                         '#4ade80',
-                  fontWeight: 'bold'
-                }}>
-                  {selectedSector.occurrence === 'StellarNursery' ? '🌌 HII_STELLAR_NURSERY' : 
-                   selectedSector.occurrence === 'DustLane' ? '🪐 COLD_DUST_LANE' : 
-                   selectedSector.occurrence === 'SupernovaBubble' ? '💥 SUPERNOVA_HIM_BUBBLE' : 
-                   '✨ AMBIENT_SPACE'}
-                </span>
-              </div>
-
-              <div className="field-row">
-                <span className="field-label">SURFACE_STATUS:</span>
-                <span className="field-value" style={{ 
-                  color: selectedSector.spectralClass === 'BlackHole' ? 'var(--hud-danger)' : 
-                         props && props.hazardLevel > 15 ? '#fb923c' : 'var(--hud-green)',
-                  fontWeight: 'bold'
-                }}>
-                  {selectedSector.spectralClass === 'BlackHole' ? 'CRITICAL_HAZARD' : 
-                   props && props.hazardLevel > 15 ? 'INTENSE_RADIATION' : 'STABLE'}
-                </span>
-              </div>
-
-              {props && props.hazardLevel > 1 && (
+            {inspectorTab === 'telemetry' ? (
+              <div className="inspector-fields anim-fade-in">
                 <div className="field-row">
-                  <span className="field-label">HAZARD_RADIATION:</span>
-                  <span className="field-value" style={{ color: 'var(--hud-danger)', fontWeight: 'bold' }}>
-                    {props.hazardLevel.toFixed(1)} Rad/tick
+                  <span className="field-label">COORD_X:</span>
+                  <span className="field-value">{selectedSector.x} LY</span>
+                </div>
+                <div className="field-row">
+                  <span className="field-label">COORD_Y:</span>
+                  <span className="field-value">{selectedSector.y} LY</span>
+                </div>
+                <div className="field-row">
+                  <span className="field-label">SPECTRAL_CLASS:</span>
+                  <span className="field-value" style={{ color: starColor, fontWeight: 'bold' }}>
+                    {selectedSector.spectralClass}
                   </span>
                 </div>
-              )}
+                
+                {/* SSoT Physical properties readout */}
+                <div className="field-row">
+                  <span className="field-label">STELLAR_MASS:</span>
+                  <span className="field-value" style={{ color: '#fff', fontWeight: 'bold' }}>
+                    {selectedSector.spectralClass === 'BlackHole' && selectedSector.mass > 100 
+                      ? `${(selectedSector.mass / 100).toFixed(1)}B M_sun`
+                      : `${selectedSector.mass.toFixed(2)} M_sun`}
+                  </span>
+                </div>
 
-              <div className="divider" style={{ margin: '15px 0' }} />
-
-              <h4 className="sub-title">🪐 NATURAL RESOURCES (EST.)</h4>
-              
-              {isSelectedSectorRevealed ? (
-                <>
-                  <div className="field-row">
-                    <span className="field-label">SOLAR_ENERGY_POTENTIAL:</span>
-                    <span className="field-value highlight-energy">
-                      {selectedSector.energyDepot.toLocaleString()} E
-                    </span>
-                  </div>
-                  <div className="field-row">
-                    <span className="field-label">HEAVY_MATTER_DEPOT:</span>
-                    <span className="field-value highlight-matter">
-                      {selectedSector.matterDepot.toLocaleString()} T
-                    </span>
-                  </div>
-
-                  {selectedSector.occurrence !== 'Normal' && (
-                    <div className="hud-warning-box" style={{ 
-                      marginTop: '12px',
-                      background: 'rgba(56, 189, 248, 0.04)',
-                      borderColor: 'rgba(56, 189, 248, 0.2)',
-                    }}>
-                      <span className="warning-title" style={{ color: 'var(--hud-text-bright)', fontSize: '0.7rem' }}>📡 ENVIRONMENT_TRAITS ACTIVE:</span>
-                      <span className="warning-text" style={{ color: 'var(--hud-text)', fontSize: '0.65rem', lineHeight: '1.4' }}>
-                        {selectedSector.occurrence === 'StellarNursery' && 'HII Region: Rich ionization amplifies solar collection potential (+35%) and matter condensation (+25%).'}
-                        {selectedSector.occurrence === 'DustLane' && 'Cold Dust Lane: Exceptional metallic debris condensation (+120%). Stellar light heavily obscured (-60%).'}
-                        {selectedSector.occurrence === 'SupernovaBubble' && 'Supernova HIM Bubble: Gas blown away, matter heavily depleted (-75%). High radiation storms block solar harvesting (-50%).'}
+                {props && (
+                  <>
+                    <div className="field-row">
+                      <span className="field-label">STELLAR_RADIUS:</span>
+                      <span className="field-value">{props.radius.toFixed(2)} R_sun</span>
+                    </div>
+                    <div className="field-row">
+                      <span className="field-label">STELLAR_VOLUME:</span>
+                      <span className="field-value">{props.volume.toFixed(2)} V_sun</span>
+                    </div>
+                    <div className="field-row">
+                      <span className="field-label">PLASMA_DENSITY:</span>
+                      <span className="field-value">{props.density.toFixed(2)} Density_sun</span>
+                    </div>
+                    <div className="field-row">
+                      <span className="field-label">SURFACE_GRAVITY:</span>
+                      <span className="field-value" style={{ fontWeight: 'bold' }}>
+                        {props.gravity.toFixed(2)} g_sun
                       </span>
                     </div>
-                  )}
-                </>
-              ) : (
-                <div className="hud-warning-box">
-                  <span className="warning-title">⚠️ WARNING: NO DATA</span>
-                  <span className="warning-text">Sector must be scanned (using the REVEAL brush) to retrieve resource readings.</span>
+                    <div className="field-row">
+                      <span className="field-label">EFFECTIVE_TEMP:</span>
+                      <span className="field-value" style={{ color: starColor }}>
+                        {props.temperature.toLocaleString()} K
+                      </span>
+                    </div>
+                    <div className="field-row">
+                      <span className="field-label">ABSOLUTE_LUMINOSITY:</span>
+                      <span className="field-value">{props.luminosity.toFixed(2)} L_sun</span>
+                    </div>
+                  </>
+                )}
+
+                {/* Cosmic Occurrence / Biome Display */}
+                <div className="field-row">
+                  <span className="field-label">COSMIC_ENVIRONMENT:</span>
+                  <span className="field-value" style={{ 
+                    color: selectedSector.occurrence === 'StellarNursery' ? '#f472b6' : 
+                           selectedSector.occurrence === 'DustLane' ? '#fb923c' : 
+                           selectedSector.occurrence === 'SupernovaBubble' ? '#c084fc' : 
+                           '#4ade80',
+                    fontWeight: 'bold'
+                  }}>
+                    {selectedSector.occurrence === 'StellarNursery' ? '🌌 HII_STELLAR_NURSERY' : 
+                     selectedSector.occurrence === 'DustLane' ? '🪐 COLD_DUST_LANE' : 
+                     selectedSector.occurrence === 'SupernovaBubble' ? '💥 SUPERNOVA_HIM_BUBBLE' : 
+                     '✨ AMBIENT_SPACE'}
+                  </span>
                 </div>
-              )}
-            </div>
+
+                <div className="field-row">
+                  <span className="field-label">SURFACE_STATUS:</span>
+                  <span className="field-value" style={{ 
+                    color: selectedSector.spectralClass === 'BlackHole' ? 'var(--hud-danger)' : 
+                           props && props.hazardLevel > 15 ? '#fb923c' : 'var(--hud-green)',
+                    fontWeight: 'bold'
+                  }}>
+                    {selectedSector.spectralClass === 'BlackHole' ? 'CRITICAL_HAZARD' : 
+                     props && props.hazardLevel > 15 ? 'INTENSE_RADIATION' : 'STABLE'}
+                  </span>
+                </div>
+
+                {props && props.hazardLevel > 1 && (
+                  <div className="field-row">
+                    <span className="field-label">HAZARD_RADIATION:</span>
+                    <span className="field-value" style={{ color: 'var(--hud-danger)', fontWeight: 'bold' }}>
+                      {props.hazardLevel.toFixed(1)} Rad/tick
+                    </span>
+                  </div>
+                )}
+
+                <div className="divider" style={{ margin: '15px 0' }} />
+
+                <h4 className="sub-title">🪐 NATURAL RESOURCES (EST.)</h4>
+                
+                {isSelectedSectorRevealed ? (
+                  <>
+                    <div className="field-row">
+                      <span className="field-label">SOLAR_ENERGY_POTENTIAL:</span>
+                      <span className="field-value highlight-energy">
+                        {selectedSector.energyDepot.toLocaleString()} E
+                      </span>
+                    </div>
+                    <div className="field-row">
+                      <span className="field-label">HEAVY_MATTER_DEPOT:</span>
+                      <span className="field-value highlight-matter">
+                        {selectedSector.matterDepot.toLocaleString()} T
+                      </span>
+                    </div>
+
+                    {selectedSector.occurrence !== 'Normal' && (
+                      <div className="hud-warning-box" style={{ 
+                        marginTop: '12px',
+                        background: 'rgba(56, 189, 248, 0.04)',
+                        borderColor: 'rgba(56, 189, 248, 0.2)',
+                      }}>
+                        <span className="warning-title" style={{ color: 'var(--hud-text-bright)', fontSize: '0.7rem' }}>📡 ENVIRONMENT_TRAITS ACTIVE:</span>
+                        <span className="warning-text" style={{ color: 'var(--hud-text)', fontSize: '0.65rem', lineHeight: '1.4' }}>
+                          {selectedSector.occurrence === 'StellarNursery' && 'HII Region: Rich ionization amplifies solar collection potential (+35%) and matter condensation (+25%).'}
+                          {selectedSector.occurrence === 'DustLane' && 'Cold Dust Lane: Exceptional metallic debris condensation (+120%). Stellar light heavily obscured (-60%).'}
+                          {selectedSector.occurrence === 'SupernovaBubble' && 'Supernova HIM Bubble: Gas blown away, matter heavily depleted (-75%). High radiation storms block solar harvesting (-50%).'}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="hud-warning-box">
+                    <span className="warning-title">⚠️ WARNING: NO DATA</span>
+                    <span className="warning-text">Sector must be scanned (using the REVEAL brush) to retrieve resource readings.</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="inspector-orbits anim-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <h4 className="sub-title">🪐 STELLAR ORBIT CONFIG</h4>
+                {selectedSector.system && (selectedSector.system.planets.length > 0 || selectedSector.system.asteroidBelts.length > 0) ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '350px', overflowY: 'auto', paddingRight: '4px' }}>
+                    {/* Render Orbit timeline */}
+                    {Array.from({ length: Math.max(...selectedSector.system.planets.map(p => p.orbitIndex), ...selectedSector.system.asteroidBelts, 0) }, (_, index) => {
+                      const idx = index + 1;
+                      const planet = selectedSector.system?.planets.find(p => p.orbitIndex === idx);
+                      const isBelt = selectedSector.system?.asteroidBelts.includes(idx);
+
+                      if (isBelt) {
+                        return (
+                          <div key={`belt-${idx}`} className="field-row" style={{ border: '1px dashed rgba(249, 115, 22, 0.35)', padding: '6px 8px', background: 'rgba(249, 115, 22, 0.04)', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.65rem', color: '#f97316', fontWeight: 'bold' }}>Orbit {idx}: ░░ ASTEROID_BELT ░░</span>
+                            <span style={{ fontSize: '0.62rem', color: '#fb923c', fontStyle: 'italic' }}>Matter Rich</span>
+                          </div>
+                        );
+                      }
+
+                      if (planet) {
+                        const getPlanetColor = (type: string) => {
+                          switch (type) {
+                            case 'Vulcanian': return '#ef4444';
+                            case 'Rocky': return '#a8a29e';
+                            case 'Habitable': return '#10b981';
+                            case 'Desert': return '#fb923c';
+                            case 'GasGiant': return '#38bdf8';
+                            case 'IceGiant': return '#818cf8';
+                            default: return '#94a3b8';
+                          }
+                        };
+                        const pColor = getPlanetColor(planet.type);
+                        
+                        return (
+                          <div key={planet.id} className="field-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '4px', border: '1px solid rgba(56, 189, 248, 0.08)', padding: '6px 8px', background: 'rgba(15, 23, 42, 0.45)', borderRadius: '4px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: pColor, boxShadow: `0 0 6px ${pColor}` }} />
+                                <span style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                                  {planet.orbitIndex}. {planet.type.toUpperCase()}
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '0.62rem', color: 'var(--hud-text-bright)', fontWeight: 'bold' }}>{planet.distance.toFixed(2)} AU</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: 'var(--hud-text)', borderTop: '1px solid rgba(255,255,255,0.02)', paddingTop: '3px' }}>
+                              <span>Radius: {planet.radius.toFixed(1)} R_e</span>
+                              <span>Temp: {planet.temperature} K</span>
+                              <span>Moons: {planet.moonsCount}</span>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })}
+                  </div>
+                ) : (
+                  <div className="hud-warning-box">
+                    <span className="warning-title">⚠️ SYSTEM EMPTY</span>
+                    <span className="warning-text">Stellar winds have swept this vicinity bare. No stable planetary orbits exist.</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div className="inspector-empty">

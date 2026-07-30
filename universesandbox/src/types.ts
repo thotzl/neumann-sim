@@ -8,6 +8,24 @@ export type SpectralClass = 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M' | 'BlackHole
 
 export type CosmicOccurrence = 'Normal' | 'DustLane' | 'StellarNursery' | 'SupernovaBubble';
 
+export type PlanetType = 'Vulcanian' | 'Rocky' | 'Habitable' | 'Desert' | 'GasGiant' | 'IceGiant';
+
+export interface Planet {
+  id: string;
+  orbitIndex: number;
+  distance: number;       // Orbit distance in Astronomical Units (AU)
+  type: PlanetType;
+  radius: number;         // Radius relative to Earth (R_earth)
+  mass: number;           // Mass relative to Earth (M_earth)
+  temperature: number;    // Surface temperature in Kelvin
+  moonsCount: number;     // Number of orbiting moons
+}
+
+export interface SolarSystem {
+  planets: Planet[];
+  asteroidBelts: number[]; // Orbit indices where debris belts formed instead of planets
+}
+
 export interface Sector {
   id: string;
   x: number; // Grid-aligned X coordinate (multiple of 100)
@@ -17,6 +35,7 @@ export interface Sector {
   occurrence: CosmicOccurrence; // The cosmic environment/biome
   energyDepot: number;
   matterDepot: number;
+  system?: SolarSystem; // Dynamically generated solar system orbits (Phase 1)
 }
 
 export interface SandboxConfig {

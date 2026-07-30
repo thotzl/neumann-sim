@@ -1,4 +1,4 @@
-import { Sector, SpectralClass, CosmicOccurrence } from './types';
+import { Sector, SpectralClass, CosmicOccurrence, SolarSystem, Planet, PlanetType } from './types';
 
 /**
  * Converts a Planck color temperature in Kelvin to an RGB object
@@ -417,6 +417,109 @@ export class UniverseGenerator {
   }
 
   /**
+   * Deterministically generates a beautiful, Kepler-aligned Solar System 
+   * around a star based purely on its gehashten coordinate seed and physical mass/luminosity.
+   */
+  static generateSolarSystem(x: number, y: number, starMass: number, worldSeed: number): SolarSystem {
+    // Generate Sektor seed
+    const sectorSeed = (Math.imul(x, 12853) ^ Math.imul(y, 28351) ^ worldSeed) & 0xffffffff;
+    const prng = new Mulberry32(sectorSeed);
+
+    const planets: Planet[] = [];
+    const asteroidBelts: number[] = [];
+
+    // O-giants have massive stellar winds (fewer stable planets), M-dwarfs have compact tightly packed orbits
+    let maxPlanets = 8;
+    let minPlanets = 2;
+    if (starMass > 15) {
+      maxPlanets = 3;
+      minPlanets = 0;
+    } else if (starMass > 6.0) {
+      maxPlanets = 5;
+      minPlanets = 1;
+    }
+
+    const planetCount = Math.round(minPlanets + prng.next() * (maxPlanets - minPlanets));
+    if (planetCount === 0) {
+      return { planets, asteroidBelts };
+    }
+
+    // Exponent factor for Titius-Bode spacing
+    const gamma = 1.45 + prng.next() * 0.25; // exponential base 1.45 to 1.7
+    const props = getStellarProperties(starMass);
+
+    for (let i = 1; i <= planetCount; i++) {
+      // Titius-Bode Orbit distance calculation in Astronomical Units (AU)
+      const distance = 0.22 * Math.pow(gamma, i) + (prng.next() - 0.5) * 0.05;
+
+      // Deterministic Orbit Asteroid Debris Belt roll
+      if (prng.next() < 0.15 && i > 1 && i < planetCount) {
+        asteroidBelts.push(i);
+        continue; // Forms an Asteroid Debris Belt instead of a planet!
+      }
+
+      // Calculate Planet temperature based on Inverse-Square Law & Albedo
+      // T_p = 278 * L^0.25 / sqrt(a)
+      const temperature = Math.round((278 * Math.pow(props.luminosity, 0.25)) / Math.sqrt(distance));
+
+      // Classify planet type based on temperature boundaries
+      let type: PlanetType = 'Rocky';
+      let radius = 1.0;
+      let mass = 1.0;
+      let moonsCount = 0;
+
+      if (temperature >= 600) {
+        type = 'Vulcanian'; // Geschmolzenes Gestein, massive resources
+        radius = 0.4 + prng.next() * 0.7; // Mercury size
+        mass = Math.pow(radius, 3.0) * (0.85 + prng.next() * 0.2);
+        moonsCount = 0; // Too close to star for stable moons
+      } else if (temperature >= 380) {
+        type = 'Rocky'; // barren/warm desert worlds
+        radius = 0.5 + prng.next() * 0.8;
+        mass = Math.pow(radius, 3.0) * (0.9 + prng.next() * 0.2);
+        moonsCount = prng.next() < 0.2 ? 1 : 0;
+      } else if (temperature >= 245) {
+        // Goldilocks zone!
+        type = 'Habitable'; 
+        radius = 0.8 + prng.next() * 0.8; // Earth/Super-Earth size
+        mass = Math.pow(radius, 3.0) * (1.0 + prng.next() * 0.15);
+        moonsCount = Math.floor(prng.next() * 3); // 0 to 2 moons
+      } else if (temperature >= 140) {
+        type = 'Desert'; // cool mars-like frozen soil/desert
+        radius = 0.5 + prng.next() * 0.6;
+        mass = Math.pow(radius, 3.0) * (0.8 + prng.next() * 0.2);
+        moonsCount = Math.floor(prng.next() * 3);
+      } else if (temperature >= 70) {
+        // Frost-boundary Gas giants
+        type = 'GasGiant';
+        radius = 3.5 + prng.next() * 7.5; // Jupiter size
+        mass = Math.pow(radius, 2.2) * (0.15 + prng.next() * 0.15); // gas density
+        moonsCount = Math.floor(4 + prng.next() * 12); // numerous moons
+      } else {
+        type = 'IceGiant'; // frozen nitrogen/methane outer giant
+        radius = 2.8 + prng.next() * 4.5; // Neptune size
+        mass = Math.pow(radius, 2.3) * (0.2 + prng.next() * 0.1);
+        moonsCount = Math.floor(2 + prng.next() * 8);
+      }
+
+      const id = `SYS_X${x}_Y${y}-P${i}`;
+
+      planets.push({
+        id,
+        orbitIndex: i,
+        distance,
+        type,
+        radius,
+        mass,
+        temperature,
+        moonsCount
+      });
+    }
+
+    return { planets, asteroidBelts };
+  }
+
+  /**
    * Generates a single sector deterministically for a given cell coordinate (cx, cy)
    * if it exists under the current world seed and local density waves.
    */
@@ -542,6 +645,8 @@ export class UniverseGenerator {
       }
     }
 
+    const system = this.generateSolarSystem(x, y, mass, seed);
+
     const id = `SYS_X${x}_Y${y}`;
 
     return {
@@ -553,6 +658,7 @@ export class UniverseGenerator {
       occurrence,
       energyDepot,
       matterDepot,
+      system
     };
   }
 

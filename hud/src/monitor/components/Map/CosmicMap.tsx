@@ -257,7 +257,8 @@ export const CosmicMap = ({ state, selection, setSelection }: CosmicMapProps) =>
 
       // 6. Draw main-sequence stars, event horizons, and pulsars
       const selectedId = selection?.id || null;
-      controller.drawSectors(sectors, cameraRef.current, selectedId, revealedSet);
+      const defaultTuning = { sizeScale: 0.25, brightnessScale: 1.1, colorShift: 0, colorContrast: 1.0, planetSizeScale: 0.35, orbitSpacingScale: 1.0 };
+      controller.drawSectors(sectors, cameraRef.current, selectedId, revealedSet, defaultTuning);
 
       // 7. Render Bobs and Vessels next to the systems (Augmentation!)
       const zoom = cameraRef.current.zoom;

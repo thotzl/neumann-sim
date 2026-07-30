@@ -324,14 +324,14 @@ export class CanvasController {
    * Renders the visible sectors.
    */
   drawSectors(
-    sectors: Sector[], 
-    camera: Camera, 
-    selectedId: string | null, 
+    sectors: Sector[],
+    camera: Camera,
+    selectedId: string | null,
     revealedSectors: Set<string>,
     visualTuning?: { sizeScale: number; brightnessScale: number; colorShift: number; colorContrast: number; planetSizeScale: number; orbitSpacingScale: number }
   ) {
     const zoom = camera.zoom;
-    const tuning = visualTuning || { sizeScale: 1.0, brightnessScale: 1.0, colorShift: 0, colorContrast: 1.0, planetSizeScale: 0.35, orbitSpacingScale: 1.0 };
+    const tuning = visualTuning || { sizeScale: 0.25, brightnessScale: 1.1, colorShift: 0, colorContrast: 1.0, planetSizeScale: 0.35, orbitSpacingScale: 1.0 };
 
     sectors.forEach((s) => {
       const screenPos = this.worldToScreen(s.x, s.y, camera);

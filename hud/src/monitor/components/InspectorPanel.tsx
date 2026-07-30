@@ -9,7 +9,7 @@ import {
 } from '../utils/dashboardHelpers';
 import { VesselSchematicModal } from './VesselSchematicModal';
 import { ShipyardCatalogModal } from './ShipyardCatalogModal';
-import { hashStringToInt, getStellarProperties } from '../../shared/generator';
+import { hashStringToInt, getStellarProperties, UniverseGenerator } from '../../shared/generator';
 
 interface InspectorPanelProps {
   state: WorldState;
@@ -33,7 +33,7 @@ interface DistantSignature {
 }
 
 export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, selectedSystem }: InspectorPanelProps) => {
-  const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'meta' | 'raw'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'meta' | 'raw' | 'orbits'>('status');
   const [showVesselSchematic, setShowVesselSchematic] = useState(false);
   const [selectedShipForSchematic, setSelectedShipForSchematic] = useState<Ship | null>(null);
   const [showShipyardCatalog, setShowShipyardCatalog] = useState(false);
@@ -64,6 +64,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
   let spectralClass = 'M';
   let starMass = 1.0;
   let stellarProps = { radius: 1.0, luminosity: 1.0, temperature: 5778, gravity: 1.0 };
+  let solarSystem: any = null;
   if (selectedSystem) {
     const nameHash = hashStringToInt(selectedSystem.name);
     starMass = 0.1 + (nameHash % 200) / 10;
@@ -84,6 +85,7 @@ export const InspectorPanel = ({ state, selection, setSelection, selectedAgent, 
       spectralClass = 'K';
     }
     stellarProps = getStellarProperties(starMass);
+    solarSystem = UniverseGenerator.generateSolarSystem(starMass, nameHash);
   }
 
   return (

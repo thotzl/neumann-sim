@@ -1,10 +1,9 @@
 import { create } from 'zustand';
 import { WorldState, LogEntry, Selection, LogCategory, HistoryEntry } from '../types';
 
-// Event-Driven Throttled Batch-Buffer Module Scope Variables (V14.1 Reactive Damping)
-let pendingStateBuffer: any = null;
-let pendingLogsBuffer: any[] = [];
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+// Event-Driven Adaptive Queue Variables (V14.5 Congestion-Controlled Flow)
+let updateQueue: Array<{ type: string; payload: any }> = [];
+let isProcessingQueue = false;
 
 const getSimpleHash = (str: string): string => {
   let hash = 0;
@@ -225,82 +224,121 @@ export const useC2Store = create<C2Store>((set) => ({
   }),
 
   enqueueLiveUpdate: (type, payload) => {
-    if (type === 'LIVE_STATE_UPDATE') {
-      pendingStateBuffer = pendingStateBuffer ? { ...pendingStateBuffer, ...payload } : payload;
-    } else if (type === 'REALTIME_LOGS') {
-      if (payload && Array.isArray(payload)) {
-        pendingLogsBuffer.push(...payload);
-      }
-    }
-
-    if (!debounceTimer) {
-      // Butterweicher, flimmerfreier 150ms Dämpfungs-Takt im RAM (V14.1 Reactive Damping)
-      debounceTimer = setTimeout(() => {
-        debounceTimer = null;
-
-        // Führe atomares, synchronisiertes Zustand-Update aus
-        set((prev) => {
-          let nextState = prev.state;
-          if (pendingStateBuffer) {
-            // Wende reaktives SSoT Merging an
-            nextState = { ...prev.state, ...pendingStateBuffer };
-
-            // Schütze Agentennamen (V13.5 ID-Merging)
-            if (pendingStateBuffer.agents && Array.isArray(pendingStateBuffer.agents)) {
-              nextState.agents = pendingStateBuffer.agents.map((newAgent: any) => {
-                const prevAgent = prev.state?.agents?.find((a: any) => a.id === newAgent.id);
-                return prevAgent ? { ...prevAgent, ...newAgent } : newAgent;
-              });
-            }
-
-            // Koordinaten-Heilung im RAM
-            if (nextState && nextState.agents && Array.isArray(nextState.agents)) {
-              nextState.agents.forEach((a: any) => {
-                if (a.parent_id === undefined && a.sensors?.parent_id) {
-                  a.parent_id = a.sensors.parent_id;
-                }
-                if (a.host_type === 'ship' && a.host_id) {
-                  const ship = nextState.ships?.find((s: any) => s.id.toString() === a.host_id?.toString());
-                  a.location = ship ? ship.system_name : 'Unknown';
-                } else if (a.host_type === 'matrix' && a.host_id) {
-                  let systemName = 'Unknown';
-                  if (nextState.systems) {
-                    for (const sys of nextState.systems) {
-                      if (sys.infra && sys.infra.some((inf: any) => inf.id.toString() === a.host_id?.toString())) {
-                        systemName = sys.name;
-                        break;
-                      }
-                    }
-                  }
-                  a.location = systemName;
-                }
-              });
-            }
-            pendingStateBuffer = null;
-          }
-
-          let nextLogs = prev.logs;
-          if (pendingLogsBuffer.length > 0) {
-            const newEntries = pendingLogsBuffer.map(event => {
-              const logId = event.id || `live-${event.tick}-${event.agentId}-${getSimpleHash(event.text)}`;
-              return {
-                id: logId,
-                tick: event.tick,
-                agentId: event.agentId,
-                agentName: event.agentName || event.agentId,
-                type: event.type,
-                text: event.text
-              };
-            });
-            nextLogs = [...prev.logs, ...newEntries]
-              .filter((ne, index, self) => self.findIndex(p => p.id === ne.id) === index)
-              .sort((a, b) => a.tick - b.tick);
-            pendingLogsBuffer = [];
-          }
-
-          return { state: nextState, logs: nextLogs };
-        });
-      }, 150); // 150ms Dämpfungsfenster
+    updateQueue.push({ type, payload });
+    if (!isProcessingQueue) {
+      processNextQueueItem(set);
     }
   }
 }));
+
+/**
+ * Event-Driven Adaptive Queue Processor (V14.5 Congestion-Controlled Flow)
+ * Drains incoming WebSocket state and log frames sequentially to prevent UI-stuttering.
+ * Dynamically adjusts drain speeds (80ms -> 30ms -> 10ms) and compresses queues when congested.
+ */
+const processNextQueueItem = (set: any) => {
+  if (updateQueue.length === 0) {
+    isProcessingQueue = false;
+    return;
+  }
+  isProcessingQueue = true;
+
+  // Adaptive Congestion Control: Scale interval based on queue depth
+  let speed = 80; // Standard buttery-smooth interval (80ms)
+  if (updateQueue.length > 25) {
+    speed = 10; // Catch up rapidly (10ms)
+  } else if (updateQueue.length > 10) {
+    speed = 30; // Speed up (30ms)
+  }
+
+  // Pre-merge state updates if the queue is severely congested (>40 items) to prevent lagging
+  if (updateQueue.length > 40) {
+    const compressedQueue: Array<{ type: string; payload: any }> = [];
+    let mergedStatePayload: any = null;
+    updateQueue.forEach(item => {
+      if (item.type === 'LIVE_STATE_UPDATE') {
+        mergedStatePayload = mergedStatePayload ? { ...mergedStatePayload, ...item.payload } : item.payload;
+      } else {
+        if (mergedStatePayload) {
+          compressedQueue.push({ type: 'LIVE_STATE_UPDATE', payload: mergedStatePayload });
+          mergedStatePayload = null;
+        }
+        compressedQueue.push(item);
+      }
+    });
+    if (mergedStatePayload) {
+      compressedQueue.push({ type: 'LIVE_STATE_UPDATE', payload: mergedStatePayload });
+    }
+    updateQueue = compressedQueue;
+  }
+
+  const nextItem = updateQueue.shift();
+  if (!nextItem) {
+    isProcessingQueue = false;
+    return;
+  }
+
+  const { type, payload } = nextItem;
+
+  set((prev: any) => {
+    let nextState = prev.state;
+    let nextLogs = prev.logs;
+
+    if (type === 'LIVE_STATE_UPDATE' && payload) {
+      nextState = { ...prev.state, ...payload };
+
+      // Preserves chosen_name during partials (V13.5)
+      if (payload.agents && Array.isArray(payload.agents)) {
+        nextState.agents = payload.agents.map((newAgent: any) => {
+          const prevAgent = prev.state?.agents?.find((a: any) => a.id === newAgent.id);
+          return prevAgent ? { ...prevAgent, ...newAgent } : newAgent;
+        });
+      }
+
+      // Self-healing coordinate resolution (V14.1)
+      if (nextState && nextState.agents && Array.isArray(nextState.agents)) {
+        nextState.agents.forEach((a: any) => {
+          if (a.parent_id === undefined && a.sensors?.parent_id) {
+            a.parent_id = a.sensors.parent_id;
+          }
+          if (a.host_type === 'ship' && a.host_id) {
+            const ship = nextState.ships?.find((s: any) => s.id.toString() === a.host_id?.toString());
+            a.location = ship ? ship.system_name : 'Unknown';
+          } else if (a.host_type === 'matrix' && a.host_id) {
+            let systemName = 'Unknown';
+            if (nextState.systems) {
+              for (const sys of nextState.systems) {
+                if (sys.infra && sys.infra.some((inf: any) => inf.id.toString() === a.host_id?.toString())) {
+                  systemName = sys.name;
+                  break;
+                }
+              }
+            }
+            a.location = systemName;
+          }
+        });
+      }
+    } 
+    
+    else if (type === 'REALTIME_LOGS' && payload && Array.isArray(payload)) {
+      const newEntries = payload.map(event => {
+        const logId = event.id || `live-${event.tick}-${event.agentId}-${getSimpleHash(event.text)}`;
+        return {
+          id: logId,
+          tick: event.tick,
+          agentId: event.agentId,
+          agentName: event.agentName || event.agentId,
+          type: event.type,
+          text: event.text
+        };
+      });
+      nextLogs = [...prev.logs, ...newEntries]
+        .filter((ne, index, self) => self.findIndex(p => p.id === ne.id) === index)
+        .sort((a, b) => a.tick - b.tick);
+    }
+
+    return { state: nextState, logs: nextLogs };
+  });
+
+  setTimeout(() => processNextQueueItem(set), speed);
+};

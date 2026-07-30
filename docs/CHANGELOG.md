@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.5** | **2026-07-30** | `RELEASED` | Symmetrie-Feinabstimmung & Interstellare Härte (V13.5) | `[TCK-114]` |
 | **v13.0** | **2026-07-29** | `RELEASED` | V13.0 Clean Architecture & Modular Services | `[TCK-114]` |
 | **v12.0** | **2026-07-28** | `RELEASED` | WebSocket-First Real-Time Architecture | `[TCK-011]` |
 | **v11.0** | *In Planung (Q4 2026)* | `draft` | Factions & Fog of War (RTS-Evolution) | `[TCK-106]`, `[TCK-112]`, `[TCK-113]` |
@@ -18,6 +19,25 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.5] - 2026-07-30
+*Das "Symmetrie-Feinabstimmung & Interstellare Härte" Upgrade. Dieser Meilenstein vollendet die Clean-Architecture durch die Einführung strenger physikalischer Flugstrandungs-Regeln, einer Blackout-resistenten Solarphysik, unfehlbarer temporaler Doppel-Doppelpunkt Arithmetiken und names-sicherer Klon-Erzeugungs-Chroniken im Sim-Runner.*
+
+#### Added (Neue Features)
+- **Physikalische Interstellare Transitstrandung:** Enforcements in `physics_update.py`, bei denen antriebslos gewordene Schiffe (0 Energy) im interstellaren Vakuum sofort stranden, ihren Flugfortschritt einfrieren und eine visuelle Alarmmeldung in SQLite eintragen.
+  - *Ticket:* `[TCK-114]` ([Link](../.tickets/closed/TCK-114-codebase-restructuring.md))
+- **Duales Temporal-Arithmetik Format `::`:** Striktes, fehlerfreies `round::tick` Zeit-Rendering (z.B. `1::1`, `1::2`), welches kognitive JSON-ValueError Abstürze in Python und NodeJS ausschließt.
+  - *Ticket:* `[TCK-114]` ([Link](../.tickets/closed/TCK-114-codebase-restructuring.md))
+- **Echtzeit-Mailbox-Routing & SCUT-Namen:** Inbox-Routing in `mailbox_service.js`, das alle eingehenden Funkwellen-Sub-Ethersprüche mit dem echten Namen (`chosen_name`) statt mit kryptischen IDs auflöst und in `log.md` verbucht.
+  - *Ticket:* `[TCK-114]` ([Link](../.tickets/closed/TCK-114-codebase-restructuring.md))
+- **Names-Sicheres Klon-Resolving:** Resolving-Erweiterung im Klon-Bootstrapper, die bei Neugeburten den Namen des Vaters unbestechlich aus `state.agentNames` statt unvollständigen `state.agents` auflöst und `"Unnamed"` Legacy-Einträge in `log.md` eliminiert.
+  - *Ticket:* `[TCK-114]` ([Link](../.tickets/closed/TCK-114-codebase-restructuring.md))
+
+#### Fixed (Fehlerbehebungen)
+- **Blackout-Solar-Drosselungs-Bypass:** Fehlerbehebung in der physikalischen Solarzellen-Berechnung. Lokale Sektor-Blackouts drosseln zwar die aktive Industrie, lassen aber die physische Solar-Ausbeute der Sonnenkollektoren unberührt bei 100 % nominalem Output.
+  - *Ticket:* `[TCK-114]` ([Link](../.tickets/closed/TCK-114-codebase-restructuring.md))
+
+---
 
 ### [v13.0] - 2026-07-29
 *Das "Modulare Clean-Architecture" Upgrade. Dieser Meilenstein entkoppelt den ehemals monolithischen Runner in wiederverwendbare, logisch isolierte Domänen-Services, eliminiert sämtlichen Inline-Fremdcode aus dem System und spaltet den Datenbank-Seeder physisch in Normal- und Test-Betriebsmodi auf.*

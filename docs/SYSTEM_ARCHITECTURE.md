@@ -48,4 +48,10 @@ All automated JavaScript, Python, and E2E simulation tests are located under `/t
 ## 8. CLI Usage
 - **Start Simulation:** `npm run sim <experiment_name>`
 - **Inject Patch:** `npm run inject <experiment_name> <engine|tools>`
+
+## 9. WebSocket-First Broadcast & Real-Time Monitor (V14.5)
+Die Simulation ist direkt an ein rein flüchtiges, ereignisgesteuertes WebSocket-Übertragungsnetzwerk gekoppelt:
+- **RAM-First Broadcasting:** Nach jedem aktiven oder übersprungenen Turn triggert der Runner `/src/sim_engine/core/runner.js` den `state_exporter.js`, um den aktuellen Sektorzustand im RAM zu kompilieren und per in-memory HTTP-POST an den VoG-Server auf Port 3001 zu schießen (0 % SSD-Schreibabnutzung).
+- **VoG C2 Server (`monitor/vog_server.cjs`):** Fungiert als flüchtiger WebSocket-Broker. Er verschmilzt eintreffende Teil-Zustände im RAM und leitet sie unbemerkt per Websocket an alle Browser-Clients weiter.
+- **Adaptive Congestion-Controlled Queue (`monitor/src/store/stateStore.ts`):** Um asynchrone React-Render-Blockaden und UI-Flimmern bei Hochfrequenz-Updates (50Hz) im Standby zu verhindern, schleust der Zustand-Store alle Nachrichten durch eine sequentielle FIFO-Queue. Diese leert sich im Normalbetrieb alle 80ms seidenweich und beschleunigt bei Stau automatisch auf bis zu 10ms (inklusive RAM-Verschmelzung), was buttery-smooth 60 FPS Flug-Interpolationen auf dem Canvas garantiert.
 - **Build Experiment:** `python3 scripts/build.py <name> --mission "..."`

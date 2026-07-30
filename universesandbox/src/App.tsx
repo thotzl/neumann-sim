@@ -37,6 +37,7 @@ export default function App() {
     sizeScale: 0.22,        // Star size ratio contrast exponent (default 0.22, 0.0 is uniform size)
     brightnessScale: 1.0,   // Star glow ratio contrast multiplier (default 1.0, 0.0 is uniform glow)
     colorShift: 0,          // offsets Kelvin color temperature visually (+- Kelvin offset)
+    colorContrast: 1.0,     // stretches spectral temperature contrast around solar baseline (default 1.0)
   });
 
   // Sync state to static fields of UniverseGenerator
@@ -398,6 +399,7 @@ export default function App() {
       sizeScale: 0.22,
       brightnessScale: 1.0,
       colorShift: 0,
+      colorContrast: 1.0
     });
     // Centering, FOW reset, and start node selection will trigger automatically in useEffect reacting to seed/density state reset!
   };
@@ -757,6 +759,20 @@ export default function App() {
             step="200"
             value={visualTuning.colorShift}
             onChange={(e) => setVisualTuning(prev => ({ ...prev, colorShift: parseInt(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* Color Contrast Scale */}
+        <div className="control-group">
+          <label>MAP_SPECTRAL_COLOR_CONTRAST: <strong>{visualTuning.colorContrast === 0 ? "UNIFORM_COLOR" : `${(visualTuning.colorContrast * 100).toFixed(0)}% (Ratio)`}</strong></label>
+          <input
+            type="range"
+            min="0.0"
+            max="2.5"
+            step="0.05"
+            value={visualTuning.colorContrast}
+            onChange={(e) => setVisualTuning(prev => ({ ...prev, colorContrast: parseFloat(e.target.value) }))}
             className="hud-slider"
           />
         </div>

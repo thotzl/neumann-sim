@@ -226,10 +226,10 @@ export class CanvasController {
     camera: Camera, 
     selectedId: string | null, 
     revealedSectors: Set<string>,
-    visualTuning?: { sizeScale: number; brightnessScale: number; colorShift: number }
+    visualTuning?: { sizeScale: number; brightnessScale: number; colorShift: number; colorContrast: number }
   ) {
     const zoom = camera.zoom;
-    const tuning = visualTuning || { sizeScale: 1.0, brightnessScale: 1.0, colorShift: 0 };
+    const tuning = visualTuning || { sizeScale: 1.0, brightnessScale: 1.0, colorShift: 0, colorContrast: 1.0 };
 
     sectors.forEach((s) => {
       const screenPos = this.worldToScreen(s.x, s.y, camera);
@@ -283,9 +283,11 @@ export class CanvasController {
         const baseSize = 3.5 * Math.pow(props.radius, tuning.sizeScale);
         const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom));
 
-        // --- SPECULAR TEMPERATURE SHIFT ---
-        // Shift color temperature visually based on slider (Kelvin offset)
-        const adjustedTemp = Math.max(1000, Math.min(40000, props.temperature + tuning.colorShift));
+        // --- SPECULAR TEMPERATURE SHIFT & CONTRAST STRETCH ---
+        // Shift and stretch temperature difference around the solar baseline (5778K)
+        // If colorContrast = 0, all stars have the identical color temperature (uniform)
+        const deltaT = props.temperature - 5778;
+        const adjustedTemp = Math.max(1000, Math.min(40000, 5778 + deltaT * tuning.colorContrast + tuning.colorShift));
         
         // Dynamic color palette determined by shifted temperature
         let colorStr = '#ffffff';

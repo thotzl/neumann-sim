@@ -10,6 +10,7 @@ export interface Sector {
   id: string;
   x: number; // Grid-aligned X coordinate (multiple of 100)
   y: number; // Grid-aligned Y coordinate (multiple of 100)
+  mass: number; // Single Source of Truth for physical attributes (M_sun)
   spectralClass: SpectralClass;
   energyDepot: number;
   matterDepot: number;

@@ -1,5 +1,5 @@
-import { Camera, Sector, SpectralClass } from './types';
-import { Galaxy } from './generator';
+import { Camera, Sector } from './types';
+import { Galaxy, getStellarProperties } from './generator';
 
 export class CanvasController {
   private canvas: HTMLCanvasElement;
@@ -219,30 +219,6 @@ export class CanvasController {
   }
 
   /**
-   * Colors and glows for each Spectral Class.
-   */
-  static getSpectralStyle(cls: SpectralClass): { solid: string; glow: string; size: number } {
-    switch (cls) {
-      case 'O':
-        return { solid: '#38bdf8', glow: 'rgba(56, 189, 248, 0.65)', size: 8 }; // Electric Blue
-      case 'B':
-        return { solid: '#a5f3fc', glow: 'rgba(165, 243, 252, 0.55)', size: 7.2 }; // Blue-White
-      case 'A':
-        return { solid: '#f8fafc', glow: 'rgba(248, 250, 252, 0.45)', size: 6.5 }; // Pure White
-      case 'F':
-        return { solid: '#fef08a', glow: 'rgba(254, 240, 138, 0.45)', size: 6.0 }; // Pale Yellow
-      case 'G':
-        return { solid: '#fbbf24', glow: 'rgba(251, 191, 36, 0.55)', size: 5.5 }; // Sol Yellow
-      case 'K':
-        return { solid: '#f97316', glow: 'rgba(249, 115, 22, 0.55)', size: 4.8 }; // Orange
-      case 'M':
-        return { solid: '#ef4444', glow: 'rgba(239, 68, 68, 0.65)', size: 4.0 }; // Deep Red Dwarf
-      case 'BlackHole':
-        return { solid: '#000000', glow: 'rgba(168, 85, 247, 0.55)', size: 1.8 }; // Tiny dense stellar-mass singularity point
-    }
-  }
-
-  /**
    * Renders the visible sectors.
    */
   drawSectors(sectors: Sector[], camera: Camera, selectedId: string | null, revealedSectors: Set<string>) {
@@ -253,9 +229,6 @@ export class CanvasController {
       const isSelected = s.id === selectedId;
       const isRevealed = revealedSectors.has(s.id);
 
-      const style = CanvasController.getSpectralStyle(s.spectralClass);
-      const radius = style.size * Math.max(0.4, Math.min(2.5, zoom));
-
       this.ctx.save();
 
       // If sector is covered in Fog of War, draw it as a very faint grey trace or not at all
@@ -263,57 +236,67 @@ export class CanvasController {
         this.ctx.globalAlpha = 0.15; // Extremely dim if unrevealed
       }
 
-      // Draw Glowing Aura
-      this.ctx.shadowColor = style.glow;
-      this.ctx.shadowBlur = isSelected ? 25 : 12;
-
       if (s.spectralClass === 'BlackHole') {
-        // Render compact Stellar Accretion Disk (thin line)
-        this.ctx.strokeStyle = style.glow;
-        this.ctx.lineWidth = Math.max(1, 1.2 * zoom);
+        // --- 1. SPECIAL RENDER: BLACK HOLE ---
+        const eventHorizonRadius = Math.max(1.5, (s.mass > 100 ? 12 : 2.5) * zoom);
+        const diskRadius = eventHorizonRadius * (s.mass > 100 ? 1.6 : 1.8);
+
+        // Draw glowing violet Accretion Disk (thin line)
+        this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.7)';
+        this.ctx.shadowColor = 'rgba(168, 85, 247, 0.85)';
+        this.ctx.shadowBlur = isSelected ? 30 : 15;
+        this.ctx.lineWidth = s.mass > 100 ? Math.max(1.5, 3.5 * zoom) : Math.max(0.8, 1.2 * zoom);
+        
         this.ctx.beginPath();
-        this.ctx.arc(screenPos.x, screenPos.y, radius * 1.6, 0, Math.PI * 2);
+        this.ctx.arc(screenPos.x, screenPos.y, diskRadius, 0, Math.PI * 2);
         this.ctx.stroke();
 
-        // Tiny Black Event Horizon Core (perfectly sharp pinprick)
+        // Draw central Event Horizon Core (pitch black)
         this.ctx.fillStyle = '#000000';
-        this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.7)'; // subtle outer purple edge
+        this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.5)';
         this.ctx.lineWidth = 1;
-        this.ctx.shadowBlur = 0; // No internal glow
+        this.ctx.shadowBlur = 0; // No internal core glow
         this.ctx.beginPath();
-        this.ctx.arc(screenPos.x, screenPos.y, radius, 0, Math.PI * 2);
+        this.ctx.arc(screenPos.x, screenPos.y, eventHorizonRadius, 0, Math.PI * 2);
         this.ctx.fill();
         this.ctx.stroke();
+
+        // Draw selection helper rings
+        if (isSelected) {
+          this.drawSelectionReticle(screenPos.x, screenPos.y, diskRadius);
+        }
       } else {
-        // Standard Star Render
-        this.ctx.fillStyle = style.solid;
+        // --- 2. MAIN SEQUENCE PHYSICAL STAR RENDER (SSoT) ---
+        const props = getStellarProperties(s.mass);
+        
+        // Base star visual radius scales directly with calculated physical radius R
+        // We multiply by a standard scaler (3.8) and keep it clamped to reasonable pixel ranges [2px, 16px]
+        const coreRadius = Math.max(2.0, Math.min(16.0, props.radius * 3.8 * Math.max(0.4, Math.min(2.5, zoom))));
+
+        // Color string
+        const colorStr = `rgb(${props.color.r}, ${props.color.g}, ${props.color.b})`;
+        const glowStr = `rgba(${props.color.r}, ${props.color.g}, ${props.color.b}, 0.65)`;
+
+        // Stellar Bloom / Glow is directly proportional to its physical Luminosity L (brightness)
+        // L ranges from 0.005 (M-zwerg) up to 300,000 (O-giant). We compress using log-scaling
+        const glowRadius = Math.max(4.0, Math.min(32.0, 7 + Math.log(props.luminosity + 1.1) * 3.0));
+
+        this.ctx.shadowColor = glowStr;
+        this.ctx.shadowBlur = isSelected ? glowRadius * 2.2 : glowRadius;
+
+        // Draw Solid Star Core
+        this.ctx.fillStyle = colorStr;
         this.ctx.beginPath();
-        this.ctx.arc(screenPos.x, screenPos.y, radius, 0, Math.PI * 2);
+        this.ctx.arc(screenPos.x, screenPos.y, coreRadius, 0, Math.PI * 2);
         this.ctx.fill();
+
+        // Draw selection helper rings
+        if (isSelected) {
+          this.drawSelectionReticle(screenPos.x, screenPos.y, coreRadius);
+        }
       }
 
       this.ctx.restore();
-
-      // Draw selection overlay ring (animated retro brackets/crosshair)
-      if (isSelected) {
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.beginPath();
-        this.ctx.arc(screenPos.x, screenPos.y, radius + 8, 0, Math.PI * 2);
-        this.ctx.stroke();
-
-        // Crosshair reticle corners
-        this.ctx.beginPath();
-        this.ctx.moveTo(screenPos.x - radius - 12, screenPos.y);
-        this.ctx.lineTo(screenPos.x - radius - 6, screenPos.y);
-        this.ctx.moveTo(screenPos.x + radius + 6, screenPos.y);
-        this.ctx.lineTo(screenPos.x + radius + 12, screenPos.y);
-        this.ctx.moveTo(screenPos.x, screenPos.y - radius - 12);
-        this.ctx.lineTo(screenPos.x, screenPos.y - radius - 6);
-        this.ctx.moveTo(screenPos.x, screenPos.y + radius + 6);
-        this.ctx.lineTo(screenPos.x, screenPos.y + radius + 12);
-        this.ctx.stroke();
-      }
 
       // Render Sector Name / Label (only when zoomed in relatively close)
       if (zoom > 0.45) {
@@ -326,9 +309,38 @@ export class CanvasController {
           label = `SYS_X???_Y??? [UNMAPPED]`;
           this.ctx.fillStyle = 'rgba(100, 116, 139, 0.4)';
         }
-        this.ctx.fillText(label, screenPos.x, screenPos.y + radius + 14);
+        
+        const offsetRadius = s.spectralClass === 'BlackHole' ? (s.mass > 100 ? 25 : 6) : 6;
+        this.ctx.fillText(label, screenPos.x, screenPos.y + offsetRadius + 14);
       }
     });
+  }
+
+  /**
+   * Helper to draw selection reticle brackets.
+   */
+  private drawSelectionReticle(x: number, y: number, radius: number) {
+    this.ctx.save();
+    this.ctx.strokeStyle = '#ffffff';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.shadowBlur = 0; // No shadow for reticle lines
+    
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, radius + 8, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    // Crosshair reticle corners
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - radius - 12, y);
+    this.ctx.lineTo(x - radius - 6, y);
+    this.ctx.moveTo(x + radius + 6, y);
+    this.ctx.lineTo(x + radius + 12, y);
+    this.ctx.moveTo(x, y - radius - 12);
+    this.ctx.lineTo(x, y - radius - 6);
+    this.ctx.moveTo(x, y + radius + 6);
+    this.ctx.lineTo(x, y + radius + 12);
+    this.ctx.stroke();
+    this.ctx.restore();
   }
 
   /**

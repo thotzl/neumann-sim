@@ -1,8 +1,126 @@
 import { Sector, SpectralClass } from './types';
 
 /**
+ * Converts a Planck color temperature in Kelvin to an RGB object
+ * using Tanner Helland's high-quality curve-fit approximation (1,000K to 40,000K).
+ */
+export function kelvinToRGB(kelvin: number): { r: number; g: number; b: number } {
+  // Clamp kelvin to valid algorithm boundaries
+  const k = Math.max(1000, Math.min(40000, kelvin));
+  let temp = k / 100;
+  let r = 0, g = 0, b = 0;
+
+  // Calculate Red
+  if (temp <= 66) {
+    r = 255;
+  } else {
+    r = temp - 60;
+    r = 329.698727446 * Math.pow(r, -0.1332047592);
+    if (r < 0) r = 0;
+    if (r > 255) r = 255;
+  }
+
+  // Calculate Green
+  if (temp <= 66) {
+    g = temp;
+    g = 99.4708025861 * Math.log(g) - 161.1195681661;
+    if (g < 0) g = 0;
+    if (g > 255) g = 255;
+  } else {
+    g = temp - 60;
+    g = 288.1221695283 * Math.pow(g, -0.0755148492);
+    if (g < 0) g = 0;
+    if (g > 255) g = 255;
+  }
+
+  // Calculate Blue
+  if (temp >= 66) {
+    b = 255;
+  } else {
+    if (temp <= 19) {
+      b = 0;
+    } else {
+      b = temp - 10;
+      b = 138.5177312231 * Math.log(b) - 305.0447927307;
+      if (b < 0) b = 0;
+      if (b > 255) b = 255;
+    }
+  }
+
+  return {
+    r: Math.round(r),
+    g: Math.round(g),
+    b: Math.round(b),
+  };
+}
+
+export interface StellarProps {
+  radius: number;       // in R_sun (Sun-scaled radius)
+  volume: number;       // in V_sun (Sun-scaled volume)
+  luminosity: number;   // in L_sun (Sun-scaled luminosity)
+  temperature: number;  // in Kelvin (surface temperature)
+  density: number;      // in solar densities (mass / volume)
+  hazardLevel: number;  // radiation in relative Rad/cycle units
+  color: { r: number; g: number; b: number };
+}
+
+/**
+ * Main-Sequence Hertzsprung-Russell Physical Relation Engine.
+ * Derives ALL physical properties deterministically from a single key: Stellar Mass.
+ */
+export function getStellarProperties(mass: number): StellarProps {
+  // 1. Calculate Radius (R) using empirical main-sequence exponents
+  const radius = mass < 1.0 
+    ? Math.pow(mass, 0.8) 
+    : Math.pow(mass, 0.57);
+
+  // 2. Calculate Volume (V) relative to Sun
+  const volume = Math.pow(radius, 3); // V = 4/3*pi*R^3, scaled directly to V_sun
+
+  // 3. Calculate Luminosity (L) using mass-luminosity power laws
+  let luminosity = 1.0;
+  if (mass < 0.43) {
+    luminosity = 0.23 * Math.pow(mass, 2.3);
+  } else if (mass < 2.0) {
+    luminosity = Math.pow(mass, 4.0); // Sun-like exponent
+  } else if (mass < 20.0) {
+    luminosity = 1.5 * Math.pow(mass, 3.5);
+  } else {
+    luminosity = 25 * Math.pow(mass, 1.8);
+  }
+
+  // 4. Calculate effective temperature (T) in Kelvin using Stefan-Boltzmann's Law:
+  // T = T_sun * (L / R^2)^1/4
+  const temperature = Math.round(5778 * Math.pow(luminosity / Math.pow(radius, 2), 0.25));
+
+  // 5. Calculate Plasma Density (rho) relative to Sun
+  const density = mass / volume;
+
+  // 6. Calculate ionizing radiation (Hazard Level)
+  // Highly concentrated on ultraviolet stellar giants: scales steeply with temperature
+  const hazardLevel = Math.pow(temperature / 5778, 4.5);
+
+  // 7. Calculate RGB Chromaticity using blackbody Plank curve-fitting
+  const color = kelvinToRGB(temperature);
+
+  return { radius, volume, luminosity, temperature, density, hazardLevel, color };
+}
+
+/**
+ * Maps Temperature back into Morgan-Keenan spectral classification
+ */
+export function getSpectralClassFromTemp(temp: number): SpectralClass {
+  if (temp >= 30000) return 'O';
+  if (temp >= 10000) return 'B';
+  if (temp >= 7500) return 'A';
+  if (temp >= 6000) return 'F';
+  if (temp >= 5200) return 'G';
+  if (temp >= 3700) return 'K';
+  return 'M';
+}
+
+/**
  * 32-Bit Mulberry32 PRNG Algorithm
- * Guarantees identical, deterministic pseudo-random sequences across systems.
  */
 export class Mulberry32 {
   private state: number;
@@ -11,9 +129,6 @@ export class Mulberry32 {
     this.state = seed | 0;
   }
 
-  /**
-   * Returns a pseudo-random float between 0.0 (inclusive) and 1.0 (exclusive).
-   */
   next(): number {
     let t = (this.state += 0x6D2B79F5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
@@ -30,7 +145,7 @@ export function hashStringToInt(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0; // Force 32-bit sign-extended integer
+    hash |= 0;
   }
   return hash;
 }
@@ -60,30 +175,33 @@ export interface Galaxy {
 export class UniverseGenerator {
   // Configurable Cosmic Physics (adjusts on-the-fly from the Sandbox HUD)
   static CELL_SIZE = 500;           // Size of system cells (500x500 world units)
-  static MAX_JITTER = 75;           // Jitter from cell center (raw offset up to +-75) - Default: 75 LY (organic chaos)
+  static MAX_JITTER = 75;           // Jitter from cell center (raw offset up to +-75)
   
   static SUPER_CELL_SIZE = 120000;  // Super-cell grid width (120,000 LY)
-  static GALAXY_CHANCE = 0.40;      // Chance of a galaxy in any super-cell (40%)
+  static GALAXY_CHANCE = 0.40;      // Chance of a galaxy in any super-cell
 
   static MIN_GALAXY_RADIUS = 15000; // Minimum galaxy size
   static MAX_GALAXY_RADIUS = 50000; // Maximum galaxy size
 
-  static MIN_PITCH_ANGLE = 6;       // Spiral arms tightness (Sa type - tightly wound 6 degrees)
-  static MAX_PITCH_ANGLE = 24;      // Spiral arms tightness (Sc type - widely open 24 degrees)
+  static MIN_PITCH_ANGLE = 6;       // Spiral arms tightness (Sa type)
+  static MAX_PITCH_ANGLE = 24;      // Spiral arms tightness (Sc type)
+
+  // SSoT Stellar Generation config
+  static MIN_STELLAR_MASS = 0.08;   // Smallest fusiable mass (M-dwarf)
+  static MAX_STELLAR_MASS = 40.0;   // Massive stellar giant (O-giant)
+  static STELLAR_MASS_IMF = 3.0;    // Salpeter IMF exponent skew (lower mass is favored)
 
   /**
    * Evaluates a super-cell coordinate (scx, scy) to see if a Galaxy exists there.
-   * If yes, computes its deterministic parameters based on the world seed.
    */
   static getGalaxyInSuperCell(scx: number, scy: number, worldSeed: number): Galaxy | null {
-    // Unique seed for the super-cell
     const superSeed = (Math.imul(scx, 73856093) ^ Math.imul(scy, 19349663) ^ worldSeed) & 0xffffffff;
     const prng = new Mulberry32(superSeed);
 
     const isHome = (scx === 0 && scy === 0);
 
     if (!isHome && prng.next() > this.GALAXY_CHANCE) {
-      return null; // Empty space in this super-cell (Intergalactic Void)
+      return null;
     }
 
     let x = 0;
@@ -91,62 +209,50 @@ export class UniverseGenerator {
     let type: GalaxyType = 'S';
 
     if (isHome) {
-      // Force home galaxy centered at a deterministic offset from (0,0)
-      // so that the coordinate (0,0) sits in the spiral arm region (~15k to ~23k LY from center)
       const angle = prng.next() * Math.PI * 2;
       const dist = 15000 + prng.next() * 8000; // 15k to 23k LY offset
       x = Math.round(Math.cos(angle) * dist);
       y = Math.round(Math.sin(angle) * dist);
-      
-      // Home is always a majestic Spiral or Barred Spiral galaxy
       type = prng.next() < 0.5 ? 'S' : 'SB';
     } else {
-      // Centroid coordinate within the super cell
-      const ox = prng.next(); // 0.0 to 1.0
-      const oy = prng.next(); // 0.0 to 1.0
+      const ox = prng.next();
+      const oy = prng.next();
 
       const cellCenterX = scx * this.SUPER_CELL_SIZE + this.SUPER_CELL_SIZE / 2;
       const cellCenterY = scy * this.SUPER_CELL_SIZE + this.SUPER_CELL_SIZE / 2;
 
-      // Displace center of galaxy (Jitter within 70% of the super-cell boundaries)
       x = Math.round(cellCenterX + (ox - 0.5) * 0.7 * this.SUPER_CELL_SIZE);
       y = Math.round(cellCenterY + (oy - 0.5) * 0.7 * this.SUPER_CELL_SIZE);
 
-      // Roll Morphological Type (Spiral, Barred, Elliptical, Lenticular, Irregular)
       const typeRoll = prng.next();
-      if (typeRoll < 0.35) type = 'S';          // Spiral (35%)
-      else if (typeRoll < 0.60) type = 'SB';    // Barred Spiral (25%)
-      else if (typeRoll < 0.75) type = 'E';     // Elliptical (15%)
-      else if (typeRoll < 0.90) type = 'L';     // Lenticular (15%)
-      else type = 'Irr';                        // Irregular (10%)
+      if (typeRoll < 0.35) type = 'S';
+      else if (typeRoll < 0.60) type = 'SB';
+      else if (typeRoll < 0.75) type = 'E';
+      else if (typeRoll < 0.90) type = 'L';
+      else type = 'Irr';
     }
 
-    // Galaxy dimensions and physics
-    // Make sure home galaxy is always large and majestic
     const radius = isHome 
-      ? Math.round(32000 + prng.next() * 14000) // 32k to 46k LY
+      ? Math.round(32000 + prng.next() * 14000)
       : Math.round(this.MIN_GALAXY_RADIUS + prng.next() * (this.MAX_GALAXY_RADIUS - this.MIN_GALAXY_RADIUS));
 
-    // Pitch Angle in degrees (Sa = 6 degrees, Sc = 24 degrees)
     const pitchAngle = this.MIN_PITCH_ANGLE + prng.next() * (this.MAX_PITCH_ANGLE - this.MIN_PITCH_ANGLE);
     const pitchRad = pitchAngle * Math.PI / 180;
-    const b = Math.tan(pitchRad); // Logarithmic spiral growth rate parameter
+    const b = Math.tan(pitchRad);
 
-    const numArms = prng.next() < 0.55 ? 2 : 4;                // 2 or 4 arms (mostly 2 arms)
-    const baseDensity = 0.50 + prng.next() * 0.35;            // core peak density
-    const rotation = prng.next() * Math.PI * 2;               // rotation angle in rad
+    const numArms = prng.next() < 0.55 ? 2 : 4;
+    const baseDensity = 0.50 + prng.next() * 0.35;
+    const rotation = prng.next() * Math.PI * 2;
 
-    // M-Sigma SMBH Mass relation scaling (in Millions of solar masses)
-    // Giant ellipticals beget the largest black holes, spirals are moderate, irregulars are tiny.
     let smbhMass = 1.0;
     if (type === 'E') {
-      smbhMass = 4.5 + prng.next() * 5.0; // Giant elliptical: 4.5 - 9.5 billion solar masses
+      smbhMass = 4.5 + prng.next() * 5.0;
     } else if (type === 'SB' || type === 'S') {
-      smbhMass = 1.2 + prng.next() * 2.0; // Spiral core: 1.2 - 3.2 billion solar masses
+      smbhMass = 1.2 + prng.next() * 2.0;
     } else if (type === 'L') {
-      smbhMass = 1.0 + prng.next() * 1.5; // Lenticular: 1.0 - 2.5 billion
+      smbhMass = 1.0 + prng.next() * 1.5;
     } else {
-      smbhMass = 0.1 + prng.next() * 0.4; // Irregular nebula: 0.1 - 0.5 billion (tiny or none)
+      smbhMass = 0.1 + prng.next() * 0.4;
     }
 
     const id = isHome ? 'HOME_GALAXY' : `GALAXY_scX${scx}_scY${scy}`;
@@ -161,8 +267,6 @@ export class UniverseGenerator {
    */
   static getOverlappingGalaxies(minX: number, maxX: number, minY: number, maxY: number, worldSeed: number): Galaxy[] {
     const list: Galaxy[] = [];
-    
-    // Map bounding box to super-grid boundaries
     const minScx = Math.floor(minX / this.SUPER_CELL_SIZE) - 1;
     const maxScx = Math.floor(maxX / this.SUPER_CELL_SIZE) + 1;
     const minScy = Math.floor(minY / this.SUPER_CELL_SIZE) - 1;
@@ -172,7 +276,6 @@ export class UniverseGenerator {
       for (let scy = minScy; scy <= maxScy; scy++) {
         const galaxy = this.getGalaxyInSuperCell(scx, scy, worldSeed);
         if (galaxy) {
-          // Check radial collision (plus 50% margin for outer gravity / halo)
           const margin = galaxy.radius * 1.5;
           const overlapX = (galaxy.x + margin >= minX) && (galaxy.x - margin <= maxX);
           const overlapY = (galaxy.y + margin >= minY) && (galaxy.y - margin <= maxY);
@@ -187,12 +290,11 @@ export class UniverseGenerator {
   }
 
   /**
-   * Analytical density wave simulator incorporating Sérsic Profiles and Exponential Disks.
-   * Calculates the exact stellar density [0.0 - 1.0] at any coordinate (wx, wy)
+   * Analytical density wave simulator incorporating Sérsic Profiles.
    */
   static getDensityAt(wx: number, wy: number, worldSeed: number): number {
     const galaxies = this.getOverlappingGalaxies(wx, wx, wy, wy, worldSeed);
-    if (galaxies.length === 0) return 0.0; // Deep Void
+    if (galaxies.length === 0) return 0.0;
 
     let totalDensity = 0.0;
 
@@ -201,30 +303,23 @@ export class UniverseGenerator {
       const dy = wy - g.y;
       const r = Math.sqrt(dx * dx + dy * dy);
 
-      if (r > g.radius) return; // Outside this galaxy's boundary
+      if (r > g.radius) return;
 
       const theta = Math.atan2(dy, dx);
       let localD = 0.0;
 
       switch (g.type) {
         case 'S': {
-          // Spiral: Sérsic n=2 Bulge + Exponential Disk Spiral Arms (n=1)
-          const rEffCore = g.radius * 0.12; // Half-light core bulge radius
-          const rEffDisk = g.radius * 0.35; // Half-light disk scale radius
+          const rEffCore = g.radius * 0.12;
+          const rEffDisk = g.radius * 0.35;
 
           if (r < rEffCore * 1.5) {
-            // Sérsic index n=2 profile for the central bulge
-            // b_2 = 3.671
             const bulge = g.baseDensity * Math.exp(-3.671 * (Math.pow(r / rEffCore, 0.5) - 1));
             localD = Math.max(localD, bulge);
           }
 
-          // Exponential Disk Spiral Arms
-          // phi = theta - ln(r / rEffCore) / b - rotation
           const phi = theta - Math.log(r / rEffCore) / g.b - g.rotation;
-          const armModulation = Math.cos(g.numArms * phi); // Peaks on spiral arms
-          
-          // Exponential disk density profile (n=1, b_1 = 1.672)
+          const armModulation = Math.cos(g.numArms * phi);
           const disk = g.baseDensity * Math.exp(-1.672 * (r / rEffDisk - 1)) * (0.12 + 0.88 * Math.max(0, armModulation));
           
           localD = Math.max(localD, disk);
@@ -232,26 +327,21 @@ export class UniverseGenerator {
         }
 
         case 'SB': {
-          // Barred Spiral: Flat Linear Bar core + Logarithmic Spiral Arms starting from tips
           const rBar = g.radius * 0.20;
           const rEffDisk = g.radius * 0.35;
-          
-          // Rotate coordinates to align with galaxy's major axis rotation
           const rotCos = Math.cos(-g.rotation);
           const rotSin = Math.sin(-g.rotation);
           const rx = dx * rotCos - dy * rotSin;
           const ry = dx * rotSin + dy * rotCos;
 
           if (r < rBar) {
-            // Flat flat-topped Bar Profile
             const barThickness = g.radius * 0.045;
-            const barShapeX = Math.exp(-Math.pow(rx / rBar, 4)); // Sharp flat-topped decay along X
-            const barShapeY = Math.exp(-Math.pow(ry / barThickness, 2)); // Gaussian decay along Y
+            const barShapeX = Math.exp(-Math.pow(rx / rBar, 4));
+            const barShapeY = Math.exp(-Math.pow(ry / barThickness, 2));
             localD = g.baseDensity * barShapeX * barShapeY * 1.05;
           } else {
-            // Logarithmic spiral arms winding outwards from the bar tips (rBar)
             const phi = theta - Math.log(r / rBar) / g.b - g.rotation;
-            const armModulation = Math.cos(2 * phi); // Barred spirals are always 2-armed
+            const armModulation = Math.cos(2 * phi);
             const disk = g.baseDensity * Math.exp(-1.672 * ((r - rBar) / rEffDisk)) * (0.12 + 0.88 * Math.max(0, armModulation));
             localD = Math.max(localD, disk);
           }
@@ -259,26 +349,20 @@ export class UniverseGenerator {
         }
 
         case 'E': {
-          // Giant Elliptical: DeVaucouleurs Sérsic n=4 profile (b_4 = 7.669)
-          const rEff = g.radius * 0.24; // Half-light/effective radius
-
-          // Stretched coordinate grid representing a 1:0.72 elliptical ovoid
+          const rEff = g.radius * 0.24;
           const rotCos = Math.cos(-g.rotation);
           const rotSin = Math.sin(-g.rotation);
           const rx = dx * rotCos - dy * rotSin;
           const ry = dx * rotSin + dy * rotCos;
           const rElliptical = Math.sqrt(rx * rx + Math.pow(ry / 0.72, 2));
 
-          // Standard DeVaucouleurs profile (b_4 = 7.669, n=4)
           localD = g.baseDensity * Math.exp(-7.669 * (Math.pow(rElliptical / rEff, 0.25) - 1));
           break;
         }
 
         case 'L': {
-          // Lenticular (Linsenförmig): Sérsic n=1 core bulge + Flat exponential disk
           const rEffCore = g.radius * 0.16;
           const rEffDisk = g.radius * 0.32;
-          
           const core = g.baseDensity * Math.exp(-1.672 * (r / rEffCore - 1));
           const disk = g.baseDensity * 0.40 * Math.exp(-1.672 * (r / rEffDisk - 1));
           localD = Math.max(core, disk);
@@ -286,9 +370,7 @@ export class UniverseGenerator {
         }
 
         case 'Irr': {
-          // Irregular Nebula: Chaotic star-forming gas clusters modulated by gravitational SDF
           const fade = Math.exp(-Math.pow(r / g.radius, 2));
-          // Fractal multi-octave cosine waves simulating patchy starburst groups
           const n1 = Math.sin(wx * 0.00015) * Math.cos(wy * 0.00015);
           const n2 = Math.sin(wx * 0.00045 + wy * 0.00025) * 0.4;
           const noise = (n1 + n2 + 1.4) / 2.8;
@@ -309,47 +391,35 @@ export class UniverseGenerator {
    * if it exists under the current world seed and local density waves.
    */
   static getSectorInCell(cx: number, cy: number, seed: number, densityMultiplier: number): Sector | null {
-    // Find physical coordinates of the cell center
     const cellCenterX = cx * this.CELL_SIZE + this.CELL_SIZE / 2;
     const cellCenterY = cy * this.CELL_SIZE + this.CELL_SIZE / 2;
 
-    // Query density at the center of this cell (procedural galaxy calculation)
     const baseDensity = this.getDensityAt(cellCenterX, cellCenterY, seed);
-    
-    // Scale density based on the global density config multiplier
     const finalDensity = baseDensity * densityMultiplier;
 
     if (finalDensity < 0.04) {
-      return null; // Empty space (below star erzeugung threshold or intergalactic void)
+      return null;
     }
 
-    // Generate cell deterministic variables
     const cellSeed = (Math.imul(cx, 15485863) ^ Math.imul(cy, 32452843) ^ seed) & 0xffffffff;
     const prng = new Mulberry32(cellSeed);
 
     const existsVal = prng.next();
     if (existsVal > finalDensity) {
-      return null; // Star failed to spawn under local density probability
+      return null;
     }
 
     // Determine Jitter offset inside the cell
-    const ox = prng.next(); // 0.0 to 1.0
-    const oy = prng.next(); // 0.0 to 1.0
+    const ox = prng.next();
+    const oy = prng.next();
 
     const rawX = cellCenterX + (ox - 0.5) * 2 * this.MAX_JITTER;
     const rawY = cellCenterY + (oy - 0.5) * 2 * this.MAX_JITTER;
 
-    // Snap to 100-grid
     const x = Math.round(rawX / 100) * 100;
     const y = Math.round(rawY / 100) * 100;
 
-    // Determine Spectral Class (O, B, A, F, G, K, M, BlackHole)
-    const classVal = prng.next();
-    let spectralClass: SpectralClass = 'G';
-    let energyDepot = 120000;
-    let matterDepot = 180000;
-
-    // If coordinates match the absolute center of a nearby galaxy, force a Supermassive Black Hole!
+    // Check for galaxy center Supermassive Black Hole (SMBH)
     const nearbyGalaxies = this.getOverlappingGalaxies(x - 250, x + 250, y - 250, y + 250, seed);
     let isSMBH = false;
     nearbyGalaxies.forEach(g => {
@@ -359,43 +429,40 @@ export class UniverseGenerator {
       }
     });
 
+    let mass = 1.0;
+    let spectralClass: SpectralClass = 'G';
+    let energyDepot = 120000;
+    let matterDepot = 180000;
+
     if (isSMBH) {
-      spectralClass = 'BlackHole';
-      energyDepot = 0; // Black hole core absorbs solar energy
-      matterDepot = 1500000; // Colossal mass core
-    } else if (classVal < 0.001) {
-      // Rare stellar-mass black hole (0.1% chance)
+      mass = 120.0; // Extreme SMBH mass representation
       spectralClass = 'BlackHole';
       energyDepot = 0;
-      matterDepot = 600000;
-    } else if (classVal < 0.12) {
-      spectralClass = 'O'; // Blue giant (High energy, low matter)
-      energyDepot = 500000;
-      matterDepot = 50000;
-    } else if (classVal < 0.22) {
-      spectralClass = 'B'; // Blue-White (High energy)
-      energyDepot = 350000;
-      matterDepot = 80000;
-    } else if (classVal < 0.32) {
-      spectralClass = 'A'; // White
-      energyDepot = 200000;
-      matterDepot = 120000;
-    } else if (classVal < 0.42) {
-      spectralClass = 'F'; // Yellow-White
-      energyDepot = 150000;
-      matterDepot = 150000;
-    } else if (classVal < 0.65) {
-      spectralClass = 'G'; // Yellow (Sol balance)
-      energyDepot = 120000;
-      matterDepot = 180000;
-    } else if (classVal < 0.82) {
-      spectralClass = 'K'; // Orange
-      energyDepot = 80000;
-      matterDepot = 250000;
+      matterDepot = 2500000; // Gigantic matter core
     } else {
-      spectralClass = 'M'; // Red dwarf (Low energy, high matter)
-      energyDepot = 30000;
-      matterDepot = 400000;
+      // Draw deterministic mass based on IMF exponent skew
+      const massRoll = prng.next();
+      mass = this.MIN_STELLAR_MASS + (this.MAX_STELLAR_MASS - this.MIN_STELLAR_MASS) * Math.pow(massRoll, this.STELLAR_MASS_IMF);
+
+      const classVal = prng.next();
+      if (classVal < 0.001) {
+        // Exceptionally rare stellar-mass black hole (0.1% chance)
+        spectralClass = 'BlackHole';
+        mass = 8.0 + prng.next() * 15.0; // Stellar BH mass: 8-23 solar masses
+        energyDepot = 0;
+        matterDepot = 600000;
+      } else {
+        // Derive all main sequence properties from mass SSoT
+        const props = getStellarProperties(mass);
+        spectralClass = getSpectralClassFromTemp(props.temperature);
+        
+        // Energy output scales directly with luminosity L: E = L * 120k E (Sun default is 120k)
+        energyDepot = Math.round(props.luminosity * 120000);
+        
+        // Matter resources collect in denser, more stable stars. Inversely proportional to mass.
+        // M-dwarf (0.1M) yields ~400k Matter. Giant (30M) yields ~32k.
+        matterDepot = Math.round(Math.pow(1.0 / mass, 0.45) * 180000);
+      }
     }
 
     const id = `SYS_X${x}_Y${y}`;
@@ -404,6 +471,7 @@ export class UniverseGenerator {
       id,
       x,
       y,
+      mass,
       spectralClass,
       energyDepot,
       matterDepot,
@@ -419,22 +487,16 @@ export class UniverseGenerator {
     const homeGalaxy = this.getGalaxyInSuperCell(0, 0, seed);
     
     if (!homeGalaxy) {
-      // Fallback
-      return { id: 'SYS_X0_Y0', x: 0, y: 0, spectralClass: 'G', energyDepot: 120000, matterDepot: 180000 };
+      return { id: 'SYS_X0_Y0', x: 0, y: 0, mass: 1.0, spectralClass: 'G', energyDepot: 120000, matterDepot: 180000 };
     }
 
-    // Determine home galaxy cell coordinate
     const centerCx = Math.floor(homeGalaxy.x / this.CELL_SIZE);
     const centerCy = Math.floor(homeGalaxy.y / this.CELL_SIZE);
-
-    // We do a deterministic spiral search outwards starting from the galaxy center
-    // to find the first G-type or F-type star in a spiral arm cell.
     const candidates: Sector[] = [];
     
     for (let r = 1; r <= 20; r++) {
       for (let dx = -r; dx <= r; dx++) {
         for (let dy = -r; dy <= r; dy++) {
-          // Only check the outer perimeter of the current ring
           if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
           
           const cx = centerCx + dx;
@@ -445,24 +507,30 @@ export class UniverseGenerator {
           }
         }
       }
-      // If we have found a few candidates in this ring level, stop searching to save cycles
       if (candidates.length >= 8) break;
     }
 
     if (candidates.length > 0) {
-      // Pick a starting system deterministically based on seed
       const prng = new Mulberry32(seed + 999);
       const idx = Math.floor(prng.next() * candidates.length);
-      return candidates[idx];
+      const selected = candidates[idx];
+      // Force starting node to have perfectly balanced Sun-like properties for gameplay consistency
+      return {
+        ...selected,
+        mass: 1.0,
+        spectralClass: 'G',
+        energyDepot: 120000,
+        matterDepot: 180000
+      };
     }
 
-    // Hard fallback: center of the galaxy (converted to grid)
     const fallbackX = Math.round(homeGalaxy.x / 100) * 100;
     const fallbackY = Math.round(homeGalaxy.y / 100) * 100;
     return {
       id: `SYS_X${fallbackX}_Y${fallbackY}`,
       x: fallbackX,
       y: fallbackY,
+      mass: 1.0,
       spectralClass: 'G',
       energyDepot: 120000,
       matterDepot: 180000
@@ -483,7 +551,6 @@ export class UniverseGenerator {
     const seed = hashStringToInt(seedStr);
     const sectors: Sector[] = [];
 
-    // Map world bounding box to cell coords
     const minCx = Math.floor(minX / this.CELL_SIZE) - 1;
     const maxCx = Math.floor(maxX / this.CELL_SIZE) + 1;
     const minCy = Math.floor(minY / this.CELL_SIZE) - 1;
@@ -493,7 +560,6 @@ export class UniverseGenerator {
       for (let cy = minCy; cy <= maxCy; cy++) {
         const sector = this.getSectorInCell(cx, cy, seed, densityMultiplier);
         if (sector) {
-          // Verify sector falls inside the true bounding box after jitter and snapping
           if (sector.x >= minX && sector.x <= maxX && sector.y >= minY && sector.y <= maxY) {
             sectors.push(sector);
           }

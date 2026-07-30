@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, Sector, SandboxConfig } from './types';
-import { UniverseGenerator, hashStringToInt } from './generator';
+import { UniverseGenerator, hashStringToInt, getStellarProperties } from './generator';
 import { CanvasController } from './canvasController';
 
 export default function App() {
@@ -26,7 +26,10 @@ export default function App() {
     minPitchAngle: 6,   // Tight Sa-type spiral pitch angle in degrees (default 6)
     maxPitchAngle: 24,  // Open Sc-type spiral pitch angle in degrees (default 24)
     systemCellSize: 500,
-    maxJitter: 75       // Chaos spacing (default 75 LY)
+    maxJitter: 75,      // Chaos spacing (default 75 LY)
+    minStellarMass: 0.08, // IMF boundary (default 0.08)
+    maxStellarMass: 40.0, // IMF boundary (default 40.0)
+    stellarMassImf: 3.0   // Salpeter IMF Exponent curve skew (default 3.0)
   });
 
   // Sync state to static fields of UniverseGenerator
@@ -39,6 +42,9 @@ export default function App() {
     UniverseGenerator.MAX_PITCH_ANGLE = physics.maxPitchAngle;
     UniverseGenerator.CELL_SIZE = physics.systemCellSize;
     UniverseGenerator.MAX_JITTER = physics.maxJitter;
+    UniverseGenerator.MIN_STELLAR_MASS = physics.minStellarMass;
+    UniverseGenerator.MAX_STELLAR_MASS = physics.maxStellarMass;
+    UniverseGenerator.STELLAR_MASS_IMF = physics.stellarMassImf;
   }, [physics]);
 
   // Dynamically calculate starting system on seed/density changes, center camera on it, and reveal/select it!
@@ -375,27 +381,30 @@ export default function App() {
       minPitchAngle: 6,
       maxPitchAngle: 24,
       systemCellSize: 500,
-      maxJitter: 75
+      maxJitter: 75,
+      minStellarMass: 0.08,
+      maxStellarMass: 40.0,
+      stellarMassImf: 3.0
     });
     // Centering, FOW reset, and start node selection will trigger automatically in useEffect reacting to seed/density state reset!
   };
 
-  // Helper styling for Spectral classes in HUD
-  const getSpectralColor = (cls: string) => {
-    switch (cls) {
-      case 'O': return '#38bdf8';
-      case 'B': return '#a5f3fc';
-      case 'A': return '#f8fafc';
-      case 'F': return '#fef08a';
-      case 'G': return '#fbbf24';
-      case 'K': return '#f97316';
-      case 'M': return '#ef4444';
-      case 'BlackHole': return '#a855f7';
-      default: return '#94a3b8';
-    }
-  };
+
 
   const isSelectedSectorRevealed = selectedSector && revealedSectorsRef.current.has(selectedSector.id);
+
+  // SSoT Main Sequence physical properties derivation
+  const props = selectedSector && selectedSector.spectralClass !== 'BlackHole'
+    ? getStellarProperties(selectedSector.mass)
+    : null;
+
+  const starColor = selectedSector
+    ? selectedSector.spectralClass === 'BlackHole'
+      ? '#a855f7'
+      : props 
+        ? `rgb(${props.color.r}, ${props.color.g}, ${props.color.b})`
+        : '#fbbf24'
+    : '#94a3b8';
 
   return (
     <div ref={containerRef} className="sandbox-container">
@@ -651,6 +660,48 @@ export default function App() {
           />
         </div>
 
+        {/* IMF Min Mass */}
+        <div className="control-group">
+          <label>MIN_STELLAR_MASS: <strong>{physics.minStellarMass.toFixed(2)} M_sun</strong></label>
+          <input
+            type="range"
+            min="0.08"
+            max="1.50"
+            step="0.05"
+            value={physics.minStellarMass}
+            onChange={(e) => setPhysics(prev => ({ ...prev, minStellarMass: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* IMF Max Mass */}
+        <div className="control-group">
+          <label>MAX_STELLAR_MASS: <strong>{physics.maxStellarMass.toFixed(0)} M_sun</strong></label>
+          <input
+            type="range"
+            min="1.5"
+            max="100.0"
+            step="0.5"
+            value={physics.maxStellarMass}
+            onChange={(e) => setPhysics(prev => ({ ...prev, maxStellarMass: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
+        {/* IMF Exponent Curve */}
+        <div className="control-group">
+          <label>IMF_CURVE_EXPONENT: <strong>{physics.stellarMassImf.toFixed(1)}</strong></label>
+          <input
+            type="range"
+            min="1.0"
+            max="6.0"
+            step="0.1"
+            value={physics.stellarMassImf}
+            onChange={(e) => setPhysics(prev => ({ ...prev, stellarMassImf: parseFloat(e.target.value) }))}
+            className="hud-slider"
+          />
+        </div>
+
         <div className="divider" />
 
         {/* Live Map Stats */}
@@ -668,17 +719,17 @@ export default function App() {
         {selectedSector ? (
           <div className="inspector-content">
             <div className="star-schematic">
-              {/* Retro stylized ASCII graphic / visual representation */}
+              {/* Retro stylized visual representation based on real RGB temperature color */}
               <div 
                 className="stellar-halo" 
                 style={{ 
-                  borderColor: getSpectralColor(selectedSector.spectralClass),
-                  boxShadow: `0 0 20px ${getSpectralColor(selectedSector.spectralClass)}`
+                  borderColor: starColor,
+                  boxShadow: `0 0 20px ${starColor}`
                 }}
               >
                 <div 
                   className="stellar-core" 
-                  style={{ backgroundColor: selectedSector.spectralClass === 'BlackHole' ? '#000000' : getSpectralColor(selectedSector.spectralClass) }} 
+                  style={{ backgroundColor: selectedSector.spectralClass === 'BlackHole' ? '#000000' : starColor }} 
                 />
               </div>
             </div>
@@ -698,16 +749,68 @@ export default function App() {
               </div>
               <div className="field-row">
                 <span className="field-label">SPECTRAL_CLASS:</span>
-                <span className="field-value" style={{ color: getSpectralColor(selectedSector.spectralClass), fontWeight: 'bold' }}>
+                <span className="field-value" style={{ color: starColor, fontWeight: 'bold' }}>
                   {selectedSector.spectralClass}
                 </span>
               </div>
+              
+              {/* SSoT Physical properties readout */}
               <div className="field-row">
-                <span className="field-label">SURFACE_STATUS:</span>
-                <span className="field-value">
-                  {selectedSector.spectralClass === 'BlackHole' ? 'CRITICAL_HAZARD' : 'STABLE'}
+                <span className="field-label">STELLAR_MASS:</span>
+                <span className="field-value" style={{ color: '#fff', fontWeight: 'bold' }}>
+                  {selectedSector.spectralClass === 'BlackHole' && selectedSector.mass > 100 
+                    ? `${(selectedSector.mass / 100).toFixed(1)}B M_sun`
+                    : `${selectedSector.mass.toFixed(2)} M_sun`}
                 </span>
               </div>
+
+              {props && (
+                <>
+                  <div className="field-row">
+                    <span className="field-label">STELLAR_RADIUS:</span>
+                    <span className="field-value">{props.radius.toFixed(2)} R_sun</span>
+                  </div>
+                  <div className="field-row">
+                    <span className="field-label">STELLAR_VOLUME:</span>
+                    <span className="field-value">{props.volume.toFixed(2)} V_sun</span>
+                  </div>
+                  <div className="field-row">
+                    <span className="field-label">PLASMA_DENSITY:</span>
+                    <span className="field-value">{props.density.toFixed(2)} Density_sun</span>
+                  </div>
+                  <div className="field-row">
+                    <span className="field-label">EFFECTIVE_TEMP:</span>
+                    <span className="field-value" style={{ color: starColor }}>
+                      {props.temperature.toLocaleString()} K
+                    </span>
+                  </div>
+                  <div className="field-row">
+                    <span className="field-label">ABSOLUTE_LUMINOSITY:</span>
+                    <span className="field-value">{props.luminosity.toFixed(2)} L_sun</span>
+                  </div>
+                </>
+              )}
+
+              <div className="field-row">
+                <span className="field-label">SURFACE_STATUS:</span>
+                <span className="field-value" style={{ 
+                  color: selectedSector.spectralClass === 'BlackHole' ? 'var(--hud-danger)' : 
+                         props && props.hazardLevel > 15 ? '#fb923c' : 'var(--hud-green)',
+                  fontWeight: 'bold'
+                }}>
+                  {selectedSector.spectralClass === 'BlackHole' ? 'CRITICAL_HAZARD' : 
+                   props && props.hazardLevel > 15 ? 'INTENSE_RADIATION' : 'STABLE'}
+                </span>
+              </div>
+
+              {props && props.hazardLevel > 1 && (
+                <div className="field-row">
+                  <span className="field-label">HAZARD_RADIATION:</span>
+                  <span className="field-value" style={{ color: 'var(--hud-danger)', fontWeight: 'bold' }}>
+                    {props.hazardLevel.toFixed(1)} Rad/tick
+                  </span>
+                </div>
+              )}
 
               <div className="divider" style={{ margin: '15px 0' }} />
 

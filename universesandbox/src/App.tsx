@@ -438,9 +438,11 @@ export default function App() {
   const starColor = selectedSector
     ? selectedSector.spectralClass === 'BlackHole'
       ? '#a855f7'
-      : props 
-        ? `rgb(${props.color.r}, ${props.color.g}, ${props.color.b})`
-        : '#fbbf24'
+      : selectedSector.spectralClass === 'Pulsar'
+        ? '#38bdf8'
+        : props 
+          ? `rgb(${props.color.r}, ${props.color.g}, ${props.color.b})`
+          : '#fbbf24'
     : '#94a3b8';
 
   return (

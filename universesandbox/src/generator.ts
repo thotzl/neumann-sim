@@ -1,4 +1,4 @@
-import { Sector, SpectralClass, CosmicOccurrence, SolarSystem, Planet, PlanetType } from './types';
+import { Sector, SpectralClass, CosmicOccurrence, SolarSystem, Planet, PlanetType, AnomalyType } from './types';
 
 /**
  * Converts a Planck color temperature in Kelvin to an RGB object
@@ -417,6 +417,33 @@ export class UniverseGenerator {
   }
 
   /**
+   * Deterministically calculates if a local Gravitational SpaceTime Well (Dark Matter clump)
+   * overlaps the world coordinates (wx, wy) based on world seed.
+   * Cellular grid checking of 75,000 LY.
+   */
+  static getGravityWellAt(wx: number, wy: number, seed: number): { x: number; y: number; r: number } | null {
+    const size = 75000;
+    const bx = Math.floor(wx / size);
+    const by = Math.floor(wy / size);
+
+    // Unique cell seed
+    const cellSeed = (Math.imul(bx, 19349) ^ Math.imul(by, 83931) ^ seed + 9999) & 0xffffffff;
+    const prng = new Mulberry32(cellSeed);
+
+    if (prng.next() > 0.08) return null; // 8% chance of gravity well in this 75k cell
+
+    const cx = bx * size + size / 2 + (prng.next() - 0.5) * 0.45 * size;
+    const cy = by * size + size / 2 + (prng.next() - 0.5) * 0.45 * size;
+    const r = 5000 + prng.next() * 7000; // 5k to 12k LY gravity well radius
+
+    const d = Math.sqrt((wx - cx) ** 2 + (wy - cy) ** 2);
+    if (d < r) {
+      return { x: cx, y: cy, r };
+    }
+    return null;
+  }
+
+  /**
    * Deterministically calculates the 2D Warp Current flow vector (angle and magnitude)
    * at any coordinate (wx, wy) based on the world seed.
    */
@@ -587,11 +614,17 @@ export class UniverseGenerator {
       // Draw deterministic mass based on IMF exponent skew
       const classVal = prng.next();
       if (classVal < 0.001) {
-        // Exceptionally rare stellar-mass black hole (0.1% chance)
-        spectralClass = 'BlackHole';
-        mass = 8.0 + prng.next() * 15.0; // Stellar BH mass: 8-23 solar masses
+        mass = 8.0 + prng.next() * 15.0; // Stellar remnant mass: 8-23 solar masses
         energyDepot = 0;
-        matterDepot = 600000;
+        if (mass < 15.0) {
+          // Neutron star collapse begets a rapidly spinning Pulsar
+          spectralClass = 'Pulsar';
+          matterDepot = 300000;
+        } else {
+          // Black hole collapse
+          spectralClass = 'BlackHole';
+          matterDepot = 600000;
+        }
       } else {
         // --- CONTINUOUS DOUBLE-EXPONENTIAL IMF MASS EQUATION (STUFENLOS) ---
         const u = prng.next();
@@ -656,6 +689,22 @@ export class UniverseGenerator {
       }
     }
 
+    // --- DETERMINISTIC SPACETIME ANOMALIES (Phase 4) ---
+    let anomaly: AnomalyType = 'None';
+    let anomalyAngle: number | undefined = undefined;
+
+    if (spectralClass === 'Pulsar') {
+      anomalyAngle = prng.next() * Math.PI * 2; // Pulsar rotation spin axis angle
+    }
+
+    const activeWell = this.getGravityWellAt(x, y, seed);
+    if (activeWell) {
+      anomaly = 'GravityWell';
+      // Heavy dark matter / gravitational compression doubles mass and heavy matter condensation!
+      mass = mass * 2.0;
+      matterDepot = Math.round(matterDepot * 2.0);
+    }
+
     const system = this.generateSolarSystem(x, y, mass, seed);
     const warpCurrent = this.getWarpCurrentAt(x, y, seed);
 
@@ -668,6 +717,8 @@ export class UniverseGenerator {
       mass,
       spectralClass,
       occurrence,
+      anomaly,
+      anomalyAngle,
       energyDepot,
       matterDepot,
       system,
@@ -684,7 +735,7 @@ export class UniverseGenerator {
     const homeGalaxy = this.getGalaxyInSuperCell(0, 0, seed);
     
     if (!homeGalaxy) {
-      return { id: 'SYS_X0_Y0', x: 0, y: 0, mass: 1.0, spectralClass: 'G', occurrence: 'Normal', energyDepot: 120000, matterDepot: 180000 };
+      return { id: 'SYS_X0_Y0', x: 0, y: 0, mass: 1.0, spectralClass: 'G', occurrence: 'Normal', anomaly: 'None', energyDepot: 120000, matterDepot: 180000 };
     }
 
     const centerCx = Math.floor(homeGalaxy.x / this.CELL_SIZE);
@@ -717,6 +768,7 @@ export class UniverseGenerator {
         mass: 1.0,
         spectralClass: 'G',
         occurrence: 'Normal', // Starter is in normal interstellar medium (ambient)
+        anomaly: 'None',
         energyDepot: 120000,
         matterDepot: 180000
       };
@@ -731,6 +783,7 @@ export class UniverseGenerator {
       mass: 1.0,
       spectralClass: 'G',
       occurrence: 'Normal',
+      anomaly: 'None',
       energyDepot: 120000,
       matterDepot: 180000
     };

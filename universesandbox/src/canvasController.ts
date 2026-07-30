@@ -345,6 +345,20 @@ export class CanvasController {
         this.ctx.globalAlpha = 0.15; // Extremely dim if unrevealed
       }
 
+      // --- DETERMINISTIC SPACETIME ANOMALIES (Phase 4): GRAVITY WELLS (RENDERED BEHIND STAR) ---
+      if (s.anomaly === 'GravityWell') {
+        this.ctx.save();
+        this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
+        this.ctx.setLineDash([4, 6]);
+        this.ctx.lineWidth = 1;
+        for (let rRing = 1; rRing <= 3; rRing++) {
+          this.ctx.beginPath();
+          this.ctx.arc(screenPos.x, screenPos.y, rRing * 32 * zoom, 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
+        this.ctx.restore();
+      }
+
       if (s.spectralClass === 'BlackHole') {
         // --- 1. SPECIAL RENDER: BLACK HOLE ---
         const eventHorizonRadius = Math.max(1.5, (s.mass > 100 ? 12 : 2.5) * zoom) * tuning.sizeScale;
@@ -373,6 +387,65 @@ export class CanvasController {
         // Draw selection helper rings
         if (isSelected) {
           this.drawSelectionReticle(screenPos.x, screenPos.y, diskRadius);
+        }
+      } else if (s.spectralClass === 'Pulsar') {
+        // --- 1B. SPECIAL RENDER: PULSAR (NEUTRON STAR REMNANT) ---
+        const coreRadius = 1.6 * Math.max(0.4, Math.min(2.0, zoom)) * tuning.sizeScale;
+        const beamLength = 9500 * zoom;
+        const beamAngleWidth = 0.08; // Narrow hochenergetische jet cone
+
+        // 1. Draw glowing directed Cones
+        if (s.anomalyAngle !== undefined) {
+          this.ctx.save();
+          this.ctx.globalCompositeOperation = 'lighter';
+
+          // Beam 1
+          let grad1 = this.ctx.createRadialGradient(screenPos.x, screenPos.y, 0, screenPos.x, screenPos.y, beamLength);
+          grad1.addColorStop(0, 'rgba(168, 85, 247, 0.45)'); // intense purple/blue core
+          grad1.addColorStop(0.3, 'rgba(56, 189, 248, 0.15)');
+          grad1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          
+          this.ctx.fillStyle = grad1;
+          this.ctx.beginPath();
+          this.ctx.moveTo(screenPos.x, screenPos.y);
+          this.ctx.arc(screenPos.x, screenPos.y, beamLength, s.anomalyAngle - beamAngleWidth, s.anomalyAngle + beamAngleWidth);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          // Beam 2 (Opposite direction)
+          const oppAngle = s.anomalyAngle + Math.PI;
+          this.ctx.beginPath();
+          this.ctx.moveTo(screenPos.x, screenPos.y);
+          this.ctx.arc(screenPos.x, screenPos.y, beamLength, oppAngle - beamAngleWidth, oppAngle + beamAngleWidth);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          // 2. Draw sharp bright white core jet lines
+          this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+          this.ctx.lineWidth = Math.max(0.8, 1.2 * zoom);
+          this.ctx.beginPath();
+          this.ctx.moveTo(screenPos.x, screenPos.y);
+          this.ctx.lineTo(screenPos.x + Math.cos(s.anomalyAngle) * beamLength, screenPos.y + Math.sin(s.anomalyAngle) * beamLength);
+          this.ctx.moveTo(screenPos.x, screenPos.y);
+          this.ctx.lineTo(screenPos.x + Math.cos(oppAngle) * beamLength, screenPos.y + Math.sin(oppAngle) * beamLength);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        }
+
+        // 3. Draw tiny extremely hot star core (pure ice white with blue bloom)
+        this.ctx.save();
+        this.ctx.shadowColor = 'rgba(56, 189, 248, 0.85)';
+        this.ctx.shadowBlur = (isSelected ? 25 : 12) * tuning.brightnessScale;
+        this.ctx.fillStyle = '#ffffff'; // pure white neutron core
+        this.ctx.beginPath();
+        this.ctx.arc(screenPos.x, screenPos.y, coreRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+
+        // Draw selection helper rings
+        if (isSelected) {
+          this.drawSelectionReticle(screenPos.x, screenPos.y, coreRadius);
         }
       } else {
         // --- 2. MAIN SEQUENCE PHYSICAL STAR RENDER (SSoT) ---

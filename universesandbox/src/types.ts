@@ -4,9 +4,11 @@ export interface Camera {
   zoom: number;
 }
 
-export type SpectralClass = 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M' | 'BlackHole';
+export type SpectralClass = 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M' | 'BlackHole' | 'Pulsar';
 
 export type CosmicOccurrence = 'Normal' | 'DustLane' | 'StellarNursery' | 'SupernovaBubble';
+
+export type AnomalyType = 'None' | 'GravityWell';
 
 export type PlanetType = 'Vulcanian' | 'Rocky' | 'Habitable' | 'Desert' | 'GasGiant' | 'IceGiant';
 
@@ -33,6 +35,8 @@ export interface Sector {
   mass: number; // Single Source of Truth for physical attributes (M_sun)
   spectralClass: SpectralClass;
   occurrence: CosmicOccurrence; // The cosmic environment/biome
+  anomaly: AnomalyType; // Spacetime gravity well anomaly (Phase 4)
+  anomalyAngle?: number; // Pulsar rotation angle (Phase 4)
   energyDepot: number;
   matterDepot: number;
   system?: SolarSystem; // Dynamically generated solar system orbits (Phase 1)

@@ -1,14 +1,15 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-
-// Argumente parsen (z.B. --v=ONE)
-const vArg = process.argv.find(arg => arg.startsWith('--v='));
+// Argumente parsen (z.B. --v=ONE, --exp=ONE oder --experiment=ONE)
+const vArg = process.argv.find(arg => arg.startsWith('--v=') || arg.startsWith('--exp=') || arg.startsWith('--experiment='));
 const version = vArg ? vArg.split('=')[1] : null;
 
 if (!version) {
-    console.error("❌ Fehler: Bitte gib das aktive Experiment an, z.B.: npm run dev --v=ONE");
-    console.error("   (Du kannst auch das alternative dev-offline Skript für die reine Sandbox nutzen)");
+    console.error("❌ Fehler: Bitte gib das aktive Experiment an, z.B.:");
+    console.error("   npm run dev --exp=ONE");
+    console.error("   oder: npm run dev -- --v=ONE");
+    console.error("   (Du kannst auch das alternative dev:sandbox Skript für die reine Sandbox nutzen)");
     process.exit(1);
 }
 

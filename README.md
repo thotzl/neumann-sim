@@ -6,7 +6,7 @@ An autonomous multi-agent simulation framework orchestrating LLM-driven von Neum
 
 ## 1. Getting Started & Operations
 
-The project separates execution environments between the **Simulation Engine (Node.js)** and the **Tactical Command Monitor (React/Vite)**:
+The project separates execution environments between the **Simulation Engine (Node.js)** and the **Tactical Command Monitor (React/Vite)**.
 
 ### I. Simulation Engine (Strictly NodeJS + NPM)
 The simulation requires NodeJS (recommended: v11.11.0) due to native SQLite NAPI-addon bindings which crash under Bun.
@@ -16,16 +16,32 @@ The simulation requires NodeJS (recommended: v11.11.0) due to native SQLite NAPI
 npm install
 
 # 2. Build a clean, isolated experiment sandbox
+# CLI Options:
+#   <version>       Name of the experiment directory (e.g. expanse_2)
+#   --rounds        Number of rounds to simulate (default: 50)
+#   --agent         ID/Name of the progenitor agent (default: Instance-1)
+#   --location      Start system coordinates name (default: Alpha_Centauri)
+#   --mission       Required: Mission instructions prompt for the progenitor
+#   --force         Overwrite existing configuration and sandbox database
+#   --skip-tests    Skip the pre-build CI verification test suite
 npm run build -- expanse_2 --rounds 1500 --mission "Establish permanent colonization cradle."
 
 # 3. Start the turn-based simulation loop
+# Usage: npm run sim <experiment_name>
 npm run sim expanse_2
 
-# 4. Inject hot-patches into an active running sandbox without resetting the DB
-npm run inject expanse_2 engine
-npm run inject expanse_2 tools
+# 4. Inject hot-patches into an active running sandbox without resetting the DB state
+# Usage: npm run inject <experiment_name> <engine | tools | migrate | file_path>
+npm run inject expanse_2 engine     # Synchronizes the entire Node.js simulation engine
+npm run inject expanse_2 tools      # Synchronizes all Python tools and system libraries
+npm run inject expanse_2 migrate    # Applies pending DB migrations directly to the sandbox db
+npm run inject expanse_2 <path>     # Synchronizes a specific file path (e.g. src/sim_engine/core/runner.js)
 
-# 5. Run the complete verification CI-test suite (25 JS, Python, and E2E suites)
+# 5. Reset an active experiment back to Cycle 1, retaining its customized config.json
+# Usage: npm run reset <experiment_name> (or npm run reset -- <experiment_name>)
+npm run reset expanse_2
+
+# 6. Run the complete verification CI-test suite (25 JS, Python, and E2E suites)
 npm test
 ```
 
@@ -36,12 +52,11 @@ The monitor frontend is a React/Vite client and operates lightning-fast under Bu
 # 1. Install monitor frontend dependencies
 cd monitor && bun install
 
-# 2. Start the in-memory WebSocket broker (Port 3001)
-bun vog_server.cjs
-
-# 3. Start the React/Vite development server (Port 3000)
-bun run dev
+# 2. Launch the integrated development environment
+# Usage: bun run dev --v=<experiment_name>
+bun run dev --v=expanse_2
 ```
+*Note: Running `bun run dev --v=<exp_name>` automatically executes the local directory symlinking to target the requested sandbox database, boots up the WebSocket in-memory broker (`vog_server.cjs`) on Port 3001, and launches Vite on Port 5173 / Port 3000.*
 
 ---
 
@@ -49,7 +64,7 @@ bun run dev
 
 The simulation execution engine is a deterministic, decoupled state-machine orchestrated via four NodeJS services:
 
-- **`services/mailbox_service.js`:** Routes sub-etheric radio transmissions (SCUT) and administrative announcements (Voice of God) into agent-specific global inboxes.
+- **`services/mailbox_service.js`:** Collects and routes sub-etheric radio transmissions (SCUT) and administrative announcements (Voice of God) into agent-specific global inboxes on every turn synchronization.
 - **`services/agent_turn_service.js`:** Manages the cognitive execution index of active agents. Triggers the LLM Gemini API via `AIBridge` and parses `[RUN]` blocks via the environment sandbox guard.
 - **`services/physics_round_service.js`:** Runs end-of-round planetary physics: processes active user automation scripts, geological extraction limits, solar energy recharge, structural repairs, and vessel transits.
 - **`services/bootstrapper.js`:** Synchronizes population changes, detects newborn clones, and injects compiled historical memory blocks (`Split & Stitch` compression) during neophyte initialization.

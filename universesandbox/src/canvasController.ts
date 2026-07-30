@@ -328,10 +328,10 @@ export class CanvasController {
     camera: Camera, 
     selectedId: string | null, 
     revealedSectors: Set<string>,
-    visualTuning?: { sizeScale: number; brightnessScale: number; colorShift: number; colorContrast: number }
+    visualTuning?: { sizeScale: number; brightnessScale: number; colorShift: number; colorContrast: number; planetSizeScale: number; orbitSpacingScale: number }
   ) {
     const zoom = camera.zoom;
-    const tuning = visualTuning || { sizeScale: 1.0, brightnessScale: 1.0, colorShift: 0, colorContrast: 1.0 };
+    const tuning = visualTuning || { sizeScale: 1.0, brightnessScale: 1.0, colorShift: 0, colorContrast: 1.0, planetSizeScale: 0.35, orbitSpacingScale: 1.0 };
 
     sectors.forEach((s) => {
       const screenPos = this.worldToScreen(s.x, s.y, camera);
@@ -511,8 +511,8 @@ export class CanvasController {
             // Deterministic start phase offset by coordinate hash + time drift
             const angle = (s.x * 17 + s.y * 31 + p.orbitIndex * 89 + time * orbitSpeed) % (Math.PI * 2);
             
-            // Map AU distance to screen pixels (compact scale relative to core star size)
-            const orbitRadiusScreen = (coreRadius + 8 + p.distance * 14) * zoom;
+            // Map AU distance to screen pixels (scaled by coreRadius, and orbitSpacingScale slider!)
+            const orbitRadiusScreen = (coreRadius + 8 + p.distance * 14 * tuning.orbitSpacingScale) * zoom;
 
             // 1. Draw subtle concentric orbit line
             this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
@@ -525,8 +525,10 @@ export class CanvasController {
             const px = screenPos.x + Math.cos(angle) * orbitRadiusScreen;
             const py = screenPos.y + Math.sin(angle) * orbitRadiusScreen;
             
-            // Scaled planet radius: minimum 1.2px for crisp visibility, capped at 3.2px for massive gas giants
-            const pRadius = Math.max(1.2, Math.min(3.2, p.radius * 0.65 * zoom));
+            // Scaled planet radius using power-law planetSizeScale contrast exponent
+            // If planetSizeScale = 0, all planets are exactly 1.2px (uniform).
+            const basePRadius = 1.2 * Math.pow(p.radius, tuning.planetSizeScale);
+            const pRadius = Math.max(1.0, Math.min(5.0, basePRadius * zoom));
 
             let pColor = '#a8a29e'; // default rocky grey
             if (p.type === 'Vulcanian') pColor = '#ef4444';

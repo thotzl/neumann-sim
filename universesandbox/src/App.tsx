@@ -38,6 +38,8 @@ export default function App() {
     brightnessScale: 1.1,   // Standard Visual Stellar Luminosity scaling (default 1.1, 0.0 is uniform glow)
     colorShift: 0,          // offsets Kelvin color temperature visually (+- Kelvin offset, default 0)
     colorContrast: 1.0,     // stretches spectral temperature contrast around solar baseline (default 1.0)
+    planetSizeScale: 0.35,  // Planet size ratio contrast exponent (default 0.35, 0.0 is uniform size)
+    orbitSpacingScale: 1.0  // Planet orbit spacing contrast multiplier (default 1.0)
   });
 
   // Sync state to static fields of UniverseGenerator
@@ -407,7 +409,9 @@ export default function App() {
       sizeScale: 0.25,
       brightnessScale: 1.1,
       colorShift: 0,
-      colorContrast: 1.0
+      colorContrast: 1.0,
+      planetSizeScale: 0.35,
+      orbitSpacingScale: 1.0
     });
     // Centering, FOW reset, and start node selection will trigger automatically in useEffect reacting to seed/density state reset!
   };

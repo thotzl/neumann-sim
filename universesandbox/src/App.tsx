@@ -34,8 +34,8 @@ export default function App() {
 
   // Real-time Visual HUD Tuning constants (only affects the Map presentation layer, not the simulation!)
   const [visualTuning, setVisualTuning] = useState({
-    sizeScale: 1.0,         // scales star core radius on-screen
-    brightnessScale: 1.0,   // scales bloom glow radius on-screen
+    sizeScale: 0.22,        // Star size ratio contrast exponent (default 0.22, 0.0 is uniform size)
+    brightnessScale: 1.0,   // Star glow ratio contrast multiplier (default 1.0, 0.0 is uniform glow)
     colorShift: 0,          // offsets Kelvin color temperature visually (+- Kelvin offset)
   });
 
@@ -395,7 +395,7 @@ export default function App() {
       stellarMassImf: 3.0
     });
     setVisualTuning({
-      sizeScale: 1.0,
+      sizeScale: 0.22,
       brightnessScale: 1.0,
       colorShift: 0,
     });
@@ -719,28 +719,28 @@ export default function App() {
         <h2 className="panel-title">🎨 VISUAL HUD TUNING</h2>
         <div className="divider" style={{ marginBottom: '15px' }} />
 
-        {/* Visual Size Scale */}
+        {/* Visual Size Ratio Scale */}
         <div className="control-group">
-          <label>MAP_STAR_RENDER_SIZE: <strong>{(visualTuning.sizeScale * 100).toFixed(0)}%</strong></label>
+          <label>MAP_STAR_SIZE_CONTRAST: <strong>{visualTuning.sizeScale === 0 ? "UNIFORM_SIZE" : `${(visualTuning.sizeScale * 100).toFixed(0)}% (Ratio)`}</strong></label>
           <input
             type="range"
-            min="0.3"
-            max="3.0"
-            step="0.1"
+            min="0.0"
+            max="0.8"
+            step="0.02"
             value={visualTuning.sizeScale}
             onChange={(e) => setVisualTuning(prev => ({ ...prev, sizeScale: parseFloat(e.target.value) }))}
             className="hud-slider"
           />
         </div>
 
-        {/* Visual Glow Scale */}
+        {/* Visual Glow Ratio Scale */}
         <div className="control-group">
-          <label>MAP_STAR_GLOW_BLOOM: <strong>{(visualTuning.brightnessScale * 100).toFixed(0)}%</strong></label>
+          <label>MAP_STAR_GLOW_CONTRAST: <strong>{visualTuning.brightnessScale === 0 ? "NO_GLOW_CONTRAST" : `${(visualTuning.brightnessScale * 100).toFixed(0)}% (Ratio)`}</strong></label>
           <input
             type="range"
             min="0.0"
-            max="3.0"
-            step="0.1"
+            max="2.5"
+            step="0.05"
             value={visualTuning.brightnessScale}
             onChange={(e) => setVisualTuning(prev => ({ ...prev, brightnessScale: parseFloat(e.target.value) }))}
             className="hud-slider"

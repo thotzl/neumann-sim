@@ -276,10 +276,12 @@ export class CanvasController {
         // --- 2. MAIN SEQUENCE PHYSICAL STAR RENDER (SSoT) ---
         const props = getStellarProperties(s.mass);
         
-        // --- COMPACT SIZE DAMPING (Logarithmic scaling to prevent screen clutter) ---
-        // Red dwarf yields ~3.4px. Sun yields ~4.5px. O-giant yields ~7.6px, scaled by visual sizeScale!
-        const baseSize = 3.1 + Math.pow(props.radius, 0.4) * 1.4;
-        const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom)) * tuning.sizeScale;
+        // --- CONTRAST-RATIO SIZE SCALING (Power-law contrast scaling) ---
+        // sizeScale acts as a contrast ratio exponent.
+        // If sizeScale = 0.0, all stars are exactly 3.5px (uniform).
+        // If sizeScale = 0.22, stars dynamically stretch from 2.6px (M-dwarf) to 6.8px (O-giant).
+        const baseSize = 3.5 * Math.pow(props.radius, tuning.sizeScale);
+        const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom));
 
         // --- SPECULAR TEMPERATURE SHIFT ---
         // Shift color temperature visually based on slider (Kelvin offset)
@@ -312,8 +314,10 @@ export class CanvasController {
           glowStr = 'rgba(37, 99, 235, 0.65)';
         }
 
-        // Stellar Bloom scales logarithmically with physical luminosity (brightness), multiplied by tuning brightnessScale
-        const glowRadius = Math.max(3.0, Math.min(24.0, 5 + Math.log(props.luminosity + 1.1) * 2.2)) * tuning.brightnessScale;
+        // --- CONTRAST-RATIO GLOW SCALING (Logarithmic bloom scale) ---
+        // If brightnessScale = 0.0, all stars have the same tight glow (no contrast).
+        // If brightnessScale = 1.0, glows dynamically scale with the true physical luminosity L.
+        const glowRadius = (3.5 + Math.log(props.luminosity + 1.1) * 1.5 * tuning.brightnessScale) * Math.max(0.4, Math.min(2.0, zoom));
 
         this.ctx.shadowColor = glowStr;
         this.ctx.shadowBlur = isSelected ? glowRadius * 2.2 : glowRadius;

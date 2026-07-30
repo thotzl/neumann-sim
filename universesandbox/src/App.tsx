@@ -36,9 +36,9 @@ export default function App() {
     planetMaxCount: 8,    // Standard maximum planet count (default 8)
     planetTbOffset: 0.22, // Titius-Bode starting orbit distance offset (default 0.22)
     planetTbSpacing: 1.45, // Titius-Bode spacing multiplier (default 1.45)
-    biomeBubbleChance: 0.09, // HIM Supernova bubble spawn probability (default 9%)
-    biomeGwellChance: 0.08, // Spacetime Gravity Well spawn probability (default 8%)
-    biomeGwellMult: 2.0   // Gravity Well mass/matter condensation multiplier (default 2.0)
+    supernovaBubbleChance: 0.09, // HIM Supernova bubble spawn probability (default 9%)
+    gravityWellChance: 0.08, // Spacetime Gravity Well spawn probability (default 8%)
+    gravityWellMult: 2.0   // Gravity Well mass/matter condensation multiplier (default 2.0)
   });
 
   // Real-time Visual HUD Tuning constants (only affects the Map presentation layer, not the simulation!)
@@ -70,9 +70,9 @@ export default function App() {
     UniverseGenerator.PLANET_MAX_COUNT = physics.planetMaxCount;
     UniverseGenerator.PLANET_TB_OFFSET = physics.planetTbOffset;
     UniverseGenerator.PLANET_TB_SPACING = physics.planetTbSpacing;
-    UniverseGenerator.BIOME_BUBBLE_CHANCE = physics.biomeBubbleChance;
-    UniverseGenerator.BIOME_GWELL_CHANCE = physics.biomeGwellChance;
-    UniverseGenerator.BIOME_GWELL_MULT = physics.biomeGwellMult;
+    UniverseGenerator.SUPERNOVA_BUBBLE_CHANCE = physics.supernovaBubbleChance;
+    UniverseGenerator.GRAVITY_WELL_CHANCE = physics.gravityWellChance;
+    UniverseGenerator.GRAVITY_WELL_MULT = physics.gravityWellMult;
   }, [physics]);
 
   // Dynamically calculate starting system on seed/density changes, center camera on it, and reveal/select it!
@@ -92,6 +92,63 @@ export default function App() {
   }, [config.seed, config.density, physics.superCellSize, physics.galaxyChance, physics.minGalaxyRadius, physics.maxGalaxyRadius, physics.minPitchAngle, physics.maxPitchAngle, physics.systemCellSize, physics.maxJitter]);
 
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
+
+  const renderSliderWithInput = (
+    label: string,
+    value: number,
+    min: number,
+    max: number,
+    step: number,
+    onChange: (val: number) => void,
+    formatDisplay: (val: number) => string = (val) => val.toString()
+  ) => {
+    return (
+      <div className="control-group">
+        <label style={{ display: 'block', marginBottom: '2px', fontSize: '0.7rem', color: '#94a3b8' }}>
+          {label}: <strong style={{ color: '#38bdf8' }}>{formatDisplay(value)}</strong>
+        </label>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px' }}>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onChange={(e) => onChange(parseFloat(e.target.value))}
+            className="hud-slider"
+            style={{ flex: 1, margin: 0 }}
+          />
+          <input
+            type="number"
+            min={min}
+            max={max}
+            step={step}
+            value={isNaN(value) ? min : value}
+            onChange={(e) => {
+              let val = parseFloat(e.target.value);
+              if (isNaN(val)) return;
+              const clamped = Math.max(min, Math.min(max, val));
+              onChange(clamped);
+            }}
+            className="hud-input-number"
+            style={{
+              width: '56px',
+              background: '#040810',
+              border: '1px solid #1e293b',
+              borderRadius: '2px',
+              color: '#38bdf8',
+              fontFamily: 'monospace',
+              fontSize: '0.75rem',
+              padding: '2px 4px',
+              textAlign: 'center',
+              outline: 'none',
+              height: '18px'
+            }}
+          />
+        </div>
+      </div>
+    );
+  };
   const [inspectorTab, setInspectorTab] = useState<'telemetry' | 'orbits'>('telemetry');
   const [viewportStats, setViewportStats] = useState({ x: 0, y: 0, count: 0, revealedCount: 0 });
 
@@ -428,9 +485,9 @@ export default function App() {
       planetMaxCount: 8,
       planetTbOffset: 0.22,
       planetTbSpacing: 1.45,
-      biomeBubbleChance: 0.09,
-      biomeGwellChance: 0.08,
-      biomeGwellMult: 2.0
+      supernovaBubbleChance: 0.09,
+      gravityWellChance: 0.08,
+      gravityWellMult: 2.0
     });
     setVisualTuning({
       sizeScale: 0.25,
@@ -539,21 +596,18 @@ export default function App() {
         </div>
 
         {/* Star Density Config */}
-        <div className="control-group">
-          <label>COSMIC_DENSITY: <strong>{(config.density * 100).toFixed(0)}%</strong></label>
-          <input
-            type="range"
-            min="0.1"
-            max="0.8"
-            step="0.05"
-            value={config.density}
-            onChange={(e) => {
-              setConfig(prev => ({ ...prev, density: parseFloat(e.target.value) }));
-              setSelectedSector(null);
-            }}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "COSMIC_DENSITY",
+          config.density,
+          0.1,
+          0.8,
+          0.05,
+          (val) => {
+            setConfig(prev => ({ ...prev, density: val }));
+            setSelectedSector(null);
+          },
+          (val) => `${(val * 100).toFixed(0)}%`
+        )}
 
         {/* Action Tools */}
         <div className="control-group">
@@ -582,18 +636,15 @@ export default function App() {
 
         {/* Brush Size Slider (shown only when painting) */}
         {(config.activeTool === 'reveal' || config.activeTool === 'hide') && (
-          <div className="control-group anim-fade-in">
-            <label>BRUSH_RADIUS: <strong>{config.brushSize} LY</strong></label>
-            <input
-              type="range"
-              min="100"
-              max="1500"
-              step="100"
-              value={config.brushSize}
-              onChange={(e) => setConfig(prev => ({ ...prev, brushSize: parseInt(e.target.value) }))}
-              className="hud-slider"
-            />
-          </div>
+          renderSliderWithInput(
+            "BRUSH_RADIUS",
+            config.brushSize,
+            100,
+            1500,
+            100,
+            (val) => setConfig(prev => ({ ...prev, brushSize: val })),
+            (val) => `${val} LY`
+          )
         )}
 
         <div className="divider" />
@@ -618,345 +669,273 @@ export default function App() {
         <h2 className="panel-title">🌌 DEEPER PHYSICS</h2>
         <div className="divider" style={{ marginBottom: '15px' }} />
 
-        {/* Galaxy Spawn Chance */}
-        <div className="control-group">
-          <label>GALAXY_SPAWN_CHANCE: <strong>{(physics.galaxyChance * 100).toFixed(0)}%</strong></label>
-          <input
-            type="range"
-            min="0.10"
-            max="0.90"
-            step="0.05"
-            value={physics.galaxyChance}
-            onChange={(e) => setPhysics(prev => ({ ...prev, galaxyChance: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "GALAXY_SPAWN_CHANCE",
+          physics.galaxyChance,
+          0.10,
+          0.90,
+          0.05,
+          (val) => setPhysics(prev => ({ ...prev, galaxyChance: val })),
+          (val) => `${(val * 100).toFixed(0)}%`
+        )}
 
-        {/* Galaxy Grid Distance */}
-        <div className="control-group">
-          <label>GALAXY_SPACING: <strong>{(physics.superCellSize / 1000).toFixed(0)}k LY</strong></label>
-          <input
-            type="range"
-            min="40000"
-            max="200000"
-            step="10000"
-            value={physics.superCellSize}
-            onChange={(e) => setPhysics(prev => ({ ...prev, superCellSize: parseInt(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "GALAXY_SPACING",
+          physics.superCellSize,
+          40000,
+          200000,
+          10000,
+          (val) => setPhysics(prev => ({ ...prev, superCellSize: val })),
+          (val) => `${(val / 1000).toFixed(0)}k LY`
+        )}
 
-        {/* Galaxy Min Radius */}
-        <div className="control-group">
-          <label>GALAXY_MIN_RADIUS: <strong>{(physics.minGalaxyRadius / 1000).toFixed(0)}k LY</strong></label>
-          <input
-            type="range"
-            min="5000"
-            max="30000"
-            step="1000"
-            value={physics.minGalaxyRadius}
-            onChange={(e) => setPhysics(prev => ({ ...prev, minGalaxyRadius: parseInt(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "GALAXY_MIN_RADIUS",
+          physics.minGalaxyRadius,
+          5000,
+          30000,
+          1000,
+          (val) => setPhysics(prev => ({ ...prev, minGalaxyRadius: val })),
+          (val) => `${(val / 1000).toFixed(0)}k LY`
+        )}
 
-        {/* Galaxy Max Radius */}
-        <div className="control-group">
-          <label>GALAXY_MAX_RADIUS: <strong>{(physics.maxGalaxyRadius / 1000).toFixed(0)}k LY</strong></label>
-          <input
-            type="range"
-            min="30000"
-            max="100000"
-            step="2000"
-            value={physics.maxGalaxyRadius}
-            onChange={(e) => setPhysics(prev => ({ ...prev, maxGalaxyRadius: parseInt(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "GALAXY_MAX_RADIUS",
+          physics.maxGalaxyRadius,
+          30000,
+          100000,
+          2000,
+          (val) => setPhysics(prev => ({ ...prev, maxGalaxyRadius: val })),
+          (val) => `${(val / 1000).toFixed(0)}k LY`
+        )}
 
-        {/* Spiral Pitch Min */}
-        <div className="control-group">
-          <label>Sa_SPIRAL_MIN_PITCH_ANGLE: <strong>{physics.minPitchAngle}°</strong></label>
-          <input
-            type="range"
-            min="4"
-            max="14"
-            step="1"
-            value={physics.minPitchAngle}
-            onChange={(e) => setPhysics(prev => ({ ...prev, minPitchAngle: parseInt(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "Sa_SPIRAL_MIN_PITCH_ANGLE",
+          physics.minPitchAngle,
+          4,
+          14,
+          1,
+          (val) => setPhysics(prev => ({ ...prev, minPitchAngle: val })),
+          (val) => `${val}°`
+        )}
 
-        {/* Spiral Pitch Max */}
-        <div className="control-group">
-          <label>Sc_SPIRAL_MAX_PITCH_ANGLE: <strong>{physics.maxPitchAngle}°</strong></label>
-          <input
-            type="range"
-            min="15"
-            max="32"
-            step="1"
-            value={physics.maxPitchAngle}
-            onChange={(e) => setPhysics(prev => ({ ...prev, maxPitchAngle: parseInt(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "Sc_SPIRAL_MAX_PITCH_ANGLE",
+          physics.maxPitchAngle,
+          15,
+          32,
+          1,
+          (val) => setPhysics(prev => ({ ...prev, maxPitchAngle: val })),
+          (val) => `${val}°`
+        )}
 
-        {/* System Cell Size */}
-        <div className="control-group">
-          <label>SYSTEM_CELL_SIZE: <strong>{physics.systemCellSize} LY</strong></label>
-          <input
-            type="range"
-            min="300"
-            max="1000"
-            step="50"
-            value={physics.systemCellSize}
-            onChange={(e) => setPhysics(prev => ({ ...prev, systemCellSize: parseInt(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "SYSTEM_CELL_SIZE",
+          physics.systemCellSize,
+          300,
+          1000,
+          50,
+          (val) => setPhysics(prev => ({ ...prev, systemCellSize: val })),
+          (val) => `${val} LY`
+        )}
 
-        {/* System Max Jitter */}
-        <div className="control-group">
-          <label>SYSTEM_PLACEMENT_JITTER: <strong>{physics.maxJitter} LY</strong></label>
-          <input
-            type="range"
-            min="0"
-            max="150"
-            step="5"
-            value={physics.maxJitter}
-            onChange={(e) => setPhysics(prev => ({ ...prev, maxJitter: parseInt(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "SYSTEM_PLACEMENT_JITTER",
+          physics.maxJitter,
+          0,
+          150,
+          5,
+          (val) => setPhysics(prev => ({ ...prev, maxJitter: val })),
+          (val) => `${val} LY`
+        )}
 
-        {/* IMF Min Mass */}
-        <div className="control-group">
-          <label>MIN_STELLAR_MASS: <strong>{physics.minStellarMass.toFixed(2)} M_sun</strong></label>
-          <input
-            type="range"
-            min="0.08"
-            max="1.50"
-            step="0.05"
-            value={physics.minStellarMass}
-            onChange={(e) => setPhysics(prev => ({ ...prev, minStellarMass: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "MIN_STELLAR_MASS",
+          physics.minStellarMass,
+          0.08,
+          1.50,
+          0.05,
+          (val) => setPhysics(prev => ({ ...prev, minStellarMass: val })),
+          (val) => `${val.toFixed(2)} M_sun`
+        )}
 
-        {/* IMF Max Mass */}
-        <div className="control-group">
-          <label>MAX_STELLAR_MASS: <strong>{physics.maxStellarMass.toFixed(0)} M_sun</strong></label>
-          <input
-            type="range"
-            min="1.5"
-            max="100.0"
-            step="0.5"
-            value={physics.maxStellarMass}
-            onChange={(e) => setPhysics(prev => ({ ...prev, maxStellarMass: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "MAX_STELLAR_MASS",
+          physics.maxStellarMass,
+          1.5,
+          100.0,
+          0.5,
+          (val) => setPhysics(prev => ({ ...prev, maxStellarMass: val })),
+          (val) => `${val.toFixed(1)} M_sun`
+        )}
 
-        {/* IMF Exponent Curve */}
-        <div className="control-group">
-          <label>IMF_CURVE_EXPONENT: <strong>{physics.stellarMassImf.toFixed(1)}</strong></label>
-          <input
-            type="range"
-            min="1.0"
-            max="6.0"
-            step="0.1"
-            value={physics.stellarMassImf}
-            onChange={(e) => setPhysics(prev => ({ ...prev, stellarMassImf: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "IMF_CURVE_EXPONENT",
+          physics.stellarMassImf,
+          1.0,
+          6.0,
+          0.1,
+          (val) => setPhysics(prev => ({ ...prev, stellarMassImf: val })),
+          (val) => val.toFixed(1)
+        )}
 
-        {/* Remnants Spawn Probability */}
-        <div className="control-group">
-          <label>REMNANT_SPAWN_CHANCE: <strong>{(physics.remnantChance * 100).toFixed(2)}%</strong></label>
-          <input
-            type="range"
-            min="0.0005"
-            max="0.005"
-            step="0.0005"
-            value={physics.remnantChance}
-            onChange={(e) => setPhysics(prev => ({ ...prev, remnantChance: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "REMNANT_SPAWN_CHANCE",
+          physics.remnantChance,
+          0.0005,
+          0.005,
+          0.0005,
+          (val) => setPhysics(prev => ({ ...prev, remnantChance: val })),
+          (val) => `${(val * 100).toFixed(2)}%`
+        )}
 
-        {/* Remnant Pulsar / BlackHole Limit */}
-        <div className="control-group">
-          <label>REMNANT_PULSAR_MASS_LIMIT: <strong>{physics.remnantPulsarLimit.toFixed(1)} M_sun</strong></label>
-          <input
-            type="range"
-            min="10.0"
-            max="25.0"
-            step="0.5"
-            value={physics.remnantPulsarLimit}
-            onChange={(e) => setPhysics(prev => ({ ...prev, remnantPulsarLimit: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "REMNANT_PULSAR_MASS_LIMIT",
+          physics.remnantPulsarLimit,
+          10.0,
+          25.0,
+          0.5,
+          (val) => setPhysics(prev => ({ ...prev, remnantPulsarLimit: val })),
+          (val) => `${val.toFixed(1)} M_sun`
+        )}
 
-        {/* Planet Min Orbits */}
-        <div className="control-group">
-          <label>PLANETS_MIN_COUNT: <strong>{physics.planetMinCount}</strong></label>
-          <input
-            type="range"
-            min="0"
-            max="4"
-            step="1"
-            value={physics.planetMinCount}
-            onChange={(e) => setPhysics(prev => ({ ...prev, planetMinCount: parseInt(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "PLANETS_MIN_COUNT",
+          physics.planetMinCount,
+          0,
+          4,
+          1,
+          (val) => setPhysics(prev => ({ ...prev, planetMinCount: val }))
+        )}
 
-        {/* Planet Max Orbits */}
-        <div className="control-group">
-          <label>PLANETS_MAX_COUNT: <strong>{physics.planetMaxCount}</strong></label>
-          <input
-            type="range"
-            min="4"
-            max="12"
-            step="1"
-            value={physics.planetMaxCount}
-            onChange={(e) => setPhysics(prev => ({ ...prev, planetMaxCount: parseInt(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "PLANETS_MAX_COUNT",
+          physics.planetMaxCount,
+          4,
+          12,
+          1,
+          (val) => setPhysics(prev => ({ ...prev, planetMaxCount: val }))
+        )}
 
-        {/* Planet TB Orbit Starting Offset */}
-        <div className="control-group">
-          <label>PLANET_TB_START_OFFSET_MULT: <strong>{physics.planetTbOffset.toFixed(2)} AU</strong></label>
-          <input
-            type="range"
-            min="0.10"
-            max="0.45"
-            step="0.01"
-            value={physics.planetTbOffset}
-            onChange={(e) => setPhysics(prev => ({ ...prev, planetTbOffset: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "PLANET_TB_START_OFFSET_MULT",
+          physics.planetTbOffset,
+          0.10,
+          0.45,
+          0.01,
+          (val) => setPhysics(prev => ({ ...prev, planetTbOffset: val })),
+          (val) => `${val.toFixed(2)} AU`
+        )}
 
-        {/* Planet TB Orbit Spacing Gamma */}
-        <div className="control-group">
-          <label>PLANET_TB_SPACING_GAMMA: <strong>{physics.planetTbSpacing.toFixed(2)}</strong></label>
-          <input
-            type="range"
-            min="1.20"
-            max="2.20"
-            step="0.05"
-            value={physics.planetTbSpacing}
-            onChange={(e) => setPhysics(prev => ({ ...prev, planetTbSpacing: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "PLANET_TB_SPACING_GAMMA",
+          physics.planetTbSpacing,
+          1.20,
+          2.20,
+          0.05,
+          (val) => setPhysics(prev => ({ ...prev, planetTbSpacing: val })),
+          (val) => val.toFixed(2)
+        )}
 
-        {/* Biome Bubble Chance */}
-        <div className="control-group">
-          <label>BIOME_SN_BUBBLE_CHANCE: <strong>{(physics.biomeBubbleChance * 100).toFixed(0)}%</strong></label>
-          <input
-            type="range"
-            min="0.01"
-            max="0.30"
-            step="0.01"
-            value={physics.biomeBubbleChance}
-            onChange={(e) => setPhysics(prev => ({ ...prev, biomeBubbleChance: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "SUPERNOVA_BUBBLE_CHANCE",
+          physics.supernovaBubbleChance,
+          0.01,
+          0.30,
+          0.01,
+          (val) => setPhysics(prev => ({ ...prev, supernovaBubbleChance: val })),
+          (val) => `${(val * 100).toFixed(0)}%`
+        )}
 
-        {/* Biome Gravity Well Chance */}
-        <div className="control-group">
-          <label>BIOME_GWELL_CHANCE: <strong>{(physics.biomeGwellChance * 100).toFixed(0)}%</strong></label>
-          <input
-            type="range"
-            min="0.01"
-            max="0.25"
-            step="0.01"
-            value={physics.biomeGwellChance}
-            onChange={(e) => setPhysics(prev => ({ ...prev, biomeGwellChance: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "GRAVITY_WELL_CHANCE",
+          physics.gravityWellChance,
+          0.01,
+          0.25,
+          0.01,
+          (val) => setPhysics(prev => ({ ...prev, gravityWellChance: val })),
+          (val) => `${(val * 100).toFixed(0)}%`
+        )}
 
-        {/* Biome Gravity Well Multiplier */}
-        <div className="control-group">
-          <label>BIOME_GWELL_MASS_MULTIPLIER: <strong>{physics.biomeGwellMult.toFixed(1)}x</strong></label>
-          <input
-            type="range"
-            min="1.0"
-            max="4.0"
-            step="0.1"
-            value={physics.biomeGwellMult}
-            onChange={(e) => setPhysics(prev => ({ ...prev, biomeGwellMult: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "GRAVITY_WELL_MASS_MULT",
+          physics.gravityWellMult,
+          1.0,
+          4.0,
+          0.1,
+          (val) => setPhysics(prev => ({ ...prev, gravityWellMult: val })),
+          (val) => `${val.toFixed(1)}x`
+        )}
 
         <div className="divider" />
         <h2 className="panel-title">🎨 VISUAL HUD TUNING</h2>
         <div className="divider" style={{ marginBottom: '15px' }} />
 
         {/* Visual Size Ratio Scale */}
-        <div className="control-group">
-          <label>MAP_STAR_SIZE_CONTRAST: <strong>{visualTuning.sizeScale === 0 ? "UNIFORM_SIZE" : `${(visualTuning.sizeScale * 100).toFixed(0)}% (Ratio)`}</strong></label>
-          <input
-            type="range"
-            min="0.0"
-            max="0.8"
-            step="0.02"
-            value={visualTuning.sizeScale}
-            onChange={(e) => setVisualTuning(prev => ({ ...prev, sizeScale: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "MAP_STAR_SIZE_CONTRAST",
+          visualTuning.sizeScale,
+          0.0,
+          0.8,
+          0.02,
+          (val) => setVisualTuning(prev => ({ ...prev, sizeScale: val })),
+          (val) => val === 0 ? "UNIFORM_SIZE" : `${(val * 100).toFixed(0)}% (Ratio)`
+        )}
 
         {/* Visual Glow Ratio Scale */}
-        <div className="control-group">
-          <label>MAP_STAR_GLOW_CONTRAST: <strong>{visualTuning.brightnessScale === 0 ? "NO_GLOW_CONTRAST" : `${(visualTuning.brightnessScale * 100).toFixed(0)}% (Ratio)`}</strong></label>
-          <input
-            type="range"
-            min="0.0"
-            max="2.5"
-            step="0.05"
-            value={visualTuning.brightnessScale}
-            onChange={(e) => setVisualTuning(prev => ({ ...prev, brightnessScale: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "MAP_STAR_GLOW_CONTRAST",
+          visualTuning.brightnessScale,
+          0.0,
+          2.5,
+          0.05,
+          (val) => setVisualTuning(prev => ({ ...prev, brightnessScale: val })),
+          (val) => val === 0 ? "NO_GLOW_CONTRAST" : `${(val * 100).toFixed(0)}% (Ratio)`
+        )}
 
         {/* Color Shift Kelvin offset */}
-        <div className="control-group">
-          <label>MAP_SPECTRAL_COLOR_SHIFT: <strong>{visualTuning.colorShift > 0 ? `+${visualTuning.colorShift}` : visualTuning.colorShift} K</strong></label>
-          <input
-            type="range"
-            min="-6000"
-            max="6000"
-            step="200"
-            value={visualTuning.colorShift}
-            onChange={(e) => setVisualTuning(prev => ({ ...prev, colorShift: parseInt(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "MAP_SPECTRAL_COLOR_SHIFT",
+          visualTuning.colorShift,
+          -6000,
+          6000,
+          200,
+          (val) => setVisualTuning(prev => ({ ...prev, colorShift: val })),
+          (val) => `${val > 0 ? `+${val}` : val} K`
+        )}
 
         {/* Color Contrast Scale */}
-        <div className="control-group">
-          <label>MAP_SPECTRAL_COLOR_CONTRAST: <strong>{visualTuning.colorContrast === 0 ? "UNIFORM_COLOR" : `${(visualTuning.colorContrast * 100).toFixed(0)}% (Ratio)`}</strong></label>
-          <input
-            type="range"
-            min="0.0"
-            max="2.5"
-            step="0.05"
-            value={visualTuning.colorContrast}
-            onChange={(e) => setVisualTuning(prev => ({ ...prev, colorContrast: parseFloat(e.target.value) }))}
-            className="hud-slider"
-          />
-        </div>
+        {renderSliderWithInput(
+          "MAP_SPECTRAL_COLOR_CONTRAST",
+          visualTuning.colorContrast,
+          0.0,
+          2.5,
+          0.05,
+          (val) => setVisualTuning(prev => ({ ...prev, colorContrast: val })),
+          (val) => val === 0 ? "UNIFORM_COLOR" : `${(val * 100).toFixed(0)}% (Ratio)`
+        )}
+
+        {/* Planet Size Contrast Scale */}
+        {renderSliderWithInput(
+          "MAP_PLANET_SIZE_CONTRAST",
+          visualTuning.planetSizeScale,
+          0.0,
+          1.2,
+          0.05,
+          (val) => setVisualTuning(prev => ({ ...prev, planetSizeScale: val })),
+          (val) => val === 0 ? "UNIFORM_SIZE" : `${(val * 100).toFixed(0)}% (Ratio)`
+        )}
+
+        {/* Planet Orbit Spacing Contrast Scale */}
+        {renderSliderWithInput(
+          "MAP_PLANET_ORBIT_SPACING",
+          visualTuning.orbitSpacingScale,
+          0.3,
+          2.5,
+          0.05,
+          (val) => setVisualTuning(prev => ({ ...prev, orbitSpacingScale: val })),
+          (val) => `${(val * 100).toFixed(0)}% (Spacing)`
+        )}
 
         <div className="divider" />
 

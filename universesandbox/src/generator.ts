@@ -212,12 +212,12 @@ export class UniverseGenerator {
   static PLANET_ALBEDO_GAS = 0.35;     // Thick methane/helium cloud (default 0.35)
   static PLANET_ALBEDO_ICE = 0.40;     // Solid surface nitrogen ice (default 0.40)
 
-  // Cosmic Occurrence ISM parameters (Phase 5)
-  static BIOME_BUBBLE_SIZE = 64000;  // HIM Supernova bubble voxel cellular size (default 64,000 LY)
-  static BIOME_BUBBLE_CHANCE = 0.09; // HIM Supernova bubble spawn probability (default 9%)
-  static BIOME_GWELL_SIZE = 75000;   // Spacetime Gravity Well cell size (default 75,000 LY)
-  static BIOME_GWELL_CHANCE = 0.08;  // Spacetime Gravity Well spawn probability (default 8%)
-  static BIOME_GWELL_MULT = 2.0;     // Gravity Well mass/matter condensation compression factor (default 2.0x)
+  // Cosmic Occurrence Environmental ISM parameters (Phase 5)
+  static SUPERNOVA_BUBBLE_SIZE = 64000;  // HIM Supernova bubble voxel cellular size (default 64,000 LY)
+  static SUPERNOVA_BUBBLE_CHANCE = 0.09; // HIM Supernova bubble spawn probability (default 9%)
+  static GRAVITY_WELL_SIZE = 75000;   // Spacetime Gravity Well cell size (default 75,000 LY)
+  static GRAVITY_WELL_CHANCE = 0.08;  // Spacetime Gravity Well spawn probability (default 8%)
+  static GRAVITY_WELL_MULT = 2.0;     // Gravity Well mass/matter condensation compression factor (default 2.0x)
 
   /**
    * Evaluates a super-cell coordinate (scx, scy) to see if a Galaxy exists there.
@@ -416,10 +416,10 @@ export class UniverseGenerator {
 
   /**
    * Deterministically calculates if a giant HIM Supernova Bubble overlaps (wx, wy).
-   * Low-frequency 60,000 LY grid checking.
+   * Low-frequency grid checking.
    */
   static getBubbleAt(wx: number, wy: number, seed: number): { x: number; y: number; r: number } | null {
-    const size = this.BIOME_BUBBLE_SIZE;
+    const size = this.SUPERNOVA_BUBBLE_SIZE;
     const bx = Math.floor(wx / size);
     const by = Math.floor(wy / size);
 
@@ -427,7 +427,7 @@ export class UniverseGenerator {
     const cellSeed = (Math.imul(bx, 12853) ^ Math.imul(by, 28351) ^ seed + 5555) & 0xffffffff;
     const prng = new Mulberry32(cellSeed);
 
-    if (prng.next() > this.BIOME_BUBBLE_CHANCE) return null; // configurable chance of bubble per cell
+    if (prng.next() > this.SUPERNOVA_BUBBLE_CHANCE) return null; // configurable chance of bubble per cell
 
     // Displace center within cell
     const cx = bx * size + size / 2 + (prng.next() - 0.5) * 0.45 * size;
@@ -453,10 +453,10 @@ export class UniverseGenerator {
   /**
    * Deterministically calculates if a local Gravitational SpaceTime Well (Dark Matter clump)
    * overlaps the world coordinates (wx, wy) based on world seed.
-   * Cellular grid checking of 75,000 LY.
+   * Cellular grid checking.
    */
   static getGravityWellAt(wx: number, wy: number, seed: number): { x: number; y: number; r: number } | null {
-    const size = this.BIOME_GWELL_SIZE;
+    const size = this.GRAVITY_WELL_SIZE;
     const bx = Math.floor(wx / size);
     const by = Math.floor(wy / size);
 
@@ -464,7 +464,7 @@ export class UniverseGenerator {
     const cellSeed = (Math.imul(bx, 19349) ^ Math.imul(by, 83931) ^ seed + 9999) & 0xffffffff;
     const prng = new Mulberry32(cellSeed);
 
-    if (prng.next() > this.BIOME_GWELL_CHANCE) return null; // configurable gravity well chance
+    if (prng.next() > this.GRAVITY_WELL_CHANCE) return null; // configurable gravity well chance
 
     const cx = bx * size + size / 2 + (prng.next() - 0.5) * 0.45 * size;
     const cy = by * size + size / 2 + (prng.next() - 0.5) * 0.45 * size;
@@ -688,7 +688,7 @@ export class UniverseGenerator {
       }
     }
 
-    // --- DETERMINISTIC COSMIC OCCURRENCES (BIOMES) ---
+    // --- DETERMINISTIC COSMIC OCCURRENCES (BIOMES / ENVIRONMENTS) ---
     let occurrence: CosmicOccurrence = 'Normal';
     
     // 1. Check Supernova HIM Bubble (takes absolute priority as shockwave blows gas away)
@@ -747,7 +747,7 @@ export class UniverseGenerator {
       anomaly = 'GravityWell';
       // Heavy dark matter / gravitational compression doubles mass and heavy matter condensation!
       mass = mass * 2.0;
-      matterDepot = Math.round(matterDepot * this.BIOME_GWELL_MULT);
+      matterDepot = Math.round(matterDepot * this.GRAVITY_WELL_MULT);
     }
 
     // --- DETERMINISTIC KIPER/DEBRIS DISK REMNANTS (Phase 5) ---

@@ -143,16 +143,16 @@ export class CanvasController {
       
       if (s.occurrence === 'StellarNursery') {
         radius = 240 * zoom;
-        // Rich pink stellar nursery nebula glow
-        colorCenter = 'rgba(236, 72, 153, 0.015)'; // pink-500 soft
+        // Rich pink stellar nursery nebula glow (increased opacity to ~6% for gorgeous visibility)
+        colorCenter = 'rgba(236, 72, 153, 0.06)'; 
       } else if (s.occurrence === 'DustLane') {
         radius = 200 * zoom;
-        // Dark-brown absorbing cosmic dust lane glow
-        colorCenter = 'rgba(120, 113, 108, 0.02)'; // stone-500 warm grey
+        // Dark-brown absorbing cosmic dust lane glow (increased opacity to ~9% for dusty contrast)
+        colorCenter = 'rgba(120, 113, 108, 0.09)'; 
       } else if (s.occurrence === 'SupernovaBubble') {
         radius = 350 * zoom;
-        // Hot ionized blue-violet supernova shockwave rim glow
-        colorCenter = 'rgba(139, 92, 246, 0.012)'; // violet-500
+        // Hot ionized blue-violet supernova shockwave rim glow (increased opacity to ~5%)
+        colorCenter = 'rgba(139, 92, 246, 0.05)'; 
       }
 
       // Draw radial gradient nebula cloud

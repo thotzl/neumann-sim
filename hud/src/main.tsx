@@ -6,20 +6,25 @@ import './sandbox/App.css'
 import './monitor/App.css'
 
 function Root() {
-  const [route, setRoute] = useState(window.location.hash);
+  // Combine pathname and hash to support direct URL entries (e.g. /sandbox) and SPA hash redirects (e.g. /#/sandbox)
+  const [route, setRoute] = useState(window.location.pathname + window.location.hash);
 
   useEffect(() => {
-    const handleHashChange = () => {
-      setRoute(window.location.hash);
+    const handleNavigation = () => {
+      setRoute(window.location.pathname + window.location.hash);
     };
-    window.addEventListener('hashchange', handleHashChange);
+    
+    window.addEventListener('hashchange', handleNavigation);
+    window.addEventListener('popstate', handleNavigation);
+    
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('hashchange', handleNavigation);
+      window.removeEventListener('popstate', handleNavigation);
     };
   }, []);
 
-  // Simple routing: if hash contains 'sandbox', show the Sandbox, else show the Monitor
-  if (route.includes('sandbox')) {
+  // If path or hash contains 'sandbox', render the offline Sandbox. Else, render the Live Monitor.
+  if (route.toLowerCase().includes('sandbox')) {
     return <SandboxApp />;
   } else {
     return <MonitorApp />;

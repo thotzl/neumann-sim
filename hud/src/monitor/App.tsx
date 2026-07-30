@@ -87,7 +87,56 @@ export default function App() {
     };
   }, [initializeLogs, setReady, updateState, appendRealtimeLogs]);
 
-  if (!state) return <div style={{color: '#38bdf8', background: '#020203', height: '100vh', padding: '40px', fontFamily: 'monospace'}}>INITIALIZING C2 LINK...</div>;
+  if (!state) {
+    return (
+      <div style={{
+        background: '#020204',
+        color: '#38bdf8',
+        height: '100vh',
+        width: '100vw',
+        padding: '50px',
+        boxSizing: 'border-box',
+        fontFamily: 'monospace',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        textAlign: 'center'
+      }}>
+        <div className="scifi-panel" style={{
+          border: '1px solid rgba(56, 189, 248, 0.3)',
+          background: 'rgba(15, 23, 42, 0.95)',
+          padding: '40px',
+          borderRadius: '6px',
+          maxWidth: '650px',
+          boxShadow: '0 0 30px rgba(56, 189, 248, 0.15)',
+          textAlign: 'left'
+        }}>
+          <div style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '15px', borderBottom: '1px solid rgba(239, 68, 68, 0.3)', paddingBottom: '8px' }}>
+            [⚠️] C2_NET_LINK: OFFLINE // WAITING FOR BACKEND
+          </div>
+          <p style={{ color: '#94a3b8', lineHeight: '1.5', fontSize: '0.85rem', marginBottom: '20px' }}>
+            The tactical C2-HUD is ready and listening for telemetry frames, but the simulation backend has not sent an initial state envelope on Port <strong style={{ color: '#fff' }}>3001</strong> yet.
+          </p>
+          <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(56, 189, 248, 0.15)', padding: '15px', borderRadius: '4px', marginBottom: '25px', fontSize: '0.8rem' }}>
+            <div style={{ color: '#fcd34d', fontWeight: 'bold', marginBottom: '8px' }}>HOW TO COMMENCE:</div>
+            <ol style={{ margin: 0, paddingLeft: '20px', color: '#cbd5e1', lineHeight: '1.5' }}>
+              <li style={{ marginBottom: '4px' }}>Launch a simulation engine experiment in your main workspace, e.g.:<br/>
+                <code style={{ background: '#0f172a', padding: '2px 6px', borderRadius: '3px', color: '#10b981', display: 'inline-block', marginTop: '4px', border: '1px solid #1e293b' }}>npm run sim ONE</code>
+              </li>
+              <li>Or shift over to the fully offline procedural space sandbox:<br/>
+                <a href="#/sandbox" style={{ color: '#38bdf8', textDecoration: 'underline', fontWeight: 'bold', display: 'inline-block', marginTop: '4px' }}>LAUNCH OFFLINE SANDBOX 🌌</a>
+              </li>
+            </ol>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className="blink-dot" style={{ width: '8px', height: '8px', background: '#38bdf8', borderRadius: '50%', marginRight: '8px', animation: 'pulse 1s infinite' }} />
+            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'bold', letterSpacing: '1px' }}>RETRYING SOCKET HANDSHAKE (ws://localhost:3001)...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const selectedAgent = selection?.type === 'agent' ? state.agents.find(a => a.id === selection.id) : null;
   const selectedSystem = selection?.type === 'system' ? state.systems.find(s => s.name === selection.id) : null;

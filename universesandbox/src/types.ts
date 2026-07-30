@@ -37,6 +37,7 @@ export interface Sector {
   occurrence: CosmicOccurrence; // The cosmic environment/biome
   anomaly: AnomalyType; // Spacetime gravity well anomaly (Phase 4)
   anomalyAngle?: number; // Pulsar rotation angle (Phase 4)
+  debrisBelt: boolean; // Circumstellar asteroid debris disk (Phase 5)
   energyDepot: number;
   matterDepot: number;
   system?: SolarSystem; // Dynamically generated solar system orbits (Phase 1)

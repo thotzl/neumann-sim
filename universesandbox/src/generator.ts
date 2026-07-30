@@ -417,6 +417,15 @@ export class UniverseGenerator {
   }
 
   /**
+   * Deterministically calculates if an interstellar debris/asteroid belt remnant
+   * covers the world coordinates (wx, wy) based on world seed.
+   */
+  static getDebrisBeltAt(wx: number, wy: number, seed: number): boolean {
+    const val = Math.sin(wx * 0.00015 + seed) * Math.cos(wy * 0.00015 - seed);
+    return val > 0.62; // ~15% of space coordinates form large debris bands
+  }
+
+  /**
    * Deterministically calculates if a local Gravitational SpaceTime Well (Dark Matter clump)
    * overlaps the world coordinates (wx, wy) based on world seed.
    * Cellular grid checking of 75,000 LY.
@@ -705,6 +714,13 @@ export class UniverseGenerator {
       matterDepot = Math.round(matterDepot * 2.0);
     }
 
+    // --- DETERMINISTIC KIPER/DEBRIS DISK REMNANTS (Phase 5) ---
+    const debrisBelt = this.getDebrisBeltAt(x, y, seed);
+    if (debrisBelt && spectralClass !== 'BlackHole' && spectralClass !== 'Pulsar') {
+      // Circular circumstellar debris disk increases matter yield by +150%!
+      matterDepot = Math.round(matterDepot * 2.50);
+    }
+
     const system = this.generateSolarSystem(x, y, mass, seed);
     const warpCurrent = this.getWarpCurrentAt(x, y, seed);
 
@@ -719,6 +735,7 @@ export class UniverseGenerator {
       occurrence,
       anomaly,
       anomalyAngle,
+      debrisBelt,
       energyDepot,
       matterDepot,
       system,
@@ -735,7 +752,7 @@ export class UniverseGenerator {
     const homeGalaxy = this.getGalaxyInSuperCell(0, 0, seed);
     
     if (!homeGalaxy) {
-      return { id: 'SYS_X0_Y0', x: 0, y: 0, mass: 1.0, spectralClass: 'G', occurrence: 'Normal', anomaly: 'None', energyDepot: 120000, matterDepot: 180000 };
+      return { id: 'SYS_X0_Y0', x: 0, y: 0, mass: 1.0, spectralClass: 'G', occurrence: 'Normal', anomaly: 'None', debrisBelt: false, energyDepot: 120000, matterDepot: 180000 };
     }
 
     const centerCx = Math.floor(homeGalaxy.x / this.CELL_SIZE);
@@ -769,6 +786,7 @@ export class UniverseGenerator {
         spectralClass: 'G',
         occurrence: 'Normal', // Starter is in normal interstellar medium (ambient)
         anomaly: 'None',
+        debrisBelt: false,
         energyDepot: 120000,
         matterDepot: 180000
       };
@@ -784,6 +802,7 @@ export class UniverseGenerator {
       spectralClass: 'G',
       occurrence: 'Normal',
       anomaly: 'None',
+      debrisBelt: false,
       energyDepot: 120000,
       matterDepot: 180000
     };

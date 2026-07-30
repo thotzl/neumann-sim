@@ -950,6 +950,15 @@ export default function App() {
                   </span>
                 </div>
 
+                {selectedSector.debrisBelt && (
+                  <div className="field-row">
+                    <span className="field-label">ORBITAL_GEOGRAPHY:</span>
+                    <span className="field-value" style={{ color: '#e2e8f0', fontWeight: 'bold' }}>
+                      🪐 CIRCUMSTELLAR_DEBRIS_DISK
+                    </span>
+                  </div>
+                )}
+
                 <div className="field-row">
                   <span className="field-label">SURFACE_STATUS:</span>
                   <span className="field-value" style={{ 
@@ -990,7 +999,7 @@ export default function App() {
                       </span>
                     </div>
 
-                    {selectedSector.occurrence !== 'Normal' && (
+                    {(selectedSector.occurrence !== 'Normal' || selectedSector.debrisBelt) && (
                       <div className="hud-warning-box" style={{ 
                         marginTop: '12px',
                         background: 'rgba(56, 189, 248, 0.04)',
@@ -1001,6 +1010,8 @@ export default function App() {
                           {selectedSector.occurrence === 'StellarNursery' && 'HII Region: Rich ionization amplifies solar collection potential (+35%) and matter condensation (+25%).'}
                           {selectedSector.occurrence === 'DustLane' && 'Cold Dust Lane: Exceptional metallic debris condensation (+120%). Stellar light heavily obscured (-60%).'}
                           {selectedSector.occurrence === 'SupernovaBubble' && 'Supernova HIM Bubble: Gas blown away, matter heavily depleted (-75%). High radiation storms block solar harvesting (-50%).'}
+                          {selectedSector.debrisBelt && selectedSector.occurrence === 'Normal' && 'Circumstellar Asteroid Belt: Dense concentric debris fields massively enhance mineral drilling potential (+150%).'}
+                          {selectedSector.debrisBelt && selectedSector.occurrence !== 'Normal' && ' | Asteroid Belt: Additional concentric debris fields massively enhance mineral drilling potential (+150%).'}
                         </span>
                       </div>
                     )}

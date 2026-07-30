@@ -499,6 +499,18 @@ export class CanvasController {
         this.ctx.shadowColor = glowStr;
         this.ctx.shadowBlur = isSelected ? glowRadius * 2.2 : glowRadius;
 
+        // --- PROZEDURAL DEBRIS DISK / KIPER BELT RENDER (Phase 5) ---
+        if (s.debrisBelt) {
+          this.ctx.save();
+          this.ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)'; // dusty grey
+          this.ctx.lineWidth = Math.max(1, 1.5 * zoom);
+          this.ctx.setLineDash([2, 5]); // dotted asteroid look
+          this.ctx.beginPath();
+          this.ctx.arc(screenPos.x, screenPos.y, coreRadius + Math.max(5, 12 * zoom), 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
+
         // Draw Solid Star Core
         this.ctx.fillStyle = colorStr;
         this.ctx.beginPath();

@@ -51,6 +51,7 @@ Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstruktur
 | **TCK-112** | SCUT 2.0 & Cipher Comms (Diplomacy vs. Eavesdropping) | Epic 3 (V11.0) / Factions | `open` | `medium` | [Link](../.tickets/open/TCK-112-scut-2-cipher-comms.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
 | **TCK-113** | Sovereignty Hacking & Takeovers | Epic 3 (V11.0) / Hacking | `open` | `medium` | [Link](../.tickets/open/TCK-113-sovereignty-hacking.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
 | **TCK-114** | Großes Struktur- & Architektur-Refactoring | V13.0 Clean Architecture | `closed` | `high` | [Link](../.tickets/closed/TCK-114-codebase-restructuring.md) | [SYSTEM_ARCHITECTURE](../docs/SYSTEM_ARCHITECTURE.md) |
+| **TCK-115** | Procedural Universe Sandbox (2D Canvas Prototyp) | Epic 5 / Runway | `ongoing` | `medium` | [Link](../.tickets/ongoing/TCK-115-procedural-universe-sandbox.md) | [TCK-108](../.tickets/open/TCK-108-deeper-verse-runway-setup.md) |
 
 ---
 

@@ -5,7 +5,7 @@ epic_phase: "Epic 5 / Runway"
 status: "open"
 priority: "low"
 created: 2026-07-28
-dependencies: []
+dependencies: ["TCK-115"]
 ---
 
 ## Description
@@ -20,6 +20,7 @@ Erweiterung des Universums um Sektor-Typisierungen (Standard, Hyper-Solares, Tox
 - **Synergies:** Zwingt Agenten zur vorausschauenden Instandhaltung und physikalischen Risikobewertung.
 
 ## References
+- Sub-Ticket (Sandbox): [TCK-115](../ongoing/TCK-115-procedural-universe-sandbox.md)
 - Source: [ROADMAP.md](../resources/todo/ROADMAP.md)
 - Terraforming & Isotope: [ADVANCED_MECHANICS_DUMP.md](../resources/todo/ADVANCED_MECHANICS_DUMP.md)
 - Siegbedingungen & Terraforming: [ROADMAP_WORLD_MECHANICS.md](../resources/todo/ROADMAP_WORLD_MECHANICS.md)

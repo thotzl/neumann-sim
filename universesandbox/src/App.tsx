@@ -34,9 +34,9 @@ export default function App() {
 
   // Real-time Visual HUD Tuning constants (only affects the Map presentation layer, not the simulation!)
   const [visualTuning, setVisualTuning] = useState({
-    sizeScale: 0.22,        // Star size ratio contrast exponent (default 0.22, 0.0 is uniform size)
-    brightnessScale: 1.0,   // Star glow ratio contrast multiplier (default 1.0, 0.0 is uniform glow)
-    colorShift: 0,          // offsets Kelvin color temperature visually (+- Kelvin offset)
+    sizeScale: 0.25,        // Standard Kenyon-Hartmann magnitude-pixel scaling (default 0.25, 0.0 is uniform size)
+    brightnessScale: 1.1,   // Standard Visual Stellar Luminosity scaling (default 1.1, 0.0 is uniform glow)
+    colorShift: 0,          // offsets Kelvin color temperature visually (+- Kelvin offset, default 0)
     colorContrast: 1.0,     // stretches spectral temperature contrast around solar baseline (default 1.0)
   });
 
@@ -396,8 +396,8 @@ export default function App() {
       stellarMassImf: 3.0
     });
     setVisualTuning({
-      sizeScale: 0.22,
-      brightnessScale: 1.0,
+      sizeScale: 0.25,
+      brightnessScale: 1.1,
       colorShift: 0,
       colorContrast: 1.0
     });

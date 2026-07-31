@@ -1,157 +1,190 @@
-import { useState, useEffect } from 'react';
-import { LogCategory } from './types';
-import { LogPanel } from './components/LogPanel';
-import { ExplorerPanel } from './components/ExplorerPanel';
-import { InspectorPanel } from './components/InspectorPanel';
-import { useC2Store } from './store/stateStore';
-import { CosmicMap } from './components/Map/CosmicMap';
+import React, { useEffect, useRef, useState } from 'react';
+import { Camera } from '../shared/types';
+import { CanvasController } from '../canvasController';
 
-export default function App() {
-  const state = useC2Store((store) => store.state);
-  const logs = useC2Store((store) => store.logs);
-  const selection = useC2Store((store) => store.selection);
-  const setSelection = useC2Store((store) => store.setSelection);
-  const setReady = useC2Store((store) => store.setReady);
-  const initializeLogs = useC2Store((store) => store.initializeLogs);
-  const updateState = useC2Store((store) => store.updateState);
-  const appendRealtimeLogs = useC2Store((store) => store.appendRealtimeLogs);
-  const enqueueLiveUpdate = useC2Store((store) => store.enqueueLiveUpdate);
+export default function MonitorApp() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const [filters, setFilters] = useState<Record<LogCategory, boolean>>({ thought: true, action: true, system: true, scut: true });
-  const [vogMsg, setVogMsg] = useState("");
+  // We keep a pure camera state, identical to the sandbox.
+  const cameraRef = useRef<Camera>({
+    panX: 0,
+    panY: 0,
+    zoom: 0.15,
+  });
 
+  const [worldState, setWorldState] = useState<any>(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  // Connect to Mock WebSocket
   useEffect(() => {
-    let socket: WebSocket | null = null;
-    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    const host = window.location.hostname || 'localhost';
+    console.log(`[Monitor] Connecting to ws://${host}:3005`);
+    const socket = new WebSocket(`ws://${host}:3005`);
 
-    const connectWS = () => {
-      const host = window.location.hostname || 'localhost';
-      console.log(`[C2-Websocket] Connecting to ws://${host}:3001`);
-      socket = new WebSocket(`ws://${host}:3001`);
+    socket.onopen = () => {
+      console.log('[Monitor] Connected to Mock Socket.');
+      setIsConnected(true);
+    };
 
-      socket.onopen = () => {
-        console.log('[C2-Websocket] Connection established with V12 server.');
-        setReady(true);
-      };
-
-      socket.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          
-          if (msg.type === 'INIT') {
-            console.log('[C2-Websocket] Handshake completed. Initializing state...');
-            
-            // 1. Process and load full historical logs
-            if (msg.history && Array.isArray(msg.history)) {
-              initializeLogs(msg.history);
-            }
-            
-            // 2. Load initial worldState
-            if (msg.state) {
-              updateState(msg.state);
-            }
-          } 
-          else if (msg.type === 'LIVE_STATE_UPDATE') {
-            console.log(`[C2-Websocket] Received real-time live update for tick: ${msg.state?.tick}`);
-            if (msg.state) {
-              enqueueLiveUpdate(msg.type, msg.state);
-            }
-          }
-          else if (msg.type === 'REALTIME_LOGS') {
-            if (msg.logs && Array.isArray(msg.logs)) {
-              enqueueLiveUpdate(msg.type, msg.logs);
-            }
-          }
-        } catch (e) {
-          console.error('[C2-Websocket] Error processing frame:', e);
+    socket.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'INIT' && msg.state) {
+          console.log('[Monitor] Received INIT state:', msg.state);
+          setWorldState(msg.state);
         }
-      };
-
-      socket.onclose = () => {
-        console.log('[C2-Websocket] Connection lost. Auto-reconnecting in 2 seconds...');
-        setReady(false);
-        socket = null;
-        reconnectTimeout = setTimeout(connectWS, 2000);
-      };
-
-      socket.onerror = (err) => {
-        console.error('[C2-Websocket] Socket error:', err);
-      };
+      } catch (e) {
+        console.error('[Monitor] WebSocket parse error:', e);
+      }
     };
 
-    connectWS();
-
-    return () => {
-      if (socket) socket.close();
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    socket.onclose = () => {
+      console.log('[Monitor] Disconnected.');
+      setIsConnected(false);
     };
-  }, [initializeLogs, setReady, updateState, appendRealtimeLogs]);
 
-  if (!state) {
-    return (
-      <div style={{
-        background: '#020204',
-        color: '#38bdf8',
-        height: '100vh',
-        width: '100vw',
-        padding: '50px',
-        boxSizing: 'border-box',
-        fontFamily: 'monospace',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        textAlign: 'center'
-      }}>
-        <div className="scifi-panel" style={{
-          border: '1px solid rgba(56, 189, 248, 0.3)',
-          background: 'rgba(15, 23, 42, 0.95)',
-          padding: '40px',
-          borderRadius: '6px',
-          maxWidth: '650px',
-          boxShadow: '0 0 30px rgba(56, 189, 248, 0.15)',
-          textAlign: 'left'
-        }}>
-          <div style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '15px', borderBottom: '1px solid rgba(239, 68, 68, 0.3)', paddingBottom: '8px' }}>
-            [⚠️] C2_NET_LINK: OFFLINE // WAITING FOR BACKEND
-          </div>
-          <p style={{ color: '#94a3b8', lineHeight: '1.5', fontSize: '0.85rem', marginBottom: '20px' }}>
-            The tactical C2-HUD is ready and listening for telemetry frames, but the simulation backend has not sent an initial state envelope on Port <strong style={{ color: '#fff' }}>3001</strong> yet.
-          </p>
-          <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(56, 189, 248, 0.15)', padding: '15px', borderRadius: '4px', marginBottom: '25px', fontSize: '0.8rem' }}>
-            <div style={{ color: '#fcd34d', fontWeight: 'bold', marginBottom: '8px' }}>HOW TO COMMENCE:</div>
-            <ol style={{ margin: 0, paddingLeft: '20px', color: '#cbd5e1', lineHeight: '1.5' }}>
-              <li style={{ marginBottom: '4px' }}>Launch a simulation engine experiment in your main workspace, e.g.:<br/>
-                <code style={{ background: '#0f172a', padding: '2px 6px', borderRadius: '3px', color: '#10b981', display: 'inline-block', marginTop: '4px', border: '1px solid #1e293b' }}>npm run sim ONE</code>
-              </li>
-              <li>Or shift over to the fully offline procedural space sandbox:<br/>
-                <a href="#/sandbox" style={{ color: '#38bdf8', textDecoration: 'underline', fontWeight: 'bold', display: 'inline-block', marginTop: '4px' }}>LAUNCH OFFLINE SANDBOX 🌌</a>
-              </li>
-            </ol>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div className="blink-dot" style={{ width: '8px', height: '8px', background: '#38bdf8', borderRadius: '50%', marginRight: '8px', animation: 'pulse 1s infinite' }} />
-            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'bold', letterSpacing: '1px' }}>RETRYING SOCKET HANDSHAKE (ws://localhost:3001)...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
+    return () => socket.close();
+  }, []);
 
-  const selectedAgent = selection?.type === 'agent' ? state.agents.find(a => a.id === selection.id) : null;
-  const selectedSystem = selection?.type === 'system' ? state.systems.find(s => s.name === selection.id) : null;
+  // Main Render Loop (Consuming ONLY the mockstate, no generator used)
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const controller = new CanvasController(canvas);
+    let animationFrameId: number;
+
+    const render = () => {
+      const width = canvas.parentElement?.clientWidth || window.innerWidth;
+      const height = canvas.parentElement?.clientHeight || window.innerHeight;
+
+      // 1. Prepare viewport
+      controller.clear(width, height);
+
+      // 2. Draw standard grid
+      controller.drawGrid(cameraRef.current);
+
+      // 3. Draw systems exclusively from mockstate
+      if (worldState && Array.isArray(worldState.systems)) {
+        const ctx = canvas.getContext('2d')!;
+        const zoom = cameraRef.current.zoom;
+
+        worldState.systems.forEach((sys: any) => {
+          // Transform coordinates using the canvas controller
+          const screenPos = controller.worldToScreen(sys.x, sys.y, cameraRef.current);
+
+          // Render a simple circular node representing the system
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(screenPos.x, screenPos.y, Math.max(3, 8 * zoom), 0, Math.PI * 2);
+          ctx.fillStyle = '#38bdf8'; // Cyan system node
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = Math.max(5, 15 * zoom);
+          ctx.fill();
+
+          // Render System Name text label
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = `${Math.max(10, 12 * zoom)}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText(sys.name, screenPos.x, screenPos.y - Math.max(6, 12 * zoom));
+          ctx.restore();
+        });
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [worldState]); // Re-bind on state changes
+
+  // Camera Controls (Unchanged from Sandbox)
+  const isDragging = useRef(false);
+  const lastMouse = useRef({ x: 0, y: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || !canvasRef.current) return;
+    const dx = e.clientX - lastMouse.current.x;
+    const dy = e.clientY - lastMouse.current.y;
+    cameraRef.current.panX -= dx / cameraRef.current.zoom;
+    cameraRef.current.panY -= dy / cameraRef.current.zoom;
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseUp = () => {
+    isDragging.current = false;
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!canvasRef.current) return;
+    e.preventDefault();
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const controller = new CanvasController(canvasRef.current);
+    
+    // Zoom exactly to mouse position
+    const worldBefore = controller.screenToWorld(mouseX, mouseY, cameraRef.current);
+    const zoomFactor = 1.1;
+    const newZoom = e.deltaY < 0 ? cameraRef.current.zoom * zoomFactor : cameraRef.current.zoom / zoomFactor;
+    
+    // Clamp zoom
+    cameraRef.current.zoom = Math.max(0.01, Math.min(newZoom, 5.0));
+    
+    const worldAfter = controller.screenToWorld(mouseX, mouseY, cameraRef.current);
+    cameraRef.current.panX -= (worldAfter.x - worldBefore.x);
+    cameraRef.current.panY -= (worldAfter.y - worldBefore.y);
+  };
+
+  // Handle Resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current && canvasRef.current) {
+        canvasRef.current.width = containerRef.current.clientWidth;
+        canvasRef.current.height = containerRef.current.clientHeight;
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial call
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
-    <div style={{ background: '#020203', color: '#a8b2c1', height: '100vh', width: '100vw', display: 'grid', gridTemplateColumns: '320px 1fr 450px', overflow: 'hidden' }}>
-      <ExplorerPanel state={state} selection={selection} setSelection={setSelection} focusBounds={() => {}} />
-
-      {/* CENTER: TACTICAL MAP */}
-      <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        <CosmicMap state={state} selection={selection} setSelection={setSelection} />
-        <InspectorPanel state={state} selection={selection} setSelection={setSelection} selectedAgent={selectedAgent} selectedSystem={selectedSystem} />
+    <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', backgroundColor: '#020408' }}>
+      
+      {/* Offline Status Warning */}
+      {!isConnected && (
+        <div style={{ position: 'absolute', top: 10, left: 10, color: 'red', zIndex: 10, fontFamily: 'monospace' }}>
+          [DISCONNECTED] Connecting to Mock Socket on Port 3005...
+        </div>
+      )}
+      
+      {/* HUD Info */}
+      <div style={{ position: 'absolute', top: 10, right: 10, color: '#38bdf8', zIndex: 10, fontFamily: 'monospace', textAlign: 'right' }}>
+        <div>V12.0 MONITOR BASELINE</div>
+        <div>Systems in State: {worldState?.systems?.length || 0}</div>
+        <div>Agents in State: {worldState?.agents?.length || 0}</div>
       </div>
 
-      <LogPanel logs={logs} filters={filters} setFilters={setFilters} vogMsg={vogMsg} setVogMsg={setVogMsg} />
+      <div ref={containerRef} style={{ width: '100%', height: '100%', cursor: isDragging.current ? 'grabbing' : 'grab' }}>
+        <canvas
+          ref={canvasRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
+          style={{ display: 'block' }}
+        />
+      </div>
     </div>
   );
 }

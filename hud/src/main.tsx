@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client'
 import SandboxApp from './sandbox/App.tsx'
 import MonitorApp from './monitor/App.tsx'
 import './sandbox/App.css'
-import './monitor/App.css'
 
 function Root() {
   // Combine pathname and hash to support direct URL entries (e.g. /sandbox) and SPA hash redirects (e.g. /#/sandbox)
@@ -23,7 +22,7 @@ function Root() {
     };
   }, []);
 
-  // If path or hash contains 'sandbox', render the offline Sandbox. Else, render the Live Monitor.
+  // If path or hash contains 'sandbox', render the offline Sandbox. Else, render the Mock Monitor.
   if (route.toLowerCase().includes('sandbox')) {
     return <SandboxApp />;
   } else {

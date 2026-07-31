@@ -161,6 +161,12 @@ export default function App() {
   const revealedSectorsRef = useRef<Set<string>>(new Set()); // populated dynamically by the starting system useEffect
   const [, forceUpdate] = useState(0); // For forcing UI updates on manual trigger
 
+  const [mockState, setMockState] = useState<any>(null);
+  const mockStateRef = useRef<any>(null);
+  useEffect(() => {
+    mockStateRef.current = mockState;
+  }, [mockState]);
+
   // Keep config values easily readable inside the high-frequency loop
   const configRef = useRef(config);
   useEffect(() => {
@@ -233,6 +239,170 @@ export default function App() {
         revealedSectorsRef.current,
         visualTuning
       );
+
+      // Draw simulated mock Bobs, traveling ships, and trajectories if preview is active in Sandbox
+      const activeMockState = mockStateRef.current;
+      if (activeMockState) {
+        const ctx = canvas.getContext('2d')!;
+        const zoom = cameraRef.current.zoom;
+
+        // A. Draw Interstellar Transit Lines for traveling ships/agents
+        if (Array.isArray(activeMockState.agents)) {
+          activeMockState.agents.forEach((agent: any) => {
+            if (agent.status === 'traveling') {
+              const originScreen = controller.worldToScreen(agent.origin_x, agent.origin_y, cameraRef.current);
+              const targetScreen = controller.worldToScreen(agent.target_x, agent.target_y, cameraRef.current);
+
+              ctx.save();
+              ctx.beginPath();
+              ctx.setLineDash([4, 8]);
+              ctx.strokeStyle = 'rgba(14, 165, 233, 0.45)'; // cyber blue
+              ctx.lineWidth = Math.max(1, 1.2 * zoom);
+              ctx.moveTo(originScreen.x, originScreen.y);
+              ctx.lineTo(targetScreen.x, targetScreen.y);
+              ctx.stroke();
+              ctx.restore();
+            }
+          });
+        }
+
+        // B. Draw stationary ships/matrix Bobs at system edge
+        if (Array.isArray(activeMockState.systems)) {
+          activeMockState.systems.forEach((sys: any) => {
+            const screenPos = controller.worldToScreen(sys.x, sys.y, cameraRef.current);
+
+            const shipsHere = activeMockState.ships ? activeMockState.ships.filter((ship: any) => ship.system_name === sys.name) : [];
+            const bobsHere = activeMockState.agents ? activeMockState.agents.filter((a: any) => a.location === sys.name && a.status !== 'traveling') : [];
+            const matrixBobs = bobsHere.filter((a: any) => !a.active_ship_id);
+
+            // Calculate dynamic system outer edge to prevent overlapping with planet orbits
+            let outerRadiusOffset = Math.max(10, 20 * zoom); // Fallback
+            
+            const matchingSector = renderedSectors.find((s: any) => s.id === sys.name);
+            if (matchingSector && matchingSector.system && matchingSector.system.planets.length > 0) {
+              const maxDistance = matchingSector.system.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
+              const props = getStellarProperties(matchingSector.mass);
+              const baseSize = 3.5 * Math.pow(props.radius, visualTuning.sizeScale);
+              const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom));
+              const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * visualTuning.orbitSpacingScale) * zoom;
+              outerRadiusOffset = maxOrbitRadius + 10 * zoom;
+            }
+
+            if (shipsHere.length > 0 || matrixBobs.length > 0) {
+              const itemWidth = 10 * Math.max(0.5, Math.min(2.0, zoom));
+              const totalWidth = (shipsHere.length + matrixBobs.length - 1) * itemWidth;
+              const startX = screenPos.x - totalWidth / 2;
+              const sy = screenPos.y + outerRadiusOffset;
+
+              let itemIdx = 0;
+
+              // Render Ships
+              shipsHere.forEach((ship: any) => {
+                const sx = startX + itemIdx * itemWidth;
+                itemIdx++;
+
+                const isUnderConstruction = ship.pilot_id === 'UNDER_CONSTRUCTION';
+                const pilot = bobsHere.find((a: any) => a.active_ship_id === ship.id);
+
+                const pilotRemaining = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilot.sleep_until_round
+                  ? Math.max(0, pilot.sleep_until_round - activeMockState.round)
+                  : 0;
+                const pilotSleeping = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilotRemaining > 0;
+
+                let shipColor = '#64748b'; // empty
+                if (isUnderConstruction) {
+                  shipColor = '#f59e0b';
+                } else if (pilot) {
+                  shipColor = '#0ea5e9';
+                  if (pilotSleeping) {
+                    if (pilot.sleep_state === 1) shipColor = '#f59e0b';
+                    else if (pilot.sleep_state === 2) shipColor = '#a855f7';
+                  }
+                }
+
+                ctx.save();
+                ctx.beginPath();
+                const shipHeight = 8 * Math.max(0.4, Math.min(2.0, zoom));
+                const shipWidth = 6 * Math.max(0.4, Math.min(2.0, zoom));
+                ctx.moveTo(sx, sy - shipHeight / 2);
+                ctx.lineTo(sx - shipWidth / 2, sy + shipHeight / 2);
+                ctx.lineTo(sx + shipWidth / 2, sy + shipHeight / 2);
+                ctx.closePath();
+                ctx.fillStyle = shipColor;
+                ctx.fill();
+                ctx.restore();
+              });
+
+              // Render Matrix Bobs
+              matrixBobs.forEach((bob: any) => {
+                const sx = startX + itemIdx * itemWidth;
+                itemIdx++;
+
+                const remaining = bob.sleep_state && bob.sleep_state > 0 && bob.sleep_until_round
+                  ? Math.max(0, bob.sleep_until_round - activeMockState.round)
+                  : 0;
+                const isSleeping = bob.sleep_state && bob.sleep_state > 0 && remaining > 0;
+
+                let bobColor = '#38bdf8';
+                if (isSleeping) {
+                  if (bob.sleep_state === 1) bobColor = '#f59e0b';
+                  else if (bob.sleep_state === 2) bobColor = '#a855f7';
+                }
+
+                ctx.save();
+                ctx.beginPath();
+                const sqSize = 4 * Math.max(0.4, Math.min(2.0, zoom));
+                ctx.rect(sx - sqSize / 2, sy - sqSize / 2, sqSize, sqSize);
+                ctx.fillStyle = bobColor;
+                ctx.shadowColor = bobColor;
+                ctx.shadowBlur = isSleeping ? 0 : 4 * zoom;
+                ctx.fill();
+                ctx.restore();
+              });
+            }
+          });
+        }
+
+        // C. Draw Traveling Ships
+        if (Array.isArray(activeMockState.agents)) {
+          activeMockState.agents.forEach((agent: any) => {
+            if (agent.status === 'traveling') {
+              const currentScreen = controller.worldToScreen(agent.current_x, agent.current_y, cameraRef.current);
+              const angle = Math.atan2(agent.target_y - agent.origin_y, agent.target_x - agent.origin_x) + Math.PI / 2;
+
+              const remaining = agent.sleep_state && agent.sleep_state > 0 && agent.sleep_until_round
+                ? Math.max(0, agent.sleep_until_round - activeMockState.round)
+                : 0;
+              const isSleeping = agent.sleep_state && agent.sleep_state > 0 && remaining > 0;
+
+              let shipColor = '#0ea5e9';
+              if (isSleeping) {
+                if (agent.sleep_state === 1) shipColor = '#f59e0b';
+                else if (agent.sleep_state === 2) shipColor = '#a855f7';
+              }
+
+              ctx.save();
+              ctx.translate(currentScreen.x, currentScreen.y);
+              ctx.rotate(angle);
+              ctx.beginPath();
+
+              const shipHeight = 12 * Math.max(0.4, Math.min(2.0, zoom));
+              const shipWidth = 8 * Math.max(0.4, Math.min(2.0, zoom));
+
+              ctx.moveTo(0, -shipHeight / 2);
+              ctx.lineTo(-shipWidth / 2, shipHeight / 2);
+              ctx.lineTo(shipWidth / 2, shipHeight / 2);
+              ctx.closePath();
+
+              ctx.fillStyle = shipColor;
+              ctx.shadowColor = shipColor;
+              ctx.shadowBlur = isSleeping ? 0 : 8 * zoom;
+              ctx.fill();
+              ctx.restore();
+            }
+          });
+        }
+      }
 
       // Render tool brush overlay if painting
       if (currentConfig.activeTool === 'reveal' || currentConfig.activeTool === 'hide') {
@@ -449,6 +619,94 @@ export default function App() {
     forceUpdate(prev => prev + 1);
   };
 
+  const handleSimulateBobs = () => {
+    if (mockState) {
+      setMockState(null);
+      return;
+    }
+
+    if (!selectedSector) {
+      alert("Please select a system in the map first!");
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const controller = controllerRef.current;
+    if (!canvas || !controller) return;
+
+    const topLeft = controller.screenToWorld(0, 0, cameraRef.current);
+    const bottomRight = controller.screenToWorld(canvas.width, canvas.height, cameraRef.current);
+
+    const visibleSectors = UniverseGenerator.getSectorsInArea(
+      topLeft.x,
+      bottomRight.x,
+      topLeft.y,
+      bottomRight.y,
+      config.seed,
+      config.density
+    );
+
+    const otherSectors = visibleSectors.filter(s => s.id !== selectedSector.id);
+    const destinations = otherSectors.slice(0, 3); // Grab up to 3 random destinations
+
+    const systems = [
+      { name: selectedSector.id, x: selectedSector.x, y: selectedSector.y },
+      ...destinations.map(d => ({ name: d.id, x: d.x, y: d.y }))
+    ];
+
+    const ships: any[] = [
+      { id: 101, name: 'Scout-Alpha', system_name: selectedSector.id, pilot_id: 'Bob-1', progress_matter: 0, required_matter: 0 },
+      { id: 102, name: 'Miner-Beta', system_name: selectedSector.id, pilot_id: 'UNDER_CONSTRUCTION', progress_matter: 250, required_matter: 500 },
+      { id: 103, name: 'Hauler-Gamma', system_name: selectedSector.id, pilot_id: null, progress_matter: 0, required_matter: 0 }
+    ];
+
+    const agents: any[] = [
+      { id: 'Bob-1', chosen_name: 'Bob-1', active_ship_id: 101, location: selectedSector.id, status: 'active', sleep_state: 0, sleep_until_round: 0 },
+      { id: 'Matrix-Bob-2', chosen_name: 'Bob-2', active_ship_id: null, location: selectedSector.id, status: 'active', sleep_state: 0, sleep_until_round: 0 },
+      { id: 'Matrix-Bob-3', chosen_name: 'Bob-3', active_ship_id: null, location: selectedSector.id, status: 'active', sleep_state: 2, sleep_until_round: 50 }
+    ];
+
+    destinations.forEach((dest, idx) => {
+      const shipId = 201 + idx;
+      const agentId = `Traveler-Bob-${idx + 1}`;
+      
+      const current_x = selectedSector.x + (dest.x - selectedSector.x) * 0.45;
+      const current_y = selectedSector.y + (dest.y - selectedSector.y) * 0.45;
+
+      ships.push({
+        id: shipId,
+        name: `Courier-${idx + 1}`,
+        system_name: null,
+        pilot_id: agentId,
+        progress_matter: 0,
+        required_matter: 0
+      });
+
+      agents.push({
+        id: agentId,
+        chosen_name: `Traveler-${idx + 1}`,
+        active_ship_id: shipId,
+        location: 'Interstellar',
+        status: 'traveling',
+        origin_x: selectedSector.x,
+        origin_y: selectedSector.y,
+        target_x: dest.x,
+        target_y: dest.y,
+        current_x: current_x,
+        current_y: current_y,
+        sleep_state: idx === 1 ? 1 : 0,
+        sleep_until_round: idx === 1 ? 50 : 0
+      });
+    });
+
+    setMockState({
+      round: 10,
+      systems,
+      ships,
+      agents
+    });
+  };
+
   // Hide all revealed sectors except the starting node
   const handleResetFOW = () => {
     const startSys = UniverseGenerator.getStartingSystem(config.seed, config.density);
@@ -656,6 +914,16 @@ export default function App() {
           </button>
           <button onClick={handleRevealAllVisible} className="hud-btn hud-btn-action">
             🛰️ REVEAL VISIBLE
+          </button>
+          <button 
+            onClick={handleSimulateBobs} 
+            className="hud-btn hud-btn-action" 
+            style={{ 
+              border: mockState ? '1px solid #ef4444' : '1px solid #10b981', 
+              color: mockState ? '#ef4444' : '#10b981' 
+            }}
+          >
+            {mockState ? '❌ CLEAR BOBS PREVIEW' : '🛸 SIMULATE BOBS PREVIEW'}
           </button>
           <button onClick={handleResetFOW} className="hud-btn hud-btn-action danger">
             ☣️ RESET FOG OF WAR

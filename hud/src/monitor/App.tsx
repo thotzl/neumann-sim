@@ -1,30 +1,68 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera } from '../shared/types';
-import { UniverseGenerator, getStellarProperties } from '../shared/generator';
+import { useC2Store } from './store/stateStore';
+import { cameraX, cameraY, zoom } from './store/mapSignals';
 import { CanvasController } from '../canvasController';
+import { UniverseGenerator, getStellarProperties } from '../shared/generator';
+
+// Import our newly reconstructed Apollon Panels & Modals
+import { ExplorerPanel } from './components/ExplorerPanel';
+import { InspectorPanel } from './components/InspectorPanel';
+import { LogPanel } from './components/LogPanel';
+import { ShipyardCatalogModal } from './components/ShipyardCatalogModal';
+import { VesselSchematicModal } from './components/VesselSchematicModal';
 
 export default function MonitorApp() {
+  const state = useC2Store((store) => store.state);
+  const selection = useC2Store((store) => store.selection);
+  const setSelection = useC2Store((store) => store.setSelection);
+  const updateState = useC2Store((store) => store.updateState);
+  const appendRealtimeLogs = useC2Store((store) => store.appendRealtimeLogs);
+  const initializeLogs = useC2Store((store) => store.initializeLogs);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // We keep a pure camera state, identical to the sandbox.
-  const cameraRef = useRef<Camera>({
-    panX: 0,
-    panY: 0,
-    zoom: 0.15,
+  // Connection & UI Layout States
+  const [isConnected, setIsConnected] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'explorer' | 'inspector'>('explorer');
+  const [isSidebarMaximized, setIsSidebarMaximized] = useState(false);
+  const [isConsoleMaximized, setIsConsoleMaximized] = useState(false);
+
+  // Modal States
+  const [showShipyard, setShowShipyard] = useState(false);
+  const [showSchematic, setShowSchematic] = useState(false);
+  const [selectedShipForSchematic, setSelectedShipForSchematic] = useState<any>(null);
+
+  // Sync canvas camera ref to global Preact signals at 60 FPS
+  const cameraRef = useRef({
+    panX: cameraX.value,
+    panY: cameraY.value,
+    zoom: zoom.value,
   });
 
-  const [worldState, setWorldState] = useState<any>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  // Track active state via ref to avoid stale closures inside render loops
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  // Handle auto-focusing on selected items when they change
+  useEffect(() => {
+    if (selection) {
+      setSidebarTab('inspector'); // Auto-switch to inspector when something is selected
+    } else {
+      setSidebarTab('explorer');
+    }
+  }, [selection]);
 
   // Connect to Mock WebSocket on Port 3005
   useEffect(() => {
     const host = window.location.hostname || 'localhost';
-    console.log(`[Monitor] Connecting to ws://${host}:3005`);
+    console.log(`[C2 Websocket] Initiating connection to ws://${host}:3005`);
     const socket = new WebSocket(`ws://${host}:3005`);
 
     socket.onopen = () => {
-      console.log('[Monitor] Connected to Mock Socket.');
+      console.log('[C2 Websocket] Connected successfully.');
       setIsConnected(true);
     };
 
@@ -32,42 +70,34 @@ export default function MonitorApp() {
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === 'INIT' && msg.state) {
-          console.log('[Monitor] Received INIT state:', msg.state);
-          
-          // Map locations to systems if they are missing
-          const state = msg.state;
-          if (state && Array.isArray(state.agents)) {
-            state.agents.forEach((agent: any) => {
-              if (!agent.location && agent.status !== 'traveling') {
-                // Find matching system by coordinates if any
-                const system = state.systems?.find((s: any) => s.x === agent.current_x && s.y === agent.current_y);
-                if (system) {
-                  agent.location = system.name;
-                }
-              }
-            });
+          console.log('[C2 Websocket] Received INIT payload.');
+          updateState(msg.state);
+          if (Array.isArray(msg.history)) {
+            initializeLogs(msg.history);
           }
-
-          setWorldState(state);
+        } else if (msg.type === 'LIVE_STATE_UPDATE' && msg.state) {
+          updateState(msg.state);
+        } else if (msg.type === 'REALTIME_LOGS' && Array.isArray(msg.logs)) {
+          appendRealtimeLogs(msg.logs);
         }
       } catch (e) {
-        console.error('[Monitor] WebSocket parse error:', e);
+        console.error('[C2 Websocket] Parse/processing frame error:', e);
       }
     };
 
     socket.onclose = () => {
-      console.log('[Monitor] Disconnected.');
+      console.log('[C2 Websocket] Disconnected.');
       setIsConnected(false);
     };
 
     return () => socket.close();
-  }, []);
+  }, [updateState, initializeLogs, appendRealtimeLogs]);
 
-  // Main Render Loop (Consuming mockstate for background and overlays)
+  // Main Render Loop (Reads from State and global Preact Signals)
   useEffect(() => {
-    if (!canvasRef.current) return;
-    
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const controller = new CanvasController(canvas);
     let animationFrameId: number;
 
@@ -75,13 +105,18 @@ export default function MonitorApp() {
       const width = canvas.parentElement?.clientWidth || window.innerWidth;
       const height = canvas.parentElement?.clientHeight || window.innerHeight;
 
-      // 1. Prepare viewport
+      // 1. Sync local camera ref with global Preact Signals
+      cameraRef.current.panX = cameraX.value;
+      cameraRef.current.panY = cameraY.value;
+      cameraRef.current.zoom = zoom.value;
+
+      // 2. Clear Viewport
       controller.clear(width, height);
 
-      // 2. Draw tactical coordinate grid
+      // 3. Draw coordinate grid
       controller.drawGrid(cameraRef.current);
 
-      // 3. Query visible bounds & fetch procedural sectors for on-the-fly system boundaries (SSoT)
+      // 4. Query visible bounds & generate procedural background systems
       const topLeft = controller.screenToWorld(0, 0, cameraRef.current);
       const bottomRight = controller.screenToWorld(width, height, cameraRef.current);
 
@@ -96,13 +131,14 @@ export default function MonitorApp() {
         density
       );
 
-      if (worldState) {
+      const activeState = stateRef.current;
+      if (activeState) {
         const ctx = canvas.getContext('2d')!;
-        const zoom = cameraRef.current.zoom;
+        const currentZoom = cameraRef.current.zoom;
 
-        // 4. Draw Interstellar Transit Lines for traveling ships/agents
-        if (Array.isArray(worldState.agents)) {
-          worldState.agents.forEach((agent: any) => {
+        // A. Draw Interstellar Transit Lines for traveling ships/agents
+        if (Array.isArray(activeState.agents)) {
+          activeState.agents.forEach((agent: any) => {
             if (agent.status === 'traveling') {
               const originX = agent.origin_x ?? 0;
               const originY = agent.origin_y ?? 0;
@@ -112,12 +148,11 @@ export default function MonitorApp() {
               const originScreen = controller.worldToScreen(originX, originY, cameraRef.current);
               const targetScreen = controller.worldToScreen(targetX, targetY, cameraRef.current);
 
-              // Draw fine dashed transit line between systems
               ctx.save();
               ctx.beginPath();
               ctx.setLineDash([4, 8]);
-              ctx.strokeStyle = 'rgba(14, 165, 233, 0.45)'; // cyber blue
-              ctx.lineWidth = Math.max(1, 1.2 * zoom);
+              ctx.strokeStyle = 'rgba(14, 165, 233, 0.45)'; // Cyber-Blue
+              ctx.lineWidth = Math.max(1, 1.2 * currentZoom);
               ctx.moveTo(originScreen.x, originScreen.y);
               ctx.lineTo(targetScreen.x, targetScreen.y);
               ctx.stroke();
@@ -126,60 +161,69 @@ export default function MonitorApp() {
           });
         }
 
-        // 5. Draw Systems and their stationary ships/matrix Bobs (At System Edge)
-        if (Array.isArray(worldState.systems)) {
-          worldState.systems.forEach((sys: any) => {
+        // B. Draw active Systems and stationary ships/matrix Bobs
+        if (Array.isArray(activeState.systems)) {
+          activeState.systems.forEach((sys: any) => {
             const screenPos = controller.worldToScreen(sys.x, sys.y, cameraRef.current);
 
-            // A. Draw System Core (Glowing Cyan tactical node)
+            // Highlight selected system core
+            const isSelected = selection?.type === 'system' && selection.id === sys.name;
+
+            // Draw Core tactical node
             ctx.save();
             ctx.beginPath();
-            ctx.arc(screenPos.x, screenPos.y, Math.max(3, 8 * zoom), 0, Math.PI * 2);
-            ctx.fillStyle = '#38bdf8';
+            ctx.arc(screenPos.x, screenPos.y, Math.max(3, 8 * currentZoom), 0, Math.PI * 2);
+            ctx.fillStyle = isSelected ? '#ffffff' : '#38bdf8';
             ctx.shadowColor = '#38bdf8';
-            ctx.shadowBlur = Math.max(5, 15 * zoom);
+            ctx.shadowBlur = isSelected ? Math.max(10, 25 * currentZoom) : Math.max(5, 15 * currentZoom);
             ctx.fill();
 
-            // B. Draw System Name above core
+            // Draw selection reticle
+            if (isSelected) {
+              ctx.beginPath();
+              ctx.arc(screenPos.x, screenPos.y, Math.max(6, 16 * currentZoom), 0, Math.PI * 2);
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 1;
+              ctx.setLineDash([3, 5]);
+              ctx.stroke();
+            }
+
+            // Draw System Name above core
             ctx.shadowBlur = 0;
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = `bold ${Math.max(10, 11 * zoom)}px monospace`;
+            ctx.fillStyle = isSelected ? '#ffffff' : '#94a3b8';
+            ctx.font = `bold ${Math.max(10, 11 * currentZoom)}px monospace`;
             ctx.textAlign = 'center';
-            ctx.fillText(sys.name, screenPos.x, screenPos.y - Math.max(8, 14 * zoom));
+            ctx.fillText(sys.name, screenPos.x, screenPos.y - Math.max(8, 14 * currentZoom));
             ctx.restore();
 
-            // C. Resolve assets inside/orbiting this system
-            const shipsHere = worldState.ships ? worldState.ships.filter((ship: any) => ship.system_name === sys.name) : [];
-            const bobsHere = worldState.agents ? worldState.agents.filter((a: any) => a.location === sys.name && a.status !== 'traveling') : [];
+            // Resolve assets inside/orbiting this system
+            const shipsHere = activeState.ships ? activeState.ships.filter((ship: any) => ship.system_name === sys.name) : [];
+            const bobsHere = activeState.agents ? activeState.agents.filter((a: any) => a.location === sys.name && a.status !== 'traveling') : [];
             const matrixBobs = bobsHere.filter((a: any) => !a.active_ship_id);
 
-            // D. Calculate dynamic system outer edge to prevent overlapping with future planet orbits
-            let outerRadiusOffset = Math.max(10, 20 * zoom); // Fallback if no planets or zoom too high
+            // Compute dynamic outermost system edge (Planetary Orbit Avoidance)
+            let outerRadiusOffset = Math.max(10, 20 * currentZoom);
             
             const matchingSector = visibleSectors.find((s: any) => s.id === sys.name);
             if (matchingSector && matchingSector.system && matchingSector.system.planets.length > 0) {
               const maxDistance = matchingSector.system.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
-              
-              // Standard physical scale multipliers matching the CanvasController's planetary math
               const props = getStellarProperties(matchingSector.mass);
-              const baseSize = 3.5 * Math.pow(props.radius, 0.25); // sizeScale = 0.25
-              const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom));
-              
-              // Compute dynamic outermost planet orbit radius in screen pixels
-              const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * 1.0) * zoom; // orbitSpacingScale = 1.0
-              outerRadiusOffset = maxOrbitRadius + 10 * zoom; // Position 10px beyond the outer orbit
+              const baseSize = 3.5 * Math.pow(props.radius, 0.25);
+              const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, currentZoom));
+              const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * 1.0) * currentZoom;
+              outerRadiusOffset = maxOrbitRadius + 10 * currentZoom;
             }
 
-            // E. Draw stationary assets row at system edge (identical layout block as old monitor, pushed beyond planets)
+            // Draw stationary ships & matrix Bobs at the system outer edge
             if (shipsHere.length > 0 || matrixBobs.length > 0) {
-              const itemWidth = 10 * Math.max(0.5, Math.min(2.0, zoom)); // space between miniature sprites
+              const itemWidth = 10 * Math.max(0.5, Math.min(2.0, currentZoom));
               const totalWidth = (shipsHere.length + matrixBobs.length - 1) * itemWidth;
               const startX = screenPos.x - totalWidth / 2;
-              const sy = screenPos.y + outerRadiusOffset; // dynamically placed at the system edge!
+              const sy = screenPos.y + outerRadiusOffset;
 
               let itemIdx = 0;
 
-              // Render Ships as tiny triangles
+              // Render Ships
               shipsHere.forEach((ship: any) => {
                 const sx = startX + itemIdx * itemWidth;
                 itemIdx++;
@@ -188,25 +232,25 @@ export default function MonitorApp() {
                 const pilot = bobsHere.find((a: any) => a.active_ship_id === ship.id);
 
                 const pilotRemaining = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilot.sleep_until_round
-                  ? Math.max(0, pilot.sleep_until_round - worldState.round)
+                  ? Math.max(0, pilot.sleep_until_round - activeState.round)
                   : 0;
                 const pilotSleeping = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilotRemaining > 0;
 
-                let shipColor = '#64748b'; // Empty Gray
+                let shipColor = '#64748b'; // empty
                 if (isUnderConstruction) {
-                  shipColor = '#f59e0b'; // Amber Construction Orange
+                  shipColor = '#f59e0b';
                 } else if (pilot) {
-                  shipColor = '#0ea5e9'; // Active Crewed Cyber-Blue
+                  shipColor = '#0ea5e9';
                   if (pilotSleeping) {
-                    if (pilot.sleep_state === 1) shipColor = '#f59e0b'; // Standby Yellow
-                    else if (pilot.sleep_state === 2) shipColor = '#a855f7'; // Silent Standby Purple
+                    if (pilot.sleep_state === 1) shipColor = '#f59e0b';
+                    else if (pilot.sleep_state === 2) shipColor = '#a855f7';
                   }
                 }
 
                 ctx.save();
                 ctx.beginPath();
-                const shipHeight = 8 * Math.max(0.4, Math.min(2.0, zoom));
-                const shipWidth = 6 * Math.max(0.4, Math.min(2.0, zoom));
+                const shipHeight = 8 * Math.max(0.4, Math.min(2.0, currentZoom));
+                const shipWidth = 6 * Math.max(0.4, Math.min(2.0, currentZoom));
                 ctx.moveTo(sx, sy - shipHeight / 2);
                 ctx.lineTo(sx - shipWidth / 2, sy + shipHeight / 2);
                 ctx.lineTo(sx + shipWidth / 2, sy + shipHeight / 2);
@@ -216,29 +260,29 @@ export default function MonitorApp() {
                 ctx.restore();
               });
 
-              // Render Matrix Bobs (disembodied minds) as tiny squares
+              // Render Matrix Bobs
               matrixBobs.forEach((bob: any) => {
                 const sx = startX + itemIdx * itemWidth;
                 itemIdx++;
 
                 const remaining = bob.sleep_state && bob.sleep_state > 0 && bob.sleep_until_round
-                  ? Math.max(0, bob.sleep_until_round - worldState.round)
+                  ? Math.max(0, bob.sleep_until_round - activeState.round)
                   : 0;
                 const isSleeping = bob.sleep_state && bob.sleep_state > 0 && remaining > 0;
 
-                let bobColor = '#38bdf8'; // Active Mind Cyan
+                let bobColor = '#38bdf8';
                 if (isSleeping) {
-                  if (bob.sleep_state === 1) bobColor = '#f59e0b'; // Standby Yellow
-                  else if (bob.sleep_state === 2) bobColor = '#a855f7'; // Silent Standby Purple
+                  if (bob.sleep_state === 1) bobColor = '#f59e0b';
+                  else if (bob.sleep_state === 2) bobColor = '#a855f7';
                 }
 
                 ctx.save();
                 ctx.beginPath();
-                const sqSize = 4 * Math.max(0.4, Math.min(2.0, zoom));
+                const sqSize = 4 * Math.max(0.4, Math.min(2.0, currentZoom));
                 ctx.rect(sx - sqSize / 2, sy - sqSize / 2, sqSize, sqSize);
                 ctx.fillStyle = bobColor;
                 ctx.shadowColor = bobColor;
-                ctx.shadowBlur = isSleeping ? 0 : 4 * zoom;
+                ctx.shadowBlur = isSleeping ? 0 : 4 * currentZoom;
                 ctx.fill();
                 ctx.restore();
               });
@@ -246,24 +290,22 @@ export default function MonitorApp() {
           });
         }
 
-        // 6. Draw Traveling Ships in Transit (Vector triangles sliding along trajectories)
-        if (Array.isArray(worldState.agents)) {
-          worldState.agents.forEach((agent: any) => {
+        // C. Draw Traveling Ships in Transit (Triangles sliding on flight paths)
+        if (Array.isArray(activeState.agents)) {
+          activeState.agents.forEach((agent: any) => {
             if (agent.status === 'traveling') {
               const currentScreen = controller.worldToScreen(agent.current_x, agent.current_y, cameraRef.current);
-              
-              // Angle points in trajectory direction (+90deg offset for standard vertical sprite orientation)
               const angle = Math.atan2(agent.target_y - agent.origin_y, agent.target_x - agent.origin_x) + Math.PI / 2;
 
               const remaining = agent.sleep_state && agent.sleep_state > 0 && agent.sleep_until_round
-                ? Math.max(0, agent.sleep_until_round - worldState.round)
+                ? Math.max(0, agent.sleep_until_round - activeState.round)
                 : 0;
               const isSleeping = agent.sleep_state && agent.sleep_state > 0 && remaining > 0;
 
-              let shipColor = '#0ea5e9'; // Active Crewed Cyber-Blue
+              let shipColor = '#0ea5e9';
               if (isSleeping) {
-                if (agent.sleep_state === 1) shipColor = '#f59e0b'; // Standby Yellow
-                else if (agent.sleep_state === 2) shipColor = '#a855f7'; // Silent Standby Purple
+                if (agent.sleep_state === 1) shipColor = '#f59e0b';
+                else if (agent.sleep_state === 2) shipColor = '#a855f7';
               }
 
               ctx.save();
@@ -271,8 +313,8 @@ export default function MonitorApp() {
               ctx.rotate(angle);
               ctx.beginPath();
 
-              const shipHeight = 12 * Math.max(0.4, Math.min(2.0, zoom));
-              const shipWidth = 8 * Math.max(0.4, Math.min(2.0, zoom));
+              const shipHeight = 12 * Math.max(0.4, Math.min(2.0, currentZoom));
+              const shipWidth = 8 * Math.max(0.4, Math.min(2.0, currentZoom));
 
               ctx.moveTo(0, -shipHeight / 2);
               ctx.lineTo(-shipWidth / 2, shipHeight / 2);
@@ -281,7 +323,7 @@ export default function MonitorApp() {
 
               ctx.fillStyle = shipColor;
               ctx.shadowColor = shipColor;
-              ctx.shadowBlur = isSleeping ? 0 : 8 * zoom;
+              ctx.shadowBlur = isSleeping ? 0 : 8 * currentZoom;
               ctx.fill();
               ctx.restore();
             }
@@ -295,9 +337,9 @@ export default function MonitorApp() {
     render();
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [worldState]); // Re-bind on state updates
+  }, [selection]); // Re-bind on selection state changes
 
-  // Camera Controls (Unchanged from Sandbox)
+  // Camera mouse dragging controls (Updating signals directly)
   const isDragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
 
@@ -310,8 +352,8 @@ export default function MonitorApp() {
     if (!isDragging.current || !canvasRef.current) return;
     const dx = e.clientX - lastMouse.current.x;
     const dy = e.clientY - lastMouse.current.y;
-    cameraRef.current.panX -= dx / cameraRef.current.zoom;
-    cameraRef.current.panY -= dy / cameraRef.current.zoom;
+    cameraX.value -= dx / zoom.value;
+    cameraY.value -= dy / zoom.value;
     lastMouse.current = { x: e.clientX, y: e.clientY };
   };
 
@@ -328,19 +370,45 @@ export default function MonitorApp() {
     const controller = new CanvasController(canvasRef.current);
     
     // Zoom exactly to mouse position
-    const worldBefore = controller.screenToWorld(mouseX, mouseY, cameraRef.current);
+    const worldBefore = controller.screenToWorld(mouseX, mouseY, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
     const zoomFactor = 1.1;
-    const newZoom = e.deltaY < 0 ? cameraRef.current.zoom * zoomFactor : cameraRef.current.zoom / zoomFactor;
+    const newZoom = e.deltaY < 0 ? zoom.value * zoomFactor : zoom.value / zoomFactor;
     
     // Clamp zoom
-    cameraRef.current.zoom = Math.max(0.01, Math.min(newZoom, 5.0));
+    zoom.value = Math.max(0.01, Math.min(newZoom, 5.0));
     
-    const worldAfter = controller.screenToWorld(mouseX, mouseY, cameraRef.current);
-    cameraRef.current.panX -= (worldAfter.x - worldBefore.x);
-    cameraRef.current.panY -= (worldAfter.y - worldBefore.y);
+    const worldAfter = controller.screenToWorld(mouseX, mouseY, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
+    cameraX.value -= (worldAfter.x - worldBefore.x);
+    cameraY.value -= (worldAfter.y - worldBefore.y);
   };
 
-  // Handle Resize
+  // Click on Canvas to Select System SSoT
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (isDragging.current || !canvasRef.current || !state) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const controller = new CanvasController(canvasRef.current);
+    const clickWorld = controller.screenToWorld(mouseX, mouseY, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
+
+    // Find clicked system core
+    let clickedSys = null;
+    let minDist = Infinity;
+    
+    state.systems.forEach((sys: any) => {
+      const dist = Math.sqrt((sys.x - clickWorld.x) ** 2 + (sys.y - clickWorld.y) ** 2);
+      if (dist < minDist && dist <= 30) { // selection threshold limit
+        minDist = dist;
+        clickedSys = sys;
+      }
+    });
+
+    if (clickedSys) {
+      setSelection({ type: 'system', id: (clickedSys as any).name });
+    }
+  };
+
+  // Handle Canvas Resizing
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current && canvasRef.current) {
@@ -349,38 +417,223 @@ export default function MonitorApp() {
       }
     };
     window.addEventListener('resize', handleResize);
-    handleResize(); // Initial call
+    handleResize(); // Initial resize
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', backgroundColor: '#020408' }}>
+    <div style={{
+      position: 'relative',
+      width: '100vw',
+      height: '100vh',
+      display: 'grid',
+      gridTemplateColumns: isSidebarMaximized ? '1fr 90vw' : '1fr 360px',
+      gridTemplateRows: '36px 1fr',
+      overflow: 'hidden',
+      backgroundColor: '#020408',
+      color: '#cbd5e1',
+      fontFamily: 'monospace'
+    }}>
       
-      {/* Offline Status Warning */}
-      {!isConnected && (
-        <div style={{ position: 'absolute', top: 10, left: 10, color: 'red', zIndex: 10, fontFamily: 'monospace' }}>
-          [DISCONNECTED] Connecting to Mock Socket on Port 3005...
+      {/* ======================================================== */}
+      {/* 1. TOP MINIMALIST HEADER BAR                             */}
+      {/* ======================================================== */}
+      <header style={{
+        gridColumn: 'span 2',
+        background: '#04060b',
+        borderBottom: '1px solid #1e293b',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '0 12px',
+        fontSize: '0.75rem',
+        zIndex: 5
+      }}>
+        {/* Left menu navigation */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontWeight: 'bold', color: '#38bdf8' }}>[≡] NASA_APOLLON_C2_TERMINAL</span>
+          <span style={{ color: isConnected ? '#10b981' : '#ef4444' }}>
+            {isConnected ? '● SOCKET_ONLINE' : '● OFFLINE_STANDBY'}
+          </span>
         </div>
-      )}
-      
-      {/* HUD Info */}
-      <div style={{ position: 'absolute', top: 10, right: 10, color: '#38bdf8', zIndex: 10, fontFamily: 'monospace', textAlign: 'right' }}>
-        <div>V12.0 MONITOR BASELINE</div>
-        <div>Systems in State: {worldState?.systems?.length || 0}</div>
-        <div>Agents in State: {worldState?.agents?.length || 0}</div>
-      </div>
 
-      <div ref={containerRef} style={{ width: '100%', height: '100%', cursor: isDragging.current ? 'grabbing' : 'grab' }}>
-        <canvas
-          ref={canvasRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onWheel={handleWheel}
-          style={{ display: 'block' }}
+        {/* Tactical Macro-KPI indicators (Top-bar stats) */}
+        <div style={{ display: 'flex', gap: '20px', color: '#94a3b8' }}>
+          <div>CYCLE: <strong style={{ color: '#fff' }}>{state?.round || 0}</strong></div>
+          <div>POPULATION: <strong style={{ color: '#38bdf8' }}>{state?.agents?.length || 0}</strong></div>
+          <div>VESSELS: <strong style={{ color: '#f59e0b' }}>{state?.ships?.length || 0}</strong></div>
+        </div>
+      </header>
+
+      {/* ======================================================== */}
+      {/* 2. MAIN CENTER ENGINE VIEWPORT (Canvas)                  */}
+      {/* ======================================================== */}
+      <main style={{
+        position: 'relative',
+        display: 'grid',
+        gridTemplateRows: isConsoleMaximized ? '1fr 90vh' : '1fr 140px',
+        height: '100%',
+        minHeight: 0,
+        borderRight: '1px solid #1e293b'
+      }}>
+        {/* Full-screen Canvas block */}
+        <div 
+          ref={containerRef} 
+          style={{ 
+            width: '100%', 
+            height: '100%', 
+            cursor: isDragging.current ? 'grabbing' : 'grab',
+            minHeight: 0
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onWheel={handleWheel}
+            onClick={handleCanvasClick}
+            style={{ display: 'block' }}
+          />
+        </div>
+
+        {/* ======================================================== */}
+        {/* 3. TRON BOTTOM CONSOLE (Horizontal Log Tray)             */}
+        {/* ======================================================== */}
+        <footer style={{ 
+          height: '100%', 
+          minHeight: 0,
+          borderTop: '1px solid #1e293b',
+          zIndex: isConsoleMaximized ? 10 : 1 // Bring above viewport when maximized
+        }}>
+          <LogPanel 
+            isMaximized={isConsoleMaximized} 
+            onToggleMaximize={() => setIsConsoleMaximized(prev => !prev)} 
+          />
+        </footer>
+      </main>
+
+      {/* ======================================================== */}
+      {/* 4. SENTRY RIGHT TAB-DRAWER (Unified Sidebar)             */}
+      {/* ======================================================== */}
+      <aside style={{
+        background: '#070a13',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        zIndex: isSidebarMaximized ? 20 : 1 // Topmost layer if expanded
+      }}>
+        {/* Sidebar Nav Tab Buttons */}
+        <div style={{ 
+          display: 'flex', 
+          background: 'rgba(15,23,42,0.9)', 
+          borderBottom: '1px solid #1e293b',
+          height: '36px',
+          alignItems: 'center',
+          padding: '0 4px',
+          flexShrink: 0
+        }}>
+          <button 
+            onClick={() => {
+              setSidebarTab('explorer');
+              setSelection(null); // Clear selection when backing out to explorer list
+            }}
+            style={{ 
+              flex: 1, 
+              padding: '6px 0', 
+              background: sidebarTab === 'explorer' ? 'rgba(56,189,248,0.1)' : 'transparent', 
+              color: sidebarTab === 'explorer' ? '#38bdf8' : '#64748b',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontFamily: 'monospace',
+              fontSize: '0.7rem'
+            }}
+          >
+            [EXPLORER]
+          </button>
+          <button 
+            disabled={!selection}
+            onClick={() => setSidebarTab('inspector')}
+            style={{ 
+              flex: 1, 
+              padding: '6px 0', 
+              background: sidebarTab === 'inspector' ? 'rgba(56,189,248,0.1)' : 'transparent', 
+              color: !selection ? '#334155' : (sidebarTab === 'inspector' ? '#38bdf8' : '#64748b'),
+              border: 'none',
+              cursor: selection ? 'pointer' : 'not-allowed',
+              fontWeight: 'bold',
+              fontFamily: 'monospace',
+              fontSize: '0.7rem'
+            }}
+          >
+            [INSPECT]
+          </button>
+          
+          {/* Elastic width expander trigger */}
+          <button
+            onClick={() => setIsSidebarMaximized(prev => !prev)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#38bdf8',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              padding: '0 12px',
+              fontFamily: 'monospace',
+              fontSize: '0.8rem'
+            }}
+            title={isSidebarMaximized ? "Shrink panel" : "Expand panel"}
+          >
+            {isSidebarMaximized ? '«' : '»'}
+          </button>
+        </div>
+
+        {/* Render Tab Contents */}
+        <div style={{ flex: 1, minHeight: 0 }}>
+          {sidebarTab === 'explorer' ? (
+            <ExplorerPanel />
+          ) : (
+            <InspectorPanel 
+              onOpenShipyard={() => setShowShipyard(true)}
+              onOpenSchematic={(ship) => {
+                setSelectedShipForSchematic(ship);
+                setShowSchematic(true);
+              }}
+            />
+          )}
+        </div>
+      </aside>
+
+      {/* ======================================================== */}
+      {/* 5. MODAL HOLOGRAPHIC OVERLAYS (CAD & Handbooks)          */}
+      {/* ======================================================== */}
+      {showShipyard && selection?.type === 'system' && state && (
+        (() => {
+          const sys = state.systems.find(s => s.name === selection.id);
+          return sys ? (
+            <ShipyardCatalogModal 
+              selectedSystem={sys}
+              state={state}
+              onClose={() => setShowShipyard(false)}
+            />
+          ) : null;
+        })()
+      )}
+
+      {showSchematic && selectedShipForSchematic && state && (
+        <VesselSchematicModal 
+          modalShip={selectedShipForSchematic}
+          state={state}
+          onClose={() => {
+            setShowSchematic(false);
+            setSelectedShipForSchematic(null);
+          }}
         />
-      </div>
+      )}
+
     </div>
   );
 }

@@ -310,6 +310,19 @@ export default function MonitorApp() {
                 ctx.fillStyle = shipColor;
                 ctx.fill();
                 ctx.restore();
+
+                // Draw selection highlight for pilot of stationary ship
+                const isPilotSelected = pilot && selection?.type === 'agent' && selection.id === pilot.id;
+                if (isPilotSelected) {
+                  ctx.save();
+                  ctx.beginPath();
+                  ctx.arc(sx, sy, 8 * Math.max(0.4, Math.min(2.0, currentZoom)), 0, Math.PI * 2);
+                  ctx.strokeStyle = '#ffffff';
+                  ctx.lineWidth = 1;
+                  ctx.setLineDash([2, 3]);
+                  ctx.stroke();
+                  ctx.restore();
+                }
               });
 
               // Render Matrix Bobs
@@ -337,6 +350,19 @@ export default function MonitorApp() {
                 ctx.shadowBlur = isSleeping ? 0 : 4 * currentZoom;
                 ctx.fill();
                 ctx.restore();
+
+                // Draw selection highlight for stationary matrix mind
+                const isBobSelected = selection?.type === 'agent' && selection.id === bob.id;
+                if (isBobSelected) {
+                  ctx.save();
+                  ctx.beginPath();
+                  ctx.arc(sx, sy, 6 * Math.max(0.4, Math.min(2.0, currentZoom)), 0, Math.PI * 2);
+                  ctx.strokeStyle = '#ffffff';
+                  ctx.lineWidth = 1;
+                  ctx.setLineDash([2, 3]);
+                  ctx.stroke();
+                  ctx.restore();
+                }
               });
             }
           });
@@ -378,6 +404,19 @@ export default function MonitorApp() {
               ctx.shadowBlur = isSleeping ? 0 : 8 * currentZoom;
               ctx.fill();
               ctx.restore();
+
+              // Draw selection highlight for traveling agent
+              const isAgentSelected = selection?.type === 'agent' && selection.id === agent.id;
+              if (isAgentSelected) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(currentScreen.x, currentScreen.y, 14 * Math.max(0.4, Math.min(2.0, currentZoom)), 0, Math.PI * 2);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 4]);
+                ctx.stroke();
+                ctx.restore();
+              }
             }
           });
         }

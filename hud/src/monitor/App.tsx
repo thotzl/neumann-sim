@@ -471,7 +471,7 @@ export default function MonitorApp() {
       <main style={{
         position: 'relative',
         display: 'grid',
-        gridTemplateRows: isConsoleMaximized ? '1fr 90vh' : '1fr 140px',
+        gridTemplateRows: isConsoleMaximized ? '1fr 90vh' : '1fr 220px',
         height: '100%',
         minHeight: 0,
         borderRight: '1px solid #1e293b'
@@ -526,52 +526,55 @@ export default function MonitorApp() {
         zIndex: isSidebarMaximized ? 20 : 1 // Topmost layer if expanded
       }}>
         {/* Sidebar Nav Tab Buttons */}
-        <div style={{ 
-          display: 'flex', 
-          background: 'rgba(15,23,42,0.9)', 
+        <div style={{
+          display: 'flex',
+          background: 'rgba(15,23,42,0.9)',
           borderBottom: '1px solid #1e293b',
           height: '36px',
           alignItems: 'center',
-          padding: '0 4px',
+          padding: '0 8px',
+          justifyContent: 'space-between',
           flexShrink: 0
         }}>
-          <button 
-            onClick={() => {
-              setSidebarTab('explorer');
-              setSelection(null); // Clear selection when backing out to explorer list
-            }}
-            style={{ 
-              flex: 1, 
-              padding: '6px 0', 
-              background: sidebarTab === 'explorer' ? 'rgba(56,189,248,0.1)' : 'transparent', 
-              color: sidebarTab === 'explorer' ? '#38bdf8' : '#64748b',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontFamily: 'monospace',
-              fontSize: '0.7rem'
-            }}
-          >
-            [EXPLORER]
-          </button>
-          <button 
-            disabled={!selection}
-            onClick={() => setSidebarTab('inspector')}
-            style={{ 
-              flex: 1, 
-              padding: '6px 0', 
-              background: sidebarTab === 'inspector' ? 'rgba(56,189,248,0.1)' : 'transparent', 
-              color: !selection ? '#334155' : (sidebarTab === 'inspector' ? '#38bdf8' : '#64748b'),
-              border: 'none',
-              cursor: selection ? 'pointer' : 'not-allowed',
-              fontWeight: 'bold',
-              fontFamily: 'monospace',
-              fontSize: '0.7rem'
-            }}
-          >
-            [INSPECT]
-          </button>
-          
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button
+              onClick={() => {
+                setSidebarTab('explorer');
+                setSelection(null); // Clear selection when backing out to explorer list
+              }}
+              style={{
+                width: '120px',
+                padding: '6px 0',
+                background: sidebarTab === 'explorer' ? 'rgba(56,189,248,0.1)' : 'transparent',
+                color: sidebarTab === 'explorer' ? '#38bdf8' : '#64748b',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                fontSize: '0.7rem'
+              }}
+            >
+              [EXPLORER]
+            </button>
+            <button
+              disabled={!selection}
+              onClick={() => setSidebarTab('inspector')}
+              style={{
+                width: '120px',
+                padding: '6px 0',
+                background: sidebarTab === 'inspector' ? 'rgba(56,189,248,0.1)' : 'transparent',
+                color: !selection ? '#334155' : (sidebarTab === 'inspector' ? '#38bdf8' : '#64748b'),
+                border: 'none',
+                cursor: selection ? 'pointer' : 'not-allowed',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                fontSize: '0.7rem'
+              }}
+            >
+              [INSPECT]
+            </button>
+          </div>
+
           {/* Elastic width expander trigger */}
           <button
             onClick={() => setIsSidebarMaximized(prev => !prev)}

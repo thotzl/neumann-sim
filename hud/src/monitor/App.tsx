@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useC2Store } from './store/stateStore';
 import { cameraX, cameraY, zoom } from './store/mapSignals';
 import { CanvasController } from '../canvasController';
-import { UniverseGenerator, getStellarProperties } from '../shared/generator';
 
 // Import our newly reconstructed Apollon Panels & Modals
 import { ExplorerPanel } from './components/ExplorerPanel';
@@ -26,7 +25,7 @@ export default function MonitorApp() {
   const [isConnected, setIsConnected] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'explorer' | 'inspector'>('explorer');
 
-  // Drag-to-Resize Right Sidebar Panel Width State
+  // Drag-to-Resize Right Sidebar Panel Width State (Full Height minus header!)
   const [sidebarWidth, setSidebarWidth] = useState(360);
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
 
@@ -168,21 +167,6 @@ export default function MonitorApp() {
       // 3. Draw coordinate grid
       controller.drawGrid(cameraRef.current);
 
-      // 4. Query visible bounds & generate procedural background systems
-      const topLeft = controller.screenToWorld(0, 0, cameraRef.current);
-      const bottomRight = controller.screenToWorld(width, height, cameraRef.current);
-
-      const seed = 'BobOS_V12';
-      const density = 0.45;
-      const visibleSectors = UniverseGenerator.getSectorsInArea(
-        topLeft.x,
-        bottomRight.x,
-        topLeft.y,
-        bottomRight.y,
-        seed,
-        density
-      );
-
       const activeState = stateRef.current;
       if (activeState) {
         const ctx = canvas.getContext('2d')!;
@@ -256,12 +240,15 @@ export default function MonitorApp() {
             // Compute dynamic outermost system edge (Planetary Orbit Avoidance)
             let outerRadiusOffset = Math.max(10, 20 * currentZoom);
             
-            const matchingSector = visibleSectors.find((s: any) => s.id === sys.name);
-            if (matchingSector && matchingSector.system && matchingSector.system.planets.length > 0) {
-              const maxDistance = matchingSector.system.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
-              const props = getStellarProperties(matchingSector.mass);
-              const baseSize = 3.5 * Math.pow(props.radius, 0.25);
+            if (Array.isArray(sys.planets) && sys.planets.length > 0) {
+              const maxDistance = sys.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
+              
+              // Standard physical scale multipliers from the optional star metadata
+              const starRadius = sys.star?.radius || 1.0;
+              const baseSize = 3.5 * Math.pow(starRadius, 0.25);
               const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, currentZoom));
+              
+              // Compute dynamic outermost planet orbit radius in screen pixels
               const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * 1.0) * currentZoom;
               outerRadiusOffset = maxOrbitRadius + 10 * currentZoom;
             }
@@ -387,36 +374,36 @@ export default function MonitorApp() {
               }
 
               ctx.save();
-              ctx.translate(currentScreen.x, currentScreen.y);
-              ctx.rotate(angle);
-              ctx.beginPath();
+               ctx.translate(currentScreen.x, currentScreen.y);
+               ctx.rotate(angle);
+               ctx.beginPath();
 
-              const shipHeight = 12 * Math.max(0.4, Math.min(2.0, currentZoom));
-              const shipWidth = 8 * Math.max(0.4, Math.min(2.0, currentZoom));
+               const shipHeight = 12 * Math.max(0.4, Math.min(2.0, currentZoom));
+               const shipWidth = 8 * Math.max(0.4, Math.min(2.0, currentZoom));
 
-              ctx.moveTo(0, -shipHeight / 2);
-              ctx.lineTo(-shipWidth / 2, shipHeight / 2);
-              ctx.lineTo(shipWidth / 2, shipHeight / 2);
-              ctx.closePath();
+               ctx.moveTo(0, -shipHeight / 2);
+               ctx.lineTo(-shipWidth / 2, shipHeight / 2);
+               ctx.lineTo(shipWidth / 2, shipHeight / 2);
+               ctx.closePath();
 
-              ctx.fillStyle = shipColor;
-              ctx.shadowColor = shipColor;
-              ctx.shadowBlur = isSleeping ? 0 : 8 * currentZoom;
-              ctx.fill();
-              ctx.restore();
+               ctx.fillStyle = shipColor;
+               ctx.shadowColor = shipColor;
+               ctx.shadowBlur = isSleeping ? 0 : 8 * currentZoom;
+               ctx.fill();
+               ctx.restore();
 
-              // Draw selection highlight for traveling agent
-              const isAgentSelected = selection?.type === 'agent' && selection.id === agent.id;
-              if (isAgentSelected) {
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(currentScreen.x, currentScreen.y, 14 * Math.max(0.4, Math.min(2.0, currentZoom)), 0, Math.PI * 2);
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([2, 4]);
-                ctx.stroke();
-                ctx.restore();
-              }
+               // Draw selection highlight for traveling agent
+               const isAgentSelected = selection?.type === 'agent' && selection.id === agent.id;
+               if (isAgentSelected) {
+                 ctx.save();
+                 ctx.beginPath();
+                 ctx.arc(currentScreen.x, currentScreen.y, 14 * Math.max(0.4, Math.min(2.0, currentZoom)), 0, Math.PI * 2);
+                 ctx.strokeStyle = '#ffffff';
+                 ctx.lineWidth = 1;
+                 ctx.setLineDash([2, 4]);
+                 ctx.stroke();
+                 ctx.restore();
+               }
             }
           });
         }
@@ -479,18 +466,6 @@ export default function MonitorApp() {
 
     // Check Systems and their stationary assets (Mini triangles & squares)
     if (!isHovering && Array.isArray(state.systems)) {
-      // Get visible bounds
-      const topLeft = controller.screenToWorld(0, 0, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
-      const bottomRight = controller.screenToWorld(canvasRef.current.width, canvasRef.current.height, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
-      const visibleSectors = UniverseGenerator.getSectorsInArea(
-        topLeft.x,
-        bottomRight.x,
-        topLeft.y,
-        bottomRight.y,
-        'BobOS_V12',
-        0.45
-      );
-
       for (const sys of state.systems) {
         const screenPos = controller.worldToScreen(sys.x, sys.y, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
         
@@ -508,11 +483,10 @@ export default function MonitorApp() {
 
         if (shipsHere.length > 0 || matrixBobs.length > 0) {
           let outerRadiusOffset = Math.max(10, 20 * zoom.value);
-          const matchingSector = visibleSectors.find((s: any) => s.id === sys.name);
-          if (matchingSector && matchingSector.system && matchingSector.system.planets.length > 0) {
-            const maxDistance = matchingSector.system.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
-            const props = getStellarProperties(matchingSector.mass);
-            const baseSize = 3.5 * Math.pow(props.radius, 0.25);
+          if (Array.isArray(sys.planets) && sys.planets.length > 0) {
+            const maxDistance = sys.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
+            const starRadius = sys.star?.radius || 1.0;
+            const baseSize = 3.5 * Math.pow(starRadius, 0.25);
             const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom.value));
             const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * 1.0) * zoom.value;
             outerRadiusOffset = maxOrbitRadius + 10 * zoom.value;
@@ -608,18 +582,6 @@ export default function MonitorApp() {
 
     // 2. Check Systems, stationary ships, and matrix Bobs
     if (!clickedItem && Array.isArray(state.systems)) {
-      // Get visible sectors to resolve outermost orbits on-the-fly
-      const topLeft = controller.screenToWorld(0, 0, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
-      const bottomRight = controller.screenToWorld(canvasRef.current.width, canvasRef.current.height, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
-      const visibleSectors = UniverseGenerator.getSectorsInArea(
-        topLeft.x,
-        bottomRight.x,
-        topLeft.y,
-        bottomRight.y,
-        'BobOS_V12',
-        0.45
-      );
-
       state.systems.forEach((sys: any) => {
         const screenPos = controller.worldToScreen(sys.x, sys.y, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
         
@@ -637,11 +599,10 @@ export default function MonitorApp() {
 
         if (shipsHere.length > 0 || matrixBobs.length > 0) {
           let outerRadiusOffset = Math.max(10, 20 * zoom.value);
-          const matchingSector = visibleSectors.find((s: any) => s.id === sys.name);
-          if (matchingSector && matchingSector.system && matchingSector.system.planets.length > 0) {
-            const maxDistance = matchingSector.system.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
-            const props = getStellarProperties(matchingSector.mass);
-            const baseSize = 3.5 * Math.pow(props.radius, 0.25);
+          if (Array.isArray(sys.planets) && sys.planets.length > 0) {
+            const maxDistance = sys.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
+            const starRadius = sys.star?.radius || 1.0;
+            const baseSize = 3.5 * Math.pow(starRadius, 0.25);
             const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom.value));
             const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * 1.0) * zoom.value;
             outerRadiusOffset = maxOrbitRadius + 10 * zoom.value;
@@ -820,78 +781,53 @@ export default function MonitorApp() {
   const stopResizeRight = () => { isResizingConsoleRight.current = false; document.removeEventListener('mousemove', handleResizeRight); document.removeEventListener('mouseup', stopResizeRight); };
 
   return (
-    <div style={{
-      position: 'relative',
-      width: '100vw',
-      height: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      backgroundColor: '#020408',
-      color: '#cbd5e1',
-      fontFamily: 'monospace'
-    }}>
+    <div className="relative w-screen h-screen flex flex-col overflow-hidden bg-cyber-dark text-slate-300 font-mono select-none">
       
       {/* ======================================================== */}
       {/* 1. TOP MINIMALIST HEADER BAR                             */}
       {/* ======================================================== */}
-      <header style={{
-        background: '#04060b',
-        borderBottom: '1px solid #1e293b',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '0 12px',
-        fontSize: '0.75rem',
-        height: '36px',
-        flexShrink: 0,
-        zIndex: 10
-      }}>
+      <header className="bg-[#04060b] border-b border-slate-800 flex justify-between items-center px-3 text-xs h-9 shrink-0 z-10 select-none">
         {/* Left menu navigation */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontWeight: 'bold', color: '#38bdf8' }}>[≡] NASA_APOLLON_C2_TERMINAL</span>
-          <span style={{ color: isConnected ? '#10b981' : '#ef4444' }}>
+        <div className="flex items-center gap-3">
+          <span className="font-bold text-cyber-blue">[≡] NASA_APOLLON_C2_TERMINAL</span>
+          <span className={isConnected ? 'text-emerald-500 font-bold' : 'text-cyber-red font-bold'}>
             {isConnected ? '● SOCKET_ONLINE' : '● OFFLINE_STANDBY'}
           </span>
 
           {/* C2 Panel Toggle Triggers (Grayed out when completely disabled!) */}
-          <div style={{ display: 'flex', gap: '6px', marginLeft: '16px' }}>
+          <div className="flex gap-1.5 ml-4">
             <button
-              onClick={() => setIsConsoleMinimized(prev => !prev)}
-              style={{
-                background: isConsoleMinimized ? 'transparent' : 'rgba(239,68,68,0.15)',
-                border: isConsoleMinimized ? '1px solid #334155' : '1px solid #ef4444',
-                color: isConsoleMinimized ? '#64748b' : '#ef4444',
-                padding: '3px 8px',
-                fontSize: '0.65rem',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                borderRadius: '2px',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
+              onClick={() => {
+                setIsConsoleMinimized(prev => !prev);
+                if (isConsoleMinimized) {
+                  setConsoleHeight(220); // Restore to default height
+                  setConsoleY(window.innerHeight - 260); // Reposition
+                } else {
+                  setConsoleHeight(40); // Collapse
+                  setConsoleY(window.innerHeight - 56);
+                }
               }}
-              onMouseEnter={(e) => { if (!isConsoleMinimized) e.currentTarget.style.background = 'rgba(239,68,68,0.25)'; }}
-              onMouseLeave={(e) => { if (!isConsoleMinimized) e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
+              className={`border text-[10px] px-2 py-0.5 font-bold font-mono rounded-sm cursor-pointer transition-all ${
+                isConsoleMinimized 
+                  ? 'bg-transparent border-slate-800 text-cyber-gray' 
+                  : 'bg-cyber-red/15 border-cyber-red text-cyber-red hover:bg-cyber-red/25'
+              }`}
             >
               📻 COGNITIVE_LOGS
             </button>
 
             <button
-              onClick={() => setIsSidebarMinimized(prev => !prev)}
-              style={{
-                background: isSidebarMinimized ? 'transparent' : 'rgba(56,189,248,0.15)',
-                border: isSidebarMinimized ? '1px solid #334155' : '1px solid #38bdf8',
-                color: isSidebarMinimized ? '#64748b' : '#38bdf8',
-                padding: '3px 8px',
-                fontSize: '0.65rem',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                borderRadius: '2px',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
+              onClick={() => {
+                setIsSidebarMinimized(prev => !prev);
+                if (isSidebarMinimized) {
+                  setSidebarWidth(360); // Restore to default width
+                }
               }}
-              onMouseEnter={(e) => { if (!isSidebarMinimized) e.currentTarget.style.background = 'rgba(56,189,248,0.25)'; }}
-              onMouseLeave={(e) => { if (!isSidebarMinimized) e.currentTarget.style.background = 'rgba(56,189,248,0.15)'; }}
+              className={`border text-[10px] px-2 py-0.5 font-bold font-mono rounded-sm cursor-pointer transition-all ${
+                isSidebarMinimized 
+                  ? 'bg-transparent border-slate-800 text-cyber-gray' 
+                  : 'bg-cyber-blue/15 border-cyber-blue text-cyber-blue hover:bg-cyber-blue/25'
+              }`}
             >
               📊 SWARM_SIDEBAR
             </button>
@@ -899,29 +835,26 @@ export default function MonitorApp() {
         </div>
 
         {/* Tactical Macro-KPI indicators (Top-bar stats) */}
-        <div style={{ display: 'flex', gap: '20px', color: '#94a3b8' }}>
-          <div>CYCLE: <strong style={{ color: '#fff' }}>{state?.round || 0}</strong></div>
-          <div>POPULATION: <strong style={{ color: '#38bdf8' }}>{state?.agents?.length || 0}</strong></div>
-          <div>VESSELS: <strong style={{ color: '#f59e0b' }}>{state?.ships?.length || 0}</strong></div>
+        <div className="flex gap-5 text-cyber-gray font-mono">
+          <div>CYCLE: <strong className="text-white">{state?.round || 0}</strong></div>
+          <div>POPULATION: <strong className="text-cyber-blue">{state?.agents?.length || 0}</strong></div>
+          <div>VESSELS: <strong className="text-cyber-amber">{state?.ships?.length || 0}</strong></div>
         </div>
       </header>
 
       {/* ======================================================== */}
       {/* MAIN CONTAINER WINDOW (Floating layers)                  */}
       {/* ======================================================== */}
-      <div style={{ position: 'relative', flex: 1, display: 'flex', minHeight: 0 }}>
+      <div className="relative flex-1 flex min-h-0">
         
         {/* ======================================================== */}
         {/* 2. CENTER ENGINE VIEWPORT (Always 100% Canvas background)*/}
         {/* ======================================================== */}
         <div 
           ref={containerRef} 
-          style={{ 
-            position: 'absolute',
-            top: 0, left: 0, right: 0, bottom: 0,
-            cursor: isDragging.current ? 'grabbing' : 'grab',
-            zIndex: 1
-          }}
+          className={`absolute top-0 left-0 right-0 bottom-0 z-[1] ${
+            isDragging.current ? 'cursor-grabbing' : 'cursor-grab'
+          }`}
         >
           <canvas
             ref={canvasRef}
@@ -931,7 +864,7 @@ export default function MonitorApp() {
             onMouseLeave={handleMouseUp}
             onWheel={handleWheel}
             onClick={handleCanvasClick}
-            style={{ display: 'block' }}
+            className="block"
           />
         </div>
 
@@ -939,227 +872,160 @@ export default function MonitorApp() {
         {/* 3. FLOATING COGNITIVE LOG CONSOLE (Hovering / 4-Edge Resizable) */}
         {/* ======================================================== */}
         {!isConsoleMinimized && (
-          <footer style={{ 
-            position: 'absolute',
-            zIndex: 5,
-            overflow: 'hidden',
-            boxSizing: 'border-box',
-            background: 'rgba(5, 6, 10, 0.85)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(56, 189, 248, 0.15)',
-            borderRadius: '6px',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.8), inset 0 0 15px rgba(56,189,248,0.05)',
-            
-            // Hovering absolute placements
-            left: `${consoleX}px`,
-            top: `${consoleY}px`,
-            width: `${consoleWidth}px`,
-            height: `${consoleHeight}px`,
-            transition: isDraggingConsolePos.current || 
-                        isResizingConsoleTop.current || 
-                        isResizingConsoleBottom.current || 
-                        isResizingConsoleLeft.current || 
-                        isResizingConsoleRight.current 
-              ? 'none' 
-              : 'all 0.12s ease-out'
-          }}>
-            
-            {/* 4-SIDE DRAG RESIZE SENSORS */}
+          <div 
+            data-augmented-ui="tl-clip tr-clip border inlay"
+            style={{ 
+              position: 'absolute',
+              left: `${consoleX}px`,
+              top: `${consoleY}px`,
+              width: `${consoleWidth}px`,
+              height: `${consoleHeight}px`,
+              zIndex: 5,
+              background: '#05060a',
+              transition: isDraggingConsolePos.current || 
+                          isResizingConsoleTop.current || 
+                          isResizingConsoleBottom.current || 
+                          isResizingConsoleLeft.current || 
+                          isResizingConsoleRight.current 
+                ? 'none' 
+                : 'all 0.12s ease-out'
+            }}
+            className="aug-console shadow-[0_10px_40px_rgba(0,0,0,0.8)]"
+          >
+            {/* 4-SIDE DRAG RESIZE SENSORS (On the outer wrapper!) */}
             {/* Top Border Resize Trigger */}
             <div
               onMouseDown={startResizeTop}
-              style={{
-                position: 'absolute',
-                left: 0, right: 0, top: 0,
-                height: '5px',
-                cursor: 'ns-resize',
-                background: isResizingConsoleTop.current ? '#ef4444' : 'rgba(239,68,68,0.02)',
-                zIndex: 100,
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = isResizingConsoleTop.current ? '#ef4444' : 'rgba(239,68,68,0.02)'; }}
+              className={`absolute left-0 right-0 top-0 h-1 z-[100] cursor-ns-resize transition-all ${
+                isResizingConsoleTop.current ? 'bg-cyber-red' : 'bg-cyber-red/5 hover:bg-cyber-red/30'
+              }`}
             />
 
             {/* Bottom Border Resize Trigger */}
             <div
               onMouseDown={startResizeBottom}
-              style={{
-                position: 'absolute',
-                left: 0, right: 0, bottom: 0,
-                height: '5px',
-                cursor: 'ns-resize',
-                background: isResizingConsoleBottom.current ? '#ef4444' : 'rgba(239,68,68,0.02)',
-                zIndex: 100,
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = isResizingConsoleBottom.current ? '#ef4444' : 'rgba(239,68,68,0.02)'; }}
+              className={`absolute left-0 right-0 bottom-0 h-1 z-[100] cursor-ns-resize transition-all ${
+                isResizingConsoleBottom.current ? 'bg-cyber-red' : 'bg-cyber-red/5 hover:bg-cyber-red/30'
+              }`}
             />
 
             {/* Left Border Resize Trigger */}
             <div
               onMouseDown={startResizeLeft}
-              style={{
-                position: 'absolute',
-                left: 0, top: 0, bottom: 0,
-                width: '5px',
-                cursor: 'ew-resize',
-                background: isResizingConsoleLeft.current ? '#ef4444' : 'rgba(239,68,68,0.02)',
-                zIndex: 100,
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = isResizingConsoleLeft.current ? '#ef4444' : 'rgba(239,68,68,0.02)'; }}
+              className={`absolute left-0 top-0 bottom-0 w-1 z-[100] cursor-ew-resize transition-all ${
+                isResizingConsoleLeft.current ? 'bg-cyber-red' : 'bg-cyber-red/5 hover:bg-cyber-red/30'
+              }`}
             />
 
             {/* Right Border Resize Trigger */}
             <div
               onMouseDown={startResizeRight}
-              style={{
-                position: 'absolute',
-                right: 0, top: 0, bottom: 0,
-                width: '5px',
-                cursor: 'ew-resize',
-                background: isResizingConsoleRight.current ? '#ef4444' : 'rgba(239,68,68,0.02)',
-                zIndex: 100,
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = isResizingConsoleRight.current ? '#ef4444' : 'rgba(239,68,68,0.02)'; }}
+              className={`absolute right-0 top-0 bottom-0 w-1 z-[100] cursor-ew-resize transition-all ${
+                isResizingConsoleRight.current ? 'bg-cyber-red' : 'bg-cyber-red/5 hover:bg-cyber-red/30'
+              }`}
             />
 
-            <LogPanel 
-              isMinimized={isConsoleMinimized} 
-              onToggleMinimize={() => setIsConsoleMinimized(true)}
-              onStartDrag={startDragConsolePos}
-            />
-          </footer>
+            {/* Core un-flexed inner component container to avoid flex item pseudo conflicts! */}
+            <div className="w-full h-full overflow-hidden rounded-md pt-3 pl-1 pr-1 pb-1">
+              <LogPanel 
+                isMinimized={isConsoleMinimized} 
+                onToggleMinimize={() => {
+                  setIsConsoleMinimized(true);
+                  setConsoleHeight(40);
+                  setConsoleY(window.innerHeight - 56);
+                }}
+                onStartDrag={startDragConsolePos}
+              />
+            </div>
+          </div>
         )}
 
         {/* ======================================================== */}
         {/* 4. SENTRY RIGHT TAB-DRAWER (Unified Sidebar - Hovering)   */}
         {/* ======================================================== */}
         {!isSidebarMinimized && (
-          <aside style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: `${sidebarWidth}px`,
-            background: '#070a13',
-            display: 'flex',
-            flexDirection: 'column',
-            borderLeft: '1px solid #1e293b',
-            zIndex: 6,
-            boxShadow: '-5px 0 25px rgba(0,0,0,0.5)',
-            transition: isResizingSidebar.current ? 'none' : 'width 0.15s ease-out'
-          }}>
+          <div 
+            data-augmented-ui="tl-clip br-clip border inlay"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: `${sidebarWidth}px`,
+              zIndex: 6,
+              background: '#070a13',
+              transition: isResizingSidebar.current ? 'none' : 'width 0.15s ease-out'
+            }}
+            className="aug-sidebar shadow-[-5px_0_25px_rgba(0,0,0,0.5)]"
+          >
             {/* Left Border Resize Handle Bar */}
             <div
               onMouseDown={startResizeSidebar}
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: '5px',
-                cursor: 'ew-resize',
-                background: isResizingSidebar.current ? '#38bdf8' : 'rgba(56,189,248,0.05)',
-                zIndex: 100,
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(56,189,248,0.3)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = isResizingSidebar.current ? '#38bdf8' : 'rgba(56,189,248,0.05)'; }}
+              className={`absolute left-0 top-0 bottom-0 w-1 z-[100] cursor-ew-resize transition-all ${
+                isResizingSidebar.current ? 'bg-cyber-blue' : 'bg-cyber-blue/5 hover:bg-cyber-blue/30'
+              }`}
             />
 
-            {/* Sidebar Nav Tab Buttons */}
-            <div style={{
-              display: 'flex',
-              background: 'rgba(15,23,42,0.9)',
-              borderBottom: '1px solid #1e293b',
-              height: '36px',
-              alignItems: 'center',
-              padding: '0 8px 0 16px',
-              justifyContent: 'space-between',
-              flexShrink: 0
-            }}>
-              <div style={{ display: 'flex', gap: '4px' }}>
+            {/* Core un-flexed inner component container to avoid flex item pseudo conflicts! */}
+            <div className="w-full h-full flex flex-col min-h-0 pl-1.5 pt-4 pb-4 pr-1.5 box-border">
+              {/* Sidebar Nav Tab Buttons */}
+              <div className="flex bg-slate-900/90 border-b border-slate-800 h-9 items-center pl-4 pr-2 shrink-0 select-none justify-between">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => {
+                      setSidebarTab('explorer');
+                      setSelection(null);
+                    }}
+                    className={`w-[110px] py-1.5 bg-transparent text-[11px] font-bold font-mono border-none cursor-pointer rounded-sm transition-all ${
+                      sidebarTab === 'explorer' 
+                        ? 'bg-cyber-blue/10 text-cyber-blue font-bold' 
+                        : 'text-cyber-gray hover:text-slate-400'
+                    }`}
+                  >
+                    [EXPLORER]
+                  </button>
+                  <button
+                    disabled={!selection}
+                    onClick={() => setSidebarTab('inspector')}
+                    className={`w-[110px] py-1.5 bg-transparent text-[11px] font-bold font-mono border-none cursor-pointer rounded-sm transition-all ${
+                      !selection 
+                        ? 'text-slate-800 cursor-not-allowed' 
+                        : (sidebarTab === 'inspector' ? 'bg-cyber-blue/10 text-cyber-blue font-bold' : 'text-cyber-gray hover:text-slate-400')
+                    }`}
+                  >
+                    [INSPECT]
+                  </button>
+                </div>
+
+                {/* Close/Minimize Sidebar Button */}
                 <button
                   onClick={() => {
-                    setSidebarTab('explorer');
-                    setSelection(null);
+                    setIsSidebarMinimized(true);
+                    setSidebarWidth(0);
                   }}
-                  style={{
-                    width: '110px',
-                    padding: '6px 0',
-                    background: sidebarTab === 'explorer' ? 'rgba(56,189,248,0.1)' : 'transparent',
-                    color: sidebarTab === 'explorer' ? '#38bdf8' : '#64748b',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    fontFamily: 'monospace',
-                    fontSize: '0.7rem'
-                  }}
+                  className="bg-transparent border-none text-cyber-red cursor-pointer font-bold px-2 font-mono text-sm transition-colors hover:text-red-500"
+                  title="Minimize Sidebar"
                 >
-                  [EXPLORER]
-                </button>
-                <button
-                  disabled={!selection}
-                  onClick={() => setSidebarTab('inspector')}
-                  style={{
-                    width: '110px',
-                    padding: '6px 0',
-                    background: sidebarTab === 'inspector' ? 'rgba(56,189,248,0.1)' : 'transparent',
-                    color: !selection ? '#334155' : (sidebarTab === 'inspector' ? '#38bdf8' : '#64748b'),
-                    border: 'none',
-                    cursor: selection ? 'pointer' : 'not-allowed',
-                    fontWeight: 'bold',
-                    fontFamily: 'monospace',
-                    fontSize: '0.7rem'
-                  }}
-                >
-                  [INSPECT]
+                  ✕
                 </button>
               </div>
 
-              {/* Close/Minimize Sidebar Button */}
-              <button
-                onClick={() => {
-                  setIsSidebarMinimized(true);
-                  setSidebarWidth(0);
-                }}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ef4444',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  padding: '0 8px',
-                  fontFamily: 'monospace',
-                  fontSize: '0.8rem'
-                }}
-                title="Minimize Sidebar"
-              >
-                ✕
-              </button>
+              {/* Render Tab Contents */}
+              <div className="flex-1 min-h-0">
+                {sidebarTab === 'explorer' ? (
+                  <ExplorerPanel />
+                ) : (
+                  <InspectorPanel 
+                    onOpenShipyard={() => setShowShipyard(true)}
+                    onOpenSchematic={(ship) => {
+                      setSelectedShipForSchematic(ship);
+                      setShowSchematic(true);
+                    }}
+                  />
+                )}
+              </div>
             </div>
-
-            {/* Render Tab Contents */}
-            <div style={{ flex: 1, minHeight: 0, paddingLeft: '6px' }}>
-              {sidebarTab === 'explorer' ? (
-                <ExplorerPanel />
-              ) : (
-                <InspectorPanel 
-                  onOpenShipyard={() => setShowShipyard(true)}
-                  onOpenSchematic={(ship) => {
-                    setSelectedShipForSchematic(ship);
-                    setShowSchematic(true);
-                  }}
-                />
-              )}
-            </div>
-          </aside>
+          </div>
         )}
 
       </div>

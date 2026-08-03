@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useC2Store } from '../store/stateStore';
 import { buildBobDashboard, jsonToYaml } from '../utils/dashboardHelpers';
-import { UniverseGenerator, getStellarProperties } from '../../shared/generator';
 
 interface InspectorPanelProps {
   onOpenShipyard: () => void;
@@ -11,7 +10,6 @@ interface InspectorPanelProps {
 export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPanelProps) => {
   const state = useC2Store((store) => store.state);
   const selection = useC2Store((store) => store.selection);
-  const setSelection = useC2Store((store) => store.setSelection);
   const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'meta' | 'raw'>('status');
 
   // Reset tab to 'status' whenever selection changes
@@ -39,148 +37,116 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
     ? state.ships?.find(s => s.id.toString() === selectedAgent.host_id?.toString()) 
     : null;
 
-  // Query procedural astrophysic sector details on-the-fly for system select
-  let systemDetail: any = null;
-  if (selectedSystem) {
-    const seed = 'BobOS_V12';
-    const seedHash = UniverseGenerator ? (UniverseGenerator as any).hashStringToInt?.(seed) || 12345 : 12345;
-    // Generate the prozedural solar system details
-    systemDetail = UniverseGenerator.generateSolarSystem(selectedSystem.x, selectedSystem.y, 1.0, seedHash);
-  }
-
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      height: '100%', 
-      overflow: 'hidden', 
-      fontFamily: 'monospace',
-      background: '#070a13',
-    }}>
+    <div className="flex flex-col h-full overflow-hidden font-mono bg-cyber-panel">
       {/* PANEL HEADER TABS */}
-      <div style={{ 
-        background: 'rgba(15,23,42,0.9)', 
-        borderBottom: '1px solid #1e293b', 
-        display: 'flex', 
-        alignItems: 'center', 
-        flexShrink: 0,
-        height: '40px'
-      }}>
-        <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', borderRight: '1px solid #1e293b', height: '100%' }}>
-          <span style={{ fontWeight: 700, color: '#38bdf8', letterSpacing: '1px', fontSize: '0.7rem' }}>
+      <div className="bg-slate-900/90 border-b border-slate-800 flex items-center shrink-0 h-10 select-none">
+        <div className="px-4 flex items-center border-r border-slate-800 h-full">
+          <span className="font-bold text-cyber-blue tracking-wider text-[11px]">
             // {selection.type.toUpperCase()}_LINK //
           </span>
         </div>
-        <div style={{ display: 'flex', flex: 1, height: '100%' }}>
-          <button 
-            onClick={() => setActiveTab('status')}
-            style={{ 
-              padding: '0 16px', 
-              background: activeTab === 'status' ? 'rgba(56,189,248,0.08)' : 'transparent', 
-              border: 'none', 
-              borderBottom: activeTab === 'status' ? '2px solid #38bdf8' : 'none', 
-              color: activeTab === 'status' ? '#fff' : '#64748b', 
-              fontSize: '0.75rem', 
-              fontWeight: 700, 
-              fontFamily: 'monospace',
-              cursor: 'pointer' 
-            }}
-          >
-            {selection.type === 'agent' ? 'UNIT_STATUS' : 'CORE_RESOURCES'}
-          </button>
-          
-          {selection.type === 'agent' && (
-            <button 
-              onClick={() => setActiveTab('cognition')}
-              style={{ 
-                padding: '0 16px', 
-                background: activeTab === 'cognition' ? 'rgba(56,189,248,0.08)' : 'transparent', 
-                border: 'none', 
-                borderBottom: activeTab === 'cognition' ? '2px solid #38bdf8' : 'none', 
-                color: activeTab === 'cognition' ? '#fff' : '#64748b', 
-                fontSize: '0.75rem', 
-                fontWeight: 700, 
-                fontFamily: 'monospace',
-                cursor: 'pointer' 
-              }}
-            >
-              NEURAL_THREADS
-            </button>
+        <div className="flex flex-1 h-full">
+          {selectedAgent && (
+            <>
+              <button
+                onClick={() => setActiveTab('status')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
+                  activeTab === 'status' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [STATUS]
+              </button>
+              <button
+                onClick={() => setActiveTab('cognition')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
+                  activeTab === 'cognition' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [COGNITION]
+              </button>
+              <button
+                onClick={() => setActiveTab('meta')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
+                  activeTab === 'meta' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [HARDWARE]
+              </button>
+              <button
+                onClick={() => setActiveTab('raw')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors ${
+                  activeTab === 'raw' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [RAW]
+              </button>
+            </>
           )}
 
-          <button 
-            onClick={() => setActiveTab('meta')}
-            style={{ 
-              padding: '0 16px', 
-              background: activeTab === 'meta' ? 'rgba(56,189,248,0.08)' : 'transparent', 
-              border: 'none', 
-              borderBottom: activeTab === 'meta' ? '2px solid #38bdf8' : 'none', 
-              color: activeTab === 'meta' ? '#fff' : '#64748b', 
-              fontSize: '0.75rem', 
-              fontWeight: 700, 
-              fontFamily: 'monospace',
-              cursor: 'pointer' 
-            }}
-          >
-            {selection.type === 'agent' ? 'HOST_SPECS' : 'INFRASTRUCTURE'}
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('raw')}
-            style={{ 
-              padding: '0 16px', 
-              background: activeTab === 'raw' ? 'rgba(56,189,248,0.08)' : 'transparent', 
-              border: 'none', 
-              borderBottom: activeTab === 'raw' ? '2px solid #38bdf8' : 'none', 
-              color: activeTab === 'raw' ? '#fff' : '#64748b', 
-              fontSize: '0.75rem', 
-              fontWeight: 700, 
-              fontFamily: 'monospace',
-              cursor: 'pointer' 
-            }}
-          >
-            {selection.type === 'agent' ? 'RAW_YAML' : 'ORBITS'}
-          </button>
+          {selectedSystem && (
+            <>
+              <button
+                onClick={() => setActiveTab('status')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
+                  activeTab === 'status' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [GEOLOGY]
+              </button>
+              <button
+                onClick={() => setActiveTab('meta')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
+                  activeTab === 'meta' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [INFRASTRUCTURE]
+              </button>
+              <button
+                onClick={() => setActiveTab('raw')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors ${
+                  activeTab === 'raw' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [ORBITS]
+              </button>
+            </>
+          )}
         </div>
-        <button 
-          onClick={() => setSelection(null)} 
-          style={{ padding: '0 16px', background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1.2rem', fontFamily: 'monospace' }}
-        >
-          ×
-        </button>
       </div>
 
-      {/* DETAILED CONTENT AREA */}
-      <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }} className="custom-scrollbar">
-        
-        {/* ======================================================== */}
-        {/* AGENT SELECTION INSPECT                                  */}
-        {/* ======================================================== */}
+      {/* PANEL SCROLL CONTENT */}
+      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         {selectedAgent && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="flex flex-col gap-4">
             {activeTab === 'status' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div>
-                  <h3 style={{ margin: '0 0 6px 0', color: '#fff', fontSize: '1.2rem' }}>
-                    {selectedAgent.chosen_name || selectedAgent.id}
-                  </h3>
-                  <div style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: '1.7' }}>
-                    ID: <span style={{ color: '#fff' }}>{selectedAgent.id}</span><br />
-                    LOCATION: <span style={{ color: '#38bdf8' }}>{selectedAgent.location || 'DEEP SPACE'}</span><br />
-                    STATUS: {(() => {
-                      const remaining = selectedAgent.sleep_state && selectedAgent.sleep_state > 0 && selectedAgent.sleep_until_round
-                        ? Math.max(0, selectedAgent.sleep_until_round - state.round)
-                        : 0;
-                      const isSleeping = selectedAgent.sleep_state && selectedAgent.sleep_state > 0 && remaining > 0;
-                      
-                      if (isSleeping) {
+              <div className="grid grid-cols-2 gap-5">
+                {/* Mind details card */}
+                <div className="bg-white/[0.01] border border-white/5 rounded p-3">
+                  <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1.5">
+                    🛰️ COGNITIVE_MIND_TELEMETRY //
+                  </div>
+                  <div className="text-xs text-white font-semibold">
+                    NAME: <span className="text-cyber-blue font-bold">{selectedAgent.chosen_name}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-1 leading-normal font-mono">
+                    ID: {selectedAgent.id}<br />
+                    LOCATION: {selectedAgent.location || 'DEEP SPACE'}<br />
+                    STATE: {(() => {
+                      if (selectedAgent.status === 'traveling') {
+                        return <span className="text-cyber-blue font-bold">● INTERSTELLAR TRAVEL</span>;
+                      }
+                      if (selectedAgent.sleep_state && selectedAgent.sleep_state > 0) {
+                        const remaining = selectedAgent.sleep_until_round 
+                          ? Math.max(0, selectedAgent.sleep_until_round - state.round)
+                          : 0;
                         return (
-                          <span style={{ color: selectedAgent.sleep_state === 1 ? '#f59e0b' : '#a855f7', fontWeight: 'bold' }}>
+                          <span className={`font-bold ${selectedAgent.sleep_state === 1 ? 'text-cyber-amber' : 'text-cyber-purple'}`}>
                             ● {selectedAgent.sleep_state === 1 ? 'STANDBY' : 'SILENT STANDBY'} ({remaining} Cycles)
                           </span>
                         );
                       }
-                      return <span style={{ color: '#10b981' }}>● ACTIVE</span>;
+                      return <span className="text-emerald-500 font-bold">● ACTIVE</span>;
                     })()}<br />
                     BIRTH: Cycle {selectedAgent.birth_cycle}<br />
                   </div>
@@ -188,37 +154,21 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
 
                 {/* Host Diagnostics Card */}
                 {dashboardObj && (
-                  <div style={{ 
-                    background: 'rgba(56,189,248,0.02)', 
-                    border: '1px solid rgba(56,189,248,0.15)', 
-                    borderRadius: '4px', 
-                    padding: '12px' 
-                  }}>
-                    <div style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>
+                  <div className="bg-cyber-blue/[0.01] border border-cyber-blue/15 rounded p-3 shadow-[0_0_10px_rgba(56,189,248,0.03)]">
+                    <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1.5">
                       🎛️ COGNITIVE_HOST_COUPLING //
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#fff' }}>
-                      HOST: <strong style={{ color: '#38bdf8' }}>{dashboardObj.your_status.host.name}</strong>
+                    <div className="text-xs text-white font-semibold">
+                      HOST: <strong className="text-cyber-blue font-bold">{dashboardObj.your_status.host.name}</strong>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
+                    <div className="text-[11px] text-slate-400 mt-1">
                       TYPE: {dashboardObj.your_status.host.type.toUpperCase()}<br />
                       ID: {dashboardObj.your_status.host.id}
                     </div>
                     {selectedAgent.host_type === 'ship' && hostRawShip && (
                       <button
                         onClick={() => onOpenSchematic(hostRawShip)}
-                        style={{
-                          marginTop: '10px',
-                          background: '#0ea5e9',
-                          border: 'none',
-                          color: '#000',
-                          fontWeight: 'bold',
-                          padding: '4px 10px',
-                          fontSize: '0.7rem',
-                          borderRadius: '2px',
-                          cursor: 'pointer',
-                          fontFamily: 'monospace'
-                        }}
+                        className="mt-2.5 bg-cyber-blue border-none text-black font-bold px-2.5 py-1 text-[11px] rounded-sm cursor-pointer font-mono transition-colors hover:bg-sky-400"
                       >
                         ⚡ LOAD VESSEL CAD SCHEMATIC
                       </button>
@@ -229,11 +179,11 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
             )}
 
             {activeTab === 'cognition' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="grid grid-cols-2 gap-5">
                 {/* Real-time thoughts */}
-                <div style={{ background: '#03050a', border: '1px solid #1e293b', borderRadius: '4px', padding: '12px', minHeight: '120px' }}>
-                  <div style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 700, marginBottom: '8px' }}>🧠 ACTIVE_THOUGHT_REGISTER //</div>
-                  <div style={{ fontSize: '0.75rem', color: '#a7f3d0', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
+                <div className="bg-black/60 border border-slate-900 rounded p-3 min-h-[120px]">
+                  <div className="text-[10px] text-emerald-500 font-bold mb-2">🧠 ACTIVE_THOUGHT_REGISTER //</div>
+                  <div className="text-xs text-emerald-100 leading-relaxed whitespace-pre-wrap">
                     {selectedAgent.last_manifestation ? (
                       selectedAgent.last_manifestation.replace(/\[SELF-IMPULSE\]:\s*/i, '').split(/action/i)[0].trim()
                     ) : 'Agent is idle / waiting for command cycle.'}
@@ -241,16 +191,16 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                 </div>
 
                 {/* Local Memos */}
-                <div style={{ background: '#03050a', border: '1px solid #1e293b', borderRadius: '4px', padding: '12px' }}>
-                  <div style={{ fontSize: '0.65rem', color: '#f59e0b', fontWeight: 700, marginBottom: '8px' }}>📋 LOCAL_SWARM_MEMOS //</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div className="bg-black/60 border border-slate-900 rounded p-3">
+                  <div className="text-[10px] text-cyber-amber font-bold mb-2">📋 LOCAL_SWARM_MEMOS //</div>
+                  <div className="flex flex-col gap-1.5">
                     {dashboardObj?.your_status?.open_memos_and_protocols?.map((memo: string, mi: number) => (
-                      <div key={mi} style={{ fontSize: '0.75rem', color: '#fef3c7', borderBottom: '1px dashed #1e293b', paddingBottom: '4px' }}>
+                      <div key={mi} className="text-xs text-amber-100 border-b border-dashed border-slate-900 pb-1">
                         {memo}
                       </div>
                     ))}
                     {(!dashboardObj?.your_status?.open_memos_and_protocols || dashboardObj.your_status.open_memos_and_protocols.length === 0) && (
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic' }}>No open memos or protocols in neural buffer.</div>
+                      <div className="text-xs text-cyber-gray italic">No open memos or protocols in neural buffer.</div>
                     )}
                   </div>
                 </div>
@@ -258,163 +208,131 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
             )}
 
             {activeTab === 'meta' && dashboardObj && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
+              <div className="grid grid-cols-[1.2fr_1fr] gap-5">
                 {/* Host specs detailed */}
-                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '12px' }}>
-                  <div style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: 700, marginBottom: '8px' }}>🚀 HARDWARE_HOST_SPECIFICATIONS //</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                <div className="bg-white/[0.01] border border-white/5 rounded p-3">
+                  <div className="text-[10px] text-cyber-blue font-bold mb-2">🚀 HARDWARE_HOST_SPECIFICATIONS //</div>
+                  <div className="grid grid-cols-2 gap-2.5 text-xs text-slate-300">
                     <div>
-                      HULL MASS: <strong style={{ color: '#fff' }}>{dashboardObj.your_status.host.stats.mass} t</strong><br />
-                      THRUST COEFF: <strong style={{ color: '#fff' }}>{dashboardObj.your_status.host.stats.thrust} N</strong><br />
-                      VELOCITY MAX: <strong style={{ color: '#fff' }}>{dashboardObj.your_status.host.stats.max_speed} m/s</strong><br />
+                      HULL MASS: <strong className="text-white font-bold">{dashboardObj.your_status.host.stats.mass} t</strong><br />
+                      THRUST COEFF: <strong className="text-white font-bold">{dashboardObj.your_status.host.stats.thrust} N</strong><br />
+                      VELOCITY MAX: <strong className="text-white font-bold">{dashboardObj.your_status.host.stats.max_speed} m/s</strong><br />
                     </div>
                     <div>
-                      CARGO LIMIT: <strong style={{ color: '#f59e0b' }}>{dashboardObj.your_status.host.stats.storage_capacity} t</strong><br />
-                      DRILL MODULE: <strong style={{ color: dashboardObj.your_status.host.capabilities.drill === 'active' ? '#10b981' : '#ef4444' }}>{dashboardObj.your_status.host.capabilities.drill.toUpperCase()}</strong><br />
-                      FAB MODULE: <strong style={{ color: dashboardObj.your_status.host.capabilities.fabricator === 'active' ? '#10b981' : '#ef4444' }}>{dashboardObj.your_status.host.capabilities.fabricator.toUpperCase()}</strong><br />
+                      CARGO LIMIT: <strong className="text-cyber-amber font-bold">{dashboardObj.your_status.host.stats.storage_capacity} t</strong><br />
+                      DRILL MODULE: <strong className={dashboardObj.your_status.host.capabilities.drill === 'active' ? 'text-emerald-500 font-bold' : 'text-cyber-red font-bold'}>{dashboardObj.your_status.host.capabilities.drill.toUpperCase()}</strong><br />
+                      FAB MODULE: <strong className={dashboardObj.your_status.host.capabilities.fabricator === 'active' ? 'text-emerald-500 font-bold' : 'text-cyber-red font-bold'}>{dashboardObj.your_status.host.capabilities.fabricator.toUpperCase()}</strong><br />
                     </div>
                   </div>
                 </div>
 
-                {/* Inventories */}
-                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '12px' }}>
-                  <div style={{ fontSize: '0.65rem', color: '#f59e0b', fontWeight: 700, marginBottom: '8px' }}>📦 INTEGRATED_HOST_INVENTORY //</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '0.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e2e8f0' }}>
-                      <span>RAW MATTER:</span> <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{dashboardObj.your_status.inventory.raw_matter} t</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e2e8f0' }}>
-                      <span>REFINED MATTER:</span> <span style={{ color: '#10b981', fontWeight: 'bold' }}>{dashboardObj.your_status.inventory.refined_matter} t</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e2e8f0' }}>
-                      <span>BATTERY CHARGE:</span> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{dashboardObj.your_status.inventory.energy} E</span>
-                    </div>
-                  </div>
+                {/* Energy specs detailed */}
+                <div className="bg-white/[0.01] border border-white/5 rounded p-3 text-xs text-slate-300">
+                  <div className="text-[10px] text-cyber-blue font-bold mb-2">🔋 ENERGY_BUFFER_MATRIX //</div>
+                  LOGIC DEPT: <strong className={dashboardObj.your_status.host.capabilities.logic_core === 'active' ? 'text-emerald-500 font-bold' : 'text-cyber-red font-bold'}>{dashboardObj.your_status.host.capabilities.logic_core.toUpperCase()}</strong><br />
+                  ENERGY LEVEL: <strong className="text-emerald-400 font-bold">{dashboardObj.your_status.inventory.energy} / {dashboardObj.your_status.host.stats.energy_capacity} E</strong><br />
+                  CARGO LOAD: <strong className="text-cyber-amber font-bold">{dashboardObj.your_status.inventory.raw_matter} / {dashboardObj.your_status.host.stats.storage_capacity} t</strong><br />
+                  REFINED LOAD: <strong className="text-white font-bold">{selectedAgent.sensors?.inventory?.refined_matter_inventory || 0} t</strong>
                 </div>
               </div>
             )}
 
             {activeTab === 'raw' && (
-              <pre style={{ 
-                background: '#03050a', 
-                border: '1px solid #1e293b', 
-                borderRadius: '4px', 
-                padding: '12px', 
-                fontSize: '0.7rem', 
-                color: '#38bdf8', 
-                lineHeight: '1.4', 
-                overflowX: 'auto',
-                whiteSpace: 'pre-wrap',
-                margin: 0
-              }}>
-                {dashboardYaml || 'GENERATING NEURAL CONFIG MAP...'}
-              </pre>
+              <div className="bg-black/80 border border-slate-900 rounded p-3 max-h-[220px] overflow-y-auto custom-scrollbar select-text">
+                <div className="text-[10px] text-cyber-gray font-bold mb-1.5">// REALTIME_ZUSTAND_RAW //</div>
+                <pre className="text-[10px] text-slate-400 font-mono leading-normal whitespace-pre-wrap">
+                  {dashboardYaml}
+                </pre>
+              </div>
             )}
           </div>
         )}
 
-        {/* ======================================================== */}
-        {/* SYSTEM SELECTION INSPECT                                 */}
-        {/* ======================================================== */}
         {selectedSystem && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="flex flex-col gap-4">
             {activeTab === 'status' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div>
-                  <h3 style={{ margin: '0 0 6px 0', color: '#fff', fontSize: '1.2rem' }}>
+              <div className="grid grid-cols-2 gap-5">
+                {/* System Geological stats */}
+                <div className="bg-white/[0.01] border border-white/5 rounded p-3">
+                  <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1.5">
+                    🛰️ GEOLOGICAL_SENSOR_DATA //
+                  </div>
+                  <h3 className="text-xs text-white font-bold mb-1 font-mono uppercase">
                     {selectedSystem.display_name || selectedSystem.name}
                   </h3>
-                  <div style={{ fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.7' }}>
-                    COORDINATES: <span style={{ color: '#fff' }}>X:{selectedSystem.x} • Y:{selectedSystem.y}</span><br />
-                    GEOLOGY (Erzgehalt): <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{selectedSystem.extractable_matter_in_core} t Raw</span><br />
-                    RAW MAT DEPOT: <span style={{ color: '#e2e8f0' }}>{selectedSystem.raw_matter_depot} / {selectedSystem.depot_matter_capacity} t</span><br />
-                    REFINED DEPOT: <span style={{ color: '#10b981', fontWeight: 'bold' }}>{selectedSystem.refined_matter_depot || 0} t</span><br />
-                    ENERGY DEPOT: <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{selectedSystem.energy_depot} / {selectedSystem.depot_energy_capacity} E</span><br />
+                  <div className="text-xs text-slate-300 leading-relaxed font-mono">
+                    COORDINATES: <span className="text-white">X:{selectedSystem.x} • Y:{selectedSystem.y}</span><br />
+                    GEOLOGY (Erzgehalt): <span className="text-cyber-amber font-bold">{selectedSystem.extractable_matter_in_core} t Raw</span><br />
+                    RAW MAT DEPOT: <span className="text-slate-400">{selectedSystem.raw_matter_depot} / {selectedSystem.depot_matter_capacity} t</span><br />
+                    REFINED DEPOT: <span className="text-emerald-500 font-bold">{selectedSystem.refined_matter_depot || 0} t</span><br />
+                    ENERGY DEPOT: <span className="text-cyber-blue font-bold">{selectedSystem.energy_depot} / {selectedSystem.depot_energy_capacity} E</span><br />
                   </div>
                 </div>
 
-                {/* Procedural Star Telemetry (Merged Sandbox & Monitor values!) */}
-                {systemDetail && (
-                  <div style={{ 
-                    background: 'rgba(56,189,248,0.02)', 
-                    border: '1px solid rgba(56,189,248,0.15)', 
-                    borderRadius: '4px', 
-                    padding: '12px' 
-                  }}>
-                    <div style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: 700, letterSpacing: '1px', marginBottom: '6px' }}>
+                {/* Star Telemetry Card - Fully passive SSoT with direct fallback placeholder */}
+                <div className="bg-cyber-blue/[0.01] border border-cyber-blue/15 rounded p-3 shadow-[0_0_10px_rgba(56,189,248,0.03)] flex flex-col justify-between">
+                  <div>
+                    <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1.5">
                       🛰️ DETECTED_STELLAR_PROPERTIES //
                     </div>
-                    {(() => {
-                      const props = getStellarProperties(1.0); // Standard star mass G spectral
-                      return (
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: '1.5' }}>
-                          SPECTRAL CLASS: <strong style={{ color: '#fff' }}>G (Yellow Dwarf)</strong><br />
-                          TEMPERATURE: <strong style={{ color: '#e2e8f0' }}>{Math.round(props.temperature)} K</strong><br />
-                          MASS (SOLAR): <strong style={{ color: '#fff' }}>1.0 M_sun</strong><br />
-                          LUMINOSITY: <strong style={{ color: '#38bdf8' }}>{props.luminosity.toFixed(2)} L_sun</strong><br />
-                        </div>
-                      );
-                    })()}
-                    <button
-                      onClick={onOpenShipyard}
-                      style={{
-                        marginTop: '10px',
-                        background: '#10b981',
-                        border: 'none',
-                        color: '#000',
-                        fontWeight: 'bold',
-                        padding: '4px 10px',
-                        fontSize: '0.7rem',
-                        borderRadius: '2px',
-                        cursor: 'pointer',
-                        fontFamily: 'monospace'
-                      }}
-                    >
-                      🏗️ ENTER SHIPYARD LAB
-                    </button>
+                    {selectedSystem.star ? (
+                      <div className="text-xs text-slate-400 leading-normal">
+                        SPECTRAL CLASS: <strong className="text-white font-bold">{selectedSystem.star.spectralClass}</strong><br />
+                        TEMPERATURE: <strong className="text-slate-200 font-bold">{Math.round(selectedSystem.star.temperature)} K</strong><br />
+                        MASS (SOLAR): <strong className="text-white font-bold">{selectedSystem.star.mass.toFixed(2)} M_sun</strong><br />
+                        LUMINOSITY: <strong className="text-cyber-blue font-bold">{selectedSystem.star.luminosity?.toFixed(2) || "1.00"} L_sun</strong><br />
+                      </div>
+                    ) : (
+                      <div className="text-xs text-cyber-gray italic leading-normal pt-1">
+                        No stellar telemetry returned by sector sensors.
+                      </div>
+                    )}
                   </div>
-                )}
+                  <button
+                    onClick={onOpenShipyard}
+                    className="mt-2.5 bg-emerald-500 border-none text-black font-bold px-2.5 py-1 text-[11px] rounded-sm cursor-pointer font-mono transition-colors hover:bg-emerald-400 w-full text-center"
+                  >
+                    🏗️ ENTER SHIPYARD LAB
+                  </button>
+                </div>
               </div>
             )}
 
             {activeTab === 'meta' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: 700, letterSpacing: '1px' }}>
+              <div className="flex flex-col gap-2.5">
+                <div className="text-[10px] text-cyber-blue font-bold tracking-wider">
                   🏗️ SYSTEM_BUILT_INFRASTRUCTURE //
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div className="grid grid-cols-2 gap-2.5">
                   {selectedSystem.infra?.map((inf, ii) => {
                     const isAssembling = inf.status === 'construction';
                     const pct = inf.required_matter > 0 ? Math.round((inf.progress_matter / inf.required_matter) * 100) : 100;
                     return (
                       <div 
                         key={ii} 
-                        style={{ 
-                          background: 'rgba(255,255,255,0.01)', 
-                          border: `1px solid ${isAssembling ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)'}`,
-                          borderRadius: '4px', 
-                          padding: '10px' 
-                        }}
+                        className={`bg-white/[0.01] border rounded p-2.5 ${
+                          isAssembling ? 'border-cyber-amber/20' : 'border-white/5'
+                        }`}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                          <span style={{ color: '#fff' }}>{inf.type.toUpperCase()} (Lvl {inf.level})</span>
-                          <span style={{ color: isAssembling ? '#f59e0b' : '#10b981' }}>
+                        <div className="flex justify-between text-xs font-bold font-mono">
+                          <span className="text-white">{inf.type.toUpperCase()} (Lvl {inf.level})</span>
+                          <span className={isAssembling ? 'text-cyber-amber' : 'text-emerald-500'}>
                             {isAssembling ? `BUILDING (${pct}%)` : 'ONLINE'}
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px' }}>
+                        <div className="text-[10px] text-cyber-gray mt-1">
                           STRUCTURAL HEALTH: {inf.health} / {inf.max_health} HP
                         </div>
                         {isAssembling && (
-                          <div style={{ width: '100%', height: '4px', background: '#1e293b', marginTop: '6px', borderRadius: '1px', overflow: 'hidden' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', background: '#f59e0b' }} />
+                          <div className="w-100 h-1 bg-slate-900 mt-1.5 rounded-sm overflow-hidden">
+                            <div className="h-full bg-cyber-amber" style={{ width: `${pct}%` }} />
                           </div>
                         )}
                       </div>
                     );
                   })}
                   {(!selectedSystem.infra || selectedSystem.infra.length === 0) && (
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic', gridColumn: 'span 2' }}>
+                    <div className="text-xs text-cyber-gray italic col-span-2">
                       No infrastructures built in this system's nodes yet.
                     </div>
                   )}
@@ -422,40 +340,32 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
               </div>
             )}
 
-            {activeTab === 'raw' && systemDetail && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ fontSize: '0.65rem', color: '#818cf8', fontWeight: 700, letterSpacing: '1px' }}>
+            {activeTab === 'raw' && (
+              <div className="flex flex-col gap-2.5">
+                <div className="text-[10px] text-cyber-blue font-bold tracking-wider">
                   🪐 DETERMINISTIC_ORBITS_REGISTER //
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {systemDetail.planets.map((p: any, pi: number) => {
-                    return (
-                      <div 
-                        key={pi} 
-                        style={{ 
-                          background: 'rgba(255,255,255,0.01)', 
-                          border: '1px solid rgba(255,255,255,0.03)', 
-                          borderRadius: '4px', 
-                          padding: '8px 12px',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          fontSize: '0.75rem'
-                        }}
-                      >
-                        <div>
-                          <strong style={{ color: '#fff' }}>Orbit {p.orbitIndex + 1}: {p.type} Planet</strong>
-                          <span style={{ color: '#64748b', marginLeft: '10px' }}>({p.distance.toFixed(2)} AU)</span>
+                <div className="flex flex-col gap-1.5">
+                  {selectedSystem.planets && selectedSystem.planets.length > 0 ? (
+                    selectedSystem.planets.map((p: any, pi: number) => {
+                      return (
+                        <div 
+                          key={pi} 
+                          className="bg-white/[0.01] border border-white/5 rounded p-2 px-3 flex justify-between items-center text-xs font-mono"
+                        >
+                          <div>
+                            <strong className="text-white font-bold">Orbit {p.orbitIndex + 1}: {p.type} Planet</strong>
+                            <span className="text-cyber-gray ml-2">({p.distance.toFixed(2)} AU)</span>
+                          </div>
+                          <div className="text-slate-300">
+                            Mass: {p.mass.toFixed(1)}M_earth • Moons: {p.moonsCount}
+                          </div>
                         </div>
-                        <div style={{ color: '#cbd5e1' }}>
-                          Mass: {p.mass.toFixed(1)}M_earth • Moons: {p.moonsCount}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {systemDetail.planets.length === 0 && (
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic' }}>
-                      No stable planetary spheres orbiting this sector's core.
+                      );
+                    })
+                  ) : (
+                    <div className="text-xs text-cyber-gray italic">
+                      No stable planetary telemetry returned by sector sensors.
                     </div>
                   )}
                 </div>

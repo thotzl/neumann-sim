@@ -58,6 +58,8 @@ export type System = {
     max_health: number; 
     level: number 
   }>;
+  star?: any;
+  planets?: any[];
 };
 
 export type Ship = {

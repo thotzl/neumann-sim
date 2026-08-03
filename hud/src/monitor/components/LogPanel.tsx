@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useC2Store } from '../store/stateStore';
 import { LogCategory } from '../types';
 
@@ -53,87 +53,51 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      height: '100%', 
-      overflow: 'hidden', 
-      background: '#05060a',
-      fontFamily: 'monospace'
-    }}>
+    <div className="flex flex-col h-full overflow-hidden bg-cyber-panel font-mono">
       {/* FILTER & CONTROL BAR / DRAG HANDLE */}
       {!isMinimized && (
         <div 
           onMouseDown={onStartDrag}
-          style={{ 
-            padding: '8px 12px 8px 16px', 
-            borderBottom: '1px solid #1e293b', 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            flexShrink: 0, 
-            background: 'rgba(15,23,42,0.9)',
-            cursor: 'move' // drag handle cursor
-          }}
+          className="px-3 py-2 pl-4 border-b border-slate-800 flex justify-between items-center shrink-0 bg-slate-900/90 cursor-move"
         >
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          <div className="flex gap-1.5 flex-wrap">
             <button 
               onClick={(e) => { e.stopPropagation(); setFilters(f => ({...f, thought: !f.thought})); }} 
-              style={{ 
-                background: filters.thought ? '#1e293b' : 'transparent', 
-                color: filters.thought ? '#fff' : '#475569', 
-                border: '1px solid #334155', 
-                padding: '3px 8px', 
-                borderRadius: '2px', 
-                fontSize: '0.65rem', 
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
+              className={`px-2 py-0.5 border rounded-sm text-[10px] font-bold cursor-pointer transition-all ${
+                filters.thought 
+                  ? 'bg-slate-800 text-white border-slate-700' 
+                  : 'bg-transparent text-slate-500 border-slate-800'
+              }`}
             >
               THOUGHTS
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); setFilters(f => ({...f, action: !f.action})); }} 
-              style={{ 
-                background: filters.action ? 'rgba(56,189,248,0.2)' : 'transparent', 
-                color: filters.action ? '#38bdf8' : '#475569', 
-                border: `1px solid ${filters.action ? '#38bdf8' : '#334155'}`, 
-                padding: '3px 8px', 
-                borderRadius: '2px', 
-                fontSize: '0.65rem', 
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
+              className={`px-2 py-0.5 border rounded-sm text-[10px] font-bold cursor-pointer transition-all ${
+                filters.action 
+                  ? 'bg-sky-950/40 text-cyber-blue border-cyber-blue/40 shadow-[0_0_5px_rgba(56,189,248,0.15)]' 
+                  : 'bg-transparent text-slate-500 border-slate-800'
+              }`}
             >
               ACTIONS
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); setFilters(f => ({...f, scut: !f.scut})); }} 
-              style={{ 
-                background: filters.scut ? 'rgba(245,158,11,0.2)' : 'transparent', 
-                color: filters.scut ? '#f59e0b' : '#475569', 
-                border: `1px solid ${filters.scut ? '#f59e0b' : '#334155'}`, 
-                padding: '3px 8px', 
-                borderRadius: '2px', 
-                fontSize: '0.65rem', 
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
+              className={`px-2 py-0.5 border rounded-sm text-[10px] font-bold cursor-pointer transition-all ${
+                filters.scut 
+                  ? 'bg-amber-950/40 text-cyber-amber border-cyber-amber/40 shadow-[0_0_5px_rgba(245,158,11,0.15)]' 
+                  : 'bg-transparent text-slate-500 border-slate-800'
+              }`}
             >
               SCUT
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); setFilters(f => ({...f, system: !f.system})); }} 
-              style={{ 
-                background: filters.system ? 'rgba(239,68,68,0.2)' : 'transparent', 
-                color: filters.system ? '#ef4444' : '#475569', 
-                border: `1px solid ${filters.system ? '#ef4444' : '#334155'}`, 
-                padding: '3px 8px', 
-                borderRadius: '2px', 
-                fontSize: '0.65rem', 
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
+              className={`px-2 py-0.5 border rounded-sm text-[10px] font-bold cursor-pointer transition-all ${
+                filters.system 
+                  ? 'bg-rose-950/40 text-cyber-red border-cyber-red/40 shadow-[0_0_5px_rgba(239,68,68,0.15)]' 
+                  : 'bg-transparent text-slate-500 border-slate-800'
+              }`}
             >
               SYSTEM
             </button>
@@ -142,17 +106,7 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
           {/* MINIMIZE FOLD TOGGLE */}
           <button
             onClick={(e) => { e.stopPropagation(); onToggleMinimize(); }}
-            style={{
-              background: 'transparent',
-              border: '1px solid #334155',
-              color: '#ef4444',
-              fontSize: '0.65rem',
-              padding: '3px 8px',
-              borderRadius: '2px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              textTransform: 'uppercase'
-            }}
+            className="bg-transparent border border-slate-800 text-cyber-red text-[10px] px-2 py-0.5 rounded-sm cursor-pointer font-bold uppercase transition-colors hover:bg-rose-950/20"
           >
             🗕 Minimize
           </button>
@@ -164,52 +118,37 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
         <div 
           ref={scrollRef}
           onScroll={onScroll}
-          style={{ 
-            flex: 1, 
-            overflowY: 'auto', 
-            padding: '12px 12px 12px 16px', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '8px',
-            background: '#020306'
-          }}
-          className="custom-scrollbar"
+          className="flex-1 overflow-y-auto p-3 pl-4 flex flex-col gap-2 bg-cyber-dark custom-scrollbar"
         >
           {filteredLogs.map(entry => {
-            let badgeColor = '#64748b';
-            let textColor = '#ffffff'; 
+            let borderClass = 'border-cyber-gray';
+            let textColor = 'text-white'; 
             let isCode = false;
 
             if (entry.type === 'thought') {
-              textColor = '#cbd5e1'; 
+              textColor = 'text-slate-300'; 
             } else if (entry.type === 'action') {
-              badgeColor = '#38bdf8';
-              textColor = '#bae6fd';
+              borderClass = 'border-cyber-blue';
+              textColor = 'text-sky-200';
               isCode = true;
             } else if (entry.type === 'scut') {
-              badgeColor = '#f59e0b';
-              textColor = '#fef3c7';
+              borderClass = 'border-cyber-amber';
+              textColor = 'text-amber-100';
             } else if (entry.type === 'system') {
-              badgeColor = '#ef4444';
-              textColor = '#fee2e2';
+              borderClass = 'border-cyber-red';
+              textColor = 'text-red-100';
             }
 
             return (
               <div 
                 key={entry.id} 
-                style={{ 
-                  borderBottom: '1px solid rgba(255,255,255,0.03)', 
-                  borderLeft: `3px solid ${badgeColor}`, 
-                  padding: '6px 0 8px 10px', 
-                  fontSize: '0.8rem', 
-                  background: 'rgba(255,255,255,0.01)' 
-                }}
+                className={`border-b border-white/5 border-l-2 ${borderClass} py-1.5 pl-2.5 text-xs bg-white/[0.01]`}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontSize: '0.6rem' }}>
-                  <span style={{ fontWeight: 700, color: badgeColor, letterSpacing: '1px', textTransform: 'uppercase' }}>
+                <div className="flex justify-between mb-0.5 text-[10px]">
+                  <span className={`font-bold ${entry.type === 'thought' ? 'text-slate-500' : 'text-current'} tracking-wide uppercase`}>
                     {entry.agentName && entry.agentName !== entry.agentId ? `${entry.agentName.toUpperCase()} (ID: ${entry.agentId})` : (entry.agentName || entry.agentId || 'UNKNOWN').toUpperCase()}
                   </span>
-                  <span style={{ color: '#475569' }}>SD_{entry.tick}</span>
+                  <span className="text-slate-600 font-mono">SD_{entry.tick}</span>
                 </div>
                 {(() => {
                   const multiplierRegex = /^\((\d+x)\)\s*/;
@@ -219,18 +158,7 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
 
                   if (match) {
                     multiplierBadge = (
-                      <span style={{
-                        background: 'rgba(245, 158, 11, 0.15)',
-                        border: '1px solid #f59e0b',
-                        color: '#f59e0b',
-                        borderRadius: '2px',
-                        padding: '1px 4px',
-                        fontSize: '0.65rem',
-                        fontWeight: 'bold',
-                        marginRight: '6px',
-                        textShadow: '0 0 5px rgba(245,158,11,0.5)',
-                        display: 'inline-block'
-                      }}>
+                      <span className="bg-cyber-amber/15 border border-cyber-amber text-cyber-amber rounded-sm px-1 text-[9px] font-bold mr-1.5 inline-block shadow-[0_0_5px_rgba(245,158,11,0.5)]">
                         {match[1].toUpperCase()}
                       </span>
                     );
@@ -238,7 +166,7 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
                   }
 
                   return (
-                    <div className={isCode ? "mono-text" : ""} style={{ whiteSpace: 'pre-wrap', color: textColor, lineHeight: '1.4' }}>
+                    <div className={`${isCode ? "font-mono" : ""} whitespace-pre-wrap ${textColor} leading-relaxed`}>
                       {multiplierBadge}
                       {displayText}
                     </div>
@@ -251,50 +179,22 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
       )}
 
       {/* INPUT BAR (Always visible at the bottom) */}
-      <div style={{ 
-        padding: '10px 12px 10px 16px', 
-        borderTop: isMinimized ? 'none' : '1px solid #1e293b', 
-        background: 'rgba(15,23,42,0.9)', 
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        height: '40px',
-        boxSizing: 'border-box'
-      }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%' }}>
-          <span style={{ color: '#ef4444', fontSize: '1rem', fontWeight: 900 }}>VOG&gt;</span>
+      <div className={`px-3 pl-4 bg-slate-900/90 shrink-0 flex items-center h-10 box-border ${
+        isMinimized ? 'border-t-0' : 'border-t border-slate-800'
+      }`}>
+        <div className="flex gap-2.5 items-center w-full">
+          <span className="text-cyber-red text-base font-black">VOG&gt;</span>
           <input 
             type="text" 
             value={vogMsg} 
             onChange={(e) => setVogMsg(e.target.value)} 
             onKeyDown={(e) => e.key === 'Enter' && handleSendVoG()}
             placeholder="TRANSMIT OVERRIDE DIRECTIVE TO THE SWARM..." 
-            style={{ 
-              flex: 1, 
-              background: 'transparent', 
-              border: 'none', 
-              borderBottom: '2px solid #ef4444', 
-              color: '#fff', 
-              padding: '2px 0', 
-              fontSize: '0.8rem', 
-              outline: 'none',
-              fontFamily: 'monospace'
-            }} 
+            className="flex-1 bg-transparent border-none border-b-2 border-cyber-red text-white py-0.5 text-xs outline-none font-mono"
           />
           <button 
             onClick={handleSendVoG} 
-            style={{ 
-              background: '#ef4444', 
-              color: '#000', 
-              border: 'none', 
-              padding: '4px 12px', 
-              cursor: 'pointer', 
-              fontSize: '0.7rem', 
-              fontWeight: 800, 
-              letterSpacing: '1px',
-              fontFamily: 'monospace',
-              borderRadius: '2px'
-            }}
+            className="bg-cyber-red text-black border-none px-3 py-1 cursor-pointer text-[11px] font-black tracking-wider font-mono rounded-sm transition-colors hover:bg-red-500"
           >
             EXEC
           </button>
@@ -303,16 +203,7 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
           {isMinimized && (
             <button
               onClick={onToggleMinimize}
-              style={{
-                background: 'transparent',
-                border: '1px solid #334155',
-                color: '#38bdf8',
-                fontSize: '0.65rem',
-                padding: '2px 8px',
-                borderRadius: '2px',
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
+              className="bg-transparent border border-slate-800 text-cyber-blue text-[10px] px-2 py-0.5 rounded-sm cursor-pointer font-bold transition-all hover:bg-sky-950/20"
             >
               🗖 Expand
             </button>

@@ -10,7 +10,7 @@ export const ExplorerPanel = () => {
 
   if (!state) {
     return (
-      <div style={{ padding: '20px', color: '#64748b', fontFamily: 'monospace' }}>
+      <div className="p-5 text-cyber-gray font-mono text-xs">
         LOADING TACTICAL SWARM SCHEMAS...
       </div>
     );
@@ -24,55 +24,37 @@ export const ExplorerPanel = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="flex flex-col h-full font-mono">
       {/* TABS HEADER */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #1e293b', background: 'rgba(15,23,42,0.4)', flexShrink: 0 }}>
+      <div className="flex border-b border-slate-800 bg-slate-900/40 shrink-0">
         <button 
           onClick={() => setActiveTab('units')}
-          style={{ 
-            flex: 1, 
-            padding: '12px 0', 
-            background: activeTab === 'units' ? 'rgba(56,189,248,0.08)' : 'transparent', 
-            border: 'none', 
-            borderBottom: activeTab === 'units' ? '2px solid #38bdf8' : '2px solid transparent', 
-            color: activeTab === 'units' ? '#38bdf8' : '#64748b', 
-            fontSize: '0.75rem', 
-            fontWeight: 700, 
-            fontFamily: 'monospace',
-            letterSpacing: '1px', 
-            cursor: 'pointer', 
-            transition: 'all 0.2s' 
-          }}
+          className={`flex-1 py-3 border-none border-b-2 text-xs font-bold font-mono tracking-wider cursor-pointer transition-all ${
+            activeTab === 'units' 
+              ? 'bg-cyber-blue/10 border-cyber-blue text-cyber-blue' 
+              : 'bg-transparent border-transparent text-cyber-gray hover:text-slate-400'
+          }`}
         >
           SWARM_UNITS
         </button>
         <button 
           onClick={() => setActiveTab('sectors')}
-          style={{ 
-            flex: 1, 
-            padding: '12px 0', 
-            background: activeTab === 'sectors' ? 'rgba(56,189,248,0.08)' : 'transparent', 
-            border: 'none', 
-            borderBottom: activeTab === 'sectors' ? '2px solid #38bdf8' : '2px solid transparent', 
-            color: activeTab === 'sectors' ? '#38bdf8' : '#64748b', 
-            fontSize: '0.75rem', 
-            fontWeight: 700, 
-            fontFamily: 'monospace',
-            letterSpacing: '1px', 
-            cursor: 'pointer', 
-            transition: 'all 0.2s' 
-          }}
+          className={`flex-1 py-3 border-none border-b-2 text-xs font-bold font-mono tracking-wider cursor-pointer transition-all ${
+            activeTab === 'sectors' 
+              ? 'bg-cyber-blue/10 border-cyber-blue text-cyber-blue' 
+              : 'bg-transparent border-transparent text-cyber-gray hover:text-slate-400'
+          }`}
         >
           SECTOR_NODES
         </button>
       </div>
 
       {/* SEARCH/LIST CONTENT */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }} className="custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
         
         {/* SWARM UNITS REGISTER */}
         {activeTab === 'units' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div className="flex flex-col gap-1">
             {state.agents.map(a => {
               const isASel = selection?.type === 'agent' && selection.id === a.id;
               const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : 'Unnamed';
@@ -83,16 +65,13 @@ export const ExplorerPanel = () => {
                 
               const isCurrentlySleeping = a.sleep_state && a.sleep_state > 0 && remaining > 0;
               
-              let dotColor = a.status === 'active' ? '#10b981' : '#f59e0b';
-              let dotShadow = a.status === 'active' ? '0 0 10px #10b981' : 'none';
+              let dotClass = a.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-cyber-amber';
               
               if (isCurrentlySleeping) {
                 if (a.sleep_state === 1) {
-                  dotColor = '#f59e0b'; // Standby Yellow
-                  dotShadow = '0 0 10px #f59e0b';
+                  dotClass = 'bg-cyber-amber shadow-[0_0_8px_#f59e0b]'; 
                 } else if (a.sleep_state === 2) {
-                  dotColor = '#a855f7'; // Silent Standby Purple
-                  dotShadow = '0 0 10px #a855f7';
+                  dotClass = 'bg-cyber-purple shadow-[0_0_8px_#a855f7]'; 
                 }
               }
               
@@ -111,26 +90,17 @@ export const ExplorerPanel = () => {
                   onClick={() => { 
                     setSelection({ type: 'agent', id: a.id }); 
                   }}
-                  style={{ 
-                    fontSize: '0.85rem', 
-                    color: isASel ? '#ffffff' : '#cbd5e1', 
-                    cursor: 'pointer', 
-                    padding: '8px 10px', 
-                    background: isASel ? 'rgba(56,189,248,0.12)' : 'transparent', 
-                    borderLeft: `2px solid ${isASel ? '#38bdf8' : 'rgba(255,255,255,0.05)'}`,
-                    borderRadius: '0 4px 4px 0',
-                    display: 'flex', 
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    transition: 'all 0.15s',
-                    fontFamily: 'monospace'
-                  }}
+                  className={`text-[13px] cursor-pointer p-2 px-2.5 rounded-r border-l-2 flex items-center justify-between transition-all font-mono ${
+                    isASel 
+                      ? 'text-white bg-cyber-blue/10 border-cyber-blue' 
+                      : 'text-slate-300 bg-transparent border-white/5 hover:bg-slate-900/40'
+                  }`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: dotColor, boxShadow: dotShadow, flexShrink: 0 }}></span> 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                      <span style={{ fontWeight: isASel ? 700 : 500 }}>{displayName}</span>
-                      <span style={{ fontSize: '0.65rem', color: isASel ? '#38bdf8' : '#64748b' }}>{a.id} • {statusText}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`}></span> 
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className={`truncate ${isASel ? 'font-bold' : 'font-medium'}`}>{displayName}</span>
+                      <span className={`text-[10px] truncate ${isASel ? 'text-cyber-blue' : 'text-cyber-gray'}`}>{a.id} • {statusText}</span>
                     </div>
                   </div>
 
@@ -145,16 +115,9 @@ export const ExplorerPanel = () => {
                         if (sys) handleFocus(sys.x, sys.y);
                       }
                     }}
-                    style={{
-                      background: 'rgba(15,23,42,0.6)',
-                      border: isASel ? '1px solid #38bdf8' : '1px solid #1e293b',
-                      color: isASel ? '#38bdf8' : '#64748b',
-                      fontSize: '0.6rem',
-                      padding: '2px 6px',
-                      borderRadius: '2px',
-                      cursor: 'pointer',
-                      textTransform: 'uppercase'
-                    }}
+                    className={`bg-slate-900/60 border text-[9px] px-1.5 py-0.5 rounded-sm cursor-pointer uppercase font-mono transition-colors hover:bg-slate-800 ${
+                      isASel ? 'border-cyber-blue text-cyber-blue' : 'border-slate-800 text-cyber-gray'
+                    }`}
                   >
                     FOCUS
                   </button>
@@ -166,7 +129,7 @@ export const ExplorerPanel = () => {
 
         {/* TACTICAL SECTOR NODES */}
         {activeTab === 'sectors' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div className="flex flex-col gap-1">
             {state.systems.map(sys => {
               const isSel = selection?.type === 'system' && selection.id === sys.name;
               const sysAgents = state.agents.filter(a => a.location === sys.name && a.status !== 'traveling');
@@ -178,28 +141,21 @@ export const ExplorerPanel = () => {
                   onClick={() => { 
                     setSelection({ type: 'system', id: sys.name }); 
                   }}
-                  style={{ 
-                    padding: '8px 10px', 
-                    background: isSel ? 'rgba(56,189,248,0.1)' : 'transparent', 
-                    borderRadius: '4px', 
-                    cursor: 'pointer', 
-                    borderLeft: `2px solid ${isSel ? '#38bdf8' : 'rgba(255,255,255,0.05)'}`,
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    transition: 'all 0.15s',
-                    fontFamily: 'monospace'
-                  }}
+                  className={`p-2 px-2.5 rounded-r border-l-2 flex justify-between items-center transition-all font-mono ${
+                    isSel 
+                      ? 'text-white bg-cyber-blue/10 border-cyber-blue' 
+                      : 'text-slate-300 bg-transparent border-white/5 hover:bg-slate-900/40'
+                  }`}
                 >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ color: isSel ? '#ffffff' : '#f1f5f9', fontSize: '0.85rem', fontWeight: 600 }}>{sys.display_name || sys.name}</span>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        {sysAgents.length > 0 && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 5px #38bdf8' }} />}
-                        {hasInfra && <span style={{ width: '6px', height: '6px', borderRadius: '1px', background: isBuilding ? '#f59e0b' : '#ef4444', boxShadow: `0 0 5px ${isBuilding ? '#f59e0b' : '#ef4444'}` }} />}
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[13px] ${isSel ? 'font-bold text-white' : 'font-semibold text-slate-200'}`}>{sys.display_name || sys.name}</span>
+                      <div className="flex gap-1">
+                        {sysAgents.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-cyber-blue shadow-[0_0_5px_#38bdf8]" />}
+                        {hasInfra && <span className={`w-1.5 h-1.5 rounded-sm ${isBuilding ? 'bg-cyber-amber shadow-[0_0_5px_#f59e0b]' : 'bg-cyber-red shadow-[0_0_5px_#ef4444]'}`} />}
                       </div>
                     </div>
-                    <span style={{ fontSize: '0.65rem', color: '#64748b' }}>X:{sys.x} • Y:{sys.y}</span>
+                    <span className="text-[10px] text-cyber-gray">X:{sys.x} • Y:{sys.y}</span>
                   </div>
 
                   <button
@@ -208,16 +164,9 @@ export const ExplorerPanel = () => {
                       setSelection({ type: 'system', id: sys.name });
                       handleFocus(sys.x, sys.y);
                     }}
-                    style={{
-                      background: 'rgba(15,23,42,0.6)',
-                      border: isSel ? '1px solid #38bdf8' : '1px solid #1e293b',
-                      color: isSel ? '#38bdf8' : '#64748b',
-                      fontSize: '0.6rem',
-                      padding: '2px 6px',
-                      borderRadius: '2px',
-                      cursor: 'pointer',
-                      textTransform: 'uppercase'
-                    }}
+                    className={`bg-slate-900/60 border text-[9px] px-1.5 py-0.5 rounded-sm cursor-pointer uppercase font-mono transition-colors hover:bg-slate-800 ${
+                      isSel ? 'border-cyber-blue text-cyber-blue' : 'border-slate-800 text-cyber-gray'
+                    }`}
                   >
                     FOCUS
                   </button>

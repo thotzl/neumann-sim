@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import SandboxApp from './sandbox/App.tsx'
 import MonitorApp from './monitor/App.tsx'
+import './index.css'
 import './sandbox/App.css'
 
 function Root() {

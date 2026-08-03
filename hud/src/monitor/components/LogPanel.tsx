@@ -58,7 +58,7 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
       {!isMinimized && (
         <div 
           onMouseDown={onStartDrag}
-          className="px-3 py-2 pl-4 border-b border-slate-800 flex justify-between items-center shrink-0 bg-slate-900/90 cursor-move"
+          className="drag-handle px-3 py-2 pl-4 border-b border-slate-800 flex justify-between items-center shrink-0 bg-slate-900/90 cursor-move"
         >
           <div className="flex gap-1.5 flex-wrap">
             <button 

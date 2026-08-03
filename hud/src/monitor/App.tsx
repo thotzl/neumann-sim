@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Rnd } from 'react-rnd';
 import { useC2Store } from './store/stateStore';
 import { cameraX, cameraY, zoom } from './store/mapSignals';
 import { CanvasController } from '../canvasController';
@@ -29,24 +30,15 @@ export default function MonitorApp() {
   const [sidebarWidth, setSidebarWidth] = useState(360);
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
 
-  // Fully Floating, Draggable & Resizable Bottom Console States (All 4 Sides!)
+  // Fully Floating, Draggable & Resizable Bottom Console States using react-rnd!
   const [consoleX, setConsoleX] = useState(16);
   const [consoleY, setConsoleY] = useState(window.innerHeight - 260);
   const [consoleWidth, setConsoleWidth] = useState(650);
   const [consoleHeight, setConsoleHeight] = useState(220);
   const [isConsoleMinimized, setIsConsoleMinimized] = useState(false);
 
-  // Dragging active references (All 4 Sides)
+  // Dragging active references for the Right Sidebar
   const isResizingSidebar = useRef(false);
-  const isResizingConsoleTop = useRef(false);
-  const isResizingConsoleBottom = useRef(false);
-  const isResizingConsoleLeft = useRef(false);
-  const isResizingConsoleRight = useRef(false);
-  const isDraggingConsolePos = useRef(false);
-
-  // DRAG HANDLE INITIAL POSITION MEMORY
-  const dragStart = useRef({ x: 0, y: 0 });
-  const consoleStartPos = useRef({ x: 0, y: 0 });
 
   // Modal States
   const [showShipyard, setShowShipyard] = useState(false);
@@ -692,94 +684,6 @@ export default function MonitorApp() {
     document.removeEventListener('mouseup', stopResizeSidebar);
   };
 
-  // ========================================================
-  // 📻 HOVERING CONSOLE 4-BORDER DYNAMIC RESIZING & DRAGGING
-  // ========================================================
-  
-  // Drag to move console absolute positions
-  const startDragConsolePos = (e: React.MouseEvent) => {
-    // Ignore dragging if clicking input fields or buttons
-    if (e.button !== 0 || (e.target as HTMLElement).tagName === 'BUTTON' || (e.target as HTMLElement).tagName === 'INPUT') return;
-    e.preventDefault();
-    isDraggingConsolePos.current = true;
-    dragStart.current = { x: e.clientX, y: e.clientY };
-    consoleStartPos.current = { x: consoleX, y: consoleY };
-    document.addEventListener('mousemove', handleDragConsolePos);
-    document.addEventListener('mouseup', stopDragConsolePos);
-  };
-
-  const handleDragConsolePos = (e: MouseEvent) => {
-    if (!isDraggingConsolePos.current) return;
-    const dx = e.clientX - dragStart.current.x;
-    const dy = e.clientY - dragStart.current.y;
-    
-    let newX = consoleStartPos.current.x + dx;
-    const newY = consoleStartPos.current.y + dy;
-
-    // Strict safety boundary: No overlap with right sidebar
-    const maxX = getMaxConsoleX() - consoleWidth;
-    newX = Math.max(16, Math.min(newX, maxX));
-
-    const maxY = window.innerHeight - 50;
-    setConsoleX(newX);
-    setConsoleY(Math.max(40, Math.min(newY, maxY)));
-  };
-
-  const stopDragConsolePos = () => {
-    isDraggingConsolePos.current = false;
-    document.removeEventListener('mousemove', handleDragConsolePos);
-    document.removeEventListener('mouseup', stopDragConsolePos);
-  };
-
-  // 1. Resize TOP Edge (ns-resize)
-  const startResizeTop = (e: React.MouseEvent) => { e.preventDefault(); isResizingConsoleTop.current = true; document.addEventListener('mousemove', handleResizeTop); document.addEventListener('mouseup', stopResizeTop); };
-  const handleResizeTop = (e: MouseEvent) => {
-    if (!isResizingConsoleTop.current) return;
-    const newY = e.clientY;
-    const newHeight = (consoleY + consoleHeight) - newY;
-    if (newHeight > 100 && newY > 40) {
-      setConsoleY(newY);
-      setConsoleHeight(newHeight);
-    }
-  };
-  const stopResizeTop = () => { isResizingConsoleTop.current = false; document.removeEventListener('mousemove', handleResizeTop); document.removeEventListener('mouseup', stopResizeTop); };
-
-  // 2. Resize BOTTOM Edge (ns-resize)
-  const startResizeBottom = (e: React.MouseEvent) => { e.preventDefault(); isResizingConsoleBottom.current = true; document.addEventListener('mousemove', handleResizeBottom); document.addEventListener('mouseup', stopResizeBottom); };
-  const handleResizeBottom = (e: MouseEvent) => {
-    if (!isResizingConsoleBottom.current) return;
-    const newHeight = e.clientY - consoleY;
-    if (newHeight > 100 && (consoleY + newHeight < window.innerHeight - 10)) {
-      setConsoleHeight(newHeight);
-    }
-  };
-  const stopResizeBottom = () => { isResizingConsoleBottom.current = false; document.removeEventListener('mousemove', handleResizeBottom); document.removeEventListener('mouseup', stopResizeBottom); };
-
-  // 3. Resize LEFT Edge (ew-resize)
-  const startResizeLeft = (e: React.MouseEvent) => { e.preventDefault(); isResizingConsoleLeft.current = true; document.addEventListener('mousemove', handleResizeLeft); document.addEventListener('mouseup', stopResizeLeft); };
-  const handleResizeLeft = (e: MouseEvent) => {
-    if (!isResizingConsoleLeft.current) return;
-    const newX = e.clientX;
-    const newWidth = (consoleX + consoleWidth) - newX;
-    if (newWidth > 250 && newX > 10) {
-      setConsoleX(newX);
-      setConsoleWidth(newWidth);
-    }
-  };
-  const stopResizeLeft = () => { isResizingConsoleLeft.current = false; document.removeEventListener('mousemove', handleResizeLeft); document.removeEventListener('mouseup', stopResizeLeft); };
-
-  // 4. Resize RIGHT Edge (ew-resize)
-  const startResizeRight = (e: React.MouseEvent) => { e.preventDefault(); isResizingConsoleRight.current = true; document.addEventListener('mousemove', handleResizeRight); document.addEventListener('mouseup', stopResizeRight); };
-  const handleResizeRight = (e: MouseEvent) => {
-    if (!isResizingConsoleRight.current) return;
-    const newWidth = e.clientX - consoleX;
-    const maxAllowedWidth = getMaxConsoleX() - consoleX;
-    if (newWidth > 250 && newWidth <= maxAllowedWidth) {
-      setConsoleWidth(newWidth);
-    }
-  };
-  const stopResizeRight = () => { isResizingConsoleRight.current = false; document.removeEventListener('mousemove', handleResizeRight); document.removeEventListener('mouseup', stopResizeRight); };
-
   return (
     <div className="relative w-screen h-screen flex flex-col overflow-hidden bg-cyber-dark text-slate-300 font-mono select-none">
       
@@ -869,64 +773,36 @@ export default function MonitorApp() {
         </div>
 
         {/* ======================================================== */}
-        {/* 3. FLOATING COGNITIVE LOG CONSOLE (Hovering / 4-Edge Resizable) */}
+        {/* 3. FLOATING COGNITIVE LOG CONSOLE (Using react-rnd!)    */}
         {/* ======================================================== */}
         {!isConsoleMinimized && (
-          <div 
-            data-augmented-ui="tl-clip tr-clip border inlay"
-            style={{ 
-              position: 'absolute',
-              left: `${consoleX}px`,
-              top: `${consoleY}px`,
-              width: `${consoleWidth}px`,
-              height: `${consoleHeight}px`,
-              zIndex: 5,
-              background: '#05060a',
-              transition: isDraggingConsolePos.current || 
-                          isResizingConsoleTop.current || 
-                          isResizingConsoleBottom.current || 
-                          isResizingConsoleLeft.current || 
-                          isResizingConsoleRight.current 
-                ? 'none' 
-                : 'all 0.12s ease-out'
+          <Rnd
+            size={{ width: consoleWidth, height: consoleHeight }}
+            position={{ x: consoleX, y: consoleY }}
+            onDragStop={(_e, d) => {
+              setConsoleX(d.x);
+              setConsoleY(d.y);
             }}
+            onResizeStop={(_e, _direction, ref, _delta, position) => {
+              // Parse pixel dimensions from ref
+              setConsoleWidth(parseInt(ref.style.width, 10));
+              setConsoleHeight(parseInt(ref.style.height, 10));
+              setConsoleX(position.x);
+              setConsoleY(position.y);
+            }}
+            dragHandleClassName="drag-handle"
+            bounds="window"
+            minWidth={250}
+            minHeight={100}
+            style={{ 
+              zIndex: 5,
+              background: '#05060a'
+            }}
+            data-augmented-ui="tl-clip tr-clip border inlay"
             className="aug-console shadow-[0_10px_40px_rgba(0,0,0,0.8)]"
           >
-            {/* 4-SIDE DRAG RESIZE SENSORS (On the outer wrapper!) */}
-            {/* Top Border Resize Trigger */}
-            <div
-              onMouseDown={startResizeTop}
-              className={`absolute left-0 right-0 top-0 h-1 z-[100] cursor-ns-resize transition-all ${
-                isResizingConsoleTop.current ? 'bg-cyber-red' : 'bg-cyber-red/5 hover:bg-cyber-red/30'
-              }`}
-            />
-
-            {/* Bottom Border Resize Trigger */}
-            <div
-              onMouseDown={startResizeBottom}
-              className={`absolute left-0 right-0 bottom-0 h-1 z-[100] cursor-ns-resize transition-all ${
-                isResizingConsoleBottom.current ? 'bg-cyber-red' : 'bg-cyber-red/5 hover:bg-cyber-red/30'
-              }`}
-            />
-
-            {/* Left Border Resize Trigger */}
-            <div
-              onMouseDown={startResizeLeft}
-              className={`absolute left-0 top-0 bottom-0 w-1 z-[100] cursor-ew-resize transition-all ${
-                isResizingConsoleLeft.current ? 'bg-cyber-red' : 'bg-cyber-red/5 hover:bg-cyber-red/30'
-              }`}
-            />
-
-            {/* Right Border Resize Trigger */}
-            <div
-              onMouseDown={startResizeRight}
-              className={`absolute right-0 top-0 bottom-0 w-1 z-[100] cursor-ew-resize transition-all ${
-                isResizingConsoleRight.current ? 'bg-cyber-red' : 'bg-cyber-red/5 hover:bg-cyber-red/30'
-              }`}
-            />
-
             {/* Core un-flexed inner component container to avoid flex item pseudo conflicts! */}
-            <div className="w-full h-full overflow-hidden rounded-md pt-3 pl-1 pr-1 pb-1">
+            <div className="w-full h-full overflow-hidden rounded-md pt-3 pl-1 pr-1 pb-1 box-border">
               <LogPanel 
                 isMinimized={isConsoleMinimized} 
                 onToggleMinimize={() => {
@@ -934,10 +810,9 @@ export default function MonitorApp() {
                   setConsoleHeight(40);
                   setConsoleY(window.innerHeight - 56);
                 }}
-                onStartDrag={startDragConsolePos}
               />
             </div>
-          </div>
+          </Rnd>
         )}
 
         {/* ======================================================== */}

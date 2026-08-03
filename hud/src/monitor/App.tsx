@@ -427,7 +427,7 @@ export default function MonitorApp() {
       width: '100vw',
       height: '100vh',
       display: 'grid',
-      gridTemplateColumns: isSidebarMaximized ? '1fr 90vw' : '1fr 360px',
+      gridTemplateColumns: '1fr 360px',
       gridTemplateRows: '36px 1fr',
       overflow: 'hidden',
       backgroundColor: '#020408',
@@ -505,7 +505,16 @@ export default function MonitorApp() {
           height: '100%', 
           minHeight: 0,
           borderTop: '1px solid #1e293b',
-          zIndex: isConsoleMaximized ? 10 : 1 // Bring above viewport when maximized
+          zIndex: isConsoleMaximized ? 10 : 1,
+          ...(isConsoleMaximized ? {
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: '360px',
+            height: '90vh',
+            borderTop: '1px solid #ef4444',
+            boxShadow: '0 -10px 40px rgba(0,0,0,0.8)'
+          } : {})
         }}>
           <LogPanel 
             isMaximized={isConsoleMaximized} 
@@ -523,7 +532,18 @@ export default function MonitorApp() {
         flexDirection: 'column',
         height: '100%',
         minHeight: 0,
-        zIndex: isSidebarMaximized ? 20 : 1 // Topmost layer if expanded
+        zIndex: isSidebarMaximized ? 20 : 1,
+        ...(isSidebarMaximized ? {
+          position: 'absolute',
+          top: '36px',
+          right: 0,
+          bottom: 0,
+          width: '90vw',
+          borderLeft: '1px solid #38bdf8',
+          boxShadow: '-10px 0 40px rgba(0,0,0,0.8)'
+        } : {
+          width: '360px'
+        })
       }}>
         {/* Sidebar Nav Tab Buttons */}
         <div style={{

@@ -26,15 +26,26 @@ export default function MonitorApp() {
   const [isConnected, setIsConnected] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'explorer' | 'inspector'>('explorer');
 
-  // Drag-to-Resize Panel Width/Height States (YOGA Huds!)
+  // Drag-to-Resize Right Sidebar Panel Width State
   const [sidebarWidth, setSidebarWidth] = useState(360);
-  const [consoleHeight, setConsoleHeight] = useState(220);
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
+
+  // Fully Floating, Draggable & Resizable Bottom Console States
+  const [consoleX, setConsoleX] = useState(16);
+  const [consoleY, setConsoleY] = useState(window.innerHeight - 260);
+  const [consoleWidth, setConsoleWidth] = useState(650);
+  const [consoleHeight, setConsoleHeight] = useState(220);
   const [isConsoleMinimized, setIsConsoleMinimized] = useState(false);
 
-  // Dragging active references
+  // Active dragging references
   const isResizingSidebar = useRef(false);
-  const isResizingConsole = useRef(false);
+  const isResizingConsoleHeight = useRef(false);
+  const isResizingConsoleWidth = useRef(false);
+  const isDraggingConsolePos = useRef(false);
+
+  // DRAG HANDLE INITIAL POSITION MEMORY
+  const dragStart = useRef({ x: 0, y: 0 });
+  const consoleStartPos = useRef({ x: 0, y: 0 });
 
   // Modal States
   const [showShipyard, setShowShipyard] = useState(false);
@@ -62,6 +73,16 @@ export default function MonitorApp() {
       setSidebarTab('explorer');
     }
   }, [selection]);
+
+  // Keep floating console within screen boundaries on browser resize
+  useEffect(() => {
+    const keepInBounds = () => {
+      setConsoleX(prev => Math.min(prev, window.innerWidth - 150));
+      setConsoleY(prev => Math.min(prev, window.innerHeight - 80));
+    };
+    window.addEventListener('resize', keepInBounds);
+    return () => window.removeEventListener('resize', keepInBounds);
+  }, []);
 
   // Connect to Mock WebSocket on Port 3005
   useEffect(() => {
@@ -457,29 +478,95 @@ export default function MonitorApp() {
     document.removeEventListener('mouseup', stopResizeSidebar);
   };
 
-  const startResizeConsole = (e: React.MouseEvent) => {
+  // ========================================================
+  // 📻 FULLY FLOATING DRAGGABLE & RESIZABLE CONSOLE EVENT HANDLERS
+  // ========================================================
+  
+  // Drag to move console X and Y coordinates
+  const startDragConsolePos = (e: React.MouseEvent) => {
+    // Left click only, ignore dragging if clicking filter buttons or typing
+    if (e.button !== 0 || (e.target as HTMLElement).tagName === 'BUTTON' || (e.target as HTMLElement).tagName === 'INPUT') return;
     e.preventDefault();
-    isResizingConsole.current = true;
-    document.addEventListener('mousemove', handleResizeConsole);
-    document.addEventListener('mouseup', stopResizeConsole);
+    isDraggingConsolePos.current = true;
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    consoleStartPos.current = { x: consoleX, y: consoleY };
+    document.addEventListener('mousemove', handleDragConsolePos);
+    document.addEventListener('mouseup', stopDragConsolePos);
   };
 
-  const handleResizeConsole = (e: MouseEvent) => {
-    if (!isResizingConsole.current) return;
-    const newHeight = window.innerHeight - e.clientY;
-    if (newHeight < 60) {
-      setIsConsoleMinimized(true);
-      setConsoleHeight(40); // Snaps to compact input line
-    } else {
+  const handleDragConsolePos = (e: MouseEvent) => {
+    if (!isDraggingConsolePos.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    
+    const newX = consoleStartPos.current.x + dx;
+    const newY = consoleStartPos.current.y + dy;
+
+    // Clamp coordinates within screen boundaries
+    const maxX = window.innerWidth - (isSidebarMinimized ? 50 : sidebarWidth) - 150;
+    const maxY = window.innerHeight - 50;
+    setConsoleX(Math.max(10, Math.min(newX, maxX)));
+    setConsoleY(Math.max(40, Math.min(newY, maxY)));
+  };
+
+  const stopDragConsolePos = () => {
+    isDraggingConsolePos.current = false;
+    document.removeEventListener('mousemove', handleDragConsolePos);
+    document.removeEventListener('mouseup', stopDragConsolePos);
+  };
+
+  // Resize console height (Top border)
+  const startResizeConsoleHeight = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingConsoleHeight.current = true;
+    document.addEventListener('mousemove', handleResizeConsoleHeight);
+    document.addEventListener('mouseup', stopResizeConsoleHeight);
+  };
+
+  const handleResizeConsoleHeight = (e: MouseEvent) => {
+    if (!isResizingConsoleHeight.current) return;
+    const newY = e.clientY;
+    const newHeight = (consoleY + consoleHeight) - newY;
+    
+    if (newHeight > 60 && newY > 40) {
+      setConsoleY(newY);
+      setConsoleHeight(newHeight);
       setIsConsoleMinimized(false);
-      setConsoleHeight(Math.max(40, Math.min(newHeight, window.innerHeight * 0.95)));
+    } else if (newHeight <= 60) {
+      setIsConsoleMinimized(true);
+      setConsoleHeight(40); // Collapses to compact bar
     }
   };
 
-  const stopResizeConsole = () => {
-    isResizingConsole.current = false;
-    document.removeEventListener('mousemove', handleResizeConsole);
-    document.removeEventListener('mouseup', stopResizeConsole);
+  const stopResizeConsoleHeight = () => {
+    isResizingConsoleHeight.current = false;
+    document.removeEventListener('mousemove', handleResizeConsoleHeight);
+    document.removeEventListener('mouseup', stopResizeConsoleHeight);
+  };
+
+  // Resize console width (Left border)
+  const startResizeConsoleWidth = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingConsoleWidth.current = true;
+    document.addEventListener('mousemove', handleResizeConsoleWidth);
+    document.addEventListener('mouseup', stopResizeConsoleWidth);
+  };
+
+  const handleResizeConsoleWidth = (e: MouseEvent) => {
+    if (!isResizingConsoleWidth.current) return;
+    const newX = e.clientX;
+    const newWidth = (consoleX + consoleWidth) - newX;
+    
+    if (newWidth > 250 && newX > 10) {
+      setConsoleX(newX);
+      setConsoleWidth(newWidth);
+    }
+  };
+
+  const stopResizeConsoleWidth = () => {
+    isResizingConsoleWidth.current = false;
+    document.removeEventListener('mousemove', handleResizeConsoleWidth);
+    document.removeEventListener('mouseup', stopResizeConsoleWidth);
   };
 
   return (
@@ -524,8 +611,10 @@ export default function MonitorApp() {
                 setIsConsoleMinimized(prev => !prev);
                 if (isConsoleMinimized) {
                   setConsoleHeight(220); // Restore to default height
+                  setConsoleY(window.innerHeight - 260); // Reposition
                 } else {
                   setConsoleHeight(40); // Collapse
+                  setConsoleY(window.innerHeight - 56);
                 }
               }}
               style={{
@@ -611,43 +700,73 @@ export default function MonitorApp() {
         </div>
 
         {/* ======================================================== */}
-        {/* 3. TRON BOTTOM CONSOLE (Horizontal Log Tray - Hovering)  */}
+        {/* 3. FLOATING COGNITIVE LOG CONSOLE (Hovering / Draggable) */}
         {/* ======================================================== */}
         <footer style={{ 
           position: 'absolute',
-          bottom: '16px',
-          left: '16px',
-          width: isSidebarMinimized ? 'calc(100vw - 32px)' : `calc(100vw - ${sidebarWidth}px - 32px)`,
-          height: `${consoleHeight}px`,
+          zIndex: 5,
+          overflow: 'hidden',
+          boxSizing: 'border-box',
           background: 'rgba(5, 6, 10, 0.85)',
           backdropFilter: 'blur(10px)',
           border: '1px solid rgba(56, 189, 248, 0.15)',
           borderRadius: '6px',
           boxShadow: '0 10px 40px rgba(0,0,0,0.8), inset 0 0 15px rgba(56,189,248,0.05)',
-          zIndex: 5,
-          overflow: 'hidden',
-          boxSizing: 'border-box',
-          transition: isResizingConsole.current 
-            ? 'none' 
-            : 'height 0.1s ease-out, width 0.15s ease-out, right 0.15s ease-out'
+          
+          // Hovering layouts (Docks cleanly if minimized, floats freely if open!)
+          ...(isConsoleMinimized ? {
+            bottom: '16px',
+            left: '16px',
+            width: isSidebarMinimized ? 'calc(100vw - 32px)' : `calc(100vw - ${sidebarWidth}px - 32px)`,
+            height: '40px',
+            transition: 'height 0.12s ease-out, width 0.15s ease-out, left 0.15s ease-out, top 0.15s ease-out'
+          } : {
+            left: `${consoleX}px`,
+            top: `${consoleY}px`,
+            width: `${consoleWidth}px`,
+            height: `${consoleHeight}px`,
+            transition: isDraggingConsolePos.current || isResizingConsoleHeight.current || isResizingConsoleWidth.current ? 'none' : 'all 0.12s ease-out'
+          })
         }}>
           {/* Top Border Resize Handle Bar */}
-          <div
-            onMouseDown={startResizeConsole}
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: 0,
-              height: '5px',
-              cursor: 'ns-resize',
-              background: isResizingConsole.current ? '#ef4444' : 'rgba(239,68,68,0.05)',
-              zIndex: 100,
-              transition: 'background 0.2s'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.3)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = isResizingConsole.current ? '#ef4444' : 'rgba(239,68,68,0.05)'; }}
-          />
+          {!isConsoleMinimized && (
+            <div
+              onMouseDown={startResizeConsoleHeight}
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                top: 0,
+                height: '5px',
+                cursor: 'ns-resize',
+                background: isResizingConsoleHeight.current ? '#ef4444' : 'rgba(239,68,68,0.05)',
+                zIndex: 100,
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = isResizingConsoleHeight.current ? '#ef4444' : 'rgba(239,68,68,0.05)'; }}
+            />
+          )}
+
+          {/* Left Border Resize Handle Bar */}
+          {!isConsoleMinimized && (
+            <div
+              onMouseDown={startResizeConsoleWidth}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: '5px',
+                cursor: 'ew-resize',
+                background: isResizingConsoleWidth.current ? '#ef4444' : 'rgba(239,68,68,0.05)',
+                zIndex: 100,
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = isResizingConsoleWidth.current ? '#ef4444' : 'rgba(239,68,68,0.05)'; }}
+            />
+          )}
 
           <LogPanel 
             isMinimized={isConsoleMinimized} 
@@ -655,11 +774,14 @@ export default function MonitorApp() {
               if (isConsoleMinimized) {
                 setIsConsoleMinimized(false);
                 setConsoleHeight(220);
+                setConsoleY(window.innerHeight - 260); // Reset
               } else {
                 setIsConsoleMinimized(true);
                 setConsoleHeight(40);
+                setConsoleY(window.innerHeight - 56);
               }
-            }} 
+            }}
+            onStartDrag={startDragConsolePos}
           />
         </footer>
 

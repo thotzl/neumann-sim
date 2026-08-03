@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useC2Store } from '../store/stateStore';
 import { LogCategory } from '../types';
 
 interface LogPanelProps {
   isMinimized: boolean;
   onToggleMinimize: () => void;
+  onStartDrag?: (e: React.MouseEvent) => void;
 }
 
-export const LogPanel = ({ isMinimized, onToggleMinimize }: LogPanelProps) => {
+export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPanelProps) => {
   const logs = useC2Store((store) => store.logs);
   const [filters, setFilters] = useState<Record<LogCategory, boolean>>({
     thought: true,
@@ -60,20 +61,24 @@ export const LogPanel = ({ isMinimized, onToggleMinimize }: LogPanelProps) => {
       background: '#05060a',
       fontFamily: 'monospace'
     }}>
-      {/* FILTER & CONTROL BAR (Hidden if fully minimized to 40px) */}
+      {/* FILTER & CONTROL BAR / DRAG HANDLE */}
       {!isMinimized && (
-        <div style={{ 
-          padding: '8px 12px 8px 16px', 
-          borderBottom: '1px solid #1e293b', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          flexShrink: 0, 
-          background: 'rgba(15,23,42,0.9)' 
-        }}>
+        <div 
+          onMouseDown={onStartDrag}
+          style={{ 
+            padding: '8px 12px 8px 16px', 
+            borderBottom: '1px solid #1e293b', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            flexShrink: 0, 
+            background: 'rgba(15,23,42,0.9)',
+            cursor: 'move' // drag handle cursor
+          }}
+        >
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             <button 
-              onClick={() => setFilters(f => ({...f, thought: !f.thought}))} 
+              onClick={(e) => { e.stopPropagation(); setFilters(f => ({...f, thought: !f.thought})); }} 
               style={{ 
                 background: filters.thought ? '#1e293b' : 'transparent', 
                 color: filters.thought ? '#fff' : '#475569', 
@@ -88,7 +93,7 @@ export const LogPanel = ({ isMinimized, onToggleMinimize }: LogPanelProps) => {
               THOUGHTS
             </button>
             <button 
-              onClick={() => setFilters(f => ({...f, action: !f.action}))} 
+              onClick={(e) => { e.stopPropagation(); setFilters(f => ({...f, action: !f.action})); }} 
               style={{ 
                 background: filters.action ? 'rgba(56,189,248,0.2)' : 'transparent', 
                 color: filters.action ? '#38bdf8' : '#475569', 
@@ -103,7 +108,7 @@ export const LogPanel = ({ isMinimized, onToggleMinimize }: LogPanelProps) => {
               ACTIONS
             </button>
             <button 
-              onClick={() => setFilters(f => ({...f, scut: !f.scut}))} 
+              onClick={(e) => { e.stopPropagation(); setFilters(f => ({...f, scut: !f.scut})); }} 
               style={{ 
                 background: filters.scut ? 'rgba(245,158,11,0.2)' : 'transparent', 
                 color: filters.scut ? '#f59e0b' : '#475569', 
@@ -118,7 +123,7 @@ export const LogPanel = ({ isMinimized, onToggleMinimize }: LogPanelProps) => {
               SCUT
             </button>
             <button 
-              onClick={() => setFilters(f => ({...f, system: !f.system}))} 
+              onClick={(e) => { e.stopPropagation(); setFilters(f => ({...f, system: !f.system})); }} 
               style={{ 
                 background: filters.system ? 'rgba(239,68,68,0.2)' : 'transparent', 
                 color: filters.system ? '#ef4444' : '#475569', 
@@ -136,7 +141,7 @@ export const LogPanel = ({ isMinimized, onToggleMinimize }: LogPanelProps) => {
 
           {/* MINIMIZE FOLD TOGGLE */}
           <button
-            onClick={onToggleMinimize}
+            onClick={(e) => { e.stopPropagation(); onToggleMinimize(); }}
             style={{
               background: 'transparent',
               border: '1px solid #334155',

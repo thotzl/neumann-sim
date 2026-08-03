@@ -516,27 +516,61 @@ export default function MonitorApp() {
           <span style={{ color: isConnected ? '#10b981' : '#ef4444' }}>
             {isConnected ? '● SOCKET_ONLINE' : '● OFFLINE_STANDBY'}
           </span>
-          {isSidebarMinimized && (
-            <button 
+
+          {/* C2 Panel Toggle Triggers */}
+          <div style={{ display: 'flex', gap: '6px', marginLeft: '16px' }}>
+            <button
               onClick={() => {
-                setIsSidebarMinimized(false);
-                setSidebarWidth(360);
+                setIsConsoleMinimized(prev => !prev);
+                if (isConsoleMinimized) {
+                  setConsoleHeight(220); // Restore to default height
+                } else {
+                  setConsoleHeight(40); // Collapse
+                }
               }}
               style={{
-                background: '#0ea5e9',
-                color: '#000',
-                border: 'none',
-                padding: '2px 8px',
-                fontFamily: 'monospace',
+                background: isConsoleMinimized ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.15)',
+                border: '1px solid #ef4444',
+                color: '#ef4444',
+                padding: '3px 8px',
                 fontSize: '0.65rem',
                 fontWeight: 'bold',
+                fontFamily: 'monospace',
                 borderRadius: '2px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.2s'
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.25)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = isConsoleMinimized ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.15)'; }}
             >
-              📁 OPEN SIDEBAR
+              {isConsoleMinimized ? '📻 OPEN_LOGS' : '📻 HIDE_LOGS'}
             </button>
-          )}
+
+            <button
+              onClick={() => {
+                setIsSidebarMinimized(prev => !prev);
+                if (isSidebarMinimized) {
+                  setSidebarWidth(360); // Restore to default width
+                }
+              }}
+              style={{
+                background: isSidebarMinimized ? 'rgba(56,189,248,0.05)' : 'rgba(56,189,248,0.15)',
+                border: '1px solid #38bdf8',
+                color: '#38bdf8',
+                padding: '3px 8px',
+                fontSize: '0.65rem',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                borderRadius: '2px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(56,189,248,0.25)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = isSidebarMinimized ? 'rgba(56,189,248,0.05)' : 'rgba(56,189,248,0.15)'; }}
+            >
+              {isSidebarMinimized ? '📊 OPEN_SIDEBAR' : '📊 HIDE_SIDEBAR'}
+            </button>
+          </div>
         </div>
 
         {/* Tactical Macro-KPI indicators (Top-bar stats) */}

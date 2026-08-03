@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Rnd } from 'react-rnd';
+import { Stage, Layer, Circle, Rect, Line, Text, Group, Shape } from 'react-konva';
 import { useC2Store } from './store/stateStore';
 import { cameraX, cameraY, zoom } from './store/mapSignals';
-import { CanvasController } from '../canvasController';
 
 // Import our newly reconstructed Apollon Panels & Modals
 import { ExplorerPanel } from './components/ExplorerPanel';
@@ -19,7 +19,6 @@ export default function MonitorApp() {
   const appendRealtimeLogs = useC2Store((store) => store.appendRealtimeLogs);
   const initializeLogs = useC2Store((store) => store.initializeLogs);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Connection & UI Layout States
@@ -45,18 +44,43 @@ export default function MonitorApp() {
   const [showSchematic, setShowSchematic] = useState(false);
   const [selectedShipForSchematic, setSelectedShipForSchematic] = useState<any>(null);
 
-  // Sync canvas camera ref to global Preact signals at 60 FPS
-  const cameraRef = useRef({
-    panX: cameraX.value,
-    panY: cameraY.value,
-    zoom: zoom.value,
-  });
+  // Live Canvas Viewport dimensions state
+  const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
 
-  // Track active state via ref to avoid stale closures inside render loops
-  const stateRef = useRef(state);
+  // Camera pan and zoom reactive states subscribed to global Preact signals
+  const [panX, setPanX] = useState(cameraX.value);
+  const [panY, setPanY] = useState(cameraY.value);
+  const [currentZoom, setCurrentZoom] = useState(zoom.value);
+
+  const isDragging = useRef(false);
+  const lastMouse = useRef({ x: 0, y: 0 });
+
+  // Handle window resizing
   useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+    const handleResize = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight
+        });
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial call
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Subscribe to Preact signals to trigger seamless React re-renders on camera pan/zoom
+  useEffect(() => {
+    const unsubX = cameraX.subscribe((val) => setPanX(val));
+    const unsubY = cameraY.subscribe((val) => setPanY(val));
+    const unsubZoom = zoom.subscribe((val) => setCurrentZoom(val));
+    return () => {
+      unsubX();
+      unsubY();
+      unsubZoom();
+    };
+  }, []);
 
   // Handle auto-focusing on selected items when they change
   useEffect(() => {
@@ -136,525 +160,32 @@ export default function MonitorApp() {
     return () => socket.close();
   }, [updateState, initializeLogs, appendRealtimeLogs]);
 
-  // Main Render Loop (Reads from State and global Preact Signals)
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const controller = new CanvasController(canvas);
-    let animationFrameId: number;
-
-    const render = () => {
-      const width = canvas.parentElement?.clientWidth || window.innerWidth;
-      const height = canvas.parentElement?.clientHeight || window.innerHeight;
-
-      // 1. Sync local camera ref with global Preact Signals
-      cameraRef.current.panX = cameraX.value;
-      cameraRef.current.panY = cameraY.value;
-      cameraRef.current.zoom = zoom.value;
-
-      // 2. Clear Viewport
-      controller.clear(width, height);
-
-      // 3. Draw coordinate grid
-      controller.drawGrid(cameraRef.current);
-
-      const activeState = stateRef.current;
-      if (activeState) {
-        const ctx = canvas.getContext('2d')!;
-        const currentZoom = cameraRef.current.zoom;
-
-        // A. Draw Interstellar Transit Lines for traveling ships/agents
-        if (Array.isArray(activeState.agents)) {
-          activeState.agents.forEach((agent: any) => {
-            if (agent.status === 'traveling') {
-              const originX = agent.origin_x ?? 0;
-              const originY = agent.origin_y ?? 0;
-              const targetX = agent.target_x ?? 0;
-              const targetY = agent.target_y ?? 0;
-
-              const originScreen = controller.worldToScreen(originX, originY, cameraRef.current);
-              const targetScreen = controller.worldToScreen(targetX, targetY, cameraRef.current);
-
-              ctx.save();
-              ctx.beginPath();
-              ctx.setLineDash([4, 8]);
-              ctx.strokeStyle = 'rgba(14, 165, 233, 0.45)'; // Cyber-Blue
-              ctx.lineWidth = Math.max(1, 1.2 * currentZoom);
-              ctx.moveTo(originScreen.x, originScreen.y);
-              ctx.lineTo(targetScreen.x, targetScreen.y);
-              ctx.stroke();
-              ctx.restore();
-            }
-          });
-        }
-
-        // B. Draw active Systems and stationary ships/matrix Bobs
-        if (Array.isArray(activeState.systems)) {
-          activeState.systems.forEach((sys: any) => {
-            const screenPos = controller.worldToScreen(sys.x, sys.y, cameraRef.current);
-
-            // Highlight selected system core
-            const isSelected = selection?.type === 'system' && selection.id === sys.name;
-
-            // Draw Core tactical node
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(screenPos.x, screenPos.y, Math.max(3, 8 * currentZoom), 0, Math.PI * 2);
-            ctx.fillStyle = isSelected ? '#ffffff' : '#38bdf8';
-            ctx.shadowColor = '#38bdf8';
-            ctx.shadowBlur = isSelected ? Math.max(10, 25 * currentZoom) : Math.max(5, 15 * currentZoom);
-            ctx.fill();
-
-            // Draw selection reticle
-            if (isSelected) {
-              ctx.beginPath();
-              ctx.arc(screenPos.x, screenPos.y, Math.max(6, 16 * currentZoom), 0, Math.PI * 2);
-              ctx.strokeStyle = '#ffffff';
-              ctx.lineWidth = 1;
-              ctx.setLineDash([3, 5]);
-              ctx.stroke();
-            }
-
-            // Draw System Name above core
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = isSelected ? '#ffffff' : '#94a3b8';
-            ctx.font = `bold ${Math.max(10, 11 * currentZoom)}px monospace`;
-            ctx.textAlign = 'center';
-            ctx.fillText(sys.name, screenPos.x, screenPos.y - Math.max(8, 14 * currentZoom));
-            ctx.restore();
-
-            // Resolve assets inside/orbiting this system
-            const shipsHere = activeState.ships ? activeState.ships.filter((ship: any) => ship.system_name === sys.name) : [];
-            const bobsHere = activeState.agents ? activeState.agents.filter((a: any) => a.location === sys.name && a.status !== 'traveling') : [];
-            const matrixBobs = bobsHere.filter((a: any) => !a.active_ship_id);
-
-            // Compute dynamic outermost system edge (Planetary Orbit Avoidance)
-            let outerRadiusOffset = Math.max(10, 20 * currentZoom);
-            
-            if (Array.isArray(sys.planets) && sys.planets.length > 0) {
-              const maxDistance = sys.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
-              
-              // Standard physical scale multipliers from the optional star metadata
-              const starRadius = sys.star?.radius || 1.0;
-              const baseSize = 3.5 * Math.pow(starRadius, 0.25);
-              const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, currentZoom));
-              
-              // Compute dynamic outermost planet orbit radius in screen pixels
-              const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * 1.0) * currentZoom;
-              outerRadiusOffset = maxOrbitRadius + 10 * currentZoom;
-            }
-
-            // Draw stationary ships & matrix Bobs at the system outer edge
-            if (shipsHere.length > 0 || matrixBobs.length > 0) {
-              const itemWidth = 10 * Math.max(0.5, Math.min(2.0, currentZoom));
-              const totalWidth = (shipsHere.length + matrixBobs.length - 1) * itemWidth;
-              const startX = screenPos.x - totalWidth / 2;
-              const sy = screenPos.y + outerRadiusOffset;
-
-              let itemIdx = 0;
-
-              // Render Ships
-              shipsHere.forEach((ship: any) => {
-                const sx = startX + itemIdx * itemWidth;
-                itemIdx++;
-
-                const isUnderConstruction = ship.pilot_id === 'UNDER_CONSTRUCTION';
-                const pilot = bobsHere.find((a: any) => a.active_ship_id === ship.id);
-
-                const pilotRemaining = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilot.sleep_until_round
-                  ? Math.max(0, pilot.sleep_until_round - activeState.round)
-                  : 0;
-                const pilotSleeping = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilotRemaining > 0;
-
-                let shipColor = '#64748b'; // empty
-                if (isUnderConstruction) {
-                  shipColor = '#f59e0b';
-                } else if (pilot) {
-                  shipColor = '#0ea5e9';
-                  if (pilotSleeping) {
-                    if (pilot.sleep_state === 1) shipColor = '#f59e0b';
-                    else if (pilot.sleep_state === 2) shipColor = '#a855f7';
-                  }
-                }
-
-                ctx.save();
-                ctx.beginPath();
-                const shipHeight = 8 * Math.max(0.4, Math.min(2.0, currentZoom));
-                const shipWidth = 6 * Math.max(0.4, Math.min(2.0, currentZoom));
-                ctx.moveTo(sx, sy - shipHeight / 2);
-                ctx.lineTo(sx - shipWidth / 2, sy + shipHeight / 2);
-                ctx.lineTo(sx + shipWidth / 2, sy + shipHeight / 2);
-                ctx.closePath();
-                ctx.fillStyle = shipColor;
-                ctx.fill();
-                ctx.restore();
-
-                // Draw selection highlight for pilot of stationary ship
-                const isPilotSelected = pilot && selection?.type === 'agent' && selection.id === pilot.id;
-                if (isPilotSelected) {
-                  ctx.save();
-                  ctx.beginPath();
-                  ctx.arc(sx, sy, 8 * Math.max(0.4, Math.min(2.0, currentZoom)), 0, Math.PI * 2);
-                  ctx.strokeStyle = '#ffffff';
-                  ctx.lineWidth = 1;
-                  ctx.setLineDash([2, 3]);
-                  ctx.stroke();
-                  ctx.restore();
-                }
-              });
-
-              // Render Matrix Bobs
-              matrixBobs.forEach((bob: any) => {
-                const sx = startX + itemIdx * itemWidth;
-                itemIdx++;
-
-                const remaining = bob.sleep_state && bob.sleep_state > 0 && bob.sleep_until_round
-                  ? Math.max(0, bob.sleep_until_round - activeState.round)
-                  : 0;
-                const isSleeping = bob.sleep_state && bob.sleep_state > 0 && remaining > 0;
-
-                let bobColor = '#38bdf8';
-                if (isSleeping) {
-                  if (bob.sleep_state === 1) bobColor = '#f59e0b';
-                  else if (bob.sleep_state === 2) bobColor = '#a855f7';
-                }
-
-                ctx.save();
-                ctx.beginPath();
-                const sqSize = 4 * Math.max(0.4, Math.min(2.0, currentZoom));
-                ctx.rect(sx - sqSize / 2, sy - sqSize / 2, sqSize, sqSize);
-                ctx.fillStyle = bobColor;
-                ctx.shadowColor = bobColor;
-                ctx.shadowBlur = isSleeping ? 0 : 4 * currentZoom;
-                ctx.fill();
-                ctx.restore();
-
-                // Draw selection highlight for stationary matrix mind
-                const isBobSelected = selection?.type === 'agent' && selection.id === bob.id;
-                if (isBobSelected) {
-                  ctx.save();
-                  ctx.beginPath();
-                  ctx.arc(sx, sy, 6 * Math.max(0.4, Math.min(2.0, currentZoom)), 0, Math.PI * 2);
-                  ctx.strokeStyle = '#ffffff';
-                  ctx.lineWidth = 1;
-                  ctx.setLineDash([2, 3]);
-                  ctx.stroke();
-                  ctx.restore();
-                }
-              });
-            }
-          });
-        }
-
-        // C. Draw Traveling Ships in Transit (Triangles sliding on flight paths)
-        if (Array.isArray(activeState.agents)) {
-          activeState.agents.forEach((agent: any) => {
-            if (agent.status === 'traveling') {
-              const currentScreen = controller.worldToScreen(agent.current_x, agent.current_y, cameraRef.current);
-              const angle = Math.atan2(agent.target_y - agent.origin_y, agent.target_x - agent.origin_x) + Math.PI / 2;
-
-              const remaining = agent.sleep_state && agent.sleep_state > 0 && agent.sleep_until_round
-                ? Math.max(0, agent.sleep_until_round - activeState.round)
-                : 0;
-              const isSleeping = agent.sleep_state && agent.sleep_state > 0 && remaining > 0;
-
-              let shipColor = '#0ea5e9';
-              if (isSleeping) {
-                if (agent.sleep_state === 1) shipColor = '#f59e0b';
-                else if (agent.sleep_state === 2) shipColor = '#a855f7';
-              }
-
-              ctx.save();
-               ctx.translate(currentScreen.x, currentScreen.y);
-               ctx.rotate(angle);
-               ctx.beginPath();
-
-               const shipHeight = 12 * Math.max(0.4, Math.min(2.0, currentZoom));
-               const shipWidth = 8 * Math.max(0.4, Math.min(2.0, currentZoom));
-
-               ctx.moveTo(0, -shipHeight / 2);
-               ctx.lineTo(-shipWidth / 2, shipHeight / 2);
-               ctx.lineTo(shipWidth / 2, shipHeight / 2);
-               ctx.closePath();
-
-               ctx.fillStyle = shipColor;
-               ctx.shadowColor = shipColor;
-               ctx.shadowBlur = isSleeping ? 0 : 8 * currentZoom;
-               ctx.fill();
-               ctx.restore();
-
-               // Draw selection highlight for traveling agent
-               const isAgentSelected = selection?.type === 'agent' && selection.id === agent.id;
-               if (isAgentSelected) {
-                 ctx.save();
-                 ctx.beginPath();
-                 ctx.arc(currentScreen.x, currentScreen.y, 14 * Math.max(0.4, Math.min(2.0, currentZoom)), 0, Math.PI * 2);
-                 ctx.strokeStyle = '#ffffff';
-                 ctx.lineWidth = 1;
-                 ctx.setLineDash([2, 4]);
-                 ctx.stroke();
-                 ctx.restore();
-               }
-            }
-          });
-        }
-      }
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [selection]); // Re-bind on selection state changes
-
-  // Camera mouse dragging controls (Updating signals directly)
-  const isDragging = useRef(false);
-  const lastMouse = useRef({ x: 0, y: 0 });
-
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // Camera mouse dragging controls
+  const handleStageMouseDown = (e: any) => {
     isDragging.current = true;
-    lastMouse.current = { x: e.clientX, y: e.clientY };
+    lastMouse.current = { x: e.evt.clientX, y: e.evt.clientY };
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!canvasRef.current) return;
-    
-    // 1. If dragging, execute smooth pan and keep grabbing hand cursor
+  const handleStageMouseMove = (e: any) => {
     if (isDragging.current) {
-      const dx = e.clientX - lastMouse.current.x;
-      const dy = e.clientY - lastMouse.current.y;
+      const dx = e.evt.clientX - lastMouse.current.x;
+      const dy = e.evt.clientY - lastMouse.current.y;
       cameraX.value -= dx / zoom.value;
       cameraY.value -= dy / zoom.value;
-      lastMouse.current = { x: e.clientX, y: e.clientY };
-      canvasRef.current.style.cursor = 'grabbing';
-      return;
+      lastMouse.current = { x: e.evt.clientX, y: e.evt.clientY };
     }
-
-    // 2. If hovering (not dragging), check for tactical entity proximity in screen pixels
-    if (!state) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const controller = new CanvasController(canvasRef.current);
-
-    let isHovering = false;
-    const threshold = 15; // 15px hover target radius
-
-    // Check Traveling Agents (Ships in Motion)
-    if (Array.isArray(state.agents)) {
-      for (const agent of state.agents) {
-        if (agent.status === 'traveling') {
-          const screenPos = controller.worldToScreen(agent.current_x, agent.current_y, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
-          const dist = Math.sqrt((mouseX - screenPos.x) ** 2 + (mouseY - screenPos.y) ** 2);
-          if (dist < threshold) {
-            isHovering = true;
-            break;
-          }
-        }
-      }
-    }
-
-    // Check Systems and their stationary assets (Mini triangles & squares)
-    if (!isHovering && Array.isArray(state.systems)) {
-      for (const sys of state.systems) {
-        const screenPos = controller.worldToScreen(sys.x, sys.y, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
-        
-        // System Core
-        const dist = Math.sqrt((mouseX - screenPos.x) ** 2 + (mouseY - screenPos.y) ** 2);
-        if (dist < threshold) {
-          isHovering = true;
-          break;
-        }
-
-        // Stationary units
-        const shipsHere = state.ships ? state.ships.filter((ship: any) => ship.system_name === sys.name) : [];
-        const bobsHere = state.agents ? state.agents.filter((a: any) => a.location === sys.name && a.status !== 'traveling') : [];
-        const matrixBobs = bobsHere.filter((a: any) => !a.active_ship_id);
-
-        if (shipsHere.length > 0 || matrixBobs.length > 0) {
-          let outerRadiusOffset = Math.max(10, 20 * zoom.value);
-          if (Array.isArray(sys.planets) && sys.planets.length > 0) {
-            const maxDistance = sys.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
-            const starRadius = sys.star?.radius || 1.0;
-            const baseSize = 3.5 * Math.pow(starRadius, 0.25);
-            const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom.value));
-            const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * 1.0) * zoom.value;
-            outerRadiusOffset = maxOrbitRadius + 10 * zoom.value;
-          }
-
-          const itemWidth = 10 * Math.max(0.5, Math.min(2.0, zoom.value));
-          const totalWidth = (shipsHere.length + matrixBobs.length - 1) * itemWidth;
-          const startX = screenPos.x - totalWidth / 2;
-          const sy = screenPos.y + outerRadiusOffset;
-
-          let itemIdx = 0;
-          
-          // Check Ships
-          for (const _ of shipsHere) {
-            const sx = startX + itemIdx * itemWidth;
-            itemIdx++;
-            const distShip = Math.sqrt((mouseX - sx) ** 2 + (mouseY - sy) ** 2);
-            if (distShip < 10) {
-              isHovering = true;
-              break;
-            }
-          }
-          if (isHovering) break;
-
-          // Check Matrix Bobs
-          for (const _ of matrixBobs) {
-            const sx = startX + itemIdx * itemWidth;
-            itemIdx++;
-            const distBob = Math.sqrt((mouseX - sx) ** 2 + (mouseY - sy) ** 2);
-            if (distBob < 10) {
-              isHovering = true;
-              break;
-            }
-          }
-          if (isHovering) break;
-        }
-      }
-    }
-
-    // Set cursor style natively (Zero React re-render overhead!)
-    canvasRef.current.style.cursor = isHovering ? 'pointer' : 'grab';
   };
 
-  const handleMouseUp = () => {
+  const handleStageMouseUp = () => {
     isDragging.current = false;
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
-    if (!canvasRef.current) return;
-    e.preventDefault();
-    const rect = canvasRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const controller = new CanvasController(canvasRef.current);
-    
-    // Zoom exactly to mouse position
-    const worldBefore = controller.screenToWorld(mouseX, mouseY, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
+  const handleStageWheel = (e: any) => {
+    e.evt.preventDefault();
     const zoomFactor = 1.1;
-    const newZoom = e.deltaY < 0 ? zoom.value * zoomFactor : zoom.value / zoomFactor;
-    
-    // Clamp zoom
+    const newZoom = e.evt.deltaY < 0 ? zoom.value * zoomFactor : zoom.value / zoomFactor;
     zoom.value = Math.max(0.01, Math.min(newZoom, 5.0));
-    
-    const worldAfter = controller.screenToWorld(mouseX, mouseY, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
-    cameraX.value -= (worldAfter.x - worldBefore.x);
-    cameraY.value -= (worldAfter.y - worldBefore.y);
   };
-
-  // Click on Canvas to Select Systems, Ships, or Agents SSoT
-  const handleCanvasClick = (e: React.MouseEvent) => {
-    if (isDragging.current || !canvasRef.current || !state) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const controller = new CanvasController(canvasRef.current);
-
-    let clickedItem = null;
-    let minDist = 15; // 15px click threshold radius
-
-    // 1. Check Traveling Agents (Ships in Motion)
-    if (Array.isArray(state.agents)) {
-      state.agents.forEach((agent: any) => {
-        if (agent.status === 'traveling') {
-          const screenPos = controller.worldToScreen(agent.current_x, agent.current_y, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
-          const dist = Math.sqrt((mouseX - screenPos.x) ** 2 + (mouseY - screenPos.y) ** 2);
-          if (dist < minDist) {
-            minDist = dist;
-            clickedItem = { type: 'agent', id: agent.id };
-          }
-        }
-      });
-    }
-
-    // 2. Check Systems, stationary ships, and matrix Bobs
-    if (!clickedItem && Array.isArray(state.systems)) {
-      state.systems.forEach((sys: any) => {
-        const screenPos = controller.worldToScreen(sys.x, sys.y, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
-        
-        // A. Check System Core Node click
-        const dist = Math.sqrt((mouseX - screenPos.x) ** 2 + (mouseY - screenPos.y) ** 2);
-        if (dist < minDist) {
-          minDist = dist;
-          clickedItem = { type: 'system', id: sys.name };
-        }
-
-        // B. Check stationary assets (miniature ship triangles & mind squares)
-        const shipsHere = state.ships ? state.ships.filter((ship: any) => ship.system_name === sys.name) : [];
-        const bobsHere = state.agents ? state.agents.filter((a: any) => a.location === sys.name && a.status !== 'traveling') : [];
-        const matrixBobs = bobsHere.filter((a: any) => !a.active_ship_id);
-
-        if (shipsHere.length > 0 || matrixBobs.length > 0) {
-          let outerRadiusOffset = Math.max(10, 20 * zoom.value);
-          if (Array.isArray(sys.planets) && sys.planets.length > 0) {
-            const maxDistance = sys.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
-            const starRadius = sys.star?.radius || 1.0;
-            const baseSize = 3.5 * Math.pow(starRadius, 0.25);
-            const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom.value));
-            const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * 1.0) * zoom.value;
-            outerRadiusOffset = maxOrbitRadius + 10 * zoom.value;
-          }
-
-          const itemWidth = 10 * Math.max(0.5, Math.min(2.0, zoom.value));
-          const totalWidth = (shipsHere.length + matrixBobs.length - 1) * itemWidth;
-          const startX = screenPos.x - totalWidth / 2;
-          const sy = screenPos.y + outerRadiusOffset;
-
-          let itemIdx = 0;
-
-          // Check stationary Ships
-          shipsHere.forEach((ship: any) => {
-            const sx = startX + itemIdx * itemWidth;
-            itemIdx++;
-
-            const distShip = Math.sqrt((mouseX - sx) ** 2 + (mouseY - sy) ** 2);
-            if (distShip < 10) { // tighter threshold for tiny elements
-              const pilot = bobsHere.find((a: any) => a.active_ship_id === ship.id);
-              if (pilot) {
-                clickedItem = { type: 'agent', id: pilot.id };
-              } else {
-                // If uncrewed, select the system core as fallback
-                clickedItem = { type: 'system', id: sys.name };
-              }
-            }
-          });
-
-          // Check stationary Matrix Bobs
-          matrixBobs.forEach((bob: any) => {
-            const sx = startX + itemIdx * itemWidth;
-            itemIdx++;
-
-            const distBob = Math.sqrt((mouseX - sx) ** 2 + (mouseY - sy) ** 2);
-            if (distBob < 10) {
-              clickedItem = { type: 'agent', id: bob.id };
-            }
-          });
-        }
-      });
-    }
-
-    if (clickedItem) {
-      setSelection(clickedItem);
-    }
-  };
-
-  // Handle Canvas Resizing
-  useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current && canvasRef.current) {
-        canvasRef.current.width = containerRef.current.clientWidth;
-        canvasRef.current.height = containerRef.current.clientHeight;
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    handleResize(); // Initial resize
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // ========================================================
   // 📊 DRAG-TO-RESIZE RIGHT SIDEBAR
@@ -683,6 +214,16 @@ export default function MonitorApp() {
     document.removeEventListener('mousemove', handleResizeSidebar);
     document.removeEventListener('mouseup', stopResizeSidebar);
   };
+
+  // Computed scale cancellation multipliers to preserve pixel sizing on scaled Layer
+  const coreRadiusLocal = Math.max(4.5 / currentZoom, 8); // Suns clamp at comfortable 4.5px screen radius
+  const selectionRadiusLocal = Math.max(8.5 / currentZoom, 16);
+  const labelFontSizeLocal = Math.max(4.5 / currentZoom, 5); // Labels clamp at microscopic, high-density 4.5px (Half size)
+  const labelYOffsetLocal = Math.max(15 / currentZoom, 18); // Labels offset 15px BELOW (positive) core center
+
+  // Global scale multiplier for ships/minds (clamped at 50% minimum size on screen)
+  const s = Math.max(0.5, Math.min(2.0, currentZoom)) / currentZoom;
+  const itemWidthLocal = 10 * Math.max(0.5, Math.min(2.0, currentZoom)) / currentZoom;
 
   return (
     <div className="relative w-screen h-screen flex flex-col overflow-hidden bg-cyber-dark text-slate-300 font-mono select-none">
@@ -760,16 +301,384 @@ export default function MonitorApp() {
             isDragging.current ? 'cursor-grabbing' : 'cursor-grab'
           }`}
         >
-          <canvas
-            ref={canvasRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onWheel={handleWheel}
-            onClick={handleCanvasClick}
-            className="block"
-          />
+          <Stage
+            width={dimensions.width}
+            height={dimensions.height}
+            onMouseDown={handleStageMouseDown}
+            onMouseMove={handleStageMouseMove}
+            onMouseUp={handleStageMouseUp}
+            onMouseLeave={handleStageMouseUp}
+            onWheel={handleStageWheel}
+          >
+            {/* BACKGROUND UN-SCALED GRID LAYER */}
+            <Layer>
+              <Shape
+                sceneFunc={(context) => {
+                  const ctx = context._context;
+                  const { width, height } = dimensions;
+
+                  ctx.save();
+                  ctx.clearRect(0, 0, width, height);
+
+                  // Deep space backing
+                  ctx.fillStyle = '#020617';
+                  ctx.fillRect(0, 0, width, height);
+
+                  ctx.lineWidth = 1;
+
+                  // Compute absolute world bounds currently visible on screen
+                  const tlX = (0 - width / 2) / currentZoom + panX;
+                  const tlY = (0 - height / 2) / currentZoom + panY;
+                  const brX = (width - width / 2) / currentZoom + panX;
+                  const brY = (height - height / 2) / currentZoom + panY;
+
+                  // 1. Draw 100-unit sub-grid (fades out at low zoom)
+                  if (currentZoom > 0.15) {
+                    ctx.strokeStyle = `rgba(30, 41, 59, ${Math.min(0.5, (currentZoom - 0.15) * 2)})`;
+                    ctx.beginPath();
+
+                    const startX = Math.floor(tlX / 100) * 100;
+                    const endX = Math.ceil(brX / 100) * 100;
+                    for (let wx = startX; wx <= endX; wx += 100) {
+                      if (wx % 500 === 0) continue; // Skip main grid lines
+                      const sx = (wx - panX) * currentZoom + width / 2;
+                      ctx.moveTo(sx, 0);
+                      ctx.lineTo(sx, height);
+                    }
+
+                    const startY = Math.floor(tlY / 100) * 100;
+                    const endY = Math.ceil(brY / 100) * 100;
+                    for (let wy = startY; wy <= endY; wy += 100) {
+                      if (wy % 500 === 0) continue; // Skip main grid lines
+                      const sy = (wy - panY) * currentZoom + height / 2;
+                      ctx.moveTo(0, sy);
+                      ctx.lineTo(width, sy);
+                    }
+                    ctx.stroke();
+                  }
+
+                  // 2. Draw 500-unit main-grid (always visible, slightly highlighted)
+                  ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+                  ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+                  ctx.font = '10px monospace';
+                  ctx.beginPath();
+
+                  const startX500 = Math.floor(tlX / 500) * 500;
+                  const endX500 = Math.ceil(brX / 500) * 500;
+                  for (let wx = startX500; wx <= endX500; wx += 500) {
+                    const sx = (wx - panX) * currentZoom + width / 2;
+                    ctx.moveTo(sx, 0);
+                    ctx.lineTo(sx, height);
+                    
+                    if (currentZoom > 0.08) {
+                      ctx.fillText(`X:${wx}`, sx + 4, height - 8);
+                    }
+                  }
+
+                  const startY500 = Math.floor(tlY / 500) * 500;
+                  const endY500 = Math.ceil(brY / 500) * 500;
+                  for (let wy = startY500; wy <= endY500; wy += 500) {
+                    const sy = (wy - panY) * currentZoom + height / 2;
+                    ctx.moveTo(0, sy);
+                    ctx.lineTo(width, sy);
+
+                    if (currentZoom > 0.08) {
+                      ctx.fillText(`Y:${wy}`, 8, sy - 4);
+                    }
+                  }
+                  ctx.stroke();
+
+                  // 3. Draw Universe Origin Axis (0, 0 Red Crosshair)
+                  ctx.strokeStyle = 'rgba(239, 68, 68, 0.25)';
+                  ctx.lineWidth = 1.5;
+                  ctx.beginPath();
+                  const originX = (0 - panX) * currentZoom + width / 2;
+                  const originY = (0 - panY) * currentZoom + height / 2;
+                  ctx.moveTo(originX, 0); ctx.lineTo(originX, height);
+                  ctx.moveTo(0, originY); ctx.lineTo(width, originY);
+                  ctx.stroke();
+
+                  ctx.restore();
+                }}
+              />
+            </Layer>
+
+            {/* HARDWARE-ACCELERATED LAYER FOR SCALED SYSTEM ELEMENTS */}
+            <Layer
+              x={dimensions.width / 2 - panX * currentZoom}
+              y={dimensions.height / 2 - panY * currentZoom}
+              scaleX={currentZoom}
+              scaleY={currentZoom}
+            >
+              {state && (
+                <>
+                  {/* A. Draw Interstellar Transit Lines */}
+                  {Array.isArray(state.agents) &&
+                    state.agents.map((agent: any) => {
+                      if (agent.status === 'traveling') {
+                        const originX = agent.origin_x ?? 0;
+                        const originY = agent.origin_y ?? 0;
+                        const targetX = agent.target_x ?? 0;
+                        const targetY = agent.target_y ?? 0;
+                        return (
+                          <Line
+                            key={`transit-${agent.id}`}
+                            points={[originX, originY, targetX, targetY]}
+                            stroke="rgba(14, 165, 233, 0.45)"
+                            strokeWidth={1.2 / currentZoom} // Normalize stroke width on scale
+                            dash={[4 / currentZoom, 8 / currentZoom]}
+                          />
+                        );
+                      }
+                      return null;
+                    })}
+
+                  {/* B. Draw active Systems and stationary units */}
+                  {Array.isArray(state.systems) &&
+                    state.systems.map((sys: any) => {
+                      const isSelected = selection?.type === 'system' && selection.id === sys.name;
+
+                      // Resolve assets inside/orbiting this system
+                      const shipsHere = state.ships ? state.ships.filter((ship: any) => ship.system_name === sys.name) : [];
+                      const bobsHere = state.agents ? state.agents.filter((a: any) => a.location === sys.name && a.status !== 'traveling') : [];
+                      const matrixBobs = bobsHere.filter((a: any) => !a.active_ship_id);
+
+                      // Compute dynamic outermost system edge (Planetary Orbit Avoidance)
+                      // Guaranteed minimum of 30px screen-offset to sit beautifully BELOW the system label!
+                      let outerRadiusOffset = Math.max(25, 30 * currentZoom) / currentZoom;
+                      if (Array.isArray(sys.planets) && sys.planets.length > 0) {
+                        const maxDistance = sys.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
+                        const starRadius = sys.star?.radius || 1.0;
+                        const baseSize = 3.5 * Math.pow(starRadius, 0.25);
+                        const coreRadius = baseSize * s; // Local core radius canceling out zoom
+                        const maxOrbitRadius = coreRadius + 8 + maxDistance * 14;
+                        outerRadiusOffset = Math.max(maxOrbitRadius + 10, Math.max(25, 30 * currentZoom) / currentZoom);
+                      }
+
+                      const startX = -(shipsHere.length + matrixBobs.length - 1) * itemWidthLocal / 2;
+                      const sy = outerRadiusOffset;
+
+                      let itemIdx = 0;
+
+                      return (
+                        <Group key={`sys-${sys.name}`} x={sys.x} y={sys.y}>
+                          {/* Selection Reticle Ring (Sizing canceled out) */}
+                          {isSelected && (
+                            <Circle
+                              radius={selectionRadiusLocal}
+                              stroke="#ffffff"
+                              strokeWidth={1 / currentZoom}
+                              dash={[3 / currentZoom, 5 / currentZoom]}
+                            />
+                          )}
+
+                          {/* Core Circle (Sizing canceled out - slightly larger!) */}
+                          <Circle
+                            radius={coreRadiusLocal}
+                            fill={isSelected ? '#ffffff' : '#38bdf8'}
+                            shadowColor="#38bdf8"
+                            shadowBlur={isSelected ? 15 : 8}
+                            onClick={() => setSelection({ type: 'system', id: sys.name })}
+                            onMouseEnter={(e) => {
+                              const stage = e.target.getStage();
+                              if (stage) stage.container().style.cursor = 'pointer';
+                            }}
+                            onMouseLeave={(e) => {
+                              const stage = e.target.getStage();
+                              if (stage) stage.container().style.cursor = 'grab';
+                            }}
+                          />
+
+                          {/* Name Text Label (Sizing and offset canceled out - positioned perfectly BELOW) */}
+                          <Text
+                            text={sys.name}
+                            fill={isSelected ? '#ffffff' : '#94a3b8'}
+                            fontSize={labelFontSizeLocal}
+                            fontFamily="monospace"
+                            fontStyle="bold"
+                            align="center"
+                            width={200 / currentZoom}
+                            offsetX={100 / currentZoom} // Perfectly center the text horizontally around x=0
+                            y={labelYOffsetLocal}
+                          />
+
+                          {/* Render Stationary Assets Group */}
+                          {(shipsHere.length > 0 || matrixBobs.length > 0) && (
+                            <Group>
+                              {/* Ships (Triangles) (Sizing canceled out - slightly larger) */}
+                              {shipsHere.map((ship: any) => {
+                                const sx = startX + itemIdx * itemWidthLocal;
+                                itemIdx++;
+
+                                const isUnderConstruction = ship.pilot_id === 'UNDER_CONSTRUCTION';
+                                const pilot = bobsHere.find((a: any) => a.active_ship_id === ship.id);
+
+                                const pilotRemaining = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilot.sleep_until_round
+                                  ? Math.max(0, pilot.sleep_until_round - state.round)
+                                  : 0;
+                                const pilotSleeping = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilotRemaining > 0;
+
+                                let shipColor = '#64748b';
+                                if (isUnderConstruction) {
+                                  shipColor = '#f59e0b';
+                                } else if (pilot) {
+                                  shipColor = '#0ea5e9';
+                                  if (pilotSleeping) {
+                                    if (pilot.sleep_state === 1) shipColor = '#f59e0b';
+                                    else if (pilot.sleep_state === 2) shipColor = '#a855f7';
+                                  }
+                                }
+
+                                const isPilotSelected = pilot && selection?.type === 'agent' && selection.id === pilot.id;
+
+                                return (
+                                  <Group key={`ship-${ship.id}`} x={sx} y={sy}>
+                                    <Line
+                                      points={[0, -4 * s, -3 * s, 4 * s, 3 * s, 4 * s]}
+                                      closed={true}
+                                      fill={shipColor}
+                                      onClick={() => {
+                                        if (pilot) setSelection({ type: 'agent', id: pilot.id });
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        if (pilot) {
+                                          const stage = e.target.getStage();
+                                          if (stage) stage.container().style.cursor = 'pointer';
+                                        }
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        const stage = e.target.getStage();
+                                        if (stage) stage.container().style.cursor = 'grab';
+                                      }}
+                                    />
+                                    {isPilotSelected && (
+                                      <Circle
+                                        radius={8 * s}
+                                        stroke="#ffffff"
+                                        strokeWidth={0.8 / currentZoom}
+                                        dash={[2 / currentZoom, 2 / currentZoom]}
+                                      />
+                                    )}
+                                  </Group>
+                                );
+                              })}
+
+                              {/* Matrix Bobs (Squares) (Sizing canceled out) */}
+                              {matrixBobs.map((bob: any) => {
+                                const sx = startX + itemIdx * itemWidthLocal;
+                                itemIdx++;
+
+                                const remaining = bob.sleep_state && bob.sleep_state > 0 && bob.sleep_until_round
+                                  ? Math.max(0, bob.sleep_until_round - state.round)
+                                  : 0;
+                                const isSleeping = bob.sleep_state && bob.sleep_state > 0 && remaining > 0;
+
+                                let bobColor = '#38bdf8';
+                                if (isSleeping) {
+                                  if (bob.sleep_state === 1) bobColor = '#f59e0b';
+                                  else if (bob.sleep_state === 2) bobColor = '#a855f7';
+                                }
+
+                                const isBobSelected = selection?.type === 'agent' && selection.id === bob.id;
+
+                                return (
+                                  <Group key={`bob-${bob.id}`} x={sx} y={sy}>
+                                    <Rect
+                                      x={-2 * s}
+                                      y={-2 * s}
+                                      width={4 * s}
+                                      height={4 * s}
+                                      fill={bobColor}
+                                      onClick={() => setSelection({ type: 'agent', id: bob.id })}
+                                      onMouseEnter={(e) => {
+                                        const stage = e.target.getStage();
+                                        if (stage) stage.container().style.cursor = 'pointer';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        const stage = e.target.getStage();
+                                        if (stage) stage.container().style.cursor = 'grab';
+                                      }}
+                                    />
+                                    {isBobSelected && (
+                                      <Circle
+                                        radius={6 * s}
+                                        stroke="#ffffff"
+                                        strokeWidth={0.8 / currentZoom}
+                                        dash={[2 / currentZoom, 2 / currentZoom]}
+                                      />
+                                    )}
+                                  </Group>
+                                );
+                              })}
+                            </Group>
+                          )}
+                        </Group>
+                      );
+                    })}
+
+                  {/* C. Draw Traveling Ships in Transit (Scaling canceled out) */}
+                  {Array.isArray(state.agents) &&
+                    state.agents.map((agent: any) => {
+                      if (agent.status === 'traveling') {
+                        const isAgentSelected = selection?.type === 'agent' && selection.id === agent.id;
+                        const angleRad = Math.atan2(agent.target_y - agent.origin_y, agent.target_x - agent.origin_x);
+                        const angleDeg = (angleRad * 180) / Math.PI + 90;
+
+                        const remaining = agent.sleep_state && agent.sleep_state > 0 && agent.sleep_until_round
+                          ? Math.max(0, agent.sleep_until_round - state.round)
+                          : 0;
+                        const isSleeping = agent.sleep_state && agent.sleep_state > 0 && remaining > 0;
+
+                        let shipColor = '#0ea5e9';
+                        if (isSleeping) {
+                          if (agent.sleep_state === 1) shipColor = '#f59e0b';
+                          else if (agent.sleep_state === 2) shipColor = '#a855f7';
+                        }
+
+                        // Local travelers scaled using standard s multiplier
+                        const shipHeightTravel = 12 * s;
+                        const shipWidthTravel = 8 * s;
+
+                        return (
+                          <Group 
+                            key={`traveling-agent-${agent.id}`} 
+                            x={agent.current_x} 
+                            y={agent.current_y}
+                          >
+                            <Line
+                              points={[0, -shipHeightTravel / 2, -shipWidthTravel / 2, shipHeightTravel / 2, shipWidthTravel / 2, shipHeightTravel / 2]}
+                              closed={true}
+                              fill={shipColor}
+                              rotation={angleDeg}
+                              shadowColor={shipColor}
+                              shadowBlur={isSleeping ? 0 : 8}
+                              onClick={() => setSelection({ type: 'agent', id: agent.id })}
+                              onMouseEnter={(e) => {
+                                const stage = e.target.getStage();
+                                if (stage) stage.container().style.cursor = 'pointer';
+                              }}
+                              onMouseLeave={(e) => {
+                                const stage = e.target.getStage();
+                                if (stage) stage.container().style.cursor = 'grab';
+                              }}
+                            />
+                            {isAgentSelected && (
+                              <Circle
+                                radius={14 * s}
+                                stroke="#ffffff"
+                                strokeWidth={0.8 / currentZoom}
+                                dash={[2 / currentZoom, 2 / currentZoom]}
+                              />
+                            )}
+                          </Group>
+                        );
+                      }
+                      return null;
+                    })}
+                </>
+              )}
+            </Layer>
+          </Stage>
         </div>
 
         {/* ======================================================== */}

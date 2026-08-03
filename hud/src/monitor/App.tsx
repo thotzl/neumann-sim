@@ -434,29 +434,112 @@ export default function MonitorApp() {
     cameraY.value -= (worldAfter.y - worldBefore.y);
   };
 
-  // Click on Canvas to Select System SSoT
+  // Click on Canvas to Select Systems, Ships, or Agents SSoT
   const handleCanvasClick = (e: React.MouseEvent) => {
     if (isDragging.current || !canvasRef.current || !state) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     const controller = new CanvasController(canvasRef.current);
-    const clickWorld = controller.screenToWorld(mouseX, mouseY, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
 
-    // Find clicked system core
-    let clickedSys = null;
-    let minDist = Infinity;
-    
-    state.systems.forEach((sys: any) => {
-      const dist = Math.sqrt((sys.x - clickWorld.x) ** 2 + (sys.y - clickWorld.y) ** 2);
-      if (dist < minDist && dist <= 30) { // selection threshold limit
-        minDist = dist;
-        clickedSys = sys;
-      }
-    });
+    let clickedItem = null;
+    let minDist = 15; // 15px click threshold radius
 
-    if (clickedSys) {
-      setSelection({ type: 'system', id: (clickedSys as any).name });
+    // 1. Check Traveling Agents (Ships in Motion)
+    if (Array.isArray(state.agents)) {
+      state.agents.forEach((agent: any) => {
+        if (agent.status === 'traveling') {
+          const screenPos = controller.worldToScreen(agent.current_x, agent.current_y, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
+          const dist = Math.sqrt((mouseX - screenPos.x) ** 2 + (mouseY - screenPos.y) ** 2);
+          if (dist < minDist) {
+            minDist = dist;
+            clickedItem = { type: 'agent', id: agent.id };
+          }
+        }
+      });
+    }
+
+    // 2. Check Systems, stationary ships, and matrix Bobs
+    if (!clickedItem && Array.isArray(state.systems)) {
+      // Get visible sectors to resolve outermost orbits on-the-fly
+      const topLeft = controller.screenToWorld(0, 0, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
+      const bottomRight = controller.screenToWorld(canvasRef.current.width, canvasRef.current.height, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
+      const visibleSectors = UniverseGenerator.getSectorsInArea(
+        topLeft.x,
+        bottomRight.x,
+        topLeft.y,
+        bottomRight.y,
+        'BobOS_V12',
+        0.45
+      );
+
+      state.systems.forEach((sys: any) => {
+        const screenPos = controller.worldToScreen(sys.x, sys.y, { panX: cameraX.value, panY: cameraY.value, zoom: zoom.value });
+        
+        // A. Check System Core Node click
+        const dist = Math.sqrt((mouseX - screenPos.x) ** 2 + (mouseY - screenPos.y) ** 2);
+        if (dist < minDist) {
+          minDist = dist;
+          clickedItem = { type: 'system', id: sys.name };
+        }
+
+        // B. Check stationary assets (miniature ship triangles & mind squares)
+        const shipsHere = state.ships ? state.ships.filter((ship: any) => ship.system_name === sys.name) : [];
+        const bobsHere = state.agents ? state.agents.filter((a: any) => a.location === sys.name && a.status !== 'traveling') : [];
+        const matrixBobs = bobsHere.filter((a: any) => !a.active_ship_id);
+
+        if (shipsHere.length > 0 || matrixBobs.length > 0) {
+          let outerRadiusOffset = Math.max(10, 20 * zoom.value);
+          const matchingSector = visibleSectors.find((s: any) => s.id === sys.name);
+          if (matchingSector && matchingSector.system && matchingSector.system.planets.length > 0) {
+            const maxDistance = matchingSector.system.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
+            const props = getStellarProperties(matchingSector.mass);
+            const baseSize = 3.5 * Math.pow(props.radius, 0.25);
+            const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom.value));
+            const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * 1.0) * zoom.value;
+            outerRadiusOffset = maxOrbitRadius + 10 * zoom.value;
+          }
+
+          const itemWidth = 10 * Math.max(0.5, Math.min(2.0, zoom.value));
+          const totalWidth = (shipsHere.length + matrixBobs.length - 1) * itemWidth;
+          const startX = screenPos.x - totalWidth / 2;
+          const sy = screenPos.y + outerRadiusOffset;
+
+          let itemIdx = 0;
+
+          // Check stationary Ships
+          shipsHere.forEach((ship: any) => {
+            const sx = startX + itemIdx * itemWidth;
+            itemIdx++;
+
+            const distShip = Math.sqrt((mouseX - sx) ** 2 + (mouseY - sy) ** 2);
+            if (distShip < 10) { // tighter threshold for tiny elements
+              const pilot = bobsHere.find((a: any) => a.active_ship_id === ship.id);
+              if (pilot) {
+                clickedItem = { type: 'agent', id: pilot.id };
+              } else {
+                // If uncrewed, select the system core as fallback
+                clickedItem = { type: 'system', id: sys.name };
+              }
+            }
+          });
+
+          // Check stationary Matrix Bobs
+          matrixBobs.forEach((bob: any) => {
+            const sx = startX + itemIdx * itemWidth;
+            itemIdx++;
+
+            const distBob = Math.sqrt((mouseX - sx) ** 2 + (mouseY - sy) ** 2);
+            if (distBob < 10) {
+              clickedItem = { type: 'agent', id: bob.id };
+            }
+          });
+        }
+      });
+    }
+
+    if (clickedItem) {
+      setSelection(clickedItem);
     }
   };
 

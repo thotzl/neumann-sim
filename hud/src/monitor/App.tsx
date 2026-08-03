@@ -25,8 +25,16 @@ export default function MonitorApp() {
   // Connection & UI Layout States
   const [isConnected, setIsConnected] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'explorer' | 'inspector'>('explorer');
-  const [isSidebarMaximized, setIsSidebarMaximized] = useState(false);
-  const [isConsoleMaximized, setIsConsoleMaximized] = useState(false);
+
+  // Drag-to-Resize Panel Width/Height States (YOGA Huds!)
+  const [sidebarWidth, setSidebarWidth] = useState(360);
+  const [consoleHeight, setConsoleHeight] = useState(220);
+  const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
+  const [isConsoleMinimized, setIsConsoleMinimized] = useState(false);
+
+  // Dragging active references
+  const isResizingSidebar = useRef(false);
+  const isResizingConsole = useRef(false);
 
   // Modal States
   const [showShipyard, setShowShipyard] = useState(false);
@@ -421,14 +429,66 @@ export default function MonitorApp() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // ========================================================
+  // 🛰️ DRAG-TO-RESIZE PANEL EVENT HANDLERS
+  // ========================================================
+  const startResizeSidebar = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingSidebar.current = true;
+    document.addEventListener('mousemove', handleResizeSidebar);
+    document.addEventListener('mouseup', stopResizeSidebar);
+  };
+
+  const handleResizeSidebar = (e: MouseEvent) => {
+    if (!isResizingSidebar.current) return;
+    const newWidth = window.innerWidth - e.clientX;
+    if (newWidth < 80) {
+      setIsSidebarMinimized(true);
+      setSidebarWidth(0);
+    } else {
+      setIsSidebarMinimized(false);
+      setSidebarWidth(Math.max(160, Math.min(newWidth, window.innerWidth * 0.95)));
+    }
+  };
+
+  const stopResizeSidebar = () => {
+    isResizingSidebar.current = false;
+    document.removeEventListener('mousemove', handleResizeSidebar);
+    document.removeEventListener('mouseup', stopResizeSidebar);
+  };
+
+  const startResizeConsole = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingConsole.current = true;
+    document.addEventListener('mousemove', handleResizeConsole);
+    document.addEventListener('mouseup', stopResizeConsole);
+  };
+
+  const handleResizeConsole = (e: MouseEvent) => {
+    if (!isResizingConsole.current) return;
+    const newHeight = window.innerHeight - e.clientY;
+    if (newHeight < 60) {
+      setIsConsoleMinimized(true);
+      setConsoleHeight(40); // Snaps to compact input line
+    } else {
+      setIsConsoleMinimized(false);
+      setConsoleHeight(Math.max(40, Math.min(newHeight, window.innerHeight * 0.95)));
+    }
+  };
+
+  const stopResizeConsole = () => {
+    isResizingConsole.current = false;
+    document.removeEventListener('mousemove', handleResizeConsole);
+    document.removeEventListener('mouseup', stopResizeConsole);
+  };
+
   return (
     <div style={{
       position: 'relative',
       width: '100vw',
       height: '100vh',
-      display: 'grid',
-      gridTemplateColumns: '1fr 360px',
-      gridTemplateRows: '36px 1fr',
+      display: 'flex',
+      flexDirection: 'column',
       overflow: 'hidden',
       backgroundColor: '#020408',
       color: '#cbd5e1',
@@ -439,7 +499,6 @@ export default function MonitorApp() {
       {/* 1. TOP MINIMALIST HEADER BAR                             */}
       {/* ======================================================== */}
       <header style={{
-        gridColumn: 'span 2',
         background: '#04060b',
         borderBottom: '1px solid #1e293b',
         display: 'flex',
@@ -447,7 +506,9 @@ export default function MonitorApp() {
         alignItems: 'center',
         padding: '0 12px',
         fontSize: '0.75rem',
-        zIndex: 5
+        height: '36px',
+        flexShrink: 0,
+        zIndex: 10
       }}>
         {/* Left menu navigation */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -455,6 +516,27 @@ export default function MonitorApp() {
           <span style={{ color: isConnected ? '#10b981' : '#ef4444' }}>
             {isConnected ? '● SOCKET_ONLINE' : '● OFFLINE_STANDBY'}
           </span>
+          {isSidebarMinimized && (
+            <button 
+              onClick={() => {
+                setIsSidebarMinimized(false);
+                setSidebarWidth(360);
+              }}
+              style={{
+                background: '#0ea5e9',
+                color: '#000',
+                border: 'none',
+                padding: '2px 8px',
+                fontFamily: 'monospace',
+                fontSize: '0.65rem',
+                fontWeight: 'bold',
+                borderRadius: '2px',
+                cursor: 'pointer'
+              }}
+            >
+              📁 OPEN SIDEBAR
+            </button>
+          )}
         </div>
 
         {/* Tactical Macro-KPI indicators (Top-bar stats) */}
@@ -466,24 +548,20 @@ export default function MonitorApp() {
       </header>
 
       {/* ======================================================== */}
-      {/* 2. MAIN CENTER ENGINE VIEWPORT (Canvas)                  */}
+      {/* MAIN CONTAINER WINDOW (Floating layers)                  */}
       {/* ======================================================== */}
-      <main style={{
-        position: 'relative',
-        display: 'grid',
-        gridTemplateRows: isConsoleMaximized ? '1fr 90vh' : '1fr 220px',
-        height: '100%',
-        minHeight: 0,
-        borderRight: '1px solid #1e293b'
-      }}>
-        {/* Full-screen Canvas block */}
+      <div style={{ position: 'relative', flex: 1, display: 'flex', minHeight: 0 }}>
+        
+        {/* ======================================================== */}
+        {/* 2. CENTER ENGINE VIEWPORT (Always full screen Canvas)    */}
+        {/* ======================================================== */}
         <div 
           ref={containerRef} 
           style={{ 
-            width: '100%', 
-            height: '100%', 
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
             cursor: isDragging.current ? 'grabbing' : 'grab',
-            minHeight: 0
+            zIndex: 1
           }}
         >
           <canvas
@@ -499,136 +577,184 @@ export default function MonitorApp() {
         </div>
 
         {/* ======================================================== */}
-        {/* 3. TRON BOTTOM CONSOLE (Horizontal Log Tray)             */}
+        {/* 3. TRON BOTTOM CONSOLE (Horizontal Log Tray - Hovering)  */}
         {/* ======================================================== */}
         <footer style={{ 
-          height: '100%', 
-          minHeight: 0,
-          borderTop: '1px solid #1e293b',
-          zIndex: isConsoleMaximized ? 10 : 1,
-          ...(isConsoleMaximized ? {
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: '360px',
-            height: '90vh',
-            borderTop: '1px solid #ef4444',
-            boxShadow: '0 -10px 40px rgba(0,0,0,0.8)'
-          } : {})
+          position: 'absolute',
+          bottom: '16px',
+          left: '16px',
+          width: isSidebarMinimized ? 'calc(100vw - 32px)' : `calc(100vw - ${sidebarWidth}px - 32px)`,
+          height: `${consoleHeight}px`,
+          background: 'rgba(5, 6, 10, 0.85)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(56, 189, 248, 0.15)',
+          borderRadius: '6px',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.8), inset 0 0 15px rgba(56,189,248,0.05)',
+          zIndex: 5,
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+          transition: isResizingConsole.current 
+            ? 'none' 
+            : 'height 0.1s ease-out, width 0.15s ease-out, right 0.15s ease-out'
         }}>
+          {/* Top Border Resize Handle Bar */}
+          <div
+            onMouseDown={startResizeConsole}
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              height: '5px',
+              cursor: 'ns-resize',
+              background: isResizingConsole.current ? '#ef4444' : 'rgba(239,68,68,0.05)',
+              zIndex: 100,
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.3)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = isResizingConsole.current ? '#ef4444' : 'rgba(239,68,68,0.05)'; }}
+          />
+
           <LogPanel 
-            isMaximized={isConsoleMaximized} 
-            onToggleMaximize={() => setIsConsoleMaximized(prev => !prev)} 
+            isMinimized={isConsoleMinimized} 
+            onToggleMinimize={() => {
+              if (isConsoleMinimized) {
+                setIsConsoleMinimized(false);
+                setConsoleHeight(220);
+              } else {
+                setIsConsoleMinimized(true);
+                setConsoleHeight(40);
+              }
+            }} 
           />
         </footer>
-      </main>
 
-      {/* ======================================================== */}
-      {/* 4. SENTRY RIGHT TAB-DRAWER (Unified Sidebar)             */}
-      {/* ======================================================== */}
-      <aside style={{
-        background: '#070a13',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        minHeight: 0,
-        zIndex: isSidebarMaximized ? 20 : 1,
-        ...(isSidebarMaximized ? {
-          position: 'absolute',
-          top: '36px',
-          right: 0,
-          bottom: 0,
-          width: '90vw',
-          borderLeft: '1px solid #38bdf8',
-          boxShadow: '-10px 0 40px rgba(0,0,0,0.8)'
-        } : {
-          width: '360px'
-        })
-      }}>
-        {/* Sidebar Nav Tab Buttons */}
-        <div style={{
-          display: 'flex',
-          background: 'rgba(15,23,42,0.9)',
-          borderBottom: '1px solid #1e293b',
-          height: '36px',
-          alignItems: 'center',
-          padding: '0 8px',
-          justifyContent: 'space-between',
-          flexShrink: 0
-        }}>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            <button
-              onClick={() => {
-                setSidebarTab('explorer');
-                setSelection(null); // Clear selection when backing out to explorer list
-              }}
+        {/* ======================================================== */}
+        {/* 4. SENTRY RIGHT TAB-DRAWER (Unified Sidebar - Hovering)   */}
+        {/* ======================================================== */}
+        {!isSidebarMinimized && (
+          <aside style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: `${sidebarWidth}px`,
+            background: '#070a13',
+            display: 'flex',
+            flexDirection: 'column',
+            borderLeft: '1px solid #1e293b',
+            zIndex: 6,
+            boxShadow: '-5px 0 25px rgba(0,0,0,0.5)',
+            transition: isResizingSidebar.current ? 'none' : 'width 0.15s ease-out'
+          }}>
+            {/* Left Border Resize Handle Bar */}
+            <div
+              onMouseDown={startResizeSidebar}
               style={{
-                width: '120px',
-                padding: '6px 0',
-                background: sidebarTab === 'explorer' ? 'rgba(56,189,248,0.1)' : 'transparent',
-                color: sidebarTab === 'explorer' ? '#38bdf8' : '#64748b',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                fontSize: '0.7rem'
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: '5px',
+                cursor: 'ew-resize',
+                background: isResizingSidebar.current ? '#38bdf8' : 'rgba(56,189,248,0.05)',
+                zIndex: 100,
+                transition: 'background 0.2s'
               }}
-            >
-              [EXPLORER]
-            </button>
-            <button
-              disabled={!selection}
-              onClick={() => setSidebarTab('inspector')}
-              style={{
-                width: '120px',
-                padding: '6px 0',
-                background: sidebarTab === 'inspector' ? 'rgba(56,189,248,0.1)' : 'transparent',
-                color: !selection ? '#334155' : (sidebarTab === 'inspector' ? '#38bdf8' : '#64748b'),
-                border: 'none',
-                cursor: selection ? 'pointer' : 'not-allowed',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                fontSize: '0.7rem'
-              }}
-            >
-              [INSPECT]
-            </button>
-          </div>
-
-          {/* Elastic width expander trigger */}
-          <button
-            onClick={() => setIsSidebarMaximized(prev => !prev)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#38bdf8',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              padding: '0 12px',
-              fontFamily: 'monospace',
-              fontSize: '0.8rem'
-            }}
-            title={isSidebarMaximized ? "Shrink panel" : "Expand panel"}
-          >
-            {isSidebarMaximized ? '«' : '»'}
-          </button>
-        </div>
-
-        {/* Render Tab Contents */}
-        <div style={{ flex: 1, minHeight: 0 }}>
-          {sidebarTab === 'explorer' ? (
-            <ExplorerPanel />
-          ) : (
-            <InspectorPanel 
-              onOpenShipyard={() => setShowShipyard(true)}
-              onOpenSchematic={(ship) => {
-                setSelectedShipForSchematic(ship);
-                setShowSchematic(true);
-              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(56,189,248,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = isResizingSidebar.current ? '#38bdf8' : 'rgba(56,189,248,0.05)'; }}
             />
-          )}
-        </div>
-      </aside>
+
+            {/* Sidebar Nav Tab Buttons */}
+            <div style={{
+              display: 'flex',
+              background: 'rgba(15,23,42,0.9)',
+              borderBottom: '1px solid #1e293b',
+              height: '36px',
+              alignItems: 'center',
+              padding: '0 8px 0 16px',
+              justifyContent: 'space-between',
+              flexShrink: 0
+            }}>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <button
+                  onClick={() => {
+                    setSidebarTab('explorer');
+                    setSelection(null);
+                  }}
+                  style={{
+                    width: '110px',
+                    padding: '6px 0',
+                    background: sidebarTab === 'explorer' ? 'rgba(56,189,248,0.1)' : 'transparent',
+                    color: sidebarTab === 'explorer' ? '#38bdf8' : '#64748b',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontFamily: 'monospace',
+                    fontSize: '0.7rem'
+                  }}
+                >
+                  [EXPLORER]
+                </button>
+                <button
+                  disabled={!selection}
+                  onClick={() => setSidebarTab('inspector')}
+                  style={{
+                    width: '110px',
+                    padding: '6px 0',
+                    background: sidebarTab === 'inspector' ? 'rgba(56,189,248,0.1)' : 'transparent',
+                    color: !selection ? '#334155' : (sidebarTab === 'inspector' ? '#38bdf8' : '#64748b'),
+                    border: 'none',
+                    cursor: selection ? 'pointer' : 'not-allowed',
+                    fontWeight: 'bold',
+                    fontFamily: 'monospace',
+                    fontSize: '0.7rem'
+                  }}
+                >
+                  [INSPECT]
+                </button>
+              </div>
+
+              {/* Close/Minimize Sidebar Button */}
+              <button
+                onClick={() => {
+                  setIsSidebarMinimized(true);
+                  setSidebarWidth(0);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ef4444',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  padding: '0 8px',
+                  fontFamily: 'monospace',
+                  fontSize: '0.8rem'
+                }}
+                title="Minimize Sidebar"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Render Tab Contents */}
+            <div style={{ flex: 1, minHeight: 0, paddingLeft: '6px' }}>
+              {sidebarTab === 'explorer' ? (
+                <ExplorerPanel />
+              ) : (
+                <InspectorPanel 
+                  onOpenShipyard={() => setShowShipyard(true)}
+                  onOpenSchematic={(ship) => {
+                    setSelectedShipForSchematic(ship);
+                    setShowSchematic(true);
+                  }}
+                />
+              )}
+            </div>
+          </aside>
+        )}
+
+      </div>
 
       {/* ======================================================== */}
       {/* 5. MODAL HOLOGRAPHIC OVERLAYS (CAD & Handbooks)          */}

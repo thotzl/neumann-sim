@@ -3,11 +3,11 @@ import { useC2Store } from '../store/stateStore';
 import { LogCategory } from '../types';
 
 interface LogPanelProps {
-  isMaximized: boolean;
-  onToggleMaximize: () => void;
+  isMinimized: boolean;
+  onToggleMinimize: () => void;
 }
 
-export const LogPanel = ({ isMaximized, onToggleMaximize }: LogPanelProps) => {
+export const LogPanel = ({ isMinimized, onToggleMinimize }: LogPanelProps) => {
   const logs = useC2Store((store) => store.logs);
   const [filters, setFilters] = useState<Record<LogCategory, boolean>>({
     thought: true,
@@ -39,10 +39,10 @@ export const LogPanel = ({ isMaximized, onToggleMaximize }: LogPanelProps) => {
 
   // Auto-scroll when new logs arrive
   useEffect(() => {
-    if (isAtBottom.current && scrollRef.current) {
+    if (isAtBottom.current && scrollRef.current && !isMinimized) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [filteredLogs]);
+  }, [filteredLogs, isMinimized]);
 
   const onScroll = () => {
     if (scrollRef.current) {
@@ -60,190 +60,203 @@ export const LogPanel = ({ isMaximized, onToggleMaximize }: LogPanelProps) => {
       background: '#05060a',
       fontFamily: 'monospace'
     }}>
-      {/* FILTER & CONTROL BAR */}
-      <div style={{ 
-        padding: '8px 12px', 
-        borderBottom: '1px solid #1e293b', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        flexShrink: 0, 
-        background: 'rgba(15,23,42,0.9)' 
-      }}>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          <button 
-            onClick={() => setFilters(f => ({...f, thought: !f.thought}))} 
-            style={{ 
-              background: filters.thought ? '#1e293b' : 'transparent', 
-              color: filters.thought ? '#fff' : '#475569', 
-              border: '1px solid #334155', 
-              padding: '3px 8px', 
-              borderRadius: '2px', 
-              fontSize: '0.65rem', 
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            THOUGHTS
-          </button>
-          <button 
-            onClick={() => setFilters(f => ({...f, action: !f.action}))} 
-            style={{ 
-              background: filters.action ? 'rgba(56,189,248,0.2)' : 'transparent', 
-              color: filters.action ? '#38bdf8' : '#475569', 
-              border: `1px solid ${filters.action ? '#38bdf8' : '#334155'}`, 
-              padding: '3px 8px', 
-              borderRadius: '2px', 
-              fontSize: '0.65rem', 
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            ACTIONS
-          </button>
-          <button 
-            onClick={() => setFilters(f => ({...f, scut: !f.scut}))} 
-            style={{ 
-              background: filters.scut ? 'rgba(245,158,11,0.2)' : 'transparent', 
-              color: filters.scut ? '#f59e0b' : '#475569', 
-              border: `1px solid ${filters.scut ? '#f59e0b' : '#334155'}`, 
-              padding: '3px 8px', 
-              borderRadius: '2px', 
-              fontSize: '0.65rem', 
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            SCUT
-          </button>
-          <button 
-            onClick={() => setFilters(f => ({...f, system: !f.system}))} 
-            style={{ 
-              background: filters.system ? 'rgba(239,68,68,0.2)' : 'transparent', 
-              color: filters.system ? '#ef4444' : '#475569', 
-              border: `1px solid ${filters.system ? '#ef4444' : '#334155'}`, 
-              padding: '3px 8px', 
-              borderRadius: '2px', 
-              fontSize: '0.65rem', 
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            SYSTEM
-          </button>
-        </div>
-
-        {/* MAXIMIZE TOGGLE */}
-        <button
-          onClick={onToggleMaximize}
-          style={{
-            background: 'transparent',
-            border: '1px solid #334155',
-            color: '#38bdf8',
-            fontSize: '0.65rem',
-            padding: '3px 8px',
-            borderRadius: '2px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            textTransform: 'uppercase'
-          }}
-        >
-          {isMaximized ? '🗗 Restore' : '🗖 Maximize'}
-        </button>
-      </div>
-
-      {/* LOG LIST */}
-      <div 
-        ref={scrollRef}
-        onScroll={onScroll}
-        style={{ 
-          flex: 1, 
-          overflowY: 'auto', 
-          padding: '12px', 
+      {/* FILTER & CONTROL BAR (Hidden if fully minimized to 40px) */}
+      {!isMinimized && (
+        <div style={{ 
+          padding: '8px 12px 8px 16px', 
+          borderBottom: '1px solid #1e293b', 
           display: 'flex', 
-          flexDirection: 'column', 
-          gap: '8px',
-          background: '#020306'
-        }}
-        className="custom-scrollbar"
-      >
-        {filteredLogs.map(entry => {
-          let badgeColor = '#64748b';
-          let textColor = '#ffffff'; 
-          let isCode = false;
-
-          if (entry.type === 'thought') {
-            textColor = '#cbd5e1'; 
-          } else if (entry.type === 'action') {
-            badgeColor = '#38bdf8';
-            textColor = '#bae6fd';
-            isCode = true;
-          } else if (entry.type === 'scut') {
-            badgeColor = '#f59e0b';
-            textColor = '#fef3c7';
-          } else if (entry.type === 'system') {
-            badgeColor = '#ef4444';
-            textColor = '#fee2e2';
-          }
-
-          return (
-            <div 
-              key={entry.id} 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          flexShrink: 0, 
+          background: 'rgba(15,23,42,0.9)' 
+        }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => setFilters(f => ({...f, thought: !f.thought}))} 
               style={{ 
-                borderBottom: '1px solid rgba(255,255,255,0.03)', 
-                borderLeft: `3px solid ${badgeColor}`, 
-                padding: '6px 0 8px 10px', 
-                fontSize: '0.8rem', 
-                background: 'rgba(255,255,255,0.01)' 
+                background: filters.thought ? '#1e293b' : 'transparent', 
+                color: filters.thought ? '#fff' : '#475569', 
+                border: '1px solid #334155', 
+                padding: '3px 8px', 
+                borderRadius: '2px', 
+                fontSize: '0.65rem', 
+                cursor: 'pointer',
+                fontWeight: 'bold'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontSize: '0.6rem' }}>
-                <span style={{ fontWeight: 700, color: badgeColor, letterSpacing: '1px', textTransform: 'uppercase' }}>
-                  {entry.agentName && entry.agentName !== entry.agentId ? `${entry.agentName.toUpperCase()} (ID: ${entry.agentId})` : (entry.agentName || entry.agentId || 'UNKNOWN').toUpperCase()}
-                </span>
-                <span style={{ color: '#475569' }}>SD_{entry.tick}</span>
-              </div>
-              {(() => {
-                const multiplierRegex = /^\((\d+x)\)\s*/;
-                const match = entry.text.match(multiplierRegex);
-                let multiplierBadge = null;
-                let displayText = entry.text;
+              THOUGHTS
+            </button>
+            <button 
+              onClick={() => setFilters(f => ({...f, action: !f.action}))} 
+              style={{ 
+                background: filters.action ? 'rgba(56,189,248,0.2)' : 'transparent', 
+                color: filters.action ? '#38bdf8' : '#475569', 
+                border: `1px solid ${filters.action ? '#38bdf8' : '#334155'}`, 
+                padding: '3px 8px', 
+                borderRadius: '2px', 
+                fontSize: '0.65rem', 
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              ACTIONS
+            </button>
+            <button 
+              onClick={() => setFilters(f => ({...f, scut: !f.scut}))} 
+              style={{ 
+                background: filters.scut ? 'rgba(245,158,11,0.2)' : 'transparent', 
+                color: filters.scut ? '#f59e0b' : '#475569', 
+                border: `1px solid ${filters.scut ? '#f59e0b' : '#334155'}`, 
+                padding: '3px 8px', 
+                borderRadius: '2px', 
+                fontSize: '0.65rem', 
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              SCUT
+            </button>
+            <button 
+              onClick={() => setFilters(f => ({...f, system: !f.system}))} 
+              style={{ 
+                background: filters.system ? 'rgba(239,68,68,0.2)' : 'transparent', 
+                color: filters.system ? '#ef4444' : '#475569', 
+                border: `1px solid ${filters.system ? '#ef4444' : '#334155'}`, 
+                padding: '3px 8px', 
+                borderRadius: '2px', 
+                fontSize: '0.65rem', 
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              SYSTEM
+            </button>
+          </div>
 
-                if (match) {
-                  multiplierBadge = (
-                    <span style={{
-                      background: 'rgba(245, 158, 11, 0.15)',
-                      border: '1px solid #f59e0b',
-                      color: '#f59e0b',
-                      borderRadius: '2px',
-                      padding: '1px 4px',
-                      fontSize: '0.6rem',
-                      fontWeight: 'bold',
-                      marginRight: '6px',
-                      textShadow: '0 0 5px rgba(245,158,11,0.5)',
-                      display: 'inline-block'
-                    }}>
-                      {match[1].toUpperCase()}
-                    </span>
+          {/* MINIMIZE FOLD TOGGLE */}
+          <button
+            onClick={onToggleMinimize}
+            style={{
+              background: 'transparent',
+              border: '1px solid #334155',
+              color: '#ef4444',
+              fontSize: '0.65rem',
+              padding: '3px 8px',
+              borderRadius: '2px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              textTransform: 'uppercase'
+            }}
+          >
+            🗕 Minimize
+          </button>
+        </div>
+      )}
+
+      {/* LOG LIST (Hidden if fully minimized to 40px) */}
+      {!isMinimized && (
+        <div 
+          ref={scrollRef}
+          onScroll={onScroll}
+          style={{ 
+            flex: 1, 
+            overflowY: 'auto', 
+            padding: '12px 12px 12px 16px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '8px',
+            background: '#020306'
+          }}
+          className="custom-scrollbar"
+        >
+          {filteredLogs.map(entry => {
+            let badgeColor = '#64748b';
+            let textColor = '#ffffff'; 
+            let isCode = false;
+
+            if (entry.type === 'thought') {
+              textColor = '#cbd5e1'; 
+            } else if (entry.type === 'action') {
+              badgeColor = '#38bdf8';
+              textColor = '#bae6fd';
+              isCode = true;
+            } else if (entry.type === 'scut') {
+              badgeColor = '#f59e0b';
+              textColor = '#fef3c7';
+            } else if (entry.type === 'system') {
+              badgeColor = '#ef4444';
+              textColor = '#fee2e2';
+            }
+
+            return (
+              <div 
+                key={entry.id} 
+                style={{ 
+                  borderBottom: '1px solid rgba(255,255,255,0.03)', 
+                  borderLeft: `3px solid ${badgeColor}`, 
+                  padding: '6px 0 8px 10px', 
+                  fontSize: '0.8rem', 
+                  background: 'rgba(255,255,255,0.01)' 
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontSize: '0.6rem' }}>
+                  <span style={{ fontWeight: 700, color: badgeColor, letterSpacing: '1px', textTransform: 'uppercase' }}>
+                    {entry.agentName && entry.agentName !== entry.agentId ? `${entry.agentName.toUpperCase()} (ID: ${entry.agentId})` : (entry.agentName || entry.agentId || 'UNKNOWN').toUpperCase()}
+                  </span>
+                  <span style={{ color: '#475569' }}>SD_{entry.tick}</span>
+                </div>
+                {(() => {
+                  const multiplierRegex = /^\((\d+x)\)\s*/;
+                  const match = entry.text.match(multiplierRegex);
+                  let multiplierBadge = null;
+                  let displayText = entry.text;
+
+                  if (match) {
+                    multiplierBadge = (
+                      <span style={{
+                        background: 'rgba(245, 158, 11, 0.15)',
+                        border: '1px solid #f59e0b',
+                        color: '#f59e0b',
+                        borderRadius: '2px',
+                        padding: '1px 4px',
+                        fontSize: '0.65rem',
+                        fontWeight: 'bold',
+                        marginRight: '6px',
+                        textShadow: '0 0 5px rgba(245,158,11,0.5)',
+                        display: 'inline-block'
+                      }}>
+                        {match[1].toUpperCase()}
+                      </span>
+                    );
+                    displayText = entry.text.replace(multiplierRegex, '');
+                  }
+
+                  return (
+                    <div className={isCode ? "mono-text" : ""} style={{ whiteSpace: 'pre-wrap', color: textColor, lineHeight: '1.4' }}>
+                      {multiplierBadge}
+                      {displayText}
+                    </div>
                   );
-                  displayText = entry.text.replace(multiplierRegex, '');
-                }
+                })()}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-                return (
-                  <div className={isCode ? "mono-text" : ""} style={{ whiteSpace: 'pre-wrap', color: textColor, lineHeight: '1.4' }}>
-                    {multiplierBadge}
-                    {displayText}
-                  </div>
-                );
-              })()}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* INPUT BAR */}
-      <div style={{ padding: '10px 12px', borderTop: '1px solid #1e293b', background: 'rgba(15,23,42,0.9)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+      {/* INPUT BAR (Always visible at the bottom) */}
+      <div style={{ 
+        padding: '10px 12px 10px 16px', 
+        borderTop: isMinimized ? 'none' : '1px solid #1e293b', 
+        background: 'rgba(15,23,42,0.9)', 
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        height: '40px',
+        boxSizing: 'border-box'
+      }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%' }}>
           <span style={{ color: '#ef4444', fontSize: '1rem', fontWeight: 900 }}>VOG&gt;</span>
           <input 
             type="text" 
@@ -269,16 +282,36 @@ export const LogPanel = ({ isMaximized, onToggleMaximize }: LogPanelProps) => {
               background: '#ef4444', 
               color: '#000', 
               border: 'none', 
-              padding: '6px 14px', 
+              padding: '4px 12px', 
               cursor: 'pointer', 
               fontSize: '0.7rem', 
               fontWeight: 800, 
               letterSpacing: '1px',
-              fontFamily: 'monospace'
+              fontFamily: 'monospace',
+              borderRadius: '2px'
             }}
           >
             EXEC
           </button>
+          
+          {/* Quick expand button if fully minimized */}
+          {isMinimized && (
+            <button
+              onClick={onToggleMinimize}
+              style={{
+                background: 'transparent',
+                border: '1px solid #334155',
+                color: '#38bdf8',
+                fontSize: '0.65rem',
+                padding: '2px 8px',
+                borderRadius: '2px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              🗖 Expand
+            </button>
+          )}
         </div>
       </div>
     </div>

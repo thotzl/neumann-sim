@@ -312,7 +312,7 @@ export default function PixiJSTestApp() {
               
               starsContainer!.addChild(orbitG);
 
-              const time = Date.now() * 0.00015;
+              const time = Date.now() * 0.00003; // scaled to 20% of original speed
               const orbitSpeed = Math.pow(1.0 / planet.distance, 1.5) * 0.5;
               const angle = (sec.x * 17 + sec.y * 31 + planet.orbitIndex * 89 + time * orbitSpeed) % (Math.PI * 2);
               

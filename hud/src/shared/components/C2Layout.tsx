@@ -6,7 +6,7 @@ interface C2LayoutProps {
   isConnected: boolean;
   statusText: string;
   cycle: number;
-  stardate?: string;
+  stardate?: string | number;
   population: number;
   vessels: number;
   
@@ -17,6 +17,8 @@ interface C2LayoutProps {
   onToggleRightSidebar: () => void;
   isLeftSidebarMinimized?: boolean;
   onToggleLeftSidebar?: () => void;
+  showTheoreticalUniverse?: boolean;
+  onToggleTheoreticalUniverse?: () => void;
 
   // Width & Heights
   rightSidebarWidth: number;
@@ -56,6 +58,8 @@ export const C2Layout = ({
   onToggleRightSidebar,
   isLeftSidebarMinimized = false,
   onToggleLeftSidebar,
+  showTheoreticalUniverse = false,
+  onToggleTheoreticalUniverse,
 
   rightSidebarWidth,
   onResizeRightSidebar,
@@ -153,6 +157,19 @@ export const C2Layout = ({
             >
               📊 SWARM_SIDEBAR
             </button>
+
+            {onToggleTheoreticalUniverse && (
+              <button
+                onClick={onToggleTheoreticalUniverse}
+                className={`border text-[10px] px-2 py-0.5 font-bold font-mono rounded-sm cursor-pointer transition-all ${
+                  showTheoreticalUniverse 
+                    ? 'bg-cyber-blue/15 border-cyber-blue text-cyber-blue hover:bg-cyber-blue/25' 
+                    : 'bg-transparent border-slate-800 text-cyber-gray hover:text-slate-400'
+                }`}
+              >
+                🌌 THEORETICAL_UNIVERSE
+              </button>
+            )}
           </div>
         </div>
 
@@ -169,7 +186,16 @@ export const C2Layout = ({
       <div className="relative flex-1 flex min-h-0">
         
         {/* VIEWPORT AREA (Host Canvas) */}
-        <div className="absolute top-0 left-0 right-0 bottom-0 z-[1]">
+        <div 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: isLeftSidebarMinimized ? 0 : `${leftSidebarWidth}px`,
+            right: isRightSidebarMinimized ? 0 : `${rightSidebarWidth}px`,
+            bottom: 0,
+            zIndex: 1
+          }}
+        >
           {children}
         </div>
 

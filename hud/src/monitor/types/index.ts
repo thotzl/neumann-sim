@@ -56,10 +56,19 @@ export type System = {
     required_matter: number; 
     health: number; 
     max_health: number; 
-    level: number 
+    level: number;
+    linked_system?: string | null;
   }>;
   star?: any;
   planets?: any[];
+  is_inspected?: number;
+  spectralClass?: string;
+  mass?: number;
+  occurrence?: string;
+  system?: {
+    planets: any[];
+    asteroidBelts: number[];
+  };
 };
 
 export type Ship = {
@@ -123,6 +132,7 @@ export type Blueprint = {
 export type WorldState = {
   tick: number; 
   round: number;
+  seed?: string;
   stardate?: string | number;
   total_turns?: number; 
   last_agent?: string; 
@@ -148,7 +158,14 @@ export interface LogEntry {
   text: string; 
 }
 
-export type Selection = { type: 'agent' | 'system'; id: string };
+export type Selection = { 
+  type: 'agent' | 'system' | 'theoretical'; 
+  id: string;
+  x?: number;
+  y?: number;
+  mass?: number;
+  spectralClass?: string;
+};
 
 export type HistoryEntry = {
   agent?: string;

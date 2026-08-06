@@ -26,7 +26,7 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
     if (!vogMsg.trim()) return;
     const host = window.location.hostname || 'localhost';
     try {
-      await fetch(`http://${host}:3005/vog`, { 
+      await fetch(`http://${host}:3001/vog`, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ message: vogMsg }) 
@@ -48,7 +48,8 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
   const onScroll = () => {
     if (scrollRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      isAtBottom.current = scrollHeight - (scrollTop + clientHeight) < 50;
+      // Tight threshold of 12px to prevent force-scrolling if the user has scrolled up even slightly, while remaining sub-pixel safe.
+      isAtBottom.current = (scrollHeight - scrollTop - clientHeight) <= 12;
     }
   };
 

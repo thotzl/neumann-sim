@@ -57,6 +57,9 @@ export default function MonitorApp() {
   const [showSchematic, setShowSchematic] = useState(false);
   const [selectedShipForSchematic, setSelectedShipForSchematic] = useState<any>(null);
 
+  // Toggle Theoretical (Unexplored) Universe
+  const [showTheoreticalUniverse, setShowTheoreticalUniverse] = useState(false);
+
   // Live Canvas Viewport dimensions state
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
 
@@ -172,6 +175,8 @@ export default function MonitorApp() {
         }}
         isRightSidebarMinimized={isSidebarMinimized}
         onToggleRightSidebar={() => setIsSidebarMinimized(!isSidebarMinimized)}
+        showTheoreticalUniverse={showTheoreticalUniverse}
+        onToggleTheoreticalUniverse={() => setShowTheoreticalUniverse(!showTheoreticalUniverse)}
 
         rightSidebarWidth={sidebarWidth}
         onResizeRightSidebar={setSidebarWidth}
@@ -272,6 +277,8 @@ export default function MonitorApp() {
           ships={mappedShips}
           selection={selection}
           onSelectionChange={setSelection}
+          showTheoreticalUniverse={showTheoreticalUniverse}
+          seed={state?.seed}
         />
       </C2Layout>
 

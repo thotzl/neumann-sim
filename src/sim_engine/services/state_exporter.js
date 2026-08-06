@@ -57,7 +57,7 @@ function exportWorldState(universeDir, state, lastAgentId) {
                     sys.warpCurrent = genSys.warpCurrent;
                 }
 
-                db.all("SELECT id, type, status, health, max_health, level, progress_matter, required_matter FROM infrastructure WHERE system_name = ?", [sys.name], (err, infra) => {
+                db.all("SELECT id, type, status, health, max_health, level, progress_matter, required_matter, linked_system FROM infrastructure WHERE system_name = ?", [sys.name], (err, infra) => {
                     sys.infra = infra || [];
                     systemsProcessed++;
                     if (systemsProcessed === systems.length) {
@@ -213,6 +213,8 @@ function exportWorldState(universeDir, state, lastAgentId) {
             stardate: process.env.BOB_STARDATE || `${state.round}::${state.actualRoundTicks || 1}`,
             total_turns: state.totalTurns,
             timestamp: Date.now(),
+            seed: seed,
+            experiment_dir: path.resolve(path.join(universeDir, '..')),
             systems: systems,
             agents: agents,
             ships: ships,

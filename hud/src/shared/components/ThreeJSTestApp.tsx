@@ -350,7 +350,7 @@ export default function ThreeJSTestApp() {
       const planetScaleFactor = Math.max(1.0, radius.current / 2500);
 
       // 1. Calculate Orbiting positions for all planets in 3D Spacetime
-      const time = Date.now() * 0.00015;
+      const time = Date.now() * 0.00003; // scaled to 20% of original speed
       activePlanetMeshes.forEach((item) => {
         const angle = item.startAngle + time * item.speed;
         item.mesh.position.set(

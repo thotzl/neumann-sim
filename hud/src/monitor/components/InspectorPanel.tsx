@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useC2Store } from '../store/stateStore';
 import { buildBobDashboard, jsonToYaml } from '../utils/dashboardHelpers';
+import { getStellarProperties } from '../../shared/generator';
 
 interface InspectorPanelProps {
   onOpenShipyard: () => void;
@@ -18,6 +19,38 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
   }, [selection?.id]);
 
   if (!state || !selection) return null;
+
+  if (selection.type === 'theoretical') {
+    return (
+      <div className="flex flex-col h-full p-4 font-mono text-xs overflow-auto select-none bg-cyber-panel">
+        <h3 className="text-cyber-gray font-bold uppercase mb-4 tracking-wider">&gt; UNCHARTED_SPACE_TELEMETRY</h3>
+        <div className="border border-dashed border-slate-800 p-4 bg-slate-950/40 rounded-sm">
+          <p className="text-slate-400 font-bold tracking-wider mb-2">SECTOR SPECIFICATION:</p>
+          <div className="grid grid-cols-2 gap-y-2 mt-3 text-slate-300">
+            <div>SECTOR_ID:</div>
+            <div className="text-white font-bold">{selection.id}</div>
+            
+            <div>COORDINATES:</div>
+            <div className="text-cyber-blue font-bold">X: {selection.x} | Y: {selection.y}</div>
+
+            <div>MASS_CLASS:</div>
+            <div className="text-white">{selection.mass?.toFixed(2)} Solar Mass</div>
+
+            <div>SPECTRAL_TYPE:</div>
+            <div className="text-white">{selection.spectralClass} Class</div>
+          </div>
+
+          <div className="border-t border-slate-800/80 my-4"></div>
+
+          <div className="space-y-1.5 text-[10px]">
+            <p className="text-cyber-amber font-bold uppercase animate-pulse">&gt; DYNAMIC TELEMETRY: INACTIVE</p>
+            <p className="text-slate-500">No active deep-space network connection.</p>
+            <p className="text-slate-500">Active telemetry requires a pilot or comms-relay at coordinate locus.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Resolve selected entity
   const selectedAgent = selection.type === 'agent' 
@@ -275,13 +308,19 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                     <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1.5">
                       🛰️ DETECTED_STELLAR_PROPERTIES //
                     </div>
-                    {selectedSystem.star ? (
-                      <div className="text-xs text-slate-400 leading-normal">
-                        SPECTRAL CLASS: <strong className="text-white font-bold">{selectedSystem.star.spectralClass}</strong><br />
-                        TEMPERATURE: <strong className="text-slate-200 font-bold">{Math.round(selectedSystem.star.temperature)} K</strong><br />
-                        MASS (SOLAR): <strong className="text-white font-bold">{selectedSystem.star.mass.toFixed(2)} M_sun</strong><br />
-                        LUMINOSITY: <strong className="text-cyber-blue font-bold">{selectedSystem.star.luminosity?.toFixed(2) || "1.00"} L_sun</strong><br />
-                      </div>
+                    {selectedSystem.spectralClass ? (
+                      (() => {
+                        const props = getStellarProperties(selectedSystem.mass || 1.0);
+                        return (
+                          <div className="text-xs text-slate-400 leading-normal">
+                            SPECTRAL CLASS: <strong className="text-white font-bold">{selectedSystem.spectralClass}</strong><br />
+                            TEMPERATURE: <strong className="text-slate-200 font-bold">{Math.round(props.temperature)} K</strong><br />
+                            MASS (SOLAR): <strong className="text-white font-bold">{(selectedSystem.mass || 1.0).toFixed(2)} M_sun</strong><br />
+                            LUMINOSITY: <strong className="text-cyber-blue font-bold">{props.luminosity?.toFixed(2) || "1.00"} L_sun</strong><br />
+                            ENVIRONMENT: <strong className="text-slate-300 font-bold">{selectedSystem.occurrence || "Normal"}</strong>
+                          </div>
+                        );
+                      })()
                     ) : (
                       <div className="text-xs text-cyber-gray italic leading-normal pt-1">
                         No stellar telemetry returned by sector sensors.
@@ -323,6 +362,11 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                         <div className="text-[10px] text-cyber-gray mt-1">
                           STRUCTURAL HEALTH: {inf.health} / {inf.max_health} HP
                         </div>
+                        {inf.type === 'wormhole_gate' && inf.linked_system && (
+                          <div className="text-[10px] text-cyber-blue font-bold mt-1.5 uppercase">
+                            ⚡ LINKED PORTAL: {inf.linked_system}
+                          </div>
+                        )}
                         {isAssembling && (
                           <div className="w-100 h-1 bg-slate-900 mt-1.5 rounded-sm overflow-hidden">
                             <div className="h-full bg-cyber-amber" style={{ width: `${pct}%` }} />
@@ -346,28 +390,35 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                   🪐 DETERMINISTIC_ORBITS_REGISTER //
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  {selectedSystem.planets && selectedSystem.planets.length > 0 ? (
-                    selectedSystem.planets.map((p: any, pi: number) => {
-                      return (
-                        <div 
-                          key={pi} 
-                          className="bg-white/[0.01] border border-white/5 rounded p-2 px-3 flex justify-between items-center text-xs font-mono"
-                        >
-                          <div>
-                            <strong className="text-white font-bold">Orbit {p.orbitIndex + 1}: {p.type} Planet</strong>
-                            <span className="text-cyber-gray ml-2">({p.distance.toFixed(2)} AU)</span>
+                  {(() => {
+                    const planetsList = selectedSystem.system?.planets || selectedSystem.planets;
+                    return planetsList && planetsList.length > 0 ? (
+                      planetsList.map((p: any, pi: number) => {
+                        const tempCelsius = Math.round(p.temperature - 273.15);
+                        return (
+                          <div 
+                            key={pi} 
+                            className="bg-white/[0.01] border border-white/5 rounded p-3 flex flex-col gap-1.5 text-xs font-mono"
+                          >
+                            <div className="flex justify-between items-center">
+                              <strong className="text-white font-bold">Orbit {p.orbitIndex + 1}: <span className="text-cyber-blue font-mono font-bold">{p.type}</span></strong>
+                              <span className="text-cyber-gray">({p.distance.toFixed(2)} AU)</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-y-2 text-[10px] text-slate-400 mt-1">
+                              <div>MASS: <strong className="text-white">{p.mass?.toFixed(2)} M_earth</strong></div>
+                              <div>RADIUS: <strong className="text-white">{p.radius?.toFixed(2)} R_earth</strong></div>
+                              <div>TEMP: <strong className="text-cyber-amber">{p.temperature} K ({tempCelsius}°C)</strong></div>
+                              <div>MOONS: <strong className="text-emerald-500">{p.moonsCount} stable moons</strong></div>
+                            </div>
                           </div>
-                          <div className="text-slate-300">
-                            Mass: {p.mass.toFixed(1)}M_earth • Moons: {p.moonsCount}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-xs text-cyber-gray italic">
-                      No stable planetary telemetry returned by sector sensors.
-                    </div>
-                  )}
+                        );
+                      })
+                    ) : (
+                      <div className="text-xs text-cyber-gray italic">
+                        No stable planetary telemetry returned by sector sensors.
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}

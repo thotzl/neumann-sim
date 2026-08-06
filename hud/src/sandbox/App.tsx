@@ -120,14 +120,14 @@ export default function SandboxApp() {
   useEffect(() => {
     const handleResize = () => {
       setDimensions({
-        width: window.innerWidth,
+        width: window.innerWidth - (isLeftSidebarMinimized ? 0 : leftSidebarWidth) - (isSidebarMinimized ? 0 : sidebarWidth),
         height: window.innerHeight
       });
     };
     window.addEventListener('resize', handleResize);
     handleResize(); // Initial call
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [sidebarWidth, isSidebarMinimized, leftSidebarWidth, isLeftSidebarMinimized]);
 
   const handleBrushAction = (worldX: number, worldY: number) => {
     const brushSectors = UniverseGenerator.getSectorsInArea(

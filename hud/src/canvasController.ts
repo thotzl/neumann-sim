@@ -341,7 +341,9 @@ export class CanvasController {
       this.ctx.save();
 
       // If sector is covered in Fog of War, draw it as a very faint grey trace or not at all
-      if (!isRevealed) {
+      if (s.isTheoretical) {
+        this.ctx.globalAlpha = 0.50; // 50% Opacity for theoretical unexplored sectors
+      } else if (!isRevealed) {
         this.ctx.globalAlpha = 0.15; // Extremely dim if unrevealed
       }
 
@@ -503,7 +505,7 @@ export class CanvasController {
         // Gated aggressively to zoom > 0.55 (55%) so that orbit math and draw calls
         // are skipped entirely when planets are too small to be recognized.
         if (s.system && s.system.planets.length > 0 && zoom > 0.55) {
-          const time = Date.now() * 0.00015; // smooth real-time tick
+          const time = Date.now() * 0.00003; // smooth real-time tick (scaled to 20% of original speed)
           
           s.system.planets.forEach((p) => {
             // Keplerian orbital speed scaling: speed proportional to a^-1.5 (Kepler's Third Law!)
@@ -571,8 +573,27 @@ export class CanvasController {
 
       this.ctx.restore();
 
+      // If the sector is selected, draw its physical Stellar Influence Zone (R_inf boundary)
+      if (isSelected && !s.isTheoretical) {
+        this.ctx.save();
+        const rInfScreen = 150 * Math.sqrt(s.mass || 1.0) * zoom;
+        this.ctx.strokeStyle = 'rgba(14, 165, 233, 0.25)'; // Cyber blue, very faint
+        this.ctx.setLineDash([3, 5]);
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.arc(screenPos.x, screenPos.y, rInfScreen, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Small label on the boundary "R_INF: 150u"
+        this.ctx.fillStyle = 'rgba(14, 165, 233, 0.45)';
+        this.ctx.font = '8px monospace';
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(`R_INF: ${Math.round(150 * Math.sqrt(s.mass || 1.0))}u`, screenPos.x + rInfScreen + 6, screenPos.y + 3);
+        this.ctx.restore();
+      }
+
       // Render Sector Name / Label (only when zoomed in relatively close)
-      if (zoom > 0.45) {
+      if (zoom > 0.45 && !s.isTheoretical) {
         this.ctx.fillStyle = isSelected ? '#ffffff' : 'rgba(148, 163, 184, 0.7)';
         this.ctx.font = 'bold 9px monospace';
         this.ctx.textAlign = 'center';
@@ -581,6 +602,9 @@ export class CanvasController {
         if (!isRevealed) {
           label = `SYS_X???_Y??? [UNMAPPED]`;
           this.ctx.fillStyle = 'rgba(100, 116, 139, 0.4)';
+        } else if (s.is_inspected === 0) {
+          label = `${s.id} [UNINSPECTED]`;
+          this.ctx.fillStyle = '#f59e0b'; // Amber warning color
         }
         
         const offsetRadius = s.spectralClass === 'BlackHole' ? (s.mass > 100 ? 25 : 6) : 6;
@@ -643,11 +667,11 @@ export class CanvasController {
     this.ctx.setLineDash([4, 8]);
     agents.forEach((agent) => {
       if (agent.status === 'traveling') {
-        const originScreen = this.worldToScreen(agent.origin_x || 0, agent.origin_y || 0, camera);
+        // Zeichne den Vektor vom AKTUELLEN Schiffsort zum ZIEL-Ort
+        const currentScreen = this.worldToScreen(agent.current_x || 0, agent.current_y || 0, camera);
         const targetScreen = this.worldToScreen(agent.target_x || 0, agent.target_y || 0, camera);
         this.ctx.beginPath();
-        this.ctx.moveTo(originScreen.x, originScreen.y);
-        this.ctx.lineTo(originScreen.x, originScreen.y); // Touch-up
+        this.ctx.moveTo(currentScreen.x, currentScreen.y);
         this.ctx.lineTo(targetScreen.x, targetScreen.y);
         this.ctx.stroke();
       }
@@ -784,7 +808,8 @@ export class CanvasController {
     agents.forEach((agent) => {
       if (agent.status === 'traveling') {
         const currentScreen = this.worldToScreen(agent.current_x, agent.current_y, camera);
-        const angle = Math.atan2(agent.target_y - agent.origin_y, agent.target_x - agent.origin_x) + Math.PI / 2;
+        // Nutzt current_x/y statt origin_x/y für eine pixelgenaue Echtzeit-Flugrichtung
+        const angle = Math.atan2(agent.target_y - agent.current_y, agent.target_x - agent.current_x) + Math.PI / 2;
 
         const remaining = agent.sleep_state && agent.sleep_state > 0 && agent.sleep_until_round
           ? Math.max(0, agent.sleep_until_round - activeRound)

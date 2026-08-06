@@ -2,9 +2,11 @@
 id: TCK-116
 title: "Deeper Verse Simulator-Integration (0-Byte-Footprint)"
 epic_phase: "Epic 5 / Integration"
-status: "open"
+status: "closed"
 priority: "high"
 created: 2026-07-30
+completed: 2026-08-06
+version: "v12.0"
 dependencies: ["TCK-115"]
 ---
 

@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.6** | **2026-08-06** | `RELEASED` | Symmetrisches Seeding, Sovereign DB-First Loading & Timeline Purity (v13.6) | `[TCK-111]`, `[TCK-116]`, `[TCK-118]` |
 | **v13.5** | **2026-07-30** | `RELEASED` | Symmetrie-Feinabstimmung & Interstellare Härte (V13.5) | `[TCK-114]` |
 | **v13.0** | **2026-07-29** | `RELEASED` | V13.0 Clean Architecture & Modular Services | `[TCK-114]` |
 | **v12.0** | **2026-07-28** | `RELEASED` | WebSocket-First Real-Time Architecture | `[TCK-011]` |
@@ -15,6 +16,35 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 | **v10.6** | **2026-07-28** | `RELEASED` | Cognitive Heritage (Gedächtnis-Vererbung) | `[TCK-012]` |
 | **v10.5** | **2026-07-28** | `RELEASED` | Host-Decoupling & Freestyle CAD-Construction | `[TCK-001]` bis `[TCK-006]`, `[TCK-009]`, `[TCK-010]`, `[TCK-013]` |
 | **v8.8** | **2026-06-15** | `RELEASED` | Industrial Evolution & World Physics | `[TCK-007]`, `[TCK-008]` |
+
+---
+
+## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.6] - 2026-08-06
+*Das "Souveräne Datenbank & Timeline-Reinheit" Upgrade. Dieser historische Meilenstein vollendet die Deep-Space-Astronomie, verknüpft interstellare Stargate-Netzwerke, befreit Bobs Kommunikation aus der Funkstille (Silent Cage) und etabliert eine absolute zeitliche Reinheit durch Sende-Zeitstempel (sent_at) im sub-etherischen Funkverkehr.*
+
+#### Added (Neue Features)
+- **Souveräner DB-First Runner & Startup:** Komplette Entkoppelung des JS-Runners von statischen JSON-Agenten-IDs. Der JS-Runner fragt an Takt 1 die Bobs direkt per SQLite (`SELECT id FROM agents`) ab, wodurch die `config.json` 100% read-only bleibt.
+  - *Ticket:* `[TCK-118]` ([Link](../.tickets/closed/TCK-118-timeline-purity-and-masked-logging.md))
+- **SSoT-Symmetrisches ID-Seeding & Befreiung:** Refactored dynamic ID-Seeder (`seed_db.py` & `seed_test_db.py`). Bob's Koordinaten werden beim Seeding direkt mit seinem echten Heimatsystem verortet, was die Distanzberechnungen korrigiert und Bob's Funkreichweiten-Sperre löst.
+  - *Ticket:* `[TCK-118]` ([Link](../.tickets/closed/TCK-118-timeline-purity-and-masked-logging.md))
+- **Timeline-Purity via SCUT Sende-Zeitstempel (`sent_at`):** Einführung des Sende-Datums (`sent_at`) im Funkverkehr. Buffered Messages im LLM-Posteingang werden mit der echten Sendezeit statt der Empfänger-Wachzeit formatiert, um chronologische Verwirrung im LLM-Gedächtnis zu tilgen.
+  - *Ticket:* `[TCK-118]` ([Link](../.tickets/closed/TCK-118-timeline-purity-and-masked-logging.md))
+- **Zustandsfreies Deeper-Verse Sektor-Resolving:** Vollständige Integration des 0-Byte-Universums-Generators im Backend. Sterne, Planeten und Orbit-Temperaturen werden live mathematisch berechnet statt in der DB gespeichert.
+  - *Ticket:* `[TCK-116]` ([Link](../.tickets/closed/TCK-116-deeper-verse-sim-integration.md))
+- **Interstellare Warp-Gates & A\*-Transit-Routing:** Actuator `link_gate(target_sector)` ermöglicht das bidirektionale Verknüpfen von Toren. Der A\*-Routenplaner integriert diese als instantane 0-Cost Transit-Highway-Kanten.
+  - *Ticket:* `[TCK-111]` ([Link](../.tickets/closed/TCK-111-interstellar-warp-gates.md))
+- **Maskiertes Startup AI Driver Logging:** Automatisches Log-Schild im JS-Runner, das bei jedem Start alle genutzten API-Treiber, Modelle und sicher maskierten API-Schlüssel ausgibt.
+  - *Ticket:* `[TCK-118]` ([Link](../.tickets/closed/TCK-118-timeline-purity-and-masked-logging.md))
+- **Globaler kommentar-sicherer `.env`-Lader:** Dependency-freier `.env`-Loader auf Node.js- und Python-Ebene, der Kommentare (`#`) überspringt und sicherstellt, dass deine aktiven Schlüssel immer absolute Geltung besitzen.
+  - *Ticket:* `[TCK-118]` ([Link](../.tickets/closed/TCK-118-timeline-purity-and-masked-logging.md))
+
+#### Fixed (Fehlerbehebungen)
+- **Mine Laderaum-Sperre (Massenerhaltungs-Leck):** Die `mine()`-Prüfung rechnet nun Rohstoffe und veredelte Ressourcen zusammen, um jegliches illegale Überladen der Schiffe über ihr physisches Maximum hinaus zu verhindern.
+  - *Ticket:* `[TCK-118]` ([Link](../.tickets/closed/TCK-118-timeline-purity-and-masked-logging.md))
+- **SYS_X0_Y0 Darstellungs-Artefakt:** Reparatur der falschen Anzeige im Analysetool. Stationäre Agenten werden nun korrekt im System ihres gehosteten Schiffes oder ihrer Matrix dargestellt statt fälschlicherweise am galaktischen Nullpunkt.
+  - *Ticket:* `[TCK-118]` ([Link](../.tickets/closed/TCK-118-timeline-purity-and-masked-logging.md))
 
 ---
 

@@ -35,6 +35,27 @@ async function run() {
     const populationFile = path.join(universeDir, 'population.json');
     const logFile = path.join(vDir, 'log.md');
 
+    // === DEPENDENCY-FREE .ENV PARSER (Supports comments & overrides shell exports!) ===
+    const envPath = path.join(vDir, '..', '..', '.env');
+    if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        envContent.split('\n').forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) return; // Skip comments and empty lines
+            
+            const match = trimmed.match(/^([^=]+)=(.*)$/);
+            if (match) {
+                const key = match[1].trim();
+                let val = match[2].trim();
+                // Strip quotes if present
+                if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                    val = val.slice(1, -1);
+                }
+                process.env[key] = val; // Set in current process env, overriding shell exports!
+            }
+        });
+    }
+
     process.env.TEST_DB_PATH = path.join(universeDir, 'universe.db');
     process.env.TEST_STATE_PATH = stateFile;
 

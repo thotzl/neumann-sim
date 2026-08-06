@@ -2,9 +2,11 @@
 id: TCK-111
 title: "Interstellar Warp Gates (Warp Tunneling)"
 epic_phase: "Epic 1 (V9.5) / Advanced Hardware"
-status: "open"
+status: "closed"
 priority: "low"
 created: 2026-07-28
+completed: 2026-08-06
+version: "v12.0"
 dependencies: ["TCK-DONE-009"]
 ---
 

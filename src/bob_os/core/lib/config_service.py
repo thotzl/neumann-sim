@@ -1,6 +1,37 @@
 import os
 import json
 
+def _load_env_from_root(env_name='.env'):
+    """
+    Dependency-free .env loader that walks up from this script's directory 
+    to find the root .env file and load it into os.environ.
+    Skips commented lines (#) and empty lines, and cleans quotes!
+    """
+    curr = os.path.abspath(os.path.dirname(__file__))
+    for _ in range(6): # Prevent infinite loops, check up to 6 parents
+        env_path = os.path.join(curr, env_name)
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        if '=' in line:
+                            parts = line.split('=', 1)
+                            key = parts[0].strip()
+                            val = parts[1].strip()
+                            # Strip quotes
+                            if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+                                val = val[1:-1]
+                            os.environ[key] = val
+            except Exception:
+                pass
+            break
+        curr = os.path.dirname(curr)
+
+_load_env_from_root()
+
 _config_cache = None
 _economy_cache = None
 

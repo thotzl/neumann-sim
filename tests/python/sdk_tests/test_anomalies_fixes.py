@@ -144,5 +144,36 @@ class TestAnomaliesFixes(unittest.TestCase):
         self.assertEqual(msg_row['sent_at'], '42::7')
         conn.close()
 
+    def test_global_env_loading(self):
+        """
+        Verify that our custom walking .env loader correctly loads active keys
+        while strictly skipping commented out lines (Fix: Omitted .env load / Commented keys).
+        """
+        # 1. Write a temporary .env file (Safe custom filename!)
+        mock_env_path = "temp_test.env"
+        with open(mock_env_path, 'w', encoding='utf-8') as f:
+            f.write("# This is a comment\n")
+            f.write("TEST_KEY_ACTIVE=AQ.Ab8RN6\n")
+            f.write("#TEST_KEY_COMMENTED=AIzaSy...eToE\n")
+            f.write("TEST_KEY_QUOTED=\"hello_world\"\n")
+            
+        # Clean up any existing values from the environment to avoid dirty tests
+        if 'TEST_KEY_ACTIVE' in os.environ: del os.environ['TEST_KEY_ACTIVE']
+        if 'TEST_KEY_COMMENTED' in os.environ: del os.environ['TEST_KEY_COMMENTED']
+        if 'TEST_KEY_QUOTED' in os.environ: del os.environ['TEST_KEY_QUOTED']
+        
+        # 2. Dynamically import config_service and execute _load_env_from_root with custom env_name
+        from core.lib import config_service
+        config_service._load_env_from_root(env_name=mock_env_path)
+        
+        # 3. Assert active, commented, and quoted variables are handled correctly
+        self.assertEqual(os.environ.get('TEST_KEY_ACTIVE'), 'AQ.Ab8RN6')
+        self.assertIsNone(os.environ.get('TEST_KEY_COMMENTED'))
+        self.assertEqual(os.environ.get('TEST_KEY_QUOTED'), 'hello_world')
+        
+        # Clean up
+        if os.path.exists(mock_env_path):
+            os.remove(mock_env_path)
+
 if __name__ == '__main__':
     unittest.main()

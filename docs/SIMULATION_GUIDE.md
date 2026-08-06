@@ -14,6 +14,12 @@ Das Framework basiert auf dem Prinzip der **minimalen Einmischung**.
 - **Sägezahn-Gedächtnis**: Kurzzeit-Impulse werden zyklisch destilliert. Nur die Synthese (Long-Term) bleibt dauerhaft im Prompt-Kontext.
 - **Boot-Validator**: Das System bricht den Start ab, wenn die Umgebung (API-Keys) oder die Config nicht integer sind.
 
+### 2.1 Interstellare Stargates & Warp-Kopplungen (v13.6+)
+Im fortgeschrittenen Kolonisationsstadium steht den Agenten das interstellare **Stargate-Netzwerk** zur Verfügung, um astronomische Distanzen (5000+ Units) augenblicklich zu überwinden:
+- **Die Infrastruktur:** Das Sendersystem und das Empfängersystem benötigen jeweils ein aktives, betriebsbereites **`wormhole_gate`** (Infrastruktur-Typ).
+- **Die Koppelung:** Die bidirektionale Portalverknüpfung wird über den Actuator `me.link_gate(target_sector)` auf der Befehlsebene etabliert.
+- **Der Transit (A*-Highway):** Sobald die Stargates gekoppelt sind, erfasst das kognitive Routingsystem (`me.route()`) diese Verbindung als instantane Highway-Kante (0-Cost, 0-Distance). Der Durchflug erfolgt ohne Zeitverlust direkt im nächsten Bewegungstakt!
+
 ## 3. Qualität & Wartung
 - **Test-Suite**: Führe `npm test` aus, um alle Module zu validieren.
 - **Modularität**: Änderungen an der Logik müssen in den entsprechenden Utilities (`scripts/utils/`) vorgenommen werden.

@@ -595,20 +595,36 @@ export class CanvasController {
       // Render Sector Name / Label (only when zoomed in relatively close)
       if (zoom > 0.45 && !s.isTheoretical) {
         this.ctx.fillStyle = isSelected ? '#ffffff' : 'rgba(148, 163, 184, 0.7)';
-        this.ctx.font = 'bold 9px monospace';
         this.ctx.textAlign = 'center';
         
-        let label = s.id;
-        if (!isRevealed) {
-          label = `SYS_X???_Y??? [UNMAPPED]`;
-          this.ctx.fillStyle = 'rgba(100, 116, 139, 0.4)';
-        } else if (s.is_inspected === 0) {
-          label = `${s.id} [UNINSPECTED]`;
-          this.ctx.fillStyle = '#f59e0b'; // Amber warning color
-        }
-        
         const offsetRadius = s.spectralClass === 'BlackHole' ? (s.mass > 100 ? 25 : 6) : 6;
-        this.ctx.fillText(label, screenPos.x, screenPos.y + offsetRadius + 14);
+        const textY = screenPos.y + offsetRadius + 14;
+
+        const hasDisplayName = s.display_name && s.display_name !== s.id;
+        
+        if (!isRevealed) {
+          this.ctx.font = 'bold 10px monospace'; // 10% larger than 9px
+          this.ctx.fillStyle = 'rgba(100, 116, 139, 0.4)';
+          this.ctx.fillText(`SYS_X???_Y??? [UNMAPPED]`, screenPos.x, textY);
+        } else if (s.is_inspected === 0) {
+          this.ctx.font = 'bold 10px monospace';
+          this.ctx.fillStyle = '#f59e0b'; // Amber warning color
+          this.ctx.fillText(`${s.id} [UNINSPECTED]`, screenPos.x, textY);
+        } else if (hasDisplayName) {
+          // Draw Custom Display Name in 10px font (10% larger)
+          this.ctx.font = 'bold 10px monospace';
+          this.ctx.fillStyle = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.85)';
+          this.ctx.fillText(s.display_name!, screenPos.x, textY);
+          
+          // Draw Sector ID under it in 80% size (8px font)
+          this.ctx.font = 'bold 8px monospace';
+          this.ctx.fillStyle = isSelected ? 'rgba(255, 255, 255, 0.5)' : 'rgba(148, 163, 184, 0.45)';
+          this.ctx.fillText(s.id, screenPos.x, textY + 11);
+        } else {
+          // Draw Sector ID in full size (10px font)
+          this.ctx.font = 'bold 10px monospace';
+          this.ctx.fillText(s.id, screenPos.x, textY);
+        }
       }
     });
   }

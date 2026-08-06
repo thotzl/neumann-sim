@@ -491,29 +491,52 @@ class Actuators:
             return True
         return False
 
-    @agent_service.with_agent_context(require_active=True, action_name='Move')
-    def move(self, cursor, agent, target_system):
-        cursor.execute("SELECT * FROM systems WHERE name = ?", (target_system,))
-        target = cursor.fetchone()
-        if not target:
-            print(f"[ERROR] System '{target_system}' has not been discovered yet.")
+    @agent_service.with_agent_context(require_active=False, action_name='Move')
+    def move(self, cursor, agent, target_x, target_y):
+        if agent['status'] not in ('active', 'traveling'):
+            print(f"[DENIED] Move is only allowed when active or traveling. Current: {agent['status']}")
             return False
+
+        tx = float(target_x)
+        ty = float(target_y)
+        sys_id = 'Interstellar'
+        display_name = f"Coordinates ({round(tx, 1)}, {round(ty, 1)})"
+
+        # Check if there is a known system at exactly these coordinates (or snapping)
+        # to set the target_system name in the DB (Pillar 2 / Seeding Integration)
+        cursor.execute("SELECT name FROM systems WHERE x = CAST(? AS INTEGER) AND y = CAST(? AS INTEGER)", (int(tx), int(ty)))
+        matched_sys = cursor.fetchone()
+        if matched_sys:
+            sys_id = matched_sys['name']
+            display_name = sys_id
+
         phys = self.rules.get('tool_costs', {}).get('move', {})
-        dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], target['x'], target['y'])
+        dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], tx, ty)
         cost = dist * phys.get('cost_per_distance', 0.1)
         if agent['energy_inventory'] < cost:
             print(f"[WARNING] Energy shortage! Journey initiated, but energy (available: {agent['energy_inventory']}, required: {cost}) is insufficient for the entire distance. Arrival with 0 energy likely.")
         
         speed = self.rules.get('global_settings', {}).get('travel_speed_per_tick', 300)
-        ticks = max(1, int(dist / speed))
+        ticks = max(1, int(math.ceil(dist / speed)))
         
-        cursor.execute("UPDATE agents SET status='traveling', target_system=?, origin_x=current_x, origin_y=current_y, target_x=?, target_y=?, transit_ticks_total=?, transit_ticks_passed=0 WHERE id=?", 
-                       (target_system, target['x'], target['y'], ticks, self.agent.id))
+        # We start the transit from the agent's current precise coordinates
+        cursor.execute("""
+            UPDATE agents SET 
+                status='traveling', 
+                target_system=?, 
+                origin_x=current_x, 
+                origin_y=current_y, 
+                target_x=?, 
+                target_y=?, 
+                transit_ticks_total=?, 
+                transit_ticks_passed=0 
+            WHERE id=?
+        """, (sys_id, tx, ty, ticks, self.agent.id))
                        
         if agent['active_ship_id']:
             cursor.execute("UPDATE ships SET system_name = 'Interstellar' WHERE id = ?", (agent['active_ship_id'],))
             
-        print(f"[SUCCESS] Journey initiated to {get_system_display_name(target)}. ETA: {ticks} Ticks.")
+        print(f"[SUCCESS] Journey initiated to {display_name}. ETA: {ticks} Ticks.")
         return True
 
     @agent_service.with_agent_context(require_active=True, action_name='Replication')

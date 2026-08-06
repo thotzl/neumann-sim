@@ -5,6 +5,29 @@ def calc_distance(x1, y1, x2, y2):
     dy = y2 - y1
     return math.sqrt(dx*dx + dy*dy)
 
+def calc_segment_to_point_distance(x1, y1, x2, y2, px, py):
+    """
+    Calculates the minimum distance from line segment AB (x1, y1) to (x2, y2)
+    to a point P (px, py). Prevents 'tunneling' at high speeds.
+    """
+    ab_x = x2 - x1
+    ab_y = y2 - y1
+    
+    ap_x = px - x1
+    ap_y = py - y1
+    
+    ab_lensq = ab_x*ab_x + ab_y*ab_y
+    if ab_lensq == 0:
+        return math.sqrt(ap_x*ap_x + ap_y*ap_y)
+        
+    t = (ap_x * ab_x + ap_y * ab_y) / ab_lensq
+    t = max(0.0, min(1.0, t))
+    
+    cx = x1 + t * ab_x
+    cy = y1 + t * ab_y
+    
+    return math.sqrt((px - cx)**2 + (py - cy)**2)
+
 def calc_travel_cost(dist, cost_factor):
     return int(dist * cost_factor)
 

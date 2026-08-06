@@ -3,18 +3,21 @@ import sys
 import json
 import sqlite3
 import random
+import math
 
 try:
     from .. import agent_service
     from .. import system_service
     from .. import config_service
     from .. import physics_service
+    from .. import generator
     from ..utils.formatting import get_display_name, aggregate_ship_telemetry
 except ImportError:
     from core.lib import agent_service
     from core.lib import system_service
     from core.lib import config_service
     from core.lib import physics_service
+    from core.lib import generator
     from core.lib.utils.formatting import get_display_name, aggregate_ship_telemetry
 
 class Sensors:
@@ -22,7 +25,6 @@ class Sensors:
     
     @agent_service.with_agent_context(allow_disembodied=True)
     def scan(self, cursor, agent):
-        system = system_service.get_system_or_fail(cursor, agent['location'])
         rules = config_service.get_economy_rules()
         base_cost = rules.get('tool_costs', {}).get('scan', {}).get('energy_cost', 40)
         
@@ -44,9 +46,7 @@ class Sensors:
             return False
 
         global_settings = rules.get('global_settings', {})
-        scan_min = global_settings.get('scan_range_min', 500)
         scan_max = global_settings.get('scan_range_max', 1500)
-        grid_size = global_settings.get('grid_snap_size', 100)
 
         cursor.execute("SELECT level FROM infrastructure WHERE system_name = ? AND type = 'deep_space_scanner' AND status = 'active'", (agent['location'],))
         scanner_row = cursor.fetchone()
@@ -57,25 +57,39 @@ class Sensors:
             scan_max += bonus
             print(f"[INFO] Deep Space Scanner Lvl {scanner_level} operational. Scan range boundary increased by +{bonus} units.")
         
-        dist = random.randint(scan_min, scan_max)
-        angle = random.uniform(0, 360)
+        # Procedural Active Radar Scan (Pillar 4 / Active Scan)
+        cx = float(agent['current_x'])
+        cy = float(agent['current_y'])
         
-        snap_x, snap_y = physics_service.calculate_scan_coordinates(system['x'], system['y'], dist, angle, grid_size)
-        sys_id = f"SYS_X{snap_x}_Y{snap_y}"
-
-        try:
-            core_val = random.randint(50000, 500000)
-            cursor.execute("""
-                INSERT INTO systems 
-                (name, x, y, extractable_matter_in_core, max_extractable_matter) 
-                VALUES (?, ?, ?, ?, ?)
-            """, (sys_id, snap_x, snap_y, core_val, core_val))
-            agent_service.consume_resources(cursor, agent['id'], energy=cost)
-            print(f"[SCAN] Detected: {sys_id}. Cost: {cost}E")
-            return True
-        except sqlite3.IntegrityError:
-            print(f"[INFO] Sector {sys_id} already mapped.")
-            return False
+        min_x = cx - scan_max
+        max_x = cx + scan_max
+        min_y = cy - scan_max
+        max_y = cy + scan_max
+        
+        cfg = config_service.get_config()
+        seed = str(cfg.get("seed", "BobOS_V12"))
+        
+        sectors = generator.UniverseGenerator.getSectorsInArea(min_x, max_x, min_y, max_y, seed, 1.0)
+        found_sectors = []
+        
+        for s in sectors:
+            dist = physics_service.calc_distance(cx, cy, s["x"], s["y"])
+            if dist <= scan_max:
+                # Discovered! Persist in DB
+                cursor.execute("""
+                    INSERT OR IGNORE INTO systems 
+                    (name, x, y, extractable_matter_in_core, max_extractable_matter) 
+                    VALUES (?, ?, ?, ?, ?)
+                """, (s["id"], s["x"], s["y"], s["matterDepot"], s["matterDepot"]))
+                
+                print(f"[SCAN] Detected: {s['id']} (Class: {s['spectralClass']}) at distance {round(dist, 1)} Units.")
+                found_sectors.append(s)
+                
+        agent_service.consume_resources(cursor, agent['id'], energy=cost)
+        if not found_sectors:
+            print("[INFO] Scanner sweep completed. No systems found in range.")
+            
+        return found_sectors if found_sectors else True
 
     @agent_service.with_agent_context(allow_disembodied=True)
     def storage(self, cursor, agent):
@@ -160,13 +174,10 @@ class Sensors:
             
         # 3. Target C: Sector Geology & Wiki Espionage
         elif system_name is not None:
-            cursor.execute("SELECT name, x, y, extractable_matter_in_core, raw_matter_depot, refined_matter_depot, energy_depot, depot_matter_capacity, depot_energy_capacity FROM systems WHERE name = ?", (system_name,))
-            row = cursor.fetchone()
-            if not row:
+            sys_dict = system_service.get_resolved_system_state(cursor, system_name)
+            if not sys_dict:
                 print(f"[ERROR] Sector '{system_name}' not mapped.")
                 return False
-                
-            sys_dict = dict(row)
             
             if system_name != agent['location']:
                 has_sat = system_service.has_active_infrastructure(cursor, agent['location'], ('sat_link', 'comms_relay'))
@@ -446,68 +457,66 @@ class Sensors:
         
     @agent_service.with_agent_context(allow_disembodied=True)
     def map(self, cursor, agent, range=None, query=None, system_id=None):
-        """Active stellar map and navigation system with modular filters."""
-        cursor.execute("SELECT name, x, y, display_name FROM systems")
-        rows = cursor.fetchall()
-        
-        current_system = system_service.get_system_or_fail(cursor, agent['location'])
-        if not current_system:
-            return []
-            
-        discovered = []
-        for r in rows:
-            dist = int(physics_service.calc_distance(current_system['x'], current_system['y'], r['x'], r['y']))
-            
-            # Apply Range Filter
-            if range is not None and dist > int(range):
-                continue
-                
-            # Apply Display Name Query Filter
-            disp_name = r['display_name'] if r['display_name'] else "Unnamed"
-            if query is not None and query.lower() not in disp_name.lower():
-                continue
-                
-            # Apply Catalog ID Filter
-            if system_id is not None and system_id.lower() != r['name'].lower():
-                continue
-                
-            discovered.append({
-                "system_id": r['name'],
-                "name": disp_name,
-                "coords": f"X{r['x']}-Y{r['y']}",
-                "distance": dist
-            })
-        return discovered
+       """Active stellar map and navigation system with modular filters."""
+       cursor.execute("SELECT name, x, y, display_name FROM systems")
+       rows = cursor.fetchall()
+
+       cx = float(agent['current_x'])
+       cy = float(agent['current_y'])
+
+       discovered = []
+       for r in rows:
+           dist = int(physics_service.calc_distance(cx, cy, r['x'], r['y']))
+
+           # Apply Range Filter
+           if range is not None and dist > int(range):
+               continue
+
+           # Apply Display Name Query Filter
+           disp_name = r['display_name'] if r['display_name'] else "Unnamed"
+           if query is not None and query.lower() not in disp_name.lower():
+               continue
+
+           # Apply Catalog ID Filter
+           if system_id is not None and system_id.lower() != r['name'].lower():
+               continue
+
+           discovered.append({
+               "system_id": r['name'],
+               "name": disp_name,
+               "coords": f"X{r['x']}-Y{r['y']}",
+               "distance": dist
+           })
+       return discovered
 
     @agent_service.with_agent_context(allow_disembodied=True)
     def eta(self, cursor, agent, destination):
-        """Calculates transit duration and energy cost for a direct flight."""
-        cursor.execute("SELECT name, x, y, display_name FROM systems WHERE name = ? OR display_name = ?", (destination, destination))
-        target = cursor.fetchone()
-        if not target:
-            print(f"[ERROR] Destination '{destination}' has not been discovered yet.")
-            return False
-            
-        current_system = system_service.get_system_or_fail(cursor, agent['location'])
-        if not current_system:
-            return False
-            
-        dist = physics_service.calc_distance(current_system['x'], current_system['y'], target['x'], target['y'])
-        
-        phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
-        cost_per_dist = phys.get('cost_per_distance', 0.1)
-        energy_cost = round(dist * cost_per_dist, 2)
-        
-        speed = config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300)
-        ticks = max(1, int(dist / speed))
-        
-        return {
-            "destination_id": target['name'],
-            "name": target['display_name'] if target['display_name'] else "Unnamed",
-            "distance": round(dist, 1),
-            "estimated_ticks": ticks,
-            "estimated_energy_cost": energy_cost
-        }
+       """Calculates transit duration and energy cost for a direct flight."""
+       cursor.execute("SELECT name, x, y, display_name FROM systems WHERE name = ? OR display_name = ?", (destination, destination))
+       target = cursor.fetchone()
+       if not target:
+           print(f"[ERROR] Destination '{destination}' has not been discovered yet.")
+           return False
+
+       cx = float(agent['current_x'])
+       cy = float(agent['current_y'])
+
+       dist = physics_service.calc_distance(cx, cy, target['x'], target['y'])
+
+       phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
+       cost_per_dist = phys.get('cost_per_distance', 0.1)
+       energy_cost = round(dist * cost_per_dist, 2)
+
+       speed = config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300)
+       ticks = max(1, int(math.ceil(dist / speed)))
+
+       return {
+           "destination_id": target['name'],
+           "name": target['display_name'] if target['display_name'] else "Unnamed",
+           "distance": round(dist, 1),
+           "estimated_ticks": ticks,
+           "estimated_energy_cost": energy_cost
+       }
 
     @agent_service.with_agent_context(allow_disembodied=True)
     def route(self, cursor, agent, destination):
@@ -520,6 +529,25 @@ class Sensors:
             
         start_sys = agent['location']
         dest_sys = target_row['name']
+
+        if start_sys == 'Interstellar':
+            cx = float(agent['current_x'])
+            cy = float(agent['current_y'])
+            # Fetch all discovered systems
+            cursor.execute("SELECT name, x, y FROM systems")
+            all_known = cursor.fetchall()
+            closest_sys = None
+            min_d = float('inf')
+            for r in all_known:
+                d = physics_service.calc_distance(cx, cy, r['x'], r['y'])
+                if d < min_d:
+                    min_d = d
+                    closest_sys = r['name']
+            if closest_sys:
+                start_sys = closest_sys
+            else:
+                print("[ERROR] No discovered systems available for routing.")
+                return False
         
         if start_sys == dest_sys:
             return {
@@ -543,24 +571,31 @@ class Sensors:
         cursor.execute("SELECT name, x, y, display_name FROM systems")
         all_systems = {r['name']: dict(r) for r in cursor.fetchall()}
         
-        # Build Hop-by-Hop Adjacency Graph (Dijkstra)
+        # Build Hop-by-Hop Adjacency Graph (A* Pathfinding - Pillar 4 & 6)
         # Two nodes are connected if the Euclidean distance between them is within the ship's energy/fuel range.
         import heapq
-        
-        queue = [(0, start_sys, [])]
+
+        dest_x = all_systems[dest_sys]['x']
+        dest_y = all_systems[dest_sys]['y']
+
+        # h_val (Heuristic): Euclidean distance to target
+        h_start = physics_service.calc_distance(all_systems[start_sys]['x'], all_systems[start_sys]['y'], dest_x, dest_y)
+
+        # queue stores: (f_score, g_score/cost, current_node, path)
+        queue = [(h_start, 0, start_sys, [])]
         seen = set()
         min_dist = {start_sys: 0}
-        
+
         phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
         cost_per_dist = phys.get('cost_per_distance', 0.1)
         speed = config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300)
-        
+
         while queue:
-            (cost, current, path) = heapq.heappop(queue)
+            (f_score, cost, current, path) = heapq.heappop(queue)
             if current in seen:
                 continue
             seen.add(current)
-            
+
             path = path + [current]
             if current == dest_sys:
                 # Build beautiful, structured flight plan
@@ -570,7 +605,7 @@ class Sensors:
                     s1 = all_systems[path[i]]
                     s2 = all_systems[path[i+1]]
                     seg_dist = physics_service.calc_distance(s1['x'], s1['y'], s2['x'], s2['y'])
-                    seg_ticks = max(1, int(seg_dist / speed))
+                    seg_ticks = max(1, int(math.ceil(seg_dist / speed)))
                     seg_cost = round(seg_dist * cost_per_dist, 2)
 
                     cumulative_ticks += seg_ticks
@@ -596,7 +631,7 @@ class Sensors:
                     "total_route_eta": f"{cumulative_ticks} turns",
                     "flight_plan": flight_plan
                 }
-                
+
             for neighbor, n_data in all_systems.items():
                 if neighbor in seen:
                     continue
@@ -606,7 +641,9 @@ class Sensors:
                     new_cost = cost + d
                     if neighbor not in min_dist or new_cost < min_dist[neighbor]:
                         min_dist[neighbor] = new_cost
-                        heapq.heappush(queue, (new_cost, neighbor, path))
+                        h_val = physics_service.calc_distance(n_data['x'], n_data['y'], dest_x, dest_y)
+                        f_score = new_cost + h_val
+                        heapq.heappush(queue, (f_score, new_cost, neighbor, path))
                         
         return {
             "status": "unroutable",

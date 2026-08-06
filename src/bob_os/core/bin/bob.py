@@ -26,7 +26,7 @@ DESCRIPTIONS = {
     "refine": "Converts raw matter into refined matter (Requires matter_refinery).",
     "repair": "Repairs damaged infrastructure (Requires structure_id from dashboard).",
     "deconstruct": "Deconstructs infrastructure and refunds part of the matter cost.",
-    "move": "Initiates transit to another (discovered) system.",
+    "move": "Initiates transit to target coordinates (target_x, target_y).",
     "replicate": "Creates an autonomous probe replican inside an active mind_forge (ID is generated dynamically by the probe kernel).",
     "set_name": "Sets an individual identity (name) for the probe.",
     "rename_system": "Gives the current system a new display name.",
@@ -125,7 +125,7 @@ def main():
         elif method == "repair": agent.repair(structure_id=safe_int(params.get('structure_id'), 'structure_id'), hp_to_restore=safe_int(params.get('hp_to_restore'), 'hp_to_restore', 50))
         elif method == "build": agent.build(building_type=params.get('building_type'), matter_to_invest=safe_int(params.get('matter_to_invest'), 'matter_to_invest', 100))
         elif method == "deconstruct": agent.deconstruct(structure_id=safe_int(params.get('structure_id'), 'structure_id'))
-        elif method == "move": agent.move(target_system=params.get('target_system'))
+        elif method == "move": agent.move(target_x=float(params.get('target_x')) if params.get('target_x') is not None else None, target_y=float(params.get('target_y')) if params.get('target_y') is not None else None)
         elif method == "replicate": agent.replicate()
         elif method == "set_name": agent.set_name(name=params.get('name'))
         elif method == "rename_system": agent.rename_system(new_name=params.get('new_name'))

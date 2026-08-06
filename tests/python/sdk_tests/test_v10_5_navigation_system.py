@@ -94,7 +94,7 @@ class TestNavigationSystem(unittest.TestCase):
         self.assertEqual(eta['destination_id'], 'SYS_B')
         self.assertEqual(eta['name'], 'Alpha Sektor')
         self.assertEqual(eta['distance'], 500.0)
-        self.assertEqual(eta['estimated_ticks'], 1) # max(1, int(500/300)) = 1
+        self.assertEqual(eta['estimated_ticks'], 2) # math.ceil(500/300) = 2
         self.assertEqual(eta['estimated_energy_cost'], 50.0) # 500 * 0.1 = 50
 
     def test_dijkstra_routing(self):
@@ -106,21 +106,21 @@ class TestNavigationSystem(unittest.TestCase):
         self.assertEqual(route['status'], 'routable')
         self.assertEqual(route['origin'], 'SYS_A')
         self.assertEqual(route['destination'], 'SYS_C')
-        self.assertEqual(route['total_route_eta'], '2 turns') # 1 turn per 500-unit leg (speed 300) -> 2 turns total!
+        self.assertEqual(route['total_route_eta'], '4 turns') # Correct continuous physics: 2 turns per 500-unit leg (speed 300) -> 4 turns total!
         
         plan = route['flight_plan']
         self.assertEqual(len(plan), 2)
         self.assertEqual(plan[0]['leg'], 1)
         self.assertEqual(plan[0]['system_id'], 'SYS_B')
         self.assertEqual(plan[0]['segment_distance'], 500.0)
-        self.assertEqual(plan[0]['travel_time'], '1 turns')
-        self.assertEqual(plan[0]['cumulative_time'], '1 turns') # Cumulative elapsed turns at Leg 1
+        self.assertEqual(plan[0]['travel_time'], '2 turns')
+        self.assertEqual(plan[0]['cumulative_time'], '2 turns') # Cumulative elapsed turns at Leg 1
         
         self.assertEqual(plan[1]['leg'], 2)
         self.assertEqual(plan[1]['system_id'], 'SYS_C')
         self.assertEqual(plan[1]['segment_distance'], 500.0)
-        self.assertEqual(plan[1]['travel_time'], '1 turns')
-        self.assertEqual(plan[1]['cumulative_time'], '2 turns') # Cumulative elapsed turns at Leg 2 (Final Destination!)
+        self.assertEqual(plan[1]['travel_time'], '2 turns')
+        self.assertEqual(plan[1]['cumulative_time'], '4 turns') # Cumulative elapsed turns at Leg 2 (Final Destination!)
 
     def test_network_comms_masking(self):
         # Option B GPS Realismus-Check

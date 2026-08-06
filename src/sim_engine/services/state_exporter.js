@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const { safeReadJsonSync } = require('../helpers/io_helpers');
+const { UniverseGenerator, hashStringToInt } = require('./generator');
 
 function exportWorldState(universeDir, state, lastAgentId) {
     const dbPath = path.join(universeDir, 'universe.db');
@@ -9,6 +10,18 @@ function exportWorldState(universeDir, state, lastAgentId) {
     const historyPath = path.join(universeDir, 'history.json');
 
     if (!fs.existsSync(dbPath)) return;
+
+    // Load experiment seed from config.json
+    const configPath = path.join(universeDir, '../config.json');
+    let seed = 'BobOS_V12';
+    try {
+        if (fs.existsSync(configPath)) {
+            const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            seed = config.seed || seed;
+        }
+    } catch (e) {
+        // fail silently
+    }
 
     const db = new sqlite3.Database(dbPath);
 
@@ -18,6 +31,32 @@ function exportWorldState(universeDir, state, lastAgentId) {
             let systemsProcessed = 0;
             if (systems.length === 0) finish(systems, [], []);
             systems.forEach(sys => {
+                // Parse coordinates from name or read from DB columns
+                const x = sys.x;
+                const y = sys.y;
+                
+                // Get procedural starting system or natural cell system
+                const startSys = UniverseGenerator.getStartingSystem(seed, 1.0);
+                let genSys = null;
+                if (sys.name === startSys.id) {
+                    genSys = startSys;
+                } else {
+                    const cx = Math.floor(x / 500);
+                    const cy = Math.floor(y / 500);
+                    genSys = UniverseGenerator.getSectorInCell(cx, cy, hashStringToInt(seed), 1.0);
+                }
+                
+                if (genSys) {
+                    sys.mass = genSys.mass;
+                    sys.spectralClass = genSys.spectralClass;
+                    sys.occurrence = genSys.occurrence;
+                    sys.anomaly = genSys.anomaly;
+                    sys.anomalyAngle = genSys.anomalyAngle;
+                    sys.debrisBelt = genSys.debrisBelt;
+                    sys.system = genSys.system; // Dynamic planetary system details!
+                    sys.warpCurrent = genSys.warpCurrent;
+                }
+
                 db.all("SELECT id, type, status, health, max_health, level, progress_matter, required_matter FROM infrastructure WHERE system_name = ?", [sys.name], (err, infra) => {
                     sys.infra = infra || [];
                     systemsProcessed++;

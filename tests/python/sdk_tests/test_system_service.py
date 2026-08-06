@@ -22,6 +22,23 @@ class TestSystemService(unittest.TestCase):
             )
         """)
         
+        # Create simplified Systems table for state resolution test
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS systems (
+                name TEXT PRIMARY KEY,
+                x INTEGER,
+                y INTEGER,
+                extractable_matter_in_core INTEGER,
+                max_extractable_matter INTEGER,
+                raw_matter_depot INTEGER DEFAULT 0,
+                refined_matter_depot INTEGER DEFAULT 0,
+                energy_depot INTEGER DEFAULT 0,
+                depot_matter_capacity INTEGER DEFAULT 0,
+                depot_energy_capacity INTEGER DEFAULT 0,
+                display_name TEXT
+            )
+        """)
+        
         # Seed test data
         self.cursor.execute("""
             INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_A', 'shipyard', 'active')
@@ -31,6 +48,10 @@ class TestSystemService(unittest.TestCase):
         """)
         self.cursor.execute("""
             INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_B', 'comms_relay', 'active')
+        """)
+        self.cursor.execute("""
+            INSERT INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter)
+            VALUES ('SYS_X18700_Y-8200', 18700, -8200, 100000, 100000)
         """)
         self.conn.commit()
 
@@ -59,6 +80,16 @@ class TestSystemService(unittest.TestCase):
         
         res = system_service.has_active_infrastructure(self.cursor, 'SYS_A', ('advanced_shipyard', 'sat_link'))
         self.assertFalse(res)
+
+    def test_get_resolved_system_state(self):
+        state = system_service.get_resolved_system_state(self.cursor, 'SYS_X18700_Y-8200')
+        self.assertIsNotNone(state)
+        self.assertEqual(state['name'], 'SYS_X18700_Y-8200')
+        self.assertEqual(state['x'], 18700)
+        self.assertEqual(state['y'], -8200)
+        self.assertEqual(state['spectral_class'], 'G')
+        self.assertEqual(state['mass'], 1.0)
+        self.assertTrue('system' in state) # Contains Kepler system planets list
 
 if __name__ == '__main__':
     unittest.main()

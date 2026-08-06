@@ -46,7 +46,7 @@ class TestBobOS_v3_1_Logistics(unittest.TestCase):
         conn.close()
 
         # Use the SDK!
-        success = self.agent.move('SYS_X400_Y400')
+        success = self.agent.move(400.0, 400.0)
         self.assertTrue(success)
         
         conn = db_config.get_connection()

@@ -37,7 +37,7 @@ async function runSwarmE2E() {
 
         process.env.E2E_MOCK = 'true';
         process.env.E2E_MOCK_STEP_1_INSTANCE1 = "ANALYSE: Skript.\nAKTION:\n[WRITE: scripts/active/auto.py (READ_KEY: secret)]\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n[END]\n[RUN: me scut(receiver_id=Instance-2, message=secret)]";
-        process.env.E2E_MOCK_STEP_2_INSTANCE2 = `ANALYSE: Move.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: me move(target_system=SYS_B)]`;
+        process.env.E2E_MOCK_STEP_2_INSTANCE2 = `ANALYSE: Move.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: me move(target_x=600, target_y=0)]`;
 
         execSync(`node src/sim_engine/core/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 

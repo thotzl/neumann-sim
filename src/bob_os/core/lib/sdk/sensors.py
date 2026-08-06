@@ -211,15 +211,39 @@ class Sensors:
     @agent_service.with_agent_context(allow_disembodied=True)
     def local_system(self, cursor, agent):
         if agent['status'] == 'traveling' or agent['location'] == 'Interstellar':
-            return {
+            energy = agent.get('energy_inventory', 0)
+            status = "In Transit"
+            warning = None
+            
+            # Get actual ship specs if piloting
+            ship_speed = 300.0
+            if agent.get('host_type') == 'ship' and agent.get('host_id'):
+                cursor.execute("SELECT max_speed FROM ships WHERE id = CAST(? AS INTEGER)", (agent['host_id'],))
+                s_row = cursor.fetchone()
+                if s_row and s_row[0] is not None:
+                    ship_speed = float(s_row[0])
+            
+            phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
+            cost_per_dist = phys.get('cost_per_distance', 0.1)
+            drain_idle = config_service.get_economy_rules().get('agent_limits', {}).get('energy_drain_idle', 0)
+            tick_cost = ship_speed * cost_per_dist + drain_idle
+            
+            if energy < tick_cost:
+                status = "PROPULSION BLACKOUT - STRANDED"
+                warning = f"CRITICAL ERROR: Propulsion grid offline due to complete energy depletion ({round(energy, 2)}/{round(tick_cost, 2)} E). Transit suspended."
+                
+            res = {
                 "system": {
                     "name": "Interstellar Space",
-                    "status": "In Transit",
+                    "status": status,
                     "target_system": agent['target_system'] if agent['target_system'] else 'Unknown',
                     "transit_ticks_passed": agent['transit_ticks_passed'],
                     "transit_ticks_total": agent['transit_ticks_total']
                 }
             }
+            if warning:
+                res["system"]["warning"] = warning
+            return res
             
         sys_name = agent['location']
         system = system_service.get_system_or_fail(cursor, sys_name)

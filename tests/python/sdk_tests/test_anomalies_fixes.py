@@ -175,5 +175,38 @@ class TestAnomaliesFixes(unittest.TestCase):
         if os.path.exists(mock_env_path):
             os.remove(mock_env_path)
 
+    def test_stranded_propulsion_warning(self):
+        """
+        Verify that a stranded traveling agent with no fuel receives a
+        critical status warning inside local_system telemetry.
+        """
+        seed_test_db.seed()
+        
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Get Bob's ID
+        cursor.execute("SELECT id FROM agents LIMIT 1")
+        agent_id = cursor.fetchone()['id']
+        os.environ['BOB_ID'] = agent_id
+        
+        # Update Bob's status to traveling and location to Interstellar
+        cursor.execute("UPDATE agents SET status = 'traveling', target_system = 'SYS_B' WHERE id = ?", (agent_id,))
+        # Update Bob's ship to have 0 energy
+        cursor.execute("UPDATE ships SET energy_inventory = 0 WHERE pilot_id = ?", (agent_id,))
+        conn.commit()
+        conn.close()
+        
+        # Fetch telemetry
+        agent = bob_sdk.Agent()
+        telemetry = agent.local_system()
+        
+        # Assertions
+        self.assertIn('system', telemetry)
+        self.assertEqual(telemetry['system']['status'], "PROPULSION BLACKOUT - STRANDED")
+        self.assertIn('warning', telemetry['system'])
+        self.assertTrue("CRITICAL ERROR" in telemetry['system']['warning'])
+
 if __name__ == '__main__':
     unittest.main()

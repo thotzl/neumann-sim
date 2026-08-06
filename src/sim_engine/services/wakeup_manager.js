@@ -69,6 +69,17 @@ async function getSectorSnapshot(location, agentId, dbPath) {
 async function handleStandby(agent, state, config, universeDir, logFile, dbPath) {
     const snapshot = await module.exports.getSectorSnapshot(agent.location, agent.id, dbPath);
     
+    // Resolve any newly logged passive sensor detections in current cycle (Steel-man Fix)
+    const db = new Database(dbPath);
+    let hasDetections = false;
+    try {
+        const detectionsRow = await db.get("SELECT COUNT(*) as count FROM visual_events WHERE cycle = ? AND actor_id = ? AND description LIKE '%[DETECTION]%'", [state.round, agent.id]);
+        hasDetections = detectionsRow ? detectionsRow.count > 0 : false;
+    } catch (e) {
+        console.error("[WAKEUP-DETECTION-ERROR]", e.message);
+    }
+    await db.close();
+    
     // Initialize baselines if they don't exist yet (Freeze on sleep initiation)
     if (!agent.sleep_baselines && snapshot) {
         agent.sleep_baselines = {
@@ -108,6 +119,10 @@ async function handleStandby(agent, state, config, universeDir, logFile, dbPath)
         {
             trigger: () => hasUnreadScut && !isDnd,
             reason: "Incoming sub-etheric radio transmission (SCUT)."
+        },
+        {
+            trigger: () => hasDetections && !isDnd,
+            reason: "Orte neues Sternensystem! Passive Sensoren haben unbekannte stellare Signaturen erfasst."
         },
         // Tier III: Navigational Alarms
         {

@@ -14,9 +14,16 @@ const Database = require('../../src/sim_engine/services/db');
 Database.prototype.run = async function(sql, params) {
     return { lastID: 1, changes: 1 };
 };
+Database.prototype.get = async function(sql, params) {
+    if (sql.includes("visual_events")) {
+        return { count: Database.prototype.mock_detections || 0 };
+    }
+    return null;
+};
 Database.prototype.close = async function() {
     return;
 };
+Database.prototype.mock_detections = 0;
 
 // Create a dummy log file to satisfy logging calls
 const dummyLog = path.join(__dirname, 'dummy_standby.log');
@@ -209,8 +216,53 @@ async function runTests() {
         assert.ok(agent5.wake_reason.includes("Demographic contact!"));
         console.log("  ✅ Demographic population changes successfully triggered wakeup.");
 
+        // --- TEST 6: PASSIVE SENSOR DETECTION WAKEUP SENSOR ---
+        console.log("Test 6: Verifying Passive Sensor Detection wakeup sensor...");
+        let agent6 = {
+            id: "Instance-1",
+            location: "SYS_X0_Y0",
+            last_location: "SYS_X0_Y0",
+            sleep_state: 1,
+            sleep_until_cycle: 10,
+            sleep_baselines: {
+                bobs_count: 0,
+                ships_count: 0,
+                infra_count: 0,
+                active_infra_count: 0,
+                core_matter: 1000
+            }
+        };
+        
+        let state6 = {
+            round: 5,
+            global_inbox: {}
+        };
+        
+        // Mock getSectorSnapshot to return neutral
+        wakeupManager.getSectorSnapshot = async function(location, agentId, dbPath) {
+            return {
+                bobs_count: 0,
+                ships_count: 0,
+                infra_count: 0,
+                active_infra_count: 0,
+                core_matter: 1000,
+                has_low_health: false,
+                priority_scuts: 0
+            };
+        };
+
+        // Enable mock detection event for cycle 5
+        Database.prototype.mock_detections = 1;
+
+        skipped = await wakeupManager.handleStandby(agent6, state6, {}, __dirname, dummyLog, "mock_db");
+        assert.strictEqual(skipped, false); // False because it woke up!
+        assert.strictEqual(agent6.sleep_state, 0);
+        assert.strictEqual(agent6.wake_reason, "Orte neues Sternensystem! Passive Sensoren haben unbekannte stellare Signaturen erfasst.");
+        console.log("  ✅ New system detection correctly triggered passive sensor wakeup.");
+
         // Restore original functions & clean up
         wakeupManager.getSectorSnapshot = originalSnapshot;
+        Database.prototype.mock_detections = 0;
         if (fs.existsSync(dummyLog)) fs.unlinkSync(dummyLog);
         
         console.log("\n🎉 ALL WAKEUP MANAGER STANDALONE UNIT TESTS PASSED SUCCESSFULLY!\n");

@@ -90,18 +90,24 @@ def update(current_tick=1):
         for star in local_stars:
             d_min = physics_service.calc_segment_to_point_distance(start_x, start_y, next_x, next_y, star["x"], star["y"])
             if d_min <= visual_range:
-                # Discovered! Write to systems table
-                cursor.execute("""
-                    INSERT OR IGNORE INTO systems 
-                    (name, x, y, extractable_matter_in_core, max_extractable_matter) 
-                    VALUES (?, ?, ?, ?, ?)
-                """, (star["id"], star["x"], star["y"], star["matterDepot"], star["matterDepot"]))
+                # Only insert and log if system is new or uninspected (Steel-man Fix)
+                cursor.execute("SELECT is_inspected FROM systems WHERE name = ?", (star["id"],))
+                existing_sys = cursor.fetchone()
+                is_new_or_uninspected = not existing_sys or existing_sys['is_inspected'] == 0
                 
-                # Emit a detection log
-                cursor.execute("""
-                    INSERT INTO visual_events (cycle, actor_id, description)
-                    VALUES (?, ?, ?)
-                """, (current_tick, t['id'], f"[DETECTION] Passive sensors mapped system {star['id']} at closest approach {round(d_min, 1)} Units."))
+                if is_new_or_uninspected:
+                    # Discovered! Write to systems table (defaulting to is_inspected=0 for Fog of War)
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO systems 
+                        (name, x, y, extractable_matter_in_core, max_extractable_matter, is_inspected) 
+                        VALUES (?, ?, ?, ?, ?, 0)
+                    """, (star["id"], star["x"], star["y"], star["matterDepot"], star["matterDepot"]))
+                    
+                    # Emit a detection log
+                    cursor.execute("""
+                        INSERT INTO visual_events (cycle, actor_id, description)
+                        VALUES (?, ?, ?)
+                    """, (current_tick, t['id'], f"[DETECTION] Passive sensors mapped system {star['id']} at closest approach {round(d_min, 1)} Units."))
 
         # Deduct travel tick costs explicitly from the host
         agent_service.update_agent_resources(cursor, t['id'], energy=-tick_cost)

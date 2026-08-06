@@ -58,9 +58,9 @@ def seed():
             ship_id = idx + 1
             cursor.execute("""
                 INSERT OR REPLACE INTO agents 
-                (id, chosen_name, host_id, host_type, status, active_ship_id) 
-                VALUES (?, ?, ?, 'ship', 'active', ?)
-            """, (agent_id, chosen_name, str(ship_id), ship_id))
+                (id, chosen_name, host_id, host_type, status, active_ship_id, current_x, current_y) 
+                VALUES (?, ?, ?, 'ship', 'active', ?, ?, ?)
+            """, (agent_id, chosen_name, str(ship_id), ship_id, start_sys["x"], start_sys["y"]))
             
             # Create ship with physical resources
             cursor.execute("""

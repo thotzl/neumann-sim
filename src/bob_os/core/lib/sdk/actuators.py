@@ -62,8 +62,12 @@ class Actuators:
         if agent['energy_inventory'] < cost:
             print(f"[ERROR] Battery empty (requires {cost} energy).")
             return False
-        if agent['raw_matter_inventory'] >= agent['matter_storage_capacity']:
-            print(f"[ERROR] Storage full ({agent['raw_matter_inventory']}/{agent['matter_storage_capacity']}).")
+            
+        raw_inv = agent.get('raw_matter_inventory') or 0
+        ref_inv = agent.get('refined_matter_inventory') or 0
+        total_inv = raw_inv + ref_inv
+        if total_inv >= agent['matter_storage_capacity']:
+            print(f"[ERROR] Storage full ({total_inv}/{agent['matter_storage_capacity']}).")
             return False
         sys_name = agent['location']
         system = system_service.get_system_or_fail(cursor, sys_name)
@@ -72,7 +76,7 @@ class Actuators:
             return False
 
         # Update raw matter and deduct energy (-cost) from the host (Column 1)
-        actual_add = min(matter_yield, agent['matter_storage_capacity'] - agent['raw_matter_inventory'])
+        actual_add = min(matter_yield, agent['matter_storage_capacity'] - total_inv)
         agent_service.update_agent_resources(cursor, self.agent.id, raw_matter=actual_add, energy=-cost)
         cursor.execute("UPDATE systems SET extractable_matter_in_core = extractable_matter_in_core - ? WHERE name = ?", (actual_add, sys_name))
         

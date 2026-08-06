@@ -48,7 +48,30 @@ def analyze(exp_name):
                 host_id = a.get('host_id', 'unknown')
                 ship_info = f" | Disembodied in Host: {host_type} (ID: {host_id})"
             
-            print(f"  {a['id']} (Name: {a.get('chosen_name', 'Unnamed')}) - Status: {a.get('status', 'active')} | System: {a.get('target_system') or 'SYS_X0_Y0'}{ship_info}")
+            # Resolve true current system location (Steel-man Fix with dynamic snapping fallback)
+            system_name = a.get('target_system')
+            if not system_name:
+                host_type = a.get('host_type')
+                host_id = a.get('host_id')
+                if host_type == 'ship':
+                    host_ship = c.execute("SELECT system_name FROM ships WHERE id = CAST(? AS INTEGER)", (host_id,)).fetchone()
+                    if host_ship:
+                        system_name = host_ship['system_name']
+                elif host_type == 'matrix':
+                    host_infra = c.execute("SELECT system_name FROM infrastructure WHERE id = CAST(? AS INTEGER)", (host_id,)).fetchone()
+                    if host_infra:
+                        system_name = host_infra['system_name']
+            
+            # Option C: Fallback to dynamic snapping from agent's actual DB coordinates
+            if not system_name and a.get('current_x') is not None and a.get('current_y') is not None:
+                snapped_x = int(round(float(a['current_x']) / 100.0) * 100.0)
+                snapped_y = int(round(float(a['current_y']) / 100.0) * 100.0)
+                system_name = f"SYS_X{snapped_x}_Y{snapped_y}"
+                
+            if not system_name:
+                system_name = 'SYS_UNKNOWN'
+
+            print(f"  {a['id']} (Name: {a.get('chosen_name', 'Unnamed')}) - Status: {a.get('status', 'active')} | System: {system_name}{ship_info}")
     except sqlite3.Error as e:
         print(f"  Error reading agents table: {e}")
 

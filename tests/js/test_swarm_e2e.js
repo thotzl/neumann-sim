@@ -32,7 +32,15 @@ async function runSwarmE2E() {
         execSync(`python3 core/bin/init_db.py --seed`, { cwd: expDir, env: { ...process.env, PYTHONPATH: expDir } });
 
         const db = new sqlite3.Database(dbPath);
-        await runSql(db, "INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, x, y) VALUES ('SYS_B', 5000, 600, 0)");
+        
+        // Resolve dynamic coordinates of the starting system to keep transit distance relative (Steel-man Fix)
+        const startSysRow = await getSql(db, "SELECT x, y FROM systems LIMIT 1");
+        const startX = startSysRow.x;
+        const startY = startSysRow.y;
+        const targetX = startX + 600;
+        const targetY = startY;
+
+        await runSql(db, `INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, x, y) VALUES ('SYS_B', 5000, ${targetX}, ${targetY})`);
         await runSql(db, `UPDATE ships SET energy_inventory = 500 WHERE id IN (1, 2)`);
 
         // Resolve generated agent IDs dynamically before running mock steps (Steel-man Fix)
@@ -47,7 +55,7 @@ async function runSwarmE2E() {
         process.env[envKey1] = `ANALYSE: Skript.\nAKTION:\n[WRITE: scripts/active/auto.py (READ_KEY: secret)]\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n[END]\n[RUN: me scut(receiver_id=${agentId2}, message=secret)]`;
 
         const envKey2 = `E2E_MOCK_STEP_2_${agentId2.toUpperCase().replace(/-/g, '')}`;
-        process.env[envKey2] = `ANALYSE: Move.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: me move(target_x=600, target_y=0)]`;
+        process.env[envKey2] = `ANALYSE: Move.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: me move(target_x=${targetX}, target_y=${targetY})]`;
 
         execSync(`node src/sim_engine/core/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 

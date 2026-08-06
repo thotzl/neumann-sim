@@ -1,13 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Camera, Sector, SandboxConfig } from '../shared/types';
-import { UniverseGenerator, hashStringToInt, getStellarProperties } from '../shared/generator';
-import { CanvasController } from '../canvasController';
+import { useEffect, useState } from 'react';
+import { Sector, SandboxConfig } from '../shared/types';
+import { UniverseGenerator, getStellarProperties } from '../shared/generator';
 
-export default function App() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+// Import Shared Layout and Canvas Components
+import { C2Layout } from '../shared/components/C2Layout';
+import { TacticalCanvas } from '../shared/components/TacticalCanvas';
 
-  // React state for UI controls (does not trigger high-frequency canvas re-renders)
+export default function SandboxApp() {
   const [config, setConfig] = useState<SandboxConfig>({
     seed: 'BobOS_V12',
     density: 0.45,
@@ -16,39 +15,39 @@ export default function App() {
   });
 
   const [showUnmapped, setShowUnmapped] = useState<boolean>(true);
-  
+
   // Real-time Physics Tuning constants
   const [physics, setPhysics] = useState({
     superCellSize: 120000,
     galaxyChance: 0.40,
     minGalaxyRadius: 15000,
     maxGalaxyRadius: 50000,
-    minPitchAngle: 6,   // Tight Sa-type spiral pitch angle in degrees (default 6)
-    maxPitchAngle: 24,  // Open Sc-type spiral pitch angle in degrees (default 24)
+    minPitchAngle: 6,
+    maxPitchAngle: 24,
     systemCellSize: 500,
-    maxJitter: 75,      // Chaos spacing (default 75 LY)
-    minStellarMass: 0.08, // IMF boundary (default 0.08)
-    maxStellarMass: 40.0, // IMF boundary (default 40.0)
-    stellarMassImf: 3.0,  // Salpeter IMF Exponent curve skew (default 3.0)
-    remnantChance: 0.001, // Stellar remnants chance (default 0.1%)
-    remnantPulsarLimit: 15.0, // Mass threshold between Pulsar and BlackHole (default 15.0 M_sun)
-    planetMinCount: 2,    // Standard minimum planet count (default 2)
-    planetMaxCount: 8,    // Standard maximum planet count (default 8)
-    planetTbOffset: 0.22, // Titius-Bode starting orbit distance offset (default 0.22)
-    planetTbSpacing: 1.45, // Titius-Bode spacing multiplier (default 1.45)
-    supernovaBubbleChance: 0.09, // HIM Supernova bubble spawn probability (default 9%)
-    gravityWellChance: 0.08, // Spacetime Gravity Well spawn probability (default 8%)
-    gravityWellMult: 2.0   // Gravity Well mass/matter condensation multiplier (default 2.0)
+    maxJitter: 75,
+    minStellarMass: 0.08,
+    maxStellarMass: 40.0,
+    stellarMassImf: 3.0,
+    remnantChance: 0.001,
+    remnantPulsarLimit: 15.0,
+    planetMinCount: 2,
+    planetMaxCount: 8,
+    planetTbOffset: 0.22,
+    planetTbSpacing: 1.45,
+    supernovaBubbleChance: 0.09,
+    gravityWellChance: 0.08,
+    gravityWellMult: 2.0
   });
 
-  // Real-time Visual HUD Tuning constants (only affects the Map presentation layer, not the simulation!)
+  // Real-time Visual HUD Tuning constants
   const [visualTuning, setVisualTuning] = useState({
-    sizeScale: 0.25,        // Standard Kenyon-Hartmann magnitude-pixel scaling (default 0.25, 0.0 is uniform size)
-    brightnessScale: 1.1,   // Standard Visual Stellar Luminosity scaling (default 1.1, 0.0 is uniform glow)
-    colorShift: 0,          // offsets Kelvin color temperature visually (+- Kelvin offset, default 0)
-    colorContrast: 1.0,     // stretches spectral temperature contrast around solar baseline (default 1.0)
-    planetSizeScale: 0.35,  // Planet size ratio contrast exponent (default 0.35, 0.0 is uniform size)
-    orbitSpacingScale: 1.0  // Planet orbit spacing contrast multiplier (default 1.0)
+    sizeScale: 0.25,
+    brightnessScale: 1.1,
+    colorShift: 0,
+    colorContrast: 1.0,
+    planetSizeScale: 0.35,
+    orbitSpacingScale: 1.0
   });
 
   // Sync state to static fields of UniverseGenerator
@@ -75,548 +74,95 @@ export default function App() {
     UniverseGenerator.GRAVITY_WELL_MULT = physics.gravityWellMult;
   }, [physics]);
 
-  // Dynamically calculate starting system on seed/density changes, center camera on it, and reveal/select it!
+  const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
+  const [activeTab, setActiveTab] = useState<'status' | 'orbits'>('status');
+
+  // Connection & Panel Toggles
+  const [sidebarWidth, setSidebarWidth] = useState(360);
+  const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
+  
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState(330);
+  const [isLeftSidebarMinimized, setIsLeftSidebarMinimized] = useState(false);
+
+  // Floating Rnd Console position states
+  const [consoleX, setConsoleX] = useState(16);
+  const [consoleY, setConsoleY] = useState(window.innerHeight - 130);
+  const [consoleWidth, setConsoleWidth] = useState(650);
+  const [consoleHeight, setConsoleHeight] = useState(100);
+  const [isConsoleMinimized, setIsConsoleMinimized] = useState(false);
+
+  // Live Canvas Viewport dimensions state
+  const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+  // Camera pan and zoom states (Parent starting coordinates)
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [currentZoom, setCurrentZoom] = useState(0.15);
+
+  const [revealedSectors, setRevealedSectors] = useState<Set<string>>(new Set());
+  const [mockState, setMockState] = useState<any | null>(null);
+
+  const [, forceUpdate] = useState(0);
+
+  // Set starting system on seed/density changes
   useEffect(() => {
     const startSys = UniverseGenerator.getStartingSystem(config.seed, config.density);
-    
-    // Clear previously revealed and register the new start system
-    revealedSectorsRef.current.clear();
-    revealedSectorsRef.current.add(startSys.id);
+    const updatedRevealed = new Set<string>();
+    updatedRevealed.add(startSys.id);
+    setRevealedSectors(updatedRevealed);
 
-    // Reposition camera pan to focus on start node
-    cameraRef.current.panX = startSys.x;
-    cameraRef.current.panY = startSys.y;
-
-    // Set as active selection
+    setPanX(startSys.x);
+    setPanY(startSys.y);
     setSelectedSector(startSys);
   }, [config.seed, config.density, physics.superCellSize, physics.galaxyChance, physics.minGalaxyRadius, physics.maxGalaxyRadius, physics.minPitchAngle, physics.maxPitchAngle, physics.systemCellSize, physics.maxJitter]);
 
-  const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
-
-  const renderSliderWithInput = (
-    label: string,
-    value: number,
-    min: number,
-    max: number,
-    step: number,
-    onChange: (val: number) => void,
-    formatDisplay: (val: number) => string = (val) => val.toString()
-  ) => {
-    return (
-      <div className="control-group">
-        <label style={{ display: 'block', marginBottom: '2px', fontSize: '0.7rem', color: '#94a3b8' }}>
-          {label}: <strong style={{ color: '#38bdf8' }}>{formatDisplay(value)}</strong>
-        </label>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px' }}>
-          <input
-            type="range"
-            min={min}
-            max={max}
-            step={step}
-            value={value}
-            onChange={(e) => onChange(parseFloat(e.target.value))}
-            className="hud-slider"
-            style={{ flex: 1, margin: 0 }}
-          />
-          <input
-            type="number"
-            min={min}
-            max={max}
-            step={step}
-            value={isNaN(value) ? min : value}
-            onChange={(e) => {
-              let val = parseFloat(e.target.value);
-              if (isNaN(val)) return;
-              const clamped = Math.max(min, Math.min(max, val));
-              onChange(clamped);
-            }}
-            className="hud-input-number"
-            style={{
-              width: '56px',
-              background: '#040810',
-              border: '1px solid #1e293b',
-              borderRadius: '2px',
-              color: '#38bdf8',
-              fontFamily: 'monospace',
-              fontSize: '0.75rem',
-              padding: '2px 4px',
-              textAlign: 'center',
-              outline: 'none',
-              height: '18px'
-            }}
-          />
-        </div>
-      </div>
-    );
-  };
-  const [inspectorTab, setInspectorTab] = useState<'telemetry' | 'orbits'>('telemetry');
-  const [viewportStats, setViewportStats] = useState({ x: 0, y: 0, count: 0, revealedCount: 0 });
-
-  // High-frequency values held in refs to maintain 60 FPS under mouse drag & zoom
-  const cameraRef = useRef<Camera>({ panX: 0, panY: 0, zoom: 0.8 });
-  const mouseRef = useRef({ x: 0, y: 0, isDown: false });
-  const controllerRef = useRef<CanvasController | null>(null);
-  
-  // Set of revealed sector IDs
-  const revealedSectorsRef = useRef<Set<string>>(new Set()); // populated dynamically by the starting system useEffect
-  const [, forceUpdate] = useState(0); // For forcing UI updates on manual trigger
-
-  const [mockState, setMockState] = useState<any>(null);
-  const mockStateRef = useRef<any>(null);
+  // Handle window resizing
   useEffect(() => {
-    mockStateRef.current = mockState;
-  }, [mockState]);
-
-  // Keep config values easily readable inside the high-frequency loop
-  const configRef = useRef(config);
-  useEffect(() => {
-    configRef.current = config;
-  }, [config]);
-
-  // Handle canvas sizing and central render loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const controller = new CanvasController(canvas);
-    controllerRef.current = controller;
-
-    let animationFrameId: number;
-
-    const render = () => {
-      const width = canvas.parentElement?.clientWidth || window.innerWidth;
-      const height = canvas.parentElement?.clientHeight || window.innerHeight;
-
-      // Prepare viewport
-      controller.clear(width, height);
-
-      // Query visible world bounds
-      const topLeft = controller.screenToWorld(0, 0, cameraRef.current);
-      const bottomRight = controller.screenToWorld(width, height, cameraRef.current);
-
-      // Fetch deterministic systems inside visible bounding box
-      const currentConfig = configRef.current;
-      const seedHash = hashStringToInt(currentConfig.seed);
-
-      const visibleSectors = UniverseGenerator.getSectorsInArea(
-        topLeft.x,
-        bottomRight.x,
-        topLeft.y,
-        bottomRight.y,
-        currentConfig.seed,
-        currentConfig.density
-      );
-
-      // Filter unmapped systems if showUnmapped is disabled
-      const renderedSectors = showUnmapped 
-        ? visibleSectors 
-        : visibleSectors.filter(s => revealedSectorsRef.current.has(s.id));
-
-      // 1. Draw glowing Interstellar Medium (ISM) backgrounds (painted behind grid)
-      controller.drawCosmicBackground(renderedSectors, cameraRef.current);
-
-      // 2. Draw Grid lines
-      controller.drawGrid(cameraRef.current);
-
-      // 3. Draw high-tech Warp Vector Currents flow field
-      controller.drawWarpCurrents(cameraRef.current, seedHash);
-
-      // Fetch and render visible Galaxies
-      const visibleGalaxies = UniverseGenerator.getOverlappingGalaxies(
-        topLeft.x,
-        bottomRight.x,
-        topLeft.y,
-        bottomRight.y,
-        seedHash
-      );
-      controller.drawGalaxies(visibleGalaxies, cameraRef.current);
-
-      // Render systems
-      controller.drawSectors(
-        renderedSectors,
-        cameraRef.current,
-        selectedSector?.id || null,
-        revealedSectorsRef.current,
-        visualTuning
-      );
-
-      // Draw simulated mock Bobs, traveling ships, and trajectories if preview is active in Sandbox
-      const activeMockState = mockStateRef.current;
-      if (activeMockState) {
-        const ctx = canvas.getContext('2d')!;
-        const zoom = cameraRef.current.zoom;
-
-        // A. Draw Interstellar Transit Lines for traveling ships/agents
-        if (Array.isArray(activeMockState.agents)) {
-          activeMockState.agents.forEach((agent: any) => {
-            if (agent.status === 'traveling') {
-              const originScreen = controller.worldToScreen(agent.origin_x, agent.origin_y, cameraRef.current);
-              const targetScreen = controller.worldToScreen(agent.target_x, agent.target_y, cameraRef.current);
-
-              ctx.save();
-              ctx.beginPath();
-              ctx.setLineDash([4, 8]);
-              ctx.strokeStyle = 'rgba(14, 165, 233, 0.45)'; // cyber blue
-              ctx.lineWidth = Math.max(1, 1.2 * zoom);
-              ctx.moveTo(originScreen.x, originScreen.y);
-              ctx.lineTo(targetScreen.x, targetScreen.y);
-              ctx.stroke();
-              ctx.restore();
-            }
-          });
-        }
-
-        // B. Draw stationary ships/matrix Bobs at system edge
-        if (Array.isArray(activeMockState.systems)) {
-          activeMockState.systems.forEach((sys: any) => {
-            const screenPos = controller.worldToScreen(sys.x, sys.y, cameraRef.current);
-
-            const shipsHere = activeMockState.ships ? activeMockState.ships.filter((ship: any) => ship.system_name === sys.name) : [];
-            const bobsHere = activeMockState.agents ? activeMockState.agents.filter((a: any) => a.location === sys.name && a.status !== 'traveling') : [];
-            const matrixBobs = bobsHere.filter((a: any) => !a.active_ship_id);
-
-            // Calculate dynamic system outer edge to prevent overlapping with planet orbits
-            let outerRadiusOffset = Math.max(10, 20 * zoom); // Fallback
-            
-            const matchingSector = renderedSectors.find((s: any) => s.id === sys.name);
-            if (matchingSector && matchingSector.system && matchingSector.system.planets.length > 0) {
-              const maxDistance = matchingSector.system.planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
-              const props = getStellarProperties(matchingSector.mass);
-              const baseSize = 3.5 * Math.pow(props.radius, visualTuning.sizeScale);
-              const coreRadius = baseSize * Math.max(0.4, Math.min(2.0, zoom));
-              const maxOrbitRadius = (coreRadius + 8 + maxDistance * 14 * visualTuning.orbitSpacingScale) * zoom;
-              outerRadiusOffset = maxOrbitRadius + 10 * zoom;
-            }
-
-            if (shipsHere.length > 0 || matrixBobs.length > 0) {
-              const itemWidth = 10 * Math.max(0.5, Math.min(2.0, zoom));
-              const totalWidth = (shipsHere.length + matrixBobs.length - 1) * itemWidth;
-              const startX = screenPos.x - totalWidth / 2;
-              const sy = screenPos.y + outerRadiusOffset;
-
-              let itemIdx = 0;
-
-              // Render Ships
-              shipsHere.forEach((ship: any) => {
-                const sx = startX + itemIdx * itemWidth;
-                itemIdx++;
-
-                const isUnderConstruction = ship.pilot_id === 'UNDER_CONSTRUCTION';
-                const pilot = bobsHere.find((a: any) => a.active_ship_id === ship.id);
-
-                const pilotRemaining = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilot.sleep_until_round
-                  ? Math.max(0, pilot.sleep_until_round - activeMockState.round)
-                  : 0;
-                const pilotSleeping = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilotRemaining > 0;
-
-                let shipColor = '#64748b'; // empty
-                if (isUnderConstruction) {
-                  shipColor = '#f59e0b';
-                } else if (pilot) {
-                  shipColor = '#0ea5e9';
-                  if (pilotSleeping) {
-                    if (pilot.sleep_state === 1) shipColor = '#f59e0b';
-                    else if (pilot.sleep_state === 2) shipColor = '#a855f7';
-                  }
-                }
-
-                ctx.save();
-                ctx.beginPath();
-                const shipHeight = 8 * Math.max(0.4, Math.min(2.0, zoom));
-                const shipWidth = 6 * Math.max(0.4, Math.min(2.0, zoom));
-                ctx.moveTo(sx, sy - shipHeight / 2);
-                ctx.lineTo(sx - shipWidth / 2, sy + shipHeight / 2);
-                ctx.lineTo(sx + shipWidth / 2, sy + shipHeight / 2);
-                ctx.closePath();
-                ctx.fillStyle = shipColor;
-                ctx.fill();
-                ctx.restore();
-              });
-
-              // Render Matrix Bobs
-              matrixBobs.forEach((bob: any) => {
-                const sx = startX + itemIdx * itemWidth;
-                itemIdx++;
-
-                const remaining = bob.sleep_state && bob.sleep_state > 0 && bob.sleep_until_round
-                  ? Math.max(0, bob.sleep_until_round - activeMockState.round)
-                  : 0;
-                const isSleeping = bob.sleep_state && bob.sleep_state > 0 && remaining > 0;
-
-                let bobColor = '#38bdf8';
-                if (isSleeping) {
-                  if (bob.sleep_state === 1) bobColor = '#f59e0b';
-                  else if (bob.sleep_state === 2) bobColor = '#a855f7';
-                }
-
-                ctx.save();
-                ctx.beginPath();
-                const sqSize = 4 * Math.max(0.4, Math.min(2.0, zoom));
-                ctx.rect(sx - sqSize / 2, sy - sqSize / 2, sqSize, sqSize);
-                ctx.fillStyle = bobColor;
-                ctx.shadowColor = bobColor;
-                ctx.shadowBlur = isSleeping ? 0 : 4 * zoom;
-                ctx.fill();
-                ctx.restore();
-              });
-            }
-          });
-        }
-
-        // C. Draw Traveling Ships
-        if (Array.isArray(activeMockState.agents)) {
-          activeMockState.agents.forEach((agent: any) => {
-            if (agent.status === 'traveling') {
-              const currentScreen = controller.worldToScreen(agent.current_x, agent.current_y, cameraRef.current);
-              const angle = Math.atan2(agent.target_y - agent.origin_y, agent.target_x - agent.origin_x) + Math.PI / 2;
-
-              const remaining = agent.sleep_state && agent.sleep_state > 0 && agent.sleep_until_round
-                ? Math.max(0, agent.sleep_until_round - activeMockState.round)
-                : 0;
-              const isSleeping = agent.sleep_state && agent.sleep_state > 0 && remaining > 0;
-
-              let shipColor = '#0ea5e9';
-              if (isSleeping) {
-                if (agent.sleep_state === 1) shipColor = '#f59e0b';
-                else if (agent.sleep_state === 2) shipColor = '#a855f7';
-              }
-
-              ctx.save();
-              ctx.translate(currentScreen.x, currentScreen.y);
-              ctx.rotate(angle);
-              ctx.beginPath();
-
-              const shipHeight = 12 * Math.max(0.4, Math.min(2.0, zoom));
-              const shipWidth = 8 * Math.max(0.4, Math.min(2.0, zoom));
-
-              ctx.moveTo(0, -shipHeight / 2);
-              ctx.lineTo(-shipWidth / 2, shipHeight / 2);
-              ctx.lineTo(shipWidth / 2, shipHeight / 2);
-              ctx.closePath();
-
-              ctx.fillStyle = shipColor;
-              ctx.shadowColor = shipColor;
-              ctx.shadowBlur = isSleeping ? 0 : 8 * zoom;
-              ctx.fill();
-              ctx.restore();
-            }
-          });
-        }
-      }
-
-      // Render tool brush overlay if painting
-      if (currentConfig.activeTool === 'reveal' || currentConfig.activeTool === 'hide') {
-        controller.drawBrushOverlay(
-          mouseRef.current.x,
-          mouseRef.current.y,
-          currentConfig.brushSize,
-          cameraRef.current,
-          currentConfig.activeTool
-        );
-      }
-
-      // Update HUD stats occasionally (throttled to save cycles)
-      if (Math.random() < 0.15) {
-        const revCount = visibleSectors.filter(s => revealedSectorsRef.current.has(s.id)).length;
-        setViewportStats({
-          x: Math.round(cameraRef.current.panX),
-          y: Math.round(cameraRef.current.panY),
-          count: visibleSectors.length,
-          revealedCount: revCount
-        });
-      }
-
-      animationFrameId = requestAnimationFrame(render);
+    const handleResize = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
     };
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial call
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-    // Trigger loop
-    render();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [selectedSector, config.seed, config.density, showUnmapped, visualTuning]); // Re-bind on critical config / selection change
-
-  // Mouse drag-to-pan & brush painting actions
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only act on Left Click
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    mouseRef.current.isDown = true;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    mouseRef.current.x = mouseX;
-    mouseRef.current.y = mouseY;
-
-    const currentConfig = configRef.current;
-    const controller = controllerRef.current;
-
-    if (currentConfig.activeTool === 'inspect') {
-      // Perform sector selection check
-      if (controller) {
-        const clickWorld = controller.screenToWorld(mouseX, mouseY, cameraRef.current);
-        
-        // Fetch sectors around click coordinates to see if we clicked one
-        const radiusToCheck = 50; // check a tight world box around click
-        const candidates = UniverseGenerator.getSectorsInArea(
-          clickWorld.x - radiusToCheck,
-          clickWorld.x + radiusToCheck,
-          clickWorld.y - radiusToCheck,
-          clickWorld.y + radiusToCheck,
-          currentConfig.seed,
-          currentConfig.density
-        );
-
-        // Find nearest sector to click position
-        let nearest: Sector | null = null;
-        let minDistance = Infinity;
-
-        candidates.forEach(s => {
-          const dist = Math.sqrt((s.x - clickWorld.x) ** 2 + (s.y - clickWorld.y) ** 2);
-          if (dist < minDistance && dist <= 28) { // Click radius margin
-            minDistance = dist;
-            nearest = s;
-          }
-        });
-
-        setSelectedSector(nearest);
-      }
-    } else {
-      // Paint brush immediately on mouse down
-      applyBrushPaint(mouseX, mouseY);
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const currentConfig = configRef.current;
-
-    if (mouseRef.current.isDown) {
-      if (currentConfig.activeTool === 'inspect') {
-        // Drag to PAN camera
-        const dx = mouseX - mouseRef.current.x;
-        const dy = mouseY - mouseRef.current.y;
-
-        cameraRef.current.panX -= dx / cameraRef.current.zoom;
-        cameraRef.current.panY -= dy / cameraRef.current.zoom;
-      } else {
-        // Drag to PAINT reveal / hide
-        applyBrushPaint(mouseX, mouseY);
-      }
-    }
-
-    // Keep tracked mouse position updated
-    mouseRef.current.x = mouseX;
-    mouseRef.current.y = mouseY;
-  };
-
-  const handleMouseUp = () => {
-    mouseRef.current.isDown = false;
-  };
-
-  // Applies scanning reveal/hide brush math
-  const applyBrushPaint = (screenX: number, screenY: number) => {
-    const controller = controllerRef.current;
-    if (!controller) return;
-
-    const worldPos = controller.screenToWorld(screenX, screenY, cameraRef.current);
-    const currentConfig = configRef.current;
-
-    // Fetch all sectors in bounding box of brush size
+  const handleBrushAction = (worldX: number, worldY: number) => {
     const brushSectors = UniverseGenerator.getSectorsInArea(
-      worldPos.x - currentConfig.brushSize,
-      worldPos.x + currentConfig.brushSize,
-      worldPos.y - currentConfig.brushSize,
-      worldPos.y + currentConfig.brushSize,
-      currentConfig.seed,
-      currentConfig.density
+      worldX - config.brushSize,
+      worldX + config.brushSize,
+      worldY - config.brushSize,
+      worldY + config.brushSize,
+      config.seed,
+      config.density
     );
 
-    let listChanged = false;
-    brushSectors.forEach(s => {
-      const dist = Math.sqrt((s.x - worldPos.x) ** 2 + (s.y - worldPos.y) ** 2);
-      if (dist <= currentConfig.brushSize) {
-        if (currentConfig.activeTool === 'reveal') {
-          if (!revealedSectorsRef.current.has(s.id)) {
-            revealedSectorsRef.current.add(s.id);
-            listChanged = true;
+    const updatedRevealed = new Set(revealedSectors);
+    let changed = false;
+
+    brushSectors.forEach((s) => {
+      const dist = Math.sqrt((s.x - worldX) ** 2 + (s.y - worldY) ** 2);
+      if (dist <= config.brushSize) {
+        if (config.activeTool === 'reveal') {
+          if (!updatedRevealed.has(s.id)) {
+            updatedRevealed.add(s.id);
+            changed = true;
           }
-        } else if (currentConfig.activeTool === 'hide') {
-          if (revealedSectorsRef.current.has(s.id)) {
-            revealedSectorsRef.current.delete(s.id);
-            listChanged = true;
+        } else if (config.activeTool === 'hide') {
+          if (updatedRevealed.has(s.id)) {
+            updatedRevealed.delete(s.id);
+            changed = true;
           }
         }
       }
     });
 
-    if (listChanged) {
-      // Force React UI update to sync inspector if selected sector state was updated
-      forceUpdate(prev => prev + 1);
+    if (changed) {
+      setRevealedSectors(updatedRevealed);
+      forceUpdate((prev) => prev + 1);
     }
-  };
-
-  // Mousewheel camera zoom (focused on mouse pointer)
-  const handleWheel = (e: React.WheelEvent) => {
-    const canvas = canvasRef.current;
-    const controller = controllerRef.current;
-    if (!canvas || !controller) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    // Determine current world point under mouse before zoom
-    const beforeZoomWorld = controller.screenToWorld(mouseX, mouseY, cameraRef.current);
-
-    // Apply zoom multiplier
-    const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-    const newZoom = Math.max(0.002, Math.min(6, cameraRef.current.zoom * zoomFactor));
-
-    cameraRef.current.zoom = newZoom;
-
-    // Shift camera pan so that the same world coordinate remains locked under the mouse pointer
-    cameraRef.current.panX = beforeZoomWorld.x - (mouseX - rect.width / 2) / newZoom;
-    cameraRef.current.panY = beforeZoomWorld.y - (mouseY - rect.height / 2) / newZoom;
-  };
-
-  // Reset viewport to center on the dynamically calculated start system of this seed
-  const handleRecenter = () => {
-    const startSys = UniverseGenerator.getStartingSystem(config.seed, config.density);
-    cameraRef.current = { panX: startSys.x, panY: startSys.y, zoom: 0.8 };
-    setSelectedSector(startSys);
-    forceUpdate(prev => prev + 1);
-  };
-
-  // Reveal all visible sectors instantly
-  const handleRevealAllVisible = () => {
-    const canvas = canvasRef.current;
-    const controller = controllerRef.current;
-    if (!canvas || !controller) return;
-
-    const topLeft = controller.screenToWorld(0, 0, cameraRef.current);
-    const bottomRight = controller.screenToWorld(canvas.width, canvas.height, cameraRef.current);
-
-    const visibleSectors = UniverseGenerator.getSectorsInArea(
-      topLeft.x,
-      bottomRight.x,
-      topLeft.y,
-      bottomRight.y,
-      config.seed,
-      config.density
-    );
-
-    visibleSectors.forEach(s => revealedSectorsRef.current.add(s.id));
-    forceUpdate(prev => prev + 1);
   };
 
   const handleSimulateBobs = () => {
@@ -630,28 +176,18 @@ export default function App() {
       return;
     }
 
-    const canvas = canvasRef.current;
-    const controller = controllerRef.current;
-    if (!canvas || !controller) return;
+    const tlX = (0 - dimensions.width / 2) / currentZoom + panX;
+    const tlY = (0 - dimensions.height / 2) / currentZoom + panY;
+    const brX = (dimensions.width - dimensions.width / 2) / currentZoom + panX;
+    const brY = (dimensions.height - dimensions.height / 2) / currentZoom + panY;
 
-    const topLeft = controller.screenToWorld(0, 0, cameraRef.current);
-    const bottomRight = controller.screenToWorld(canvas.width, canvas.height, cameraRef.current);
-
-    const visibleSectors = UniverseGenerator.getSectorsInArea(
-      topLeft.x,
-      bottomRight.x,
-      topLeft.y,
-      bottomRight.y,
-      config.seed,
-      config.density
-    );
-
-    const otherSectors = visibleSectors.filter(s => s.id !== selectedSector.id);
+    const visibleSectors = UniverseGenerator.getSectorsInArea(tlX, brX, tlY, brY, config.seed, config.density);
+    const otherSectors = visibleSectors.filter((s) => s.id !== selectedSector.id);
     const destinations = otherSectors.slice(0, 3); // Grab up to 3 random destinations
 
     const systems = [
-      { name: selectedSector.id, x: selectedSector.x, y: selectedSector.y },
-      ...destinations.map(d => ({ name: d.id, x: d.x, y: d.y }))
+      { name: selectedSector.id, x: selectedSector.x, y: selectedSector.y, planets: selectedSector.system?.planets, star: getStellarProperties(selectedSector.mass) },
+      ...destinations.map((d) => ({ name: d.id, x: d.x, y: d.y, planets: d.system?.planets, star: getStellarProperties(d.mass) }))
     ];
 
     const ships: any[] = [
@@ -707,16 +243,14 @@ export default function App() {
     });
   };
 
-  // Hide all revealed sectors except the starting node
   const handleResetFOW = () => {
     const startSys = UniverseGenerator.getStartingSystem(config.seed, config.density);
-    revealedSectorsRef.current.clear();
-    revealedSectorsRef.current.add(startSys.id);
+    const updatedRevealed = new Set<string>();
+    updatedRevealed.add(startSys.id);
+    setRevealedSectors(updatedRevealed);
     setSelectedSector(startSys);
-    forceUpdate(prev => prev + 1);
   };
 
-  // Completely resets all camera, seed, density, FOW, and physics parameters to default
   const handleResetAllConfigs = () => {
     setConfig({
       seed: 'BobOS_V12',
@@ -755,758 +289,400 @@ export default function App() {
       planetSizeScale: 0.35,
       orbitSpacingScale: 1.0
     });
-    // Centering, FOW reset, and start node selection will trigger automatically in useEffect reacting to seed/density state reset!
   };
 
+  // Convert visible sectors into TacticalCanvas compatible system nodes
+  const tlX = (0 - dimensions.width / 2) / currentZoom + panX;
+  const tlY = (0 - dimensions.height / 2) / currentZoom + panY;
+  const brX = (dimensions.width - dimensions.width / 2) / currentZoom + panX;
+  const brY = (dimensions.height - dimensions.height / 2) / currentZoom + panY;
 
+  const visibleSectors = UniverseGenerator.getSectorsInArea(tlX, brX, tlY, brY, config.seed, config.density);
 
-  const getHeadingName = (angle: number) => {
-    // Normalize angle to 0 - 2PI range
-    const norm = (angle + Math.PI) % (Math.PI * 2);
-    const deg = (norm * 180) / Math.PI;
-    if (deg >= 337.5 || deg < 22.5) return 'East';
-    if (deg >= 22.5 && deg < 67.5) return 'North-East';
-    if (deg >= 67.5 && deg < 112.5) return 'North';
-    if (deg >= 112.5 && deg < 157.5) return 'North-West';
-    if (deg >= 157.5 && deg < 202.5) return 'West';
-    if (deg >= 202.5 && deg < 247.5) return 'South-West';
-    if (deg >= 247.5 && deg < 292.5) return 'South';
-    return 'South-East';
+  const systemsData = mockState 
+    ? mockState.systems 
+    : visibleSectors.map((s) => ({
+        ...s,
+        id: s.id,
+        type: 'system',
+        planets: s.system?.planets,
+        star: getStellarProperties(s.mass)
+      }));
+
+  const isSelectedSectorRevealed = selectedSector && revealedSectors.has(selectedSector.id);
+  const props = selectedSector ? getStellarProperties(selectedSector.mass) : null;
+
+  const renderSliderWithInput = (
+    label: string,
+    value: number,
+    min: number,
+    max: number,
+    step: number,
+    onChange: (val: number) => void,
+    formatDisplay: (val: number) => string = (val) => val.toString()
+  ) => {
+    return (
+      <div className="flex flex-col gap-1 py-1 border-b border-white/5 mb-2">
+        <label className="text-[10px] text-cyber-gray block font-mono">
+          {label}: <strong className="text-cyber-blue font-bold">{formatDisplay(value)}</strong>
+        </label>
+        <div className="flex gap-2 items-center">
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onChange={(e) => onChange(parseFloat(e.target.value))}
+            className="flex-1 accent-cyber-blue h-1 bg-slate-900 rounded cursor-pointer"
+          />
+          <input
+            type="number"
+            min={min}
+            max={max}
+            step={step}
+            value={isNaN(value) ? min : value}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              if (isNaN(val)) return;
+              onChange(Math.max(min, Math.min(max, val)));
+            }}
+            className="w-14 bg-[#040810] border border-slate-800 rounded text-cyber-blue text-xs text-center outline-none h-[18px] font-mono"
+          />
+        </div>
+      </div>
+    );
   };
-
-  const isSelectedSectorRevealed = selectedSector && revealedSectorsRef.current.has(selectedSector.id);
-
-  // SSoT Main Sequence physical properties derivation
-  const props = selectedSector && selectedSector.spectralClass !== 'BlackHole'
-    ? getStellarProperties(selectedSector.mass)
-    : null;
-
-  const starColor = selectedSector
-    ? selectedSector.spectralClass === 'BlackHole'
-      ? '#a855f7'
-      : selectedSector.spectralClass === 'Pulsar'
-        ? '#38bdf8'
-        : props 
-          ? `rgb(${props.color.r}, ${props.color.g}, ${props.color.b})`
-          : '#fbbf24'
-    : '#94a3b8';
 
   return (
-    <div ref={containerRef} className="sandbox-container">
-      {/* Central Interactive 2D Map Canvas */}
-      <canvas
-        ref={canvasRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
-        className="map-canvas"
-      />
+    <>
+      <C2Layout
+        title="NASA_APOLLON_C2_SANDBOX"
+        isConnected={true}
+        statusText="LOCAL_SANDBOX_SIMULATOR_ACTIVE"
+        cycle={mockState ? mockState.round : 0}
+        population={mockState ? mockState.agents?.length : 1}
+        vessels={mockState ? mockState.ships?.length : 0}
 
-      {/* Floating Header Banner */}
-      <header className="hud-header">
-        <div className="title-block">
-          <span className="blink-dot" />
-          <h1>DEEPER VERSE SANDBOX</h1>
-          <span className="badge">V8.0 PROTOTYP</span>
-        </div>
-        <div className="hud-coordinates">
-          <span>SEC_X: <strong className="coordinate-val">{viewportStats.x}</strong></span>
-          <span>SEC_Y: <strong className="coordinate-val">{viewportStats.y}</strong></span>
-          <span>LOD_ZOOM: <strong className="coordinate-val">{(cameraRef.current.zoom * 100).toFixed(0)}%</strong></span>
-        </div>
-      </header>
+        // Panel Toggles
+        isConsoleMinimized={isConsoleMinimized}
+        onToggleConsole={() => {
+          setIsConsoleMinimized(!isConsoleMinimized);
+          if (isConsoleMinimized) {
+            setConsoleHeight(100);
+            setConsoleY(window.innerHeight - 130);
+          } else {
+            setConsoleHeight(40);
+            setConsoleY(window.innerHeight - 56);
+          }
+        }}
+        isRightSidebarMinimized={isSidebarMinimized}
+        onToggleRightSidebar={() => setIsSidebarMinimized(!isSidebarMinimized)}
+        isLeftSidebarMinimized={isLeftSidebarMinimized}
+        onToggleLeftSidebar={() => setIsLeftSidebarMinimized(!isLeftSidebarMinimized)}
 
-      {/* Control Panel (Left Side) */}
-      <section className="hud-panel control-panel">
-        <h2 className="panel-title">📡 COSMOS TUNING</h2>
-        <div className="divider" />
+        rightSidebarWidth={sidebarWidth}
+        onResizeRightSidebar={setSidebarWidth}
+        leftSidebarWidth={leftSidebarWidth}
+        onResizeLeftSidebar={setLeftSidebarWidth}
 
-        {/* Debug View Toggle */}
-        <div className="control-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-          <input 
-            type="checkbox" 
-            id="toggle-unmapped" 
-            checked={showUnmapped} 
-            onChange={(e) => setShowUnmapped(e.target.checked)} 
-            style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#38bdf8' }}
-          />
-          <label htmlFor="toggle-unmapped" style={{ cursor: 'pointer', userSelect: 'none', fontSize: '0.75rem', fontWeight: 'bold', color: '#fff' }}>
-            DEBUG: SHOW UNMAPPED
-          </label>
-        </div>
+        // Rnd positioning states
+        consoleX={consoleX}
+        onConsoleXChange={setConsoleX}
+        consoleY={consoleY}
+        onConsoleYChange={setConsoleY}
+        consoleWidth={consoleWidth}
+        onConsoleWidthChange={setConsoleWidth}
+        consoleHeight={consoleHeight}
+        onConsoleHeightChange={setConsoleHeight}
 
-        {/* Seed Config */}
-        <div className="control-group">
-          <label htmlFor="seed-input">UNIVERSE_SEED</label>
-          <input
-            id="seed-input"
-            type="text"
-            value={config.seed}
-            onChange={(e) => {
-              setConfig(prev => ({ ...prev, seed: e.target.value }));
-              setSelectedSector(null);
-            }}
-            placeholder="Eingabe Seed..."
-            className="hud-input"
-          />
-        </div>
-
-        {/* Star Density Config */}
-        {renderSliderWithInput(
-          "COSMIC_DENSITY",
-          config.density,
-          0.1,
-          0.8,
-          0.05,
-          (val) => {
-            setConfig(prev => ({ ...prev, density: val }));
-            setSelectedSector(null);
-          },
-          (val) => `${(val * 100).toFixed(0)}%`
-        )}
-
-        {/* Action Tools */}
-        <div className="control-group">
-          <label>ACTIVE_TOOL</label>
-          <div className="button-grid">
-            <button
-              onClick={() => setConfig(prev => ({ ...prev, activeTool: 'inspect' }))}
-              className={`hud-btn ${config.activeTool === 'inspect' ? 'active' : ''}`}
-            >
-              🔍 INSPECT
-            </button>
-            <button
-              onClick={() => setConfig(prev => ({ ...prev, activeTool: 'reveal' }))}
-              className={`hud-btn ${config.activeTool === 'reveal' ? 'active' : ''}`}
-            >
-              🟢 REVEAL BRUSH
-            </button>
-            <button
-              onClick={() => setConfig(prev => ({ ...prev, activeTool: 'hide' }))}
-              className={`hud-btn ${config.activeTool === 'hide' ? 'active' : ''}`}
-            >
-              🔴 HIDE BRUSH
-            </button>
-          </div>
-        </div>
-
-        {/* Brush Size Slider (shown only when painting) */}
-        {(config.activeTool === 'reveal' || config.activeTool === 'hide') && (
-          renderSliderWithInput(
-            "BRUSH_RADIUS",
-            config.brushSize,
-            100,
-            1500,
-            100,
-            (val) => setConfig(prev => ({ ...prev, brushSize: val })),
-            (val) => `${val} LY`
-          )
-        )}
-
-        <div className="divider" />
-
-        {/* Utility actions */}
-        <div className="control-group">
-          <button onClick={handleRecenter} className="hud-btn hud-btn-action">
-            🎯 CENTER ON START NODE
-          </button>
-          <button onClick={handleRevealAllVisible} className="hud-btn hud-btn-action">
-            🛰️ REVEAL VISIBLE
-          </button>
-          <button 
-            onClick={handleSimulateBobs} 
-            className="hud-btn hud-btn-action" 
-            style={{ 
-              border: mockState ? '1px solid #ef4444' : '1px solid #10b981', 
-              color: mockState ? '#ef4444' : '#10b981' 
-            }}
-          >
-            {mockState ? '❌ CLEAR BOBS PREVIEW' : '🛸 SIMULATE BOBS PREVIEW'}
-          </button>
-          <button onClick={handleResetFOW} className="hud-btn hud-btn-action danger">
-            ☣️ RESET FOG OF WAR
-          </button>
-          <button onClick={handleResetAllConfigs} className="hud-btn hud-btn-action danger">
-            🔄 RESET ALL CONFIGS
-          </button>
-        </div>
-
-        <div className="divider" />
-        <h2 className="panel-title">🌌 DEEPER PHYSICS</h2>
-        <div className="divider" style={{ marginBottom: '15px' }} />
-
-        {renderSliderWithInput(
-          "GALAXY_SPAWN_CHANCE",
-          physics.galaxyChance,
-          0.10,
-          0.90,
-          0.05,
-          (val) => setPhysics(prev => ({ ...prev, galaxyChance: val })),
-          (val) => `${(val * 100).toFixed(0)}%`
-        )}
-
-        {renderSliderWithInput(
-          "GALAXY_SPACING",
-          physics.superCellSize,
-          40000,
-          200000,
-          10000,
-          (val) => setPhysics(prev => ({ ...prev, superCellSize: val })),
-          (val) => `${(val / 1000).toFixed(0)}k LY`
-        )}
-
-        {renderSliderWithInput(
-          "GALAXY_MIN_RADIUS",
-          physics.minGalaxyRadius,
-          5000,
-          30000,
-          1000,
-          (val) => setPhysics(prev => ({ ...prev, minGalaxyRadius: val })),
-          (val) => `${(val / 1000).toFixed(0)}k LY`
-        )}
-
-        {renderSliderWithInput(
-          "GALAXY_MAX_RADIUS",
-          physics.maxGalaxyRadius,
-          30000,
-          100000,
-          2000,
-          (val) => setPhysics(prev => ({ ...prev, maxGalaxyRadius: val })),
-          (val) => `${(val / 1000).toFixed(0)}k LY`
-        )}
-
-        {renderSliderWithInput(
-          "Sa_SPIRAL_MIN_PITCH_ANGLE",
-          physics.minPitchAngle,
-          4,
-          14,
-          1,
-          (val) => setPhysics(prev => ({ ...prev, minPitchAngle: val })),
-          (val) => `${val}°`
-        )}
-
-        {renderSliderWithInput(
-          "Sc_SPIRAL_MAX_PITCH_ANGLE",
-          physics.maxPitchAngle,
-          15,
-          32,
-          1,
-          (val) => setPhysics(prev => ({ ...prev, maxPitchAngle: val })),
-          (val) => `${val}°`
-        )}
-
-        {renderSliderWithInput(
-          "SYSTEM_CELL_SIZE",
-          physics.systemCellSize,
-          300,
-          1000,
-          50,
-          (val) => setPhysics(prev => ({ ...prev, systemCellSize: val })),
-          (val) => `${val} LY`
-        )}
-
-        {renderSliderWithInput(
-          "SYSTEM_PLACEMENT_JITTER",
-          physics.maxJitter,
-          0,
-          150,
-          5,
-          (val) => setPhysics(prev => ({ ...prev, maxJitter: val })),
-          (val) => `${val} LY`
-        )}
-
-        {renderSliderWithInput(
-          "MIN_STELLAR_MASS",
-          physics.minStellarMass,
-          0.08,
-          1.50,
-          0.05,
-          (val) => setPhysics(prev => ({ ...prev, minStellarMass: val })),
-          (val) => `${val.toFixed(2)} M_sun`
-        )}
-
-        {renderSliderWithInput(
-          "MAX_STELLAR_MASS",
-          physics.maxStellarMass,
-          1.5,
-          100.0,
-          0.5,
-          (val) => setPhysics(prev => ({ ...prev, maxStellarMass: val })),
-          (val) => `${val.toFixed(1)} M_sun`
-        )}
-
-        {renderSliderWithInput(
-          "IMF_CURVE_EXPONENT",
-          physics.stellarMassImf,
-          1.0,
-          6.0,
-          0.1,
-          (val) => setPhysics(prev => ({ ...prev, stellarMassImf: val })),
-          (val) => val.toFixed(1)
-        )}
-
-        {renderSliderWithInput(
-          "REMNANT_SPAWN_CHANCE",
-          physics.remnantChance,
-          0.0005,
-          0.005,
-          0.0005,
-          (val) => setPhysics(prev => ({ ...prev, remnantChance: val })),
-          (val) => `${(val * 100).toFixed(2)}%`
-        )}
-
-        {renderSliderWithInput(
-          "REMNANT_PULSAR_MASS_LIMIT",
-          physics.remnantPulsarLimit,
-          10.0,
-          25.0,
-          0.5,
-          (val) => setPhysics(prev => ({ ...prev, remnantPulsarLimit: val })),
-          (val) => `${val.toFixed(1)} M_sun`
-        )}
-
-        {renderSliderWithInput(
-          "PLANETS_MIN_COUNT",
-          physics.planetMinCount,
-          0,
-          4,
-          1,
-          (val) => setPhysics(prev => ({ ...prev, planetMinCount: val }))
-        )}
-
-        {renderSliderWithInput(
-          "PLANETS_MAX_COUNT",
-          physics.planetMaxCount,
-          4,
-          12,
-          1,
-          (val) => setPhysics(prev => ({ ...prev, planetMaxCount: val }))
-        )}
-
-        {renderSliderWithInput(
-          "PLANET_TB_START_OFFSET_MULT",
-          physics.planetTbOffset,
-          0.10,
-          0.45,
-          0.01,
-          (val) => setPhysics(prev => ({ ...prev, planetTbOffset: val })),
-          (val) => `${val.toFixed(2)} AU`
-        )}
-
-        {renderSliderWithInput(
-          "PLANET_TB_SPACING_GAMMA",
-          physics.planetTbSpacing,
-          1.20,
-          2.20,
-          0.05,
-          (val) => setPhysics(prev => ({ ...prev, planetTbSpacing: val })),
-          (val) => val.toFixed(2)
-        )}
-
-        {renderSliderWithInput(
-          "SUPERNOVA_BUBBLE_CHANCE",
-          physics.supernovaBubbleChance,
-          0.01,
-          0.30,
-          0.01,
-          (val) => setPhysics(prev => ({ ...prev, supernovaBubbleChance: val })),
-          (val) => `${(val * 100).toFixed(0)}%`
-        )}
-
-        {renderSliderWithInput(
-          "GRAVITY_WELL_CHANCE",
-          physics.gravityWellChance,
-          0.01,
-          0.25,
-          0.01,
-          (val) => setPhysics(prev => ({ ...prev, gravityWellChance: val })),
-          (val) => `${(val * 100).toFixed(0)}%`
-        )}
-
-        {renderSliderWithInput(
-          "GRAVITY_WELL_MASS_MULT",
-          physics.gravityWellMult,
-          1.0,
-          4.0,
-          0.1,
-          (val) => setPhysics(prev => ({ ...prev, gravityWellMult: val })),
-          (val) => `${val.toFixed(1)}x`
-        )}
-
-        <div className="divider" />
-        <h2 className="panel-title">🎨 VISUAL HUD TUNING</h2>
-        <div className="divider" style={{ marginBottom: '15px' }} />
-
-        {/* Visual Size Ratio Scale */}
-        {renderSliderWithInput(
-          "MAP_STAR_SIZE_CONTRAST",
-          visualTuning.sizeScale,
-          0.0,
-          0.8,
-          0.02,
-          (val) => setVisualTuning(prev => ({ ...prev, sizeScale: val })),
-          (val) => val === 0 ? "UNIFORM_SIZE" : `${(val * 100).toFixed(0)}% (Ratio)`
-        )}
-
-        {/* Visual Glow Ratio Scale */}
-        {renderSliderWithInput(
-          "MAP_STAR_GLOW_CONTRAST",
-          visualTuning.brightnessScale,
-          0.0,
-          2.5,
-          0.05,
-          (val) => setVisualTuning(prev => ({ ...prev, brightnessScale: val })),
-          (val) => val === 0 ? "NO_GLOW_CONTRAST" : `${(val * 100).toFixed(0)}% (Ratio)`
-        )}
-
-        {/* Color Shift Kelvin offset */}
-        {renderSliderWithInput(
-          "MAP_SPECTRAL_COLOR_SHIFT",
-          visualTuning.colorShift,
-          -6000,
-          6000,
-          200,
-          (val) => setVisualTuning(prev => ({ ...prev, colorShift: val })),
-          (val) => `${val > 0 ? `+${val}` : val} K`
-        )}
-
-        {/* Color Contrast Scale */}
-        {renderSliderWithInput(
-          "MAP_SPECTRAL_COLOR_CONTRAST",
-          visualTuning.colorContrast,
-          0.0,
-          2.5,
-          0.05,
-          (val) => setVisualTuning(prev => ({ ...prev, colorContrast: val })),
-          (val) => val === 0 ? "UNIFORM_COLOR" : `${(val * 100).toFixed(0)}% (Ratio)`
-        )}
-
-        {/* Planet Size Contrast Scale */}
-        {renderSliderWithInput(
-          "MAP_PLANET_SIZE_CONTRAST",
-          visualTuning.planetSizeScale,
-          0.0,
-          1.2,
-          0.05,
-          (val) => setVisualTuning(prev => ({ ...prev, planetSizeScale: val })),
-          (val) => val === 0 ? "UNIFORM_SIZE" : `${(val * 100).toFixed(0)}% (Ratio)`
-        )}
-
-        {/* Planet Orbit Spacing Contrast Scale */}
-        {renderSliderWithInput(
-          "MAP_PLANET_ORBIT_SPACING",
-          visualTuning.orbitSpacingScale,
-          0.3,
-          2.5,
-          0.05,
-          (val) => setVisualTuning(prev => ({ ...prev, orbitSpacingScale: val })),
-          (val) => `${(val * 100).toFixed(0)}% (Spacing)`
-        )}
-
-        <div className="divider" />
-
-        {/* Live Map Stats */}
-        <div className="hud-stats">
-          <div>VISIBLE_SYSTEMS: <span>{viewportStats.count}</span></div>
-          <div>MAPPED_SYSTEMS: <span>{viewportStats.revealedCount}</span></div>
-        </div>
-      </section>
-
-      {/* Sektor Inspector Panel (Right Side) */}
-      <section className="hud-panel inspector-panel">
-        <h2 className="panel-title">🔬 SECTOR_INSPECTOR</h2>
-        <div className="divider" />
-
-        {selectedSector ? (
-          <div className="inspector-content">
-            {/* Telemetry vs Orbits Tab switcher */}
-            <div className="tab-switcher" style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
-              <button 
-                onClick={() => setInspectorTab('telemetry')} 
-                className={`hud-btn ${inspectorTab === 'telemetry' ? 'active' : ''}`}
-                style={{ flex: 1, textAlign: 'center', padding: '6px', fontSize: '0.65rem' }}
-              >
-                🔬 TELEMETRY
-              </button>
-              <button 
-                onClick={() => setInspectorTab('orbits')} 
-                className={`hud-btn ${inspectorTab === 'orbits' ? 'active' : ''}`}
-                style={{ flex: 1, textAlign: 'center', padding: '6px', fontSize: '0.65rem' }}
-                disabled={selectedSector.spectralClass === 'BlackHole'}
-              >
-                🪐 SYSTEM ORBITS
-              </button>
-            </div>
-
-            <div className="star-schematic">
-              {/* Retro stylized visual representation based on real RGB temperature color */}
-              <div 
-                className="stellar-halo" 
-                style={{ 
-                  borderColor: starColor,
-                  boxShadow: `0 0 20px ${starColor}`
-                }}
-              >
-                <div 
-                  className="stellar-core" 
-                  style={{ backgroundColor: selectedSector.spectralClass === 'BlackHole' ? '#000000' : starColor }} 
+        // Left Sidebar: Physics Tuners
+        leftSidebarContent={
+          <div className="w-full h-full flex flex-col min-h-0 pl-1 pr-1 custom-scrollbar overflow-y-auto">
+            <h3 className="text-xs text-cyber-blue font-bold tracking-wider mb-3">// COSMOLOGY_PHYSICS_TUNERS //</h3>
+            
+            {/* Seed and Density settings */}
+            <div className="flex gap-2 mb-4 border-b border-white/10 pb-3">
+              <div className="flex-1 flex flex-col gap-1">
+                <span className="text-[10px] text-cyber-gray font-bold font-mono">MASTER_SEED</span>
+                <input
+                  type="text"
+                  value={config.seed}
+                  onChange={(e) => setConfig(prev => ({ ...prev, seed: e.target.value }))}
+                  className="bg-[#040810] border border-slate-800 rounded p-1 px-2 text-xs text-cyber-blue outline-none font-mono"
+                />
+              </div>
+              <div className="w-20 flex flex-col gap-1">
+                <span className="text-[10px] text-cyber-gray font-bold font-mono">DENSITY</span>
+                <input
+                  type="number"
+                  step={0.05}
+                  min={0.01}
+                  max={1.0}
+                  value={config.density}
+                  onChange={(e) => setConfig(prev => ({ ...prev, density: parseFloat(e.target.value) || 0.1 }))}
+                  className="bg-[#040810] border border-slate-800 rounded p-1 text-xs text-center text-cyber-blue outline-none font-mono"
                 />
               </div>
             </div>
 
-            <h3 style={{ textAlign: 'center', color: '#fff', fontSize: '1.25rem', letterSpacing: '1px', margin: '15px 0' }}>
-              {selectedSector.id}
-            </h3>
+            {/* Brush settings */}
+            <div className="flex gap-2 mb-4 border-b border-white/10 pb-3 justify-between items-center">
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setConfig(prev => ({ ...prev, activeTool: 'inspect' }))}
+                  className={`text-[10px] font-bold px-1.5 py-1 rounded border ${
+                    config.activeTool === 'inspect' ? 'bg-cyber-blue/15 border-cyber-blue text-cyber-blue' : 'bg-transparent border-slate-800 text-slate-500'
+                  }`}
+                >
+                  🔍 INSPECT
+                </button>
+                <button
+                  onClick={() => setConfig(prev => ({ ...prev, activeTool: 'reveal' }))}
+                  className={`text-[10px] font-bold px-1.5 py-1 rounded border ${
+                    config.activeTool === 'reveal' ? 'bg-cyber-blue/15 border-cyber-blue text-cyber-blue' : 'bg-transparent border-slate-800 text-slate-500'
+                  }`}
+                >
+                  🖌 *REVEAL*
+                </button>
+                <button
+                  onClick={() => setConfig(prev => ({ ...prev, activeTool: 'hide' }))}
+                  className={`text-[10px] font-bold px-1.5 py-1 rounded border ${
+                    config.activeTool === 'hide' ? 'bg-cyber-blue/15 border-cyber-blue text-cyber-blue' : 'bg-transparent border-slate-800 text-slate-500'
+                  }`}
+                >
+                  🛡️ HIDE
+                </button>
+              </div>
 
-            {inspectorTab === 'telemetry' ? (
-              <div className="inspector-fields anim-fade-in">
-                <div className="field-row">
-                  <span className="field-label">COORD_X:</span>
-                  <span className="field-value">{selectedSector.x} LY</span>
+              {(config.activeTool === 'reveal' || config.activeTool === 'hide') && (
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-cyber-gray font-mono">SIZE:</span>
+                  <input
+                    type="number"
+                    step={100}
+                    min={100}
+                    max={2000}
+                    value={config.brushSize}
+                    onChange={(e) => setConfig(prev => ({ ...prev, brushSize: parseInt(e.target.value) || 100 }))}
+                    className="w-14 bg-[#040810] border border-slate-800 rounded p-0.5 text-center text-xs text-cyber-blue outline-none font-mono"
+                  />
                 </div>
-                <div className="field-row">
-                  <span className="field-label">COORD_Y:</span>
-                  <span className="field-value">{selectedSector.y} LY</span>
-                </div>
-                <div className="field-row">
-                  <span className="field-label">SPECTRAL_CLASS:</span>
-                  <span className="field-value" style={{ color: starColor, fontWeight: 'bold' }}>
-                    {selectedSector.spectralClass}
-                  </span>
-                </div>
-                
-                {/* SSoT Physical properties readout */}
-                <div className="field-row">
-                  <span className="field-label">STELLAR_MASS:</span>
-                  <span className="field-value" style={{ color: '#fff', fontWeight: 'bold' }}>
-                    {selectedSector.spectralClass === 'BlackHole' && selectedSector.mass > 100 
-                      ? `${(selectedSector.mass / 100).toFixed(1)}B M_sun`
-                      : `${selectedSector.mass.toFixed(2)} M_sun`}
-                  </span>
-                </div>
+              )}
+            </div>
 
-                {selectedSector.warpCurrent && (
-                  <>
-                    <div className="field-row">
-                      <span className="field-label">WARP_CURRENT_HEADING:</span>
-                      <span className="field-value" style={{ color: '#22d3ee', fontWeight: 'bold' }}>
-                        {Math.round(selectedSector.warpCurrent.angle * 180 / Math.PI + 180) % 360}° ({getHeadingName(selectedSector.warpCurrent.angle)})
-                      </span>
-                    </div>
-                    <div className="field-row">
-                      <span className="field-label">WARP_CURRENT_POWER:</span>
-                      <span className="field-value" style={{ color: '#22d3ee' }}>
-                        {selectedSector.warpCurrent.magnitude.toFixed(2)} ({selectedSector.warpCurrent.magnitude > 0.7 ? 'High-Flow' : selectedSector.warpCurrent.magnitude > 0.3 ? 'Mid-Flow' : 'Low-Flow'})
-                      </span>
-                    </div>
-                  </>
-                )}
+            {/* Render Sliding Controls */}
+            <div className="flex-1 overflow-y-auto pr-1">
+              {renderSliderWithInput("SUPER_CELL_SIZE", physics.superCellSize, 50000, 300000, 5000, (val) => setPhysics(prev => ({ ...prev, superCellSize: val })))}
+              {renderSliderWithInput("GALAXY_OCCURRENCE", physics.galaxyChance, 0.05, 1.0, 0.05, (val) => setPhysics(prev => ({ ...prev, galaxyChance: val })), (val) => `${(val * 100).toFixed(0)}%`)}
+              {renderSliderWithInput("MIN_GALAXY_RADIUS", physics.minGalaxyRadius, 5000, 30000, 1000, (val) => setPhysics(prev => ({ ...prev, minGalaxyRadius: val })))}
+              {renderSliderWithInput("MAX_GALAXY_RADIUS", physics.maxGalaxyRadius, 31000, 100000, 1000, (val) => setPhysics(prev => ({ ...prev, maxGalaxyRadius: val })))}
+              {renderSliderWithInput("CHAOS_JITTER_COEFF", physics.maxJitter, 0, 150, 5, (val) => setPhysics(prev => ({ ...prev, maxJitter: val })))}
+              {renderSliderWithInput("PLANET_MIN_COUNT", physics.planetMinCount, 0, 4, 1, (val) => setPhysics(prev => ({ ...prev, planetMinCount: val })))}
+              {renderSliderWithInput("PLANET_MAX_COUNT", physics.planetMaxCount, 5, 12, 1, (val) => setPhysics(prev => ({ ...prev, planetMaxCount: val })))}
+              {renderSliderWithInput("SUPERNOVA_BUBBLE_CHANCE", physics.supernovaBubbleChance, 0.0, 0.35, 0.01, (val) => setPhysics(prev => ({ ...prev, supernovaBubbleChance: val })), (val) => `${(val * 100).toFixed(0)}%`)}
+              
+              <h4 className="text-[10px] text-cyber-blue font-bold tracking-wider mt-4 mb-2">// PRESENTATION_LAYERS_TUNERS //</h4>
+              {renderSliderWithInput("MAP_STAR_SCALE", visualTuning.sizeScale, 0.0, 0.8, 0.05, (val) => setVisualTuning(prev => ({ ...prev, sizeScale: val })), (val) => val === 0 ? "UNIFORM" : `${(val * 100).toFixed(0)}%`)}
+              {renderSliderWithInput("MAP_STAR_GLOW", visualTuning.brightnessScale, 0.0, 2.5, 0.05, (val) => setVisualTuning(prev => ({ ...prev, brightnessScale: val })), (val) => `${(val * 100).toFixed(0)}%`)}
+            </div>
 
-                {props && (
-                  <>
-                    <div className="field-row">
-                      <span className="field-label">STELLAR_RADIUS:</span>
-                      <span className="field-value">{props.radius.toFixed(2)} R_sun</span>
-                    </div>
-                    <div className="field-row">
-                      <span className="field-label">STELLAR_VOLUME:</span>
-                      <span className="field-value">{props.volume.toFixed(2)} V_sun</span>
-                    </div>
-                    <div className="field-row">
-                      <span className="field-label">PLASMA_DENSITY:</span>
-                      <span className="field-value">{props.density.toFixed(2)} Density_sun</span>
-                    </div>
-                    <div className="field-row">
-                      <span className="field-label">SURFACE_GRAVITY:</span>
-                      <span className="field-value" style={{ fontWeight: 'bold' }}>
-                        {props.gravity.toFixed(2)} g_sun
-                      </span>
-                    </div>
-                    <div className="field-row">
-                      <span className="field-label">EFFECTIVE_TEMP:</span>
-                      <span className="field-value" style={{ color: starColor }}>
-                        {props.temperature.toLocaleString()} K
-                      </span>
-                    </div>
-                    <div className="field-row">
-                      <span className="field-label">ABSOLUTE_LUMINOSITY:</span>
-                      <span className="field-value">{props.luminosity.toFixed(2)} L_sun</span>
-                    </div>
-                  </>
-                )}
+            {/* Action buttons at bottom */}
+            <div className="mt-4 pt-3 border-t border-white/10 flex flex-col gap-1.5">
+              <button
+                onClick={handleSimulateBobs}
+                className="bg-emerald-500 border-none text-black font-bold py-1.5 rounded cursor-pointer transition-colors hover:bg-emerald-400 font-mono text-xs w-full text-center"
+              >
+                {mockState ? "🔌 DISCONNECT BOBS PREVIEW" : "🛸 SIMULATE BOBS PREVIEW"}
+              </button>
+              
+              <div className="flex gap-1.5">
+                <button
+                  onClick={handleResetFOW}
+                  className="bg-transparent border border-slate-800 text-cyber-gray hover:text-white font-mono text-[10px] py-1 rounded flex-1 text-center"
+                >
+                  🧹 RESET_FOW
+                </button>
+                <button
+                  onClick={handleResetAllConfigs}
+                  className="bg-transparent border border-slate-800 text-cyber-red hover:text-red-400 font-mono text-[10px] py-1 rounded flex-1 text-center"
+                >
+                  ⚙️ HARD_RESET
+                </button>
+              </div>
+            </div>
+          </div>
+        }
 
-                {/* Cosmic Occurrence / Biome Display */}
-                <div className="field-row">
-                  <span className="field-label">COSMIC_ENVIRONMENT:</span>
-                  <span className="field-value" style={{ 
-                    color: selectedSector.occurrence === 'StellarNursery' ? '#f472b6' : 
-                           selectedSector.occurrence === 'DustLane' ? '#fb923c' : 
-                           selectedSector.occurrence === 'SupernovaBubble' ? '#c084fc' : 
-                           '#4ade80',
-                    fontWeight: 'bold'
-                  }}>
-                    {selectedSector.occurrence === 'StellarNursery' ? '🌌 HII_STELLAR_NURSERY' : 
-                     selectedSector.occurrence === 'DustLane' ? '🪐 COLD_DUST_LANE' : 
-                     selectedSector.occurrence === 'SupernovaBubble' ? '💥 SUPERNOVA_HIM_BUBBLE' : 
-                     '✨ AMBIENT_SPACE'}
-                  </span>
-                </div>
-
-                {selectedSector.debrisBelt && (
-                  <div className="field-row">
-                    <span className="field-label">ORBITAL_GEOGRAPHY:</span>
-                    <span className="field-value" style={{ color: '#e2e8f0', fontWeight: 'bold' }}>
-                      🪐 CIRCUMSTELLAR_DEBRIS_DISK
-                    </span>
+        // Right Sidebar: Selected Sektor Telemetry
+        rightSidebarContent={
+          <div className="w-full h-full flex flex-col min-h-0">
+            {selectedSector ? (
+              <div className="w-full h-full flex flex-col min-h-0 pl-1 pr-1">
+                {/* Header Tabs */}
+                <div className="flex bg-slate-900/90 border-b border-slate-800 h-9 items-center pl-4 pr-2 shrink-0 select-none justify-between mb-4">
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setActiveTab('status')}
+                      className={`w-[110px] py-1 bg-transparent text-[11px] font-bold font-mono border-none cursor-pointer rounded-sm transition-all ${
+                        activeTab === 'status' ? 'bg-cyber-blue/10 text-cyber-blue font-bold' : 'text-cyber-gray hover:text-slate-400'
+                      }`}
+                    >
+                      [STATUS]
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('orbits')}
+                      className={`w-[110px] py-1 bg-transparent text-[11px] font-bold font-mono border-none cursor-pointer rounded-sm transition-all ${
+                        activeTab === 'orbits' ? 'bg-cyber-blue/10 text-cyber-blue font-bold' : 'text-cyber-gray hover:text-slate-400'
+                      }`}
+                    >
+                      [ORBITS]
+                    </button>
                   </div>
-                )}
-
-                <div className="field-row">
-                  <span className="field-label">SURFACE_STATUS:</span>
-                  <span className="field-value" style={{ 
-                    color: selectedSector.spectralClass === 'BlackHole' ? 'var(--hud-danger)' : 
-                           props && props.hazardLevel > 15 ? '#fb923c' : 'var(--hud-green)',
-                    fontWeight: 'bold'
-                  }}>
-                    {selectedSector.spectralClass === 'BlackHole' ? 'CRITICAL_HAZARD' : 
-                     props && props.hazardLevel > 15 ? 'INTENSE_RADIATION' : 'STABLE'}
-                  </span>
+                  <button
+                    onClick={() => setIsSidebarMinimized(true)}
+                    className="bg-transparent border-none text-cyber-red cursor-pointer font-bold px-2 font-mono text-sm transition-colors hover:text-red-500"
+                  >
+                    ✕
+                  </button>
                 </div>
 
-                {props && props.hazardLevel > 1 && (
-                  <div className="field-row">
-                    <span className="field-label">HAZARD_RADIATION:</span>
-                    <span className="field-value" style={{ color: 'var(--hud-danger)', fontWeight: 'bold' }}>
-                      {props.hazardLevel.toFixed(1)} Rad/tick
-                    </span>
-                  </div>
-                )}
-
-                <div className="divider" style={{ margin: '15px 0' }} />
-
-                <h4 className="sub-title">🪐 NATURAL RESOURCES (EST.)</h4>
-                
-                {isSelectedSectorRevealed ? (
-                  <>
-                    <div className="field-row">
-                      <span className="field-label">SOLAR_ENERGY_POTENTIAL:</span>
-                      <span className="field-value highlight-energy">
-                        {selectedSector.energyDepot.toLocaleString()} E
-                      </span>
-                    </div>
-                    <div className="field-row">
-                      <span className="field-label">HEAVY_MATTER_DEPOT:</span>
-                      <span className="field-value highlight-matter">
-                        {selectedSector.matterDepot.toLocaleString()} T
-                      </span>
-                    </div>
-
-                    {(selectedSector.occurrence !== 'Normal' || selectedSector.debrisBelt) && (
-                      <div className="hud-warning-box" style={{ 
-                        marginTop: '12px',
-                        background: 'rgba(56, 189, 248, 0.04)',
-                        borderColor: 'rgba(56, 189, 248, 0.2)',
-                      }}>
-                        <span className="warning-title" style={{ color: 'var(--hud-text-bright)', fontSize: '0.7rem' }}>📡 ENVIRONMENT_TRAITS ACTIVE:</span>
-                        <span className="warning-text" style={{ color: 'var(--hud-text)', fontSize: '0.65rem', lineHeight: '1.4' }}>
-                          {selectedSector.occurrence === 'StellarNursery' && 'HII Region: Rich ionization amplifies solar collection potential (+35%) and matter condensation (+25%).'}
-                          {selectedSector.occurrence === 'DustLane' && 'Cold Dust Lane: Exceptional metallic debris condensation (+120%). Stellar light heavily obscured (-60%).'}
-                          {selectedSector.occurrence === 'SupernovaBubble' && 'Supernova HIM Bubble: Gas blown away, matter heavily depleted (-75%). High radiation storms block solar harvesting (-50%).'}
-                          {selectedSector.debrisBelt && selectedSector.occurrence === 'Normal' && 'Circumstellar Asteroid Belt: Dense concentric debris fields massively enhance mineral drilling potential (+150%).'}
-                          {selectedSector.debrisBelt && selectedSector.occurrence !== 'Normal' && ' | Asteroid Belt: Additional concentric debris fields massively enhance mineral drilling potential (+150%).'}
-                        </span>
+                {/* Tab content wrapper */}
+                <div className="flex-1 overflow-y-auto pr-1">
+                  {activeTab === 'status' ? (
+                    <div className="flex flex-col gap-4">
+                      {/* Geological Telemetry card */}
+                      <div className="bg-white/[0.01] border border-white/5 rounded p-3">
+                        <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1.5">
+                          🛰️ SECTOR_GEOLOGICAL_TELEMETRY //
+                        </div>
+                        <h3 className="text-xs text-white font-bold mb-1 uppercase">
+                          {selectedSector.id}
+                        </h3>
+                        <div className="text-[11px] text-slate-400 leading-normal font-mono">
+                          COORDINATES: X:{selectedSector.x} • Y:{selectedSector.y}<br />
+                          STELLAR CLASS: <strong className="text-white">{selectedSector.spectralClass}</strong><br />
+                          STELLAR MASS: {selectedSector.mass.toFixed(2)} M_sun<br />
+                        </div>
                       </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="hud-warning-box">
-                    <span className="warning-title">⚠️ WARNING: NO DATA</span>
-                    <span className="warning-text">Sector must be scanned (using the REVEAL brush) to retrieve resource readings.</span>
-                  </div>
-                )}
+
+                      {/* Hazard Diagnostics card */}
+                      {props && (
+                        <div className="bg-cyber-blue/[0.01] border border-cyber-blue/15 rounded p-3 shadow-[0_0_10px_rgba(56,189,248,0.03)] text-[11px] leading-normal text-slate-400">
+                          <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1.5">
+                            ☣️ SYSTEM_HAZARD_DIAGNOSTICS //
+                          </div>
+                          PLASMA GRAVITY: <strong className="text-white font-bold">{props.gravity.toFixed(2)} g_sun</strong><br />
+                          EFFECTIVE TEMP: <strong className="text-slate-200 font-bold">{props.temperature.toLocaleString()} K</strong><br />
+                          LUMINOSITY: <strong className="text-cyber-blue font-bold">{props.luminosity.toFixed(2)} L_sun</strong><br />
+                          RADIATION RAD: <strong className="text-cyber-red font-bold">{props.hazardLevel.toFixed(1)} Rad/tick</strong>
+                        </div>
+                      )}
+
+                      {/* Natural Resources Card */}
+                      <div className="bg-white/[0.01] border border-white/5 rounded p-3">
+                        <div className="text-[10px] text-cyber-amber font-bold tracking-wider mb-1.5">
+                          🪐 ESTIMATED_NATURAL_RESOURCES //
+                        </div>
+                        {isSelectedSectorRevealed ? (
+                          <div className="text-[11px] leading-normal text-slate-400">
+                            SOLAR POTENTIAL: <strong className="text-cyber-blue">{selectedSector.energyDepot.toLocaleString()} E</strong><br />
+                            HEAVY MATTER: <strong className="text-cyber-amber">{selectedSector.matterDepot.toLocaleString()} t</strong><br />
+                            GEOGRAPHY: {selectedSector.debrisBelt ? "Asteroid Debris Belt" : "Ambient Space"}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-cyber-gray italic leading-normal">
+                            Sector must be scanned (using the REVEAL brush) to retrieve geological resource telemetry readings.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      <div className="text-[10px] text-cyber-blue font-bold tracking-wider">
+                        🪐 DETECTED_STELLAR_ORBITS_REGISTER //
+                      </div>
+                      
+                      {selectedSector.system && (selectedSector.system.planets.length > 0 || selectedSector.system.asteroidBelts.length > 0) ? (
+                        <div className="flex flex-col gap-1.5">
+                          {selectedSector.system.planets.map((planet: any, pi: number) => (
+                            <div 
+                              key={pi} 
+                              className="bg-white/[0.01] border border-white/5 rounded p-2 px-3 flex justify-between items-center text-xs font-mono"
+                            >
+                              <div>
+                                <strong className="text-white font-bold">Orbit {planet.orbitIndex}: {planet.type} Planet</strong>
+                                <span className="text-cyber-gray ml-2">({planet.distance.toFixed(2)} AU)</span>
+                              </div>
+                              <div className="text-slate-300">
+                                Moons: {planet.moonsCount} • Temp: {planet.temperature}K
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-cyber-gray italic">
+                          Stellar winds have swept this vicinity bare. No stable planetary orbits exist.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
-              <div className="inspector-orbits anim-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <h4 className="sub-title">🪐 STELLAR ORBIT CONFIG</h4>
-                {selectedSector.system && (selectedSector.system.planets.length > 0 || selectedSector.system.asteroidBelts.length > 0) ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '350px', overflowY: 'auto', paddingRight: '4px' }}>
-                    {/* Render Orbit timeline */}
-                    {Array.from({ length: Math.max(...selectedSector.system.planets.map(p => p.orbitIndex), ...selectedSector.system.asteroidBelts, 0) }, (_, index) => {
-                      const idx = index + 1;
-                      const planet = selectedSector.system?.planets.find(p => p.orbitIndex === idx);
-                      const isBelt = selectedSector.system?.asteroidBelts.includes(idx);
-
-                      if (isBelt) {
-                        return (
-                          <div key={`belt-${idx}`} className="field-row" style={{ border: '1px dashed rgba(249, 115, 22, 0.35)', padding: '6px 8px', background: 'rgba(249, 115, 22, 0.04)', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.65rem', color: '#f97316', fontWeight: 'bold' }}>Orbit {idx}: ░░ ASTEROID_BELT ░░</span>
-                            <span style={{ fontSize: '0.62rem', color: '#fb923c', fontStyle: 'italic' }}>Matter Rich</span>
-                          </div>
-                        );
-                      }
-
-                      if (planet) {
-                        const getPlanetColor = (type: string) => {
-                          switch (type) {
-                            case 'Vulcanian': return '#ef4444';
-                            case 'Rocky': return '#a8a29e';
-                            case 'Habitable': return '#10b981';
-                            case 'Desert': return '#fb923c';
-                            case 'GasGiant': return '#38bdf8';
-                            case 'IceGiant': return '#818cf8';
-                            default: return '#94a3b8';
-                          }
-                        };
-                        const pColor = getPlanetColor(planet.type);
-                        
-                        return (
-                          <div key={planet.id} className="field-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '4px', border: '1px solid rgba(56, 189, 248, 0.08)', padding: '6px 8px', background: 'rgba(15, 23, 42, 0.45)', borderRadius: '4px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: pColor, boxShadow: `0 0 6px ${pColor}` }} />
-                                <span style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                                  {planet.orbitIndex}. {planet.type.toUpperCase()}
-                                </span>
-                              </div>
-                              <span style={{ fontSize: '0.62rem', color: 'var(--hud-text-bright)', fontWeight: 'bold' }}>{planet.distance.toFixed(2)} AU</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: 'var(--hud-text)', borderTop: '1px solid rgba(255,255,255,0.02)', paddingTop: '3px' }}>
-                              <span>Radius: {planet.radius.toFixed(1)} R_e</span>
-                              <span>Temp: {planet.temperature} K</span>
-                              <span>Moons: {planet.moonsCount}</span>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      return null;
-                    })}
-                  </div>
-                ) : (
-                  <div className="hud-warning-box">
-                    <span className="warning-title">⚠️ SYSTEM EMPTY</span>
-                    <span className="warning-text">Stellar winds have swept this vicinity bare. No stable planetary orbits exist.</span>
-                  </div>
-                )}
+              <div className="w-full h-full flex flex-col justify-center items-center text-center p-6 text-cyber-gray">
+                <div className="w-10 h-10 border border-dashed border-slate-800 rounded-sm mb-3" />
+                <span className="text-xs font-bold uppercase mb-1">NO SECTOR ATTACHED</span>
+                <span className="text-[10px] leading-relaxed">Klicke auf einen Stern im Raster, um ein Telemetrie-Sondensignal zu binden.</span>
               </div>
             )}
           </div>
-        ) : (
-          <div className="inspector-empty">
-            <div className="empty-grid-indicator" />
-            <p>NO SECTOR SELECTED</p>
-            <span>Klicke auf einen Stern im Raster, um ein Telemetrie-Sondensignal zu binden.</span>
-          </div>
-        )}
-      </section>
+        }
 
-      {/* Floating Retro Console Lines */}
-      <footer className="hud-console">
-        <p className="console-line">&gt; PROBE-CONSCIOUSNESS TELEMETRY BUFFER ONLINE...</p>
-        <p className="console-line">&gt; SEED-DETERMINISTIC COSMOLOGY LOOPS CONNECTED. INFINITE COORDINATE SPACE ACTIVE.</p>
-      </footer>
-    </div>
+        // Bottom command console
+        bottomConsoleContent={
+          <div className="text-[10px] font-mono leading-relaxed select-text p-2 pl-3">
+            <p className="text-slate-400 font-bold">&gt; PROBE-CONSCIOUSNET TELEMETRY BUFFER ONLINE...</p>
+            <p className="text-cyber-blue">&gt; SEED-DETERMINISTIC COSMOLOGY LOOPS CONNECTED. INFINITE COORDINATE SPACE ACTIVE.</p>
+          </div>
+        }
+      >
+        <TacticalCanvas
+          dimensions={dimensions}
+          initialPanX={panX}
+          initialPanY={panY}
+          initialZoom={currentZoom}
+          onCameraChange={(x, y, z) => {
+            // Standard parent updates on camera stop!
+            setPanX(x);
+            setPanY(y);
+            setCurrentZoom(z);
+          }}
+
+          systems={systemsData}
+          agents={mockState ? mockState.agents : []}
+          ships={mockState ? mockState.ships : []}
+          selection={selectedSector}
+          onSelectionChange={(sel: any) => {
+            const foundSec = visibleSectors.find(s => s.id === sel.id);
+            if (foundSec) setSelectedSector(foundSec);
+          }}
+
+          // Sandbox properties
+          isSandbox={true} // Restored!
+          showUnmapped={showUnmapped}
+          drawNebulas={showUnmapped}
+          drawGalaxies={showUnmapped}
+          drawWarpCurrents={showUnmapped}
+          seed={config.seed}
+          density={config.density}
+          activeTool={config.activeTool}
+          brushSize={config.brushSize}
+          onBrushAction={handleBrushAction}
+          revealedSectors={revealedSectors}
+          visualTuning={visualTuning}
+        />
+      </C2Layout>
+    </>
   );
 }

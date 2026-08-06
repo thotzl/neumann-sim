@@ -12,12 +12,13 @@
   },
   "dependencies": {
     "@preact/signals-react": "^3.11.0",
+    "@types/three": "^0.185.4",
     "augmented-ui": "^2.0.0",
-    "konva": "^10.3.0",
+    "pixi.js": "^8.19.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-konva": "^19.2.5",
     "react-rnd": "^10.5.3",
+    "three": "^0.185.1",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

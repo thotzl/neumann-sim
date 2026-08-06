@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import SandboxApp from './sandbox/App.tsx'
 import MonitorApp from './monitor/App.tsx'
+import PixiJSTestApp from './shared/components/PixiJSTestApp.tsx'
+import ThreeJSTestApp from './shared/components/ThreeJSTestApp.tsx'
 import './index.css'
 import './sandbox/App.css'
 
 function Root() {
-  // Combine pathname and hash to support direct URL entries (e.g. /sandbox) and SPA hash redirects (e.g. /#/sandbox)
+  // Combine pathname and hash to support direct URL entries and SPA hash redirects
   const [route, setRoute] = useState(window.location.pathname + window.location.hash);
 
   useEffect(() => {
@@ -23,8 +25,14 @@ function Root() {
     };
   }, []);
 
-  // If path or hash contains 'sandbox', render the offline Sandbox. Else, render the Mock Monitor.
-  if (route.toLowerCase().includes('sandbox')) {
+  // Speculative routing branches for comparison testing
+  const normalizedRoute = route.toLowerCase();
+
+  if (normalizedRoute.includes('gpu-test-pixijs')) {
+    return <PixiJSTestApp />;
+  } else if (normalizedRoute.includes('gpu-test-threejs') || normalizedRoute.includes('gpu-test-r3f')) {
+    return <ThreeJSTestApp />;
+  } else if (normalizedRoute.includes('sandbox')) {
     return <SandboxApp />;
   } else {
     return <MonitorApp />;

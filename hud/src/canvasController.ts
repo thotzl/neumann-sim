@@ -632,4 +632,202 @@ export class CanvasController {
     this.ctx.stroke();
     this.ctx.restore();
   }
+
+  /**
+   * Draws the interstellar travel lines for traveling agents.
+   */
+  drawTransitLines(agents: any[], camera: Camera) {
+    this.ctx.save();
+    this.ctx.strokeStyle = 'rgba(14, 165, 233, 0.45)'; // Cyber blue
+    this.ctx.lineWidth = 1;
+    this.ctx.setLineDash([4, 8]);
+    agents.forEach((agent) => {
+      if (agent.status === 'traveling') {
+        const originScreen = this.worldToScreen(agent.origin_x || 0, agent.origin_y || 0, camera);
+        const targetScreen = this.worldToScreen(agent.target_x || 0, agent.target_y || 0, camera);
+        this.ctx.beginPath();
+        this.ctx.moveTo(originScreen.x, originScreen.y);
+        this.ctx.lineTo(originScreen.x, originScreen.y); // Touch-up
+        this.ctx.lineTo(targetScreen.x, targetScreen.y);
+        this.ctx.stroke();
+      }
+    });
+    this.ctx.restore();
+  }
+
+  /**
+   * Draws the stationary ships and matrix bobs on the outer-planetary bounds.
+   */
+  drawStationaryAssets(systems: any[], ships: any[], agents: any[], camera: Camera, selectedId: string | null, activeRound: number = 0) {
+    const zoom = camera.zoom;
+    
+    systems.forEach((sys) => {
+      const sysId = sys.id || sys.name;
+      const shipsHere = ships.filter((ship) => ship.system_name === sysId);
+      const bobsHere = agents.filter((a) => a.location === sysId && a.status !== 'traveling');
+      const matrixBobs = bobsHere.filter((a) => !a.active_ship_id);
+
+      if (shipsHere.length === 0 && matrixBobs.length === 0) return;
+
+      const screenPos = this.worldToScreen(sys.x, sys.y, camera);
+
+      // Core radius of the star to offset from
+      const starRadius = sys.mass ? getStellarProperties(sys.mass).radius : 1.0;
+      const baseSize = 3.5 * Math.pow(starRadius, 0.25);
+
+      let outerRadiusOffset = Math.max(25, 30 * zoom);
+      const planets = sys.system?.planets || sys.planets || [];
+      if (planets.length > 0) {
+        const maxDistance = planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
+        const maxOrbitRadius = (baseSize * Math.max(0.4, Math.min(2.0, zoom)) + 8 + maxDistance * 14) * zoom;
+        outerRadiusOffset = Math.max(maxOrbitRadius + 10 * zoom, Math.max(25, 30 * zoom));
+      }
+
+      const itemWidth = 10 * Math.max(0.5, Math.min(2.0, zoom));
+      const totalWidth = (shipsHere.length + matrixBobs.length - 1) * itemWidth;
+      const startX = screenPos.x - totalWidth / 2;
+      const sy = screenPos.y + outerRadiusOffset;
+
+      let itemIdx = 0;
+
+      // Draw Stationary Ships
+      shipsHere.forEach((ship) => {
+        const sx = startX + itemIdx * itemWidth;
+        itemIdx++;
+
+        const isUnderConstruction = ship.pilot_id === 'UNDER_CONSTRUCTION';
+        const pilot = bobsHere.find((a) => a.active_ship_id === ship.id);
+        const isPilotSelected = pilot && selectedId === pilot.id;
+
+        const pilotRemaining = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilot.sleep_until_round
+          ? Math.max(0, pilot.sleep_until_round - activeRound)
+          : 0;
+        const pilotSleeping = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilotRemaining > 0;
+
+        let shipColor = '#64748b';
+        if (isUnderConstruction) {
+          shipColor = '#f59e0b';
+        } else if (pilot) {
+          shipColor = '#0ea5e9';
+          if (pilotSleeping) {
+            if (pilot.sleep_state === 1) shipColor = '#f59e0b';
+            else if (pilot.sleep_state === 2) shipColor = '#a855f7';
+          }
+        }
+
+        // Draw triangular ship
+        this.ctx.save();
+        this.ctx.fillStyle = shipColor;
+        this.ctx.beginPath();
+        const shipHeight = 8 * Math.max(0.4, Math.min(2.0, zoom));
+        const shipWidth = 6 * Math.max(0.4, Math.min(2.0, zoom));
+        this.ctx.moveTo(sx, sy - shipHeight / 2);
+        this.ctx.lineTo(sx - shipWidth / 2, sy + shipHeight / 2);
+        this.ctx.lineTo(sx + shipWidth / 2, sy + shipHeight / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        if (isPilotSelected) {
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.arc(sx, sy, 8 * Math.max(0.4, Math.min(2.0, zoom)), 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
+        this.ctx.restore();
+      });
+
+      // Draw Stationary Minds
+      matrixBobs.forEach((bob) => {
+        const sx = startX + itemIdx * itemWidth;
+        itemIdx++;
+
+        const remaining = bob.sleep_state && bob.sleep_state > 0 && bob.sleep_until_round
+          ? Math.max(0, bob.sleep_until_round - activeRound)
+          : 0;
+        const isSleeping = bob.sleep_state && bob.sleep_state > 0 && remaining > 0;
+
+        let bobColor = '#38bdf8';
+        if (isSleeping) {
+          if (bob.sleep_state === 1) bobColor = '#f59e0b';
+          else if (bob.sleep_state === 2) bobColor = '#a855f7';
+        }
+
+        const isBobSelected = selectedId === bob.id;
+
+        // Draw square mind
+        this.ctx.save();
+        this.ctx.fillStyle = bobColor;
+        this.ctx.shadowColor = bobColor;
+        this.ctx.shadowBlur = isSleeping ? 0 : 4 * zoom;
+        const sqSize = 4 * Math.max(0.4, Math.min(2.0, zoom));
+        this.ctx.fillRect(sx - sqSize / 2, sy - sqSize / 2, sqSize, sqSize);
+
+        if (isBobSelected) {
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.arc(sx, sy, 6 * Math.max(0.4, Math.min(2.0, zoom)), 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
+        this.ctx.restore();
+      });
+    });
+  }
+
+  /**
+   * Draws the traveling couriers along flight vector paths.
+   */
+  drawTravelingAgents(agents: any[], camera: Camera, selectedId: string | null, activeRound: number = 0) {
+    const zoom = camera.zoom;
+
+    agents.forEach((agent) => {
+      if (agent.status === 'traveling') {
+        const currentScreen = this.worldToScreen(agent.current_x, agent.current_y, camera);
+        const angle = Math.atan2(agent.target_y - agent.origin_y, agent.target_x - agent.origin_x) + Math.PI / 2;
+
+        const remaining = agent.sleep_state && agent.sleep_state > 0 && agent.sleep_until_round
+          ? Math.max(0, agent.sleep_until_round - activeRound)
+          : 0;
+        const isSleeping = agent.sleep_state && agent.sleep_state > 0 && remaining > 0;
+
+        let shipColor = '#0ea5e9';
+        if (isSleeping) {
+          if (agent.sleep_state === 1) shipColor = '#f59e0b';
+          else if (agent.sleep_state === 2) shipColor = '#a855f7';
+        }
+
+        this.ctx.save();
+        this.ctx.translate(currentScreen.x, currentScreen.y);
+        this.ctx.rotate(angle);
+        
+        this.ctx.fillStyle = shipColor;
+        this.ctx.shadowColor = shipColor;
+        this.ctx.shadowBlur = isSleeping ? 0 : 8 * zoom;
+
+        this.ctx.beginPath();
+        const shipHeight = 12 * Math.max(0.4, Math.min(2.0, zoom));
+        const shipWidth = 8 * Math.max(0.4, Math.min(2.0, zoom));
+        this.ctx.moveTo(0, -shipHeight / 2);
+        this.ctx.lineTo(-shipWidth / 2, shipHeight / 2);
+        this.ctx.lineTo(shipWidth / 2, shipHeight / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        this.ctx.restore();
+
+        // Selection highlight ring
+        const isAgentSelected = selectedId === agent.id;
+        if (isAgentSelected) {
+          this.ctx.save();
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.arc(currentScreen.x, currentScreen.y, 14 * Math.max(0.4, Math.min(2.0, zoom)), 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
+      }
+    });
+  }
 }

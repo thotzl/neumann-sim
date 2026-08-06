@@ -169,12 +169,20 @@ function processActions(text, universeDir, agentId, state) {
     // --- RUN (V10.5 Bracket-Counting Parser) ---
     const { blocks } = parseRunBlocks(safeRunText);
     
+    let chainFailed = false;
+    
     for (const block of blocks) {
         let cmd = block.cmd;
 
         if (cmd === "..." || cmd === "" || cmd.startsWith("<")) continue;
 
         let displayCmd = cmd; // The original command the agent wrote
+
+        // Action Chain Short-Circuiting
+        if (chainFailed && (cmd.includes("move(") || cmd.includes("route(") || cmd.includes("jump("))) {
+            feedback += `[ABORTED: '${cmd}' was bypassed because a preceding logistics or loading action in this chain failed.]\n`;
+            continue;
+        }
 
         // Path Mapping for Unified CLI (V10.0 Functional)
         if (cmd.startsWith("me ")) {
@@ -222,11 +230,23 @@ function processActions(text, universeDir, agentId, state) {
                 }
             }).toString();
             feedback += `[RESPONSE: '${displayCmd}' ::\n${out.trim() || "OK"}]\n`;
+
+            if (out.includes('[ERROR]') || out.includes('[DENIED]')) {
+                if (displayCmd.includes('withdraw') || displayCmd.includes('deposit') || displayCmd.includes('refine') || displayCmd.includes('build_ship')) {
+                    chainFailed = true;
+                }
+            }
         } catch (e) {
             let err = e.stderr ? e.stderr.toString() : e.message;
             const expRoot = path.resolve(universeDir, '..');
             err = err.split(expRoot).join('');
             feedback += `[ERROR-RESPONSE: '${displayCmd}' ::\n${err.trim()}]\n`;
+
+            if (err.includes('[ERROR]') || err.includes('[DENIED]')) {
+                if (displayCmd.includes('withdraw') || displayCmd.includes('deposit') || displayCmd.includes('refine') || displayCmd.includes('build_ship')) {
+                    chainFailed = true;
+                }
+            }
         }
     }
     return feedback;

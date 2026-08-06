@@ -1,6 +1,7 @@
 import sqlite3
 from core.lib import generator
 from core.lib import config_service
+from core.lib.utils import parsing
 
 def get_system_or_fail(cursor, system_name):
     """
@@ -22,8 +23,9 @@ def get_resolved_system_state(cursor, system_name):
     db_dict = dict(db_row)
     
     # Parse coordinates from name or read from DB (DNA key)
-    x = db_dict.get('x', 0)
-    y = db_dict.get('y', 0)
+    parsed_coords = parsing.parse_coords_from_name(system_name)
+    x = parsed_coords[0] if parsed_coords else db_dict.get('x', 0)
+    y = parsed_coords[1] if parsed_coords else db_dict.get('y', 0)
     
     # Get configuration and seed
     cfg = config_service.get_config()
@@ -38,6 +40,8 @@ def get_resolved_system_state(cursor, system_name):
         cy = int(y // 500)
         gen_sys = generator.UniverseGenerator.getSectorInCell(cx, cy, generator.hash_string_to_int(seed_str), 1.0)
     
+    is_inspected = db_dict.get('is_inspected', 1)
+    
     if gen_sys:
         # Merge static immutable values and dynamic database mutations
         resolved = {
@@ -50,18 +54,19 @@ def get_resolved_system_state(cursor, system_name):
             "anomaly": gen_sys["anomaly"],
             "anomaly_angle": gen_sys["anomalyAngle"],
             "debris_belt": gen_sys["debrisBelt"],
-            "system": gen_sys["system"], # Solar system (Planets & Asteroids)
+            "system": gen_sys["system"] if is_inspected == 1 else [], # Hide details if not yet fully inspected (Fog of War)
             "warp_current": gen_sys["warpCurrent"],
             
             # DB mutable values (depots, capacity overrides, remaining core resources)
-            "extractable_matter_in_core": db_dict["extractable_matter_in_core"],
+            "extractable_matter_in_core": db_dict["extractable_matter_in_core"] if is_inspected == 1 else 0,
             "max_extractable_matter": db_dict["max_extractable_matter"],
             "raw_matter_depot": db_dict["raw_matter_depot"],
             "refined_matter_depot": db_dict["refined_matter_depot"],
             "energy_depot": db_dict["energy_depot"],
             "depot_matter_capacity": db_dict["depot_matter_capacity"],
             "depot_energy_capacity": db_dict["depot_energy_capacity"],
-            "display_name": db_dict["display_name"]
+            "display_name": db_dict["display_name"],
+            "is_inspected": is_inspected
         }
         return resolved
     

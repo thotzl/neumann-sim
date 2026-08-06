@@ -26,11 +26,12 @@ DESCRIPTIONS = {
     "refine": "Converts raw matter into refined matter (Requires matter_refinery).",
     "repair": "Repairs damaged infrastructure (Requires structure_id from dashboard).",
     "deconstruct": "Deconstructs infrastructure and refunds part of the matter cost.",
-    "move": "Initiates transit to target coordinates (target_x, target_y).",
+    "move": "Initiates sub-light vector propulsion transit to precise coordinates (target_x, target_y).",
     "replicate": "Creates an autonomous probe replican inside an active mind_forge (ID is generated dynamically by the probe kernel).",
     "set_name": "Sets an individual identity (name) for the probe.",
     "rename_system": "Gives the current system a new display name.",
-    "scan": "Scans the surroundings for new systems (Deep Space Scan).",
+    "link_gate": "Synchronizes and links the local wormhole gate to a target portal in another sector (Arguments: target_sector).",
+    "scan": "Performs an active long-range sub-space sensor sweep to detect and map distant stellar signatures (Base Range: 1500+).",
     "deposit": "Deposits matter/energy into the local sector depot.",
     "withdraw": "Withdraws energy or matter from the local sector depot.",
     "transfer": "Transfers resources directly to another instance in the same sector.",
@@ -50,8 +51,8 @@ DESCRIPTIONS = {
     "delete_blueprint": "Deletes a draft from the blueprint archive (Arguments: name).",
     "inspect": "Performs a detailed local or espionage inspection (Arguments: ship_id, structure_id, system_name).",
     "map": "Active stellar map directory. Optional arguments: range (integer), query (string), system_id (string).",
-    "route": "Calculates the optimal Hop-by-Hop Dijkstra travel route to a destination (Arguments: destination).",
-    "eta": "Estimates direct flight travel duration (transit ticks) and energy costs to a destination (Arguments: destination).",
+    "route": "Calculates an energy-optimal multi-hop flight trajectory to a discovered destination (Plots safe staging waypoints).",
+    "eta": "Estimates travel duration and propulsion grid energy costs for a direct vector flight.",
     "network": "Queries active replicants. Masked as Unknown if out of range with no active comms_relay.",
     "memo": "Manage your private memos, diary entries, and logs (Actions: add, check, uncheck, remove, list, find; Optional list filter: status='all').",
     "docs": "Manage sector documents and public relics (Actions: add, list, find, remove).",
@@ -59,7 +60,7 @@ DESCRIPTIONS = {
 }
 
 from core.lib.utils.formatting import clean_dict
-from core.lib.utils.parsing import safe_int
+from core.lib.utils.parsing import safe_int, safe_float
 
 def print_help():
     print("Unified Command Line (UCL) - V10.0 Functional Evolution")
@@ -125,10 +126,11 @@ def main():
         elif method == "repair": agent.repair(structure_id=safe_int(params.get('structure_id'), 'structure_id'), hp_to_restore=safe_int(params.get('hp_to_restore'), 'hp_to_restore', 50))
         elif method == "build": agent.build(building_type=params.get('building_type'), matter_to_invest=safe_int(params.get('matter_to_invest'), 'matter_to_invest', 100))
         elif method == "deconstruct": agent.deconstruct(structure_id=safe_int(params.get('structure_id'), 'structure_id'))
-        elif method == "move": agent.move(target_x=float(params.get('target_x')) if params.get('target_x') is not None else None, target_y=float(params.get('target_y')) if params.get('target_y') is not None else None)
+        elif method == "move": agent.move(target_x=safe_float(params.get('target_x'), 'target_x'), target_y=safe_float(params.get('target_y'), 'target_y'))
         elif method == "replicate": agent.replicate()
         elif method == "set_name": agent.set_name(name=params.get('name'))
         elif method == "rename_system": agent.rename_system(new_name=params.get('new_name'))
+        elif method == "link_gate": agent.link_gate(target_sector=params.get('target_sector'))
         elif method == "scan": agent.scan()
         elif method == "deposit": agent.deposit(quantity=safe_int(params.get('quantity'), 'quantity', 100), resource_type=params.get('resource_type', 'matter'))
         elif method == "withdraw": agent.withdraw(resource_type=params.get('resource_type', 'energy'), quantity=safe_int(params.get('quantity'), 'quantity', 50))

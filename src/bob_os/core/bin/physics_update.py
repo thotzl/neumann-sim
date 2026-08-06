@@ -5,6 +5,7 @@ import math
 from core.lib.db_config import get_connection
 from core.lib import physics_service, config_service, agent_service
 from core.lib import generator
+from core.lib.utils import parsing
 
 def update(current_tick=1):
     conn = get_connection()
@@ -32,17 +33,15 @@ def update(current_tick=1):
             print(f"[PHYSICS] Project {site['type']} in {site['system_name']} completed!")
 
     # 2. Logistics & Transit (Continuous Kinematics, R_inf and Proximity Mapping - Pillar 3 & 5)
-    try:
-        cursor.execute("""
-            SELECT 
-                a.id, a.current_x, a.current_y, a.target_x, a.target_y, a.transit_ticks_total, a.transit_ticks_passed, a.target_system,
-                (SELECT s.energy_inventory FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER)) AS energy_inventory
-            FROM agents a WHERE a.status = 'traveling'
-        """)
-        travelers = cursor.fetchall()
-    except sqlite3.OperationalError:
-        cursor.execute("SELECT id, current_x, current_y, target_x, target_y, transit_ticks_total, transit_ticks_passed, energy_inventory, target_system FROM agents WHERE status = 'traveling'")
-        travelers = cursor.fetchall()
+    cursor.execute("""
+        SELECT 
+            a.id, a.current_x, a.current_y, a.target_x, a.target_y, a.transit_ticks_total, a.transit_ticks_passed, a.target_system,
+            s.energy_inventory, s.max_speed
+        FROM agents a
+        LEFT JOIN ships s ON CAST(a.host_id AS INTEGER) = s.id
+        WHERE a.status = 'traveling'
+    """)
+    travelers = cursor.fetchall()
         
     # Get config seed for proximity mapping
     cfg_full = config_service.get_config()
@@ -55,7 +54,7 @@ def update(current_tick=1):
         target_x = float(t['target_x'])
         target_y = float(t['target_y'])
         
-        speed = float(rules.get('global_settings', {}).get('travel_speed_per_tick', 300))
+        speed = float(t['max_speed']) if t['max_speed'] is not None and float(t['max_speed']) > 0 else float(rules.get('global_settings', {}).get('travel_speed_per_tick', 300))
         dist = physics_service.calc_distance(start_x, start_y, target_x, target_y)
         
         energy_cost_per_distance = physics_config.get('energy_cost_per_distance', 0.1)
@@ -111,12 +110,8 @@ def update(current_tick=1):
         
         if arrived:
             # Anchor location based on Influence Zone (R_inf = 150 * sqrt(mass))
-            try:
-                cursor.execute("SELECT name, x, y, mass FROM systems")
-                all_known = cursor.fetchall()
-            except sqlite3.OperationalError:
-                cursor.execute("SELECT name, x, y FROM systems")
-                all_known = [{"name": r["name"], "x": r["x"], "y": r["y"], "mass": 1.0} for r in cursor.fetchall()]
+            cursor.execute("SELECT name, x, y, mass FROM systems")
+            all_known = cursor.fetchall()
             
             final_location = 'Interstellar'
             for k in all_known:
@@ -136,11 +131,13 @@ def update(current_tick=1):
                 WHERE id=?
             """, (target_x, target_y, new_passed, t['id']))
             
-            # Sync ship location
+            # Sync ship location and mark arrived sector as inspected (Fog of War lift)
             cursor.execute("""
                 UPDATE ships SET system_name = ? 
                 WHERE id = (SELECT active_ship_id FROM agents WHERE id = ?)
             """, (final_location, t['id']))
+            if final_location != 'Interstellar':
+                cursor.execute("UPDATE systems SET is_inspected = 1 WHERE name = ?", (final_location,))
         else:
             cursor.execute("""
                 UPDATE agents SET 
@@ -150,16 +147,42 @@ def update(current_tick=1):
                 WHERE id=?
             """, (next_x, next_y, new_passed, t['id']))
 
-    # 3. Energy (Passive Regeneration/Drain for Active Ships with Pilots) (Pillar 1)
-    try:
-        cursor.execute("""
-            UPDATE ships SET energy_inventory = MIN(energy_capacity, MAX(0, energy_inventory + ? - ?))
-            WHERE pilot_id IS NOT NULL
-        """, (regen_base, drain_idle))
-    except sqlite3.OperationalError:
-        # Fallback for unittests that use a flat agents table format
-        cursor.execute("UPDATE agents SET energy_inventory = MIN(?, MAX(0, energy_inventory + ? - ?)) WHERE status = 'active'", 
-                       (agent_limits['energy'], regen_base, drain_idle))
+    # 3. Energy (Modular Passive Regeneration/Drain for Active Ships with Pilots) (Pillar 1)
+    cursor.execute("""
+        SELECT 
+            s.id, s.energy_inventory, s.energy_capacity, s.raw_matter_inventory,
+            b.matrix_json, b.stats_json
+        FROM ships s
+        JOIN blueprints b ON s.blueprint_name = b.name
+        WHERE s.pilot_id IS NOT NULL
+    """)
+    active_ships = cursor.fetchall()
+    
+    for ship in active_ships:
+        try:
+            stats = json.loads(ship['stats_json']) if ship['stats_json'] else {}
+            matrix = json.loads(ship['matrix_json']) if ship['matrix_json'] else []
+        except Exception:
+            stats = {}
+            matrix = []
+            
+        matrix_str = json.dumps(matrix)
+        has_fusion = "fusion_reactor" in matrix_str
+        
+        ship_regen = float(stats.get('regen', 0.0))
+        ship_drain = float(stats.get('drain', 0.0))
+        
+        # Fuel Consumption for Fusion Reactor (0.05 raw_matter per tick)
+        if has_fusion:
+            fuel_cost = 0.05
+            if float(ship['raw_matter_inventory']) >= fuel_cost:
+                new_matter = float(ship['raw_matter_inventory']) - fuel_cost
+                cursor.execute("UPDATE ships SET raw_matter_inventory = ? WHERE id = ?", (new_matter, ship['id']))
+            else:
+                ship_regen = max(0.0, ship_regen - 150.0)
+        
+        new_energy = min(float(ship['energy_capacity']), max(0.0, float(ship['energy_inventory']) + ship_regen - ship_drain))
+        cursor.execute("UPDATE ships SET energy_inventory = ? WHERE id = ?", (new_energy, ship['id']))
     
     # 4. Global System Update (Maintenance, Costs, Capacities, Geology)
     # A. Geological Regeneration of Planet Cores
@@ -229,6 +252,30 @@ def update(current_tick=1):
                 energy_depot = ?
             WHERE name = ?
         """, (new_matter_cap, new_energy_cap, new_energy_rate, new_matter_rate, final_matter, final_energy, sys_name))
+
+        # F. Observatory Macro-Kartografie Trigger (Pillar 2 / Observatory)
+        has_obs = any(infra['type'] == 'observatory' for infra in active_infras)
+        if has_obs:
+            parsed_coords = parsing.parse_coords_from_name(sys_name)
+            if parsed_coords:
+                obs_x, obs_y = parsed_coords
+                obs_range = infra_rules.get('observatory', {}).get('scan_range_bonus', 15000)
+                
+                min_x = obs_x - obs_range
+                max_x = obs_x + obs_range
+                min_y = obs_y - obs_range
+                max_y = obs_y + obs_range
+                
+                cfg_full = config_service.get_config()
+                seed_str = str(cfg_full.get("seed", "BobOS_V12"))
+                
+                sectors = generator.UniverseGenerator.getSectorsInArea(min_x, max_x, min_y, max_y, seed_str, 1.0)
+                for s in sectors:
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO systems 
+                        (name, x, y, extractable_matter_in_core, max_extractable_matter, is_inspected) 
+                        VALUES (?, ?, ?, ?, ?, 0)
+                    """, (s["id"], s["x"], s["y"], s["matterDepot"], s["matterDepot"]))
 
     conn.commit()
     conn.close()

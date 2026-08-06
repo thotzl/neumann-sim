@@ -75,6 +75,21 @@ def simulate_ship(name, matrix, rules):
             total_mass += val * m_rule['mass_per_regen']
             total_cost += val * m_rule['cost_per_regen']
             
+        elif m_type == 'fusion_reactor':
+            val = data.get('regen', 0)
+            if tiles < math.ceil(val / m_rule['max_regen_per_tile']): return {"error": f"{name}: Fusion Reactor {m_id} too small for {val} regen."}
+            total_regen += val
+            total_mass += val * m_rule['mass_per_regen']
+            total_cost += val * m_rule['cost_per_regen']
+            
+        elif m_type == 'warp_drive':
+            val = data.get('thrust', 0)
+            if tiles < math.ceil(val / m_rule['max_thrust_per_tile']): return {"error": f"{name}: Warp Drive {m_id} too small for {val} thrust."}
+            total_thrust += val
+            total_mass += val * m_rule['mass_per_thrust']
+            total_cost += val * m_rule['cost_per_thrust']
+            total_idle_drain += val * m_rule['drain_per_thrust']
+            
         elif m_type == 'comm':
             val = data.get('range', 0)
             if tiles < math.ceil(val / m_rule['max_range_per_tile']): return {"error": f"{name}: Comm {m_id} too small for {val} range."}
@@ -96,10 +111,19 @@ def simulate_ship(name, matrix, rules):
             total_cost += m_rule['cost']
             has_fab = True
 
+    # Fusion fuel cargo capacity constraint
+    if any(m['type'] == 'fusion_reactor' for m in modules.values()) and total_matter_cap == 0:
+        return {"error": f"{name}: Fusion reactor built, but has no Cargo (volume=0) to carry its matter fuel!"}
+
     # Final Stats
     speed = round((total_thrust / total_mass) * g['base_speed'], 2) if total_thrust > 0 else 0
     cost_per_dist = g['base_travel_cost'] * (1 + (total_mass / g['mass_efficiency_divisor']))
-    max_range = int(total_energy_cap / cost_per_dist) if cost_per_dist > 0 else 0
+    
+    # Precise active Warp active travel drain integration (Steel-man Fix 1)
+    net_drain = max(0.0, total_idle_drain - total_regen)
+    effective_cost_per_dist = cost_per_dist + (net_drain / speed if speed > 0 else 0)
+    max_range = int(total_energy_cap / effective_cost_per_dist) if effective_cost_per_dist > 0 else 0
+    
     build_time = math.ceil(total_cost / g['shipyard_rate'])
 
     return {
@@ -121,13 +145,21 @@ def run_sim():
     CAR_L = {"id": "c_l", "type": "cargo", "volume": 10000} # needs 4 tiles
     SOL_S = {"id": "s_s", "type": "solar", "regen": 25}
     COM_S = {"id": "com_s", "type": "comm", "range": 10000}
+    FUS_S = {"id": "fus_s", "type": "fusion_reactor", "regen": 150}
+    WRP_S = {"id": "wrp_s", "type": "warp_drive", "thrust": 3000}
     DRILL = {"type": "drill"}
     FAB   = {"type": "fabricator"}
 
-    # --- 20 ARCHE TYPES ---
+    # --- 22 ARCHE TYPES ---
     fleet = [
         ("Drone", [[LOG, ENG_S]]),
         ("Scout", [[ENG_S, LOG], [BAT_S, COM_S]]),
+        ("Galactic Scout", [[WRP_S, LOG], [BAT_S, FUS_S], [CAR_S, None]]),
+        ("Void Crusader", [
+            [WRP_S, LOG, BAT_S, BAT_S],
+            [WRP_S, FUS_S, BAT_S, BAT_S],
+            [CAR_S, CAR_S, FUS_S, FUS_S]
+        ]),
         ("Deep Space Probe", [[LOG, COM_S], [BAT_L, BAT_L], [BAT_L, BAT_L]]),
         ("Fighter", [[{"type":"engine","thrust":1000}]*2, [LOG, BAT_S]]),
         ("Courier", [[ENG_S, LOG], [CAR_S, BAT_S]]),

@@ -55,7 +55,8 @@ class TestCosmicNavigation(unittest.TestCase):
                 matter_generation_per_cycle INTEGER DEFAULT 0, 
                 energy_generation_per_cycle INTEGER DEFAULT 0, 
                 refined_matter_depot INTEGER DEFAULT 0,
-                mass REAL DEFAULT 1.0
+                mass REAL DEFAULT 1.0,
+                is_inspected INTEGER DEFAULT 1
             )
         """)
         c.execute("""
@@ -79,6 +80,15 @@ class TestCosmicNavigation(unittest.TestCase):
                 has_drill INTEGER DEFAULT 0, 
                 has_fabricator INTEGER DEFAULT 0, 
                 has_logic_core INTEGER DEFAULT 0
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS blueprints (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE,
+                author_id TEXT,
+                matrix_json TEXT,
+                stats_json TEXT
             )
         """)
         c.execute("CREATE TABLE IF NOT EXISTS visual_events (id INTEGER PRIMARY KEY AUTOINCREMENT, cycle INTEGER, actor_id TEXT, description TEXT)")

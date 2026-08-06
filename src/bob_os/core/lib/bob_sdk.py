@@ -45,6 +45,7 @@ class Agent:
     def replicate(self): return self.actuators.replicate()
     def set_name(self, name): return self.actuators.set_name(name)
     def rename_system(self, new_name): return self.actuators.rename_system(new_name)
+    def link_gate(self, target_sector): return self.actuators.link_gate(target_sector)
     def board(self, ship_id): return self.actuators.board(ship_id)
     def exit_ship(self): return self.actuators.exit_ship()
     def build_ship(self, blueprint_name=None, chassis=None, matter_to_invest=None): return self.actuators.build_ship(blueprint_name, chassis, matter_to_invest)

@@ -14,7 +14,9 @@ CREATE TABLE IF NOT EXISTS systems (
     depot_energy_capacity INTEGER DEFAULT 0,
     matter_generation_per_cycle INTEGER DEFAULT 0,
     energy_generation_per_cycle INTEGER DEFAULT 0,
-    refined_matter_depot INTEGER DEFAULT 0
+    refined_matter_depot INTEGER DEFAULT 0,
+    mass REAL DEFAULT 1.0,
+    is_inspected INTEGER DEFAULT 1
 );
 
 -- 2. Agents
@@ -87,7 +89,8 @@ CREATE TABLE IF NOT EXISTS infrastructure (
     health INTEGER DEFAULT 100,
     max_health INTEGER DEFAULT 100,
     level INTEGER DEFAULT 1,
-    maintenance_cooldown INTEGER DEFAULT 0
+    maintenance_cooldown INTEGER DEFAULT 0,
+    linked_system TEXT DEFAULT NULL
 );
 
 -- 6. Core Tables

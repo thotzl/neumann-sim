@@ -681,6 +681,29 @@ After your onboarding, you will act as a sovereign member of the swarm."""
         cursor.execute("UPDATE systems SET display_name = ? WHERE name = ?", (new_name, agent['location']))
         return True
 
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def link_gate(self, cursor, agent, target_sector):
+        # 1. Verify active wormhole_gate at current location
+        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'wormhole_gate' AND status = 'active'", (agent['location'],))
+        local_gate = cursor.fetchone()
+        if not local_gate:
+            print(f"[DENIED] link_gate failed: Your current system '{agent['location']}' lacks an active 'wormhole_gate'.")
+            return False
+            
+        # 2. Verify active wormhole_gate at target sector
+        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'wormhole_gate' AND status = 'active'", (target_sector,))
+        target_gate = cursor.fetchone()
+        if not target_gate:
+            print(f"[DENIED] link_gate failed: Target system '{target_sector}' lacks an active 'wormhole_gate'.")
+            return False
+            
+        # 3. Establish bidirectional portal link
+        cursor.execute("UPDATE infrastructure SET linked_system = ? WHERE system_name = ? AND type = 'wormhole_gate'", (target_sector, agent['location']))
+        cursor.execute("UPDATE infrastructure SET linked_system = ? WHERE system_name = ? AND type = 'wormhole_gate'", (agent['location'], target_sector))
+        
+        print(f"[SUCCESS] Interstellar wormhole connection established: {agent['location']} <===> {target_sector}!")
+        return True
+
     @agent_service.with_agent_context(require_active=True, allow_disembodied=True, action_name='Board')
     def board(self, cursor, agent, ship_id):
         if dict(agent).get('active_ship_id') is not None:

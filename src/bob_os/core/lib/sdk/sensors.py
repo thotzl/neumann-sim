@@ -571,6 +571,11 @@ class Sensors:
         cursor.execute("SELECT name, x, y, display_name FROM systems")
         all_systems = {r['name']: dict(r) for r in cursor.fetchall()}
         
+        # Fetch active linked wormholes
+        cursor.execute("SELECT system_name, linked_system FROM infrastructure WHERE type = 'wormhole_gate' AND status = 'active' AND linked_system IS NOT NULL")
+        gates = cursor.fetchall()
+        wormholes = {g['system_name']: g['linked_system'] for g in gates}
+        
         # Build Hop-by-Hop Adjacency Graph (A* Pathfinding - Pillar 4 & 6)
         # Two nodes are connected if the Euclidean distance between them is within the ship's energy/fuel range.
         import heapq
@@ -604,22 +609,30 @@ class Sensors:
                 for i in range(len(path) - 1):
                     s1 = all_systems[path[i]]
                     s2 = all_systems[path[i+1]]
-                    seg_dist = physics_service.calc_distance(s1['x'], s1['y'], s2['x'], s2['y'])
-                    seg_ticks = max(1, int(math.ceil(seg_dist / speed)))
-                    seg_cost = round(seg_dist * cost_per_dist, 2)
+                    
+                    is_wormhole = wormholes.get(s1['name']) == s2['name']
+                    
+                    if is_wormhole:
+                        seg_dist = 0.0
+                        seg_ticks = 0
+                        seg_cost = 0.0
+                    else:
+                        seg_dist = physics_service.calc_distance(s1['x'], s1['y'], s2['x'], s2['y'])
+                        seg_ticks = max(1, int(math.ceil(seg_dist / speed)))
+                        seg_cost = round(seg_dist * cost_per_dist, 2)
 
                     cumulative_ticks += seg_ticks
 
                     # Check if target system has solar collectors for recharging
                     has_solar = system_service.has_active_infrastructure(cursor, s2['name'], 'solar_collector')
-                    recharge_status = "Solar available for recharge." if has_solar else "No local solar generator."
+                    recharge_status = "Instant Wormhole Transit." if is_wormhole else ("Solar available for recharge." if has_solar else "No local solar generator.")
 
                     flight_plan.append({
                         "leg": i + 1,
                         "system_id": s2['name'],
                         "name": s2['display_name'] if s2['display_name'] else "Unnamed",
                         "segment_distance": round(seg_dist, 1),
-                        "travel_time": f"{seg_ticks} turns",
+                        "travel_time": f"{seg_ticks} turns" if not is_wormhole else "Instant",
                         "cumulative_time": f"{cumulative_ticks} turns",
                         "energy_cost": seg_cost,
                         "recharge_status": recharge_status
@@ -632,6 +645,7 @@ class Sensors:
                     "flight_plan": flight_plan
                 }
 
+            # Regular spatial neighbors
             for neighbor, n_data in all_systems.items():
                 if neighbor in seen:
                     continue
@@ -644,6 +658,16 @@ class Sensors:
                         h_val = physics_service.calc_distance(n_data['x'], n_data['y'], dest_x, dest_y)
                         f_score = new_cost + h_val
                         heapq.heappush(queue, (f_score, new_cost, neighbor, path))
+                        
+            # Linked wormhole shortcut (Pillar 4 / Wormhole)
+            linked = wormholes.get(current)
+            if linked and linked in all_systems and linked not in seen:
+                new_cost = cost + 0.0
+                if linked not in min_dist or new_cost < min_dist[linked]:
+                    min_dist[linked] = new_cost
+                    h_val = physics_service.calc_distance(all_systems[linked]['x'], all_systems[linked]['y'], dest_x, dest_y)
+                    f_score = new_cost + h_val
+                    heapq.heappush(queue, (f_score, new_cost, linked, path))
                         
         return {
             "status": "unroutable",

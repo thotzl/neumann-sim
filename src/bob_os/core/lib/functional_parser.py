@@ -12,6 +12,7 @@ METHOD_META = {
     "replicate": {"params": [], "greedy": None},
     "set_name": {"params": ["name"], "greedy": "name"},
     "rename_system": {"params": ["new_name"], "greedy": "new_name"},
+    "link_gate": {"params": ["target_sector"], "greedy": "target_sector"},
     "scan": {"params": [], "greedy": None},
     "deposit": {"params": ["quantity", "resource_type"], "greedy": None},
     "withdraw": {"params": ["resource_type", "quantity"], "greedy": None},

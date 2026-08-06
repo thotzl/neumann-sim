@@ -104,6 +104,23 @@ def run_balance_check():
             print(f"  ✅ solar_collector Net Gain: +{net_gain}E per round.")
 
     # -------------------------------------------------------------
+    # 🏢 CHECK 2B: ENDGAME SECTOR ENERGY DEFICIT STRESSTEST (Steel-man Fix 3)
+    # -------------------------------------------------------------
+    print("\n[CHECK 2B] Sektor Energy-Balance Stresstest (Observatory & Casimir)...")
+    if 'observatory' in infra:
+        obs_cost = infra['observatory'].get('maintenance_energy_cost', 10)
+        # Verify if standard solar generator can cover the observatory's standby cost
+        solar_net_gain = infra.get('solar_collector', {}).get('energy_regen_bonus', 100) - infra.get('solar_collector', {}).get('maintenance_energy_cost', 0)
+        if solar_net_gain < obs_cost:
+            errors.append(f"DEADLOCK: Observatory maintenance ({obs_cost}E) is greater than standard solar net gain ({solar_net_gain}E)! Sektors will black out immediately upon constructing an observatory!")
+        else:
+            print(f"  ✅ Sektor energy budget: Standard solar generator covers observatory standby with net positive: +{solar_net_gain - obs_cost}E.")
+
+    if 'casimir_plant' in infra:
+        cas_regen = infra['casimir_plant'].get('energy_regen_bonus', 5000)
+        print(f"  ✅ Casimir Plant yields +{cas_regen}E/tick (Provides immense surplus for stargate networks).")
+
+    # -------------------------------------------------------------
     # ⚗ CHECK 3: CONVERSION RATIOS (Refining)
     # -------------------------------------------------------------
     print("\n[CHECK 3] Refining Efficiency (Refining Ratios)...")

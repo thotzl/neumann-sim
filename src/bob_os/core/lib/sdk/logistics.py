@@ -16,7 +16,9 @@ class Logistics:
     @agent_service.with_agent_context(require_active=False)
     def deposit(self, cursor, agent, quantity=100, resource_type="matter"):
         system = system_service.get_system_or_fail(cursor, agent['location'])
-        if not system: return False
+        if not system:
+            print("[ERROR] Cannot deposit resources while in deep interstellar space.")
+            return False
         
         quantity = int(quantity)
         if resource_type in ["matter", "raw_matter"]:
@@ -67,7 +69,9 @@ class Logistics:
     @agent_service.with_agent_context(require_active=False)
     def withdraw(self, cursor, agent, resource_type="energy", quantity=50):
         system = system_service.get_system_or_fail(cursor, agent['location'])
-        if not system: return False
+        if not system:
+            print("[ERROR] Cannot withdraw resources while in deep interstellar space.")
+            return False
         
         quantity = int(quantity)
         

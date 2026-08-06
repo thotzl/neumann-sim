@@ -210,7 +210,7 @@ class Sensors:
         
     @agent_service.with_agent_context(allow_disembodied=True)
     def local_system(self, cursor, agent):
-        if agent['status'] == 'traveling' or agent['location'] == 'Interstellar':
+        if agent.get('location') == 'Interstellar':
             energy = agent.get('energy_inventory', 0)
             status = "In Transit"
             warning = None

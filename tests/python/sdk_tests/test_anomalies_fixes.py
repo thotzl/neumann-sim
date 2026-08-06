@@ -191,8 +191,8 @@ class TestAnomaliesFixes(unittest.TestCase):
         agent_id = cursor.fetchone()['id']
         os.environ['BOB_ID'] = agent_id
         
-        # Update Bob's status to traveling and location to Interstellar
-        cursor.execute("UPDATE agents SET status = 'traveling', target_system = 'SYS_B' WHERE id = ?", (agent_id,))
+        # Update Bob's status to traveling and coordinates far away into deep space (interstellar!)
+        cursor.execute("UPDATE agents SET status = 'traveling', target_system = 'SYS_B', current_x = 99999, current_y = 99999 WHERE id = ?", (agent_id,))
         # Update Bob's ship to have 0 energy
         cursor.execute("UPDATE ships SET energy_inventory = 0 WHERE pilot_id = ?", (agent_id,))
         conn.commit()
@@ -207,6 +207,77 @@ class TestAnomaliesFixes(unittest.TestCase):
         self.assertEqual(telemetry['system']['status'], "PROPULSION BLACKOUT - STRANDED")
         self.assertIn('warning', telemetry['system'])
         self.assertTrue("CRITICAL ERROR" in telemetry['system']['warning'])
+
+    def test_spatial_docking_and_solar_flyby(self):
+        """
+        Verify that a traveling agent is dynamically docked if within a planet's
+        stellar influence zone, permitting withdrawals (Fix: State-vs-Space Dissonance).
+        Also verify that solar panels yield 0 energy in Interstellar space but recharge in-system.
+        """
+        seed_test_db.seed()
+        
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Resolve dynamic starting coordinates and details of SYS_A
+        cursor.execute("SELECT name, x, y, mass FROM systems LIMIT 1")
+        sys_row = cursor.fetchone()
+        self.assertIsNotNone(sys_row)
+        sys_name = sys_row['name']
+        startX = sys_row['x']
+        startY = sys_row['y']
+        
+        # Get Bob's ID
+        cursor.execute("SELECT id FROM agents LIMIT 1")
+        agent_id = cursor.fetchone()['id']
+        os.environ['BOB_ID'] = agent_id
+        
+        # 1. Update Bob's status to traveling and his coordinates close to SYS_A (docked!)
+        cursor.execute("UPDATE agents SET status = 'traveling', target_system = 'SYS_B', current_x = ?, current_y = ? WHERE id = ?", (startX, startY, agent_id))
+        # Ensure system depot has some energy
+        cursor.execute("UPDATE systems SET energy_depot = 1000 WHERE name = ?", (sys_name,))
+        conn.commit()
+        conn.close()
+        
+        # Call withdraw - should SUCCEED because of dynamic spatial docking (within influence zone!)
+        agent = bob_sdk.Agent()
+        success = agent.withdraw("energy", 50)
+        self.assertTrue(success)
+        
+        # 2. Test Deep Space Solar Blackout (Static Ship System Location Change)
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        # Set Bob to active status (stationary) to bypass physics trajectory recalculations (Steel-man Fix)
+        cursor.execute("UPDATE agents SET status = 'active' WHERE id = ?", (agent_id,))
+        # Set Bob's ship location to Interstellar (deep space solar blackout!)
+        cursor.execute("UPDATE ships SET system_name = 'Interstellar', energy_inventory = 100, energy_capacity = 500 WHERE pilot_id = ?", (agent_id,))
+        # Equip ship with solar charging capabilities by inserting blueprint stats
+        cursor.execute("INSERT OR REPLACE INTO blueprints (name, author_id, stats_json, matrix_json) VALUES ('Proto-Neumann', ?, '{\"regen\": 50.0, \"drain\": 10.0}', '[]')", (agent_id,))
+        conn.commit()
+        
+        # Run physics update for cycle 1 in deep space (solar blackout!)
+        from core.bin import physics_update
+        physics_update.update(1)
+        
+        # Retrieve ship energy - should NOT have recharged, but only drained from 100 to 90!
+        cursor.execute("SELECT energy_inventory FROM ships WHERE pilot_id = ?", (agent_id,))
+        ship_row = cursor.fetchone()
+        self.assertEqual(ship_row['energy_inventory'], 90) # Solar was blacked out in interstellar space, so it drained!
+        
+        # 3. Test Solar Recharge in System range
+        cursor.execute("UPDATE ships SET system_name = ? WHERE pilot_id = ?", (sys_name, agent_id))
+        conn.commit()
+        
+        # Run physics update for cycle 2 in system range (flyby/docked charging!)
+        physics_update.update(2)
+        
+        # Retrieve ship energy - should have successfully charged from the star (90 + 50 - 10 = 130)!
+        cursor.execute("SELECT energy_inventory FROM ships WHERE pilot_id = ?", (agent_id,))
+        ship_row = cursor.fetchone()
+        self.assertEqual(ship_row['energy_inventory'], 130) # Solar successfully recharged on flyby!
+        conn.close()
 
 if __name__ == '__main__':
     unittest.main()

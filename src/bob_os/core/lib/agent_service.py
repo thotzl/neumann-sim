@@ -2,8 +2,19 @@ import sqlite3
 import functools
 from .db_config import get_connection
 
-def resolve_agent_location(cursor, host_type, host_id, status):
+def resolve_agent_location(cursor, host_type, host_id, status, current_x=None, current_y=None):
     if status == 'traveling':
+        # Dynamic Spatial Docking check based on Stellar Influence Zone (Pillar 5)
+        if current_x is not None and current_y is not None:
+            cursor.execute("SELECT name, x, y, mass FROM systems")
+            all_systems = cursor.fetchall()
+            for sys_row in all_systems:
+                from .physics_service import calc_distance
+                import math
+                dist = calc_distance(current_x, current_y, sys_row['x'], sys_row['y'])
+                r_inf = 150.0 * math.sqrt(sys_row['mass'] or 1.0)
+                if dist <= r_inf:
+                    return sys_row['name'] # Dynamically snapped location!
         return 'Interstellar'
     if host_type == 'ship' and host_id:
         try:
@@ -68,12 +79,21 @@ def get_agent_or_fail(cursor, agent_id, required_columns="*"):
         print(f"[ERROR] Agent '{agent_id}' not found.")
         return None
     agent_dict = dict(row)
-    if 'location' not in agent_dict:
-        agent_dict['location'] = resolve_agent_location(cursor, agent_dict.get('host_type'), agent_dict.get('host_id'), agent_dict.get('status'))
+    # Enable dynamic coordinate-based spatial docking only for traveling status,
+    # or if location is missing/unresolved (Pillar 5 / SSoT / Legacy Tests Compatibility)
+    if agent_dict.get('status') == 'traveling' or not agent_dict.get('location') or agent_dict.get('location') == 'Unknown':
+        agent_dict['location'] = resolve_agent_location(
+            cursor, 
+            agent_dict.get('host_type'), 
+            agent_dict.get('host_id'), 
+            agent_dict.get('status'),
+            agent_dict.get('current_x'),
+            agent_dict.get('current_y')
+        )
     return agent_dict
 
 def require_active_status(agent, tool_name):
-    if agent['status'] == 'traveling':
+    if agent.get('location') == 'Interstellar':
         print(f"[DENIED] Engines active. {tool_name} impossible in interstellar space.")
         return False
     return True

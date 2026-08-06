@@ -157,10 +157,11 @@ def update(current_tick=1):
     cursor.execute("""
         SELECT 
             s.id, s.energy_inventory, s.energy_capacity, s.raw_matter_inventory,
-            b.matrix_json, b.stats_json
+            b.matrix_json, b.stats_json,
+            a.status AS pilot_status, a.current_x, a.current_y
         FROM ships s
         JOIN blueprints b ON s.blueprint_name = b.name
-        WHERE s.pilot_id IS NOT NULL
+        JOIN agents a ON s.pilot_id = a.id
     """)
     active_ships = cursor.fetchall()
     
@@ -177,6 +178,20 @@ def update(current_tick=1):
         
         ship_regen = float(stats.get('regen', 0.0))
         ship_drain = float(stats.get('drain', 0.0))
+        
+        # Enforce Deep Space Solar Blackout (Pillar 1 / Active Constraints)
+        from core.lib.agent_service import resolve_agent_location
+        location = resolve_agent_location(
+            cursor, 
+            'ship', 
+            ship['id'], 
+            ship['pilot_status'], 
+            ship['current_x'], 
+            ship['current_y']
+        )
+        if location == 'Interstellar':
+            solar_regen = ship_regen - 150.0 if has_fusion else ship_regen
+            ship_regen -= max(0.0, solar_regen)
         
         # Fuel Consumption for Fusion Reactor (0.05 raw_matter per tick)
         if has_fusion:

@@ -166,6 +166,7 @@ export const TacticalCanvas = ({
       energyDepot: sys.energyDepot || 0,
       matterDepot: sys.matterDepot || 0,
       is_inspected: sys.is_inspected,
+      display_name: sys.display_name,
       system: sys.system || { planets: sys.planets || [], asteroidBelts: [] }
     }));
 

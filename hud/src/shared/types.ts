@@ -44,6 +44,7 @@ export interface Sector {
   warpCurrent?: { angle: number; magnitude: number }; // Interstellar warp currents vector field (Phase 2)
   isTheoretical?: boolean;
   is_inspected?: number;
+  display_name?: string | null;
 }
 
 export interface SandboxConfig {

@@ -91,6 +91,31 @@ print("secret")
 
     console.log("  ✅ Security ACLs successful.");
 
+    // 5. Ownership Update on Overwrite Test
+    console.log("Testing Ownership Update on Overwrite...");
+    const firstWrite = `
+ACTION:
+[WRITE: scripts/auto.py]
+print("first")
+[END]
+`;
+    processActions(firstWrite, mockDir, "Instance-1", mockState);
+    if (mockState.security.acl['scripts/auto.py'].owner !== 'Instance-1') {
+        throw new Error("First write ownership not set to Instance-1.");
+    }
+
+    const secondWrite = `
+ACTION:
+[WRITE: scripts/auto.py]
+print("second")
+[END]
+`;
+    processActions(secondWrite, mockDir, "Instance-2", mockState);
+    if (mockState.security.acl['scripts/auto.py'].owner !== 'Instance-2') {
+        throw new Error("Second write did not update ownership to Instance-2!");
+    }
+    console.log("  ✅ Ownership Update on Overwrite successful.");
+
     console.log("🎉 All Parser & Guard Tests successful.");
 } catch (e) {
     console.error("❌ Test failed:", e.message);

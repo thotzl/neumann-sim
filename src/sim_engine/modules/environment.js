@@ -100,6 +100,10 @@ function processActions(text, universeDir, agentId, state) {
                 if (writeKey) aclEntry.write_key = writeKey;
                 state.security.acl[filePath] = aclEntry;
             }
+            // Always update owner to current agentId on write/replace to prevent stale ownership on shared files
+            if (state.security.acl[filePath]) {
+                state.security.acl[filePath].owner = agentId;
+            }
 
             feedback += `[SUCCESS: '${filePath}' manifested]\n`;
         } catch (e) {}

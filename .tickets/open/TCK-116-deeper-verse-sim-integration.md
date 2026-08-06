@@ -37,6 +37,8 @@ Wir nutzen das zustandsfreie Generierungsprinzip (0-Byte-Datenbank-Footprint), u
 ---
 
 ## References & Handover
+- **Deeper Verse Handoff Resource:** [.tickets/resources/todo/TCK-116-deeper-verse-sim-integration-handoff.md](../resources/todo/TCK-116-deeper-verse-sim-integration-handoff.md)
 - **Handoff SSoT Guide:** [DEEPER_VERSE_HANDOFF.md](../../docs/DEEPER_VERSE_HANDOFF.md)
 - **Closed Sandbox Ticket:** [TCK-115](../closed/TCK-115-procedural-universe-sandbox.md)
+- **Closed Consolidation Ticket:** [TCK-117](../closed/TCK-117-frontend-consolidation-shared-resources.md)
 - Backlog Index: [EPIC_CONSOLIDATION_BACKLOG.md](../../docs/EPIC_CONSOLIDATION_BACKLOG.md)

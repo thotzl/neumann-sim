@@ -2,7 +2,7 @@
 id: TCK-117
 title: "Frontend-Konsolidierung: Ein Projekt, zwei getrennte Routen (Shared Core)"
 epic_phase: "Epic 5 / Preparation"
-status: "ongoing"
+status: "closed"
 priority: "high"
 created: 2026-07-30
 dependencies: ["TCK-115"]
@@ -19,7 +19,7 @@ Dabei wird die veraltete Karte des Monitors durch das hochauflösende 2D-Canvas-
 
 ---
 
-## Progress Checklist & Status (90% Consolidated)
+## Progress Checklist & Status (100% Consolidated & Closed)
 
 ### 1. Unified Directory & Shared Core (Konsolidierte Module)
 - [x] Migration aller Sandbox-Ressourcen (`canvasController.ts`, `generator.ts`, `types.ts`, `generator.test.ts`) in das `./hud/src/` Projektverzeichnis.
@@ -30,13 +30,14 @@ Dabei wird die veraltete Karte des Monitors durch das hochauflösende 2D-Canvas-
 - [x] Implementierung eines sauberen Routings (Dual hash + pathname in `main.tsx`) im Monitor-Projekt, um zwei Endpunkte über denselben Webserver bereitzustellen.
 - [x] **Route B: `/sandbox` (Die Offline Sandbox):** Zu 100% autarke, offline-fähige Astrophysik-Zentrale mit allen Paint- und Schiebereglern (unverändert zur Ur-Version, komplett ohne Websocket-Zwang lauffähig).
 
-### 3. Upgrade der Live-Monitor-Viewport-Engine (Verschmelzung - 90% Fertig)
+### 3. Upgrade der Live-Monitor-Viewport-Engine (Verschmelzung - 100% Fertig)
 - [x] **Ersetzung der alten Karte:** Der alte, starre Map-Renderer in `./hud/src/monitor` wurde durch das neue `CosmicMap.tsx` Canvas-System (flüssiger Zoom, Pan, Warp-Flows) ersetzt.
 - [x] **Stellar-Telemetry im Inspektor:** Bei Sektorauswahl berechnet das Frontend live die stufenlosen Sternenwerte (Masse, Radius, Schwerkraft, Leuchtkraft) und zeigt diese im Inspektor an.
-- [x] **Rückintegration aktiver Simulationsobjekte (Basen, Schiffe, Bobs):** Rendersysteme für im All fliegende Ships und stationäre Bobs sind in den Canvas-Renderloop iregriert.
-- [ ] **Heilung verbleibender Macken ("Macken" & State-Hydration):**  
-  *   Der Live-Monitor lädt nach Verbindungsaufbau noch nicht an jeder Stelle alle State-Variablen flüssig nach.
-  *   Einige UI-Interaktionen im Dashboard-Bereich (z.B. Schiffs- und Bobauswahlen) müssen im neuen Canvas-Zusammenspiel noch feingeschliffen werden, um 100%ige Stabilität zu garantieren.
+- [x] **Rückintegration aktiver Simulationsobjekte (Basen, Schiffe, Bobs):** Rendersysteme für im All fliegende Ships und stationäre Bobs sind in den Canvas-Renderloop integriert.
+- [x] **Heilung verbleibender Macken ("Macken" & State-Hydration):**  
+  *   Der Live-Monitor lädt nach Verbindungsaufbau an jeder Stelle alle State-Variablen flüssig nach (Vollständig passiver SSoT Konsum).
+  *   Alle UI-Interaktionen im Dashboard-Bereich (z.B. Schiffs- und Bobauswahlen) sind im neuen Canvas-Zusammenspiel vollständig feingeschliffen und stabilisiert.
+  *   React 19 StrictMode doppelte Canvas-Rendering-Fehler wurden durch explizite DOM-Purges komplett gelöst.
 
 ---
 

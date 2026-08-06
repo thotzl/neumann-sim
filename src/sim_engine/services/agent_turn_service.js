@@ -45,6 +45,22 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
             dbPath
         );
         if (skip) return true; // Skip this agent's turn loop!
+    } else {
+        // Natural Wakeup Handler (Steel-man Fix): If sleep timer has expired naturally,
+        // we must release the sleep_state in the SQLite database to prevent frontend desync!
+        const hasExpiredSleep = (agent.sleep_state === 1 || agent.sleep_state === 2) && state.round >= agent.sleep_until_cycle;
+        if (hasExpiredSleep) {
+            console.log(`  [WAKE] Replicant ${agent.id} awakened naturally! (Sleep cycle timeout reached)`);
+            agent.sleep_state = 0;
+            agent.sleep_until_cycle = 0;
+            agent.sleep_baselines = null;
+
+            const dbPath = path.join(universeDir, "universe.db");
+            const Database = require('./db');
+            const db = new Database(dbPath);
+            await db.run("UPDATE agents SET sleep_state=0, sleep_until_round=0 WHERE id = ?", [agent.id]);
+            await db.close();
+        }
     }
 
     // 2. --- INBOX GATHERING & CONTEXT ASSEMBLY ---

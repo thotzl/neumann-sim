@@ -15,6 +15,7 @@ export const VesselSchematicModal = ({ modalShip, onClose }: VesselSchematicModa
   const thrust = modalShip.thrust || 500;
   const speed = modalShip.max_speed || 34.48;
   const storage = modalShip.matter_storage_capacity || 500;
+  const energyCapacity = modalShip.energy_capacity || 5000;
   const hasDrill = modalShip.has_drill === 1 || modalShip.has_drill === true;
   const hasFab = modalShip.has_fabricator === 1 || modalShip.has_fabricator === true;
   const hasLogic = modalShip.has_logic_core === 1 || modalShip.has_logic_core === true;
@@ -188,6 +189,32 @@ export const VesselSchematicModal = ({ modalShip, onClose }: VesselSchematicModa
                 </filter>
               </defs>
 
+              {/* Alcubierre Warp Field (glowing blue ring for warp drive) */}
+              {thrust >= 3000 && (
+                <circle 
+                  cx="200" cy="200" r="60" 
+                  fill="none" 
+                  stroke="#38bdf8" 
+                  strokeWidth="1.5" 
+                  strokeDasharray="4,4" 
+                  opacity="0.6" 
+                  filter="url(#glow-cyan)"
+                  className="animate-spin"
+                  style={{ transformOrigin: '200px 200px' }}
+                />
+              )}
+
+              {/* Booster Engines (extra plumes on the left/right wings) */}
+              {thrust > 500 && thrust < 3000 && (
+                <>
+                  <polygon points="150,220 144,240 156,245" fill="none" stroke="#38bdf8" strokeWidth="1.2" />
+                  <polygon points="150,240 146,260 154,260" fill="rgba(245, 158, 11, 0.45)" />
+
+                  <polygon points="250,220 244,240 256,245" fill="none" stroke="#38bdf8" strokeWidth="1.2" />
+                  <polygon points="250,240 246,260 254,260" fill="rgba(245, 158, 11, 0.45)" />
+                </>
+              )}
+
               {/* Thrust tail animation */}
               <polygon points="200,310 185,340 200,360 215,340" fill="rgba(245, 158, 11, 0.4)" opacity="0.8" />
 
@@ -239,6 +266,39 @@ export const VesselSchematicModal = ({ modalShip, onClose }: VesselSchematicModa
                   
                   <rect x="230" y="215" width="20" height="20" rx="1" fill="rgba(244,63,94,0.1)" stroke="#f43f5e" strokeWidth="1" />
                   <text x="240" y="227" fill="#f43f5e" fontSize="7" textAnchor="middle">FAB</text>
+                </>
+              )}
+
+              {/* Solar Panels (expanding outward) */}
+              {energyCapacity >= 10000 && (
+                <>
+                  <line x1="145" y1="180" x2="105" y2="180" stroke="#38bdf8" strokeWidth="1.5" />
+                  <rect x="105" y="170" width="30" height="20" fill="rgba(56,189,248,0.05)" stroke="rgba(56,189,248,0.5)" strokeWidth="0.8" strokeDasharray="3,1" />
+
+                  <line x1="255" y1="180" x2="295" y2="180" stroke="#38bdf8" strokeWidth="1.5" />
+                  <rect x="260" y="170" width="30" height="20" fill="rgba(56,189,248,0.05)" stroke="rgba(56,189,248,0.5)" strokeWidth="0.8" strokeDasharray="3,1" />
+                </>
+              )}
+
+              {/* Heavy Cargo Containers (outer wingtips) */}
+              {storage > 500 && (
+                <>
+                  <rect x="125" y="195" width="16" height="25" rx="1" fill="rgba(245,158,11,0.06)" stroke="#f59e0b" strokeWidth="1" strokeDasharray="2,1" />
+                  <text x="133" y="210" fill="#f59e0b" fontSize="6" textAnchor="middle" fontWeight="bold" fontFamily="monospace">CRG</text>
+
+                  <rect x="259" y="195" width="16" height="25" rx="1" fill="rgba(245,158,11,0.06)" stroke="#f59e0b" strokeWidth="1" strokeDasharray="2,1" />
+                  <text x="267" y="210" fill="#f59e0b" fontSize="6" textAnchor="middle" fontWeight="bold" fontFamily="monospace">CRG</text>
+                </>
+              )}
+
+              {/* Battery Cells (hull flanking) */}
+              {energyCapacity > 5000 && (
+                <>
+                  <rect x="162" y="165" width="16" height="20" rx="1" fill="rgba(234,179,8,0.06)" stroke="#eab308" strokeWidth="1" />
+                  <text x="170" y="177" fill="#eab308" fontSize="6" textAnchor="middle" fontFamily="monospace">BAT</text>
+
+                  <rect x="222" y="165" width="16" height="20" rx="1" fill="rgba(234,179,8,0.06)" stroke="#eab308" strokeWidth="1" />
+                  <text x="230" y="177" fill="#eab308" fontSize="6" textAnchor="middle" fontFamily="monospace">BAT</text>
                 </>
               )}
             </svg>

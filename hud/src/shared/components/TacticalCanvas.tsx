@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { CanvasController } from '../../canvasController';
-import { hashStringToInt, UniverseGenerator } from '../generator';
+import { hashStringToInt, UniverseGenerator, getStellarProperties } from '../generator';
 import { Sector } from '../types';
 
 interface TacticalCanvasProps {
@@ -265,6 +265,70 @@ export const TacticalCanvas = ({
           foundItem = { type: 'agent', id: agent.id };
         }
       }
+    });
+
+    // Check Stationary Assets (Stationed ships, pilots, and disembodied matrix minds / sleeping bobs)
+    systems.forEach((sys) => {
+      const sysId = sys.id || sys.name;
+      const shipsHere = (ships || []).filter((ship) => ship.system_name === sysId);
+      const bobsHere = agents.filter((a) => a.location === sysId && a.status !== 'traveling');
+      const matrixBobs = bobsHere.filter((a) => !a.active_ship_id);
+
+      if (shipsHere.length === 0 && matrixBobs.length === 0) return;
+
+      const screenPos = controllerRef.current!.worldToScreen(sys.x, sys.y, {
+        panX: panXRef.current,
+        panY: panYRef.current,
+        zoom: zoomRef.current
+      });
+
+      const starRadius = sys.mass ? getStellarProperties(sys.mass).radius : 1.0;
+      const baseSize = 3.5 * Math.pow(starRadius, 0.25);
+
+      let outerRadiusOffset = Math.max(25, 30 * zoomRef.current);
+      const planets = sys.system?.planets || sys.planets || [];
+      if (planets.length > 0) {
+        const maxDistance = planets.reduce((max: number, p: any) => Math.max(max, p.distance), 0);
+        const maxOrbitRadius = (baseSize * Math.max(0.4, Math.min(2.0, zoomRef.current)) + 8 + maxDistance * 14) * zoomRef.current;
+        outerRadiusOffset = Math.max(maxOrbitRadius + 10 * zoomRef.current, Math.max(25, 30 * zoomRef.current));
+      }
+
+      const itemWidth = 10 * Math.max(0.5, Math.min(2.0, zoomRef.current));
+      const totalWidth = (shipsHere.length + matrixBobs.length - 1) * itemWidth;
+      const startX = screenPos.x - totalWidth / 2;
+      const sy = screenPos.y + outerRadiusOffset;
+
+      let itemIdx = 0;
+
+      // Check Stationary Ships / Pilots
+      shipsHere.forEach((ship) => {
+        const sx = startX + itemIdx * itemWidth;
+        itemIdx++;
+
+        const dist = Math.sqrt((clickX - sx) ** 2 + (clickY - sy) ** 2);
+        if (dist < minDist) {
+          minDist = dist;
+          const pilot = bobsHere.find((a) => a.active_ship_id === ship.id);
+          if (pilot) {
+            foundItem = { type: 'agent', id: pilot.id };
+          } else {
+            // Fallback to selecting the system if there is no pilot
+            foundItem = { type: 'system', id: sysId };
+          }
+        }
+      });
+
+      // Check Stationary Minds (Matrix Bobs / Sleeping Minds)
+      matrixBobs.forEach((bob) => {
+        const sx = startX + itemIdx * itemWidth;
+        itemIdx++;
+
+        const dist = Math.sqrt((clickX - sx) ** 2 + (clickY - sy) ** 2);
+        if (dist < minDist) {
+          minDist = dist;
+          foundItem = { type: 'agent', id: bob.id };
+        }
+      });
     });
 
     // Check Systems

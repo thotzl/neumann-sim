@@ -11,7 +11,7 @@ interface InspectorPanelProps {
 export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPanelProps) => {
   const state = useC2Store((store) => store.state);
   const selection = useC2Store((store) => store.selection);
-  const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'meta' | 'raw'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'meta' | 'raw' | 'wiki'>('status');
 
   // Reset tab to 'status' whenever selection changes
   useEffect(() => {
@@ -108,11 +108,19 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
               </button>
               <button
                 onClick={() => setActiveTab('raw')}
-                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors ${
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
                   activeTab === 'raw' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
                 }`}
               >
                 [RAW]
+              </button>
+              <button
+                onClick={() => setActiveTab('wiki')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors ${
+                  activeTab === 'wiki' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [WIKI]
               </button>
             </>
           )}
@@ -137,11 +145,19 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
               </button>
               <button
                 onClick={() => setActiveTab('raw')}
-                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors ${
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
                   activeTab === 'raw' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
                 }`}
               >
                 [ORBITS]
+              </button>
+              <button
+                onClick={() => setActiveTab('wiki')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors ${
+                  activeTab === 'wiki' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [WIKI]
               </button>
             </>
           )}
@@ -276,6 +292,52 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                 <pre className="text-[10px] text-slate-400 font-mono leading-normal whitespace-pre-wrap">
                   {dashboardYaml}
                 </pre>
+              </div>
+            )}
+
+            {activeTab === 'wiki' && (
+              <div className="flex flex-col gap-2.5 overflow-hidden">
+                <div className="text-[10px] text-cyber-blue font-bold tracking-wider uppercase mb-1">
+                  📡 CENTRAL_DATABANK_ARCHIVE / WIKI //
+                </div>
+                <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-1">
+                  {state.docs && state.docs.length > 0 ? (
+                    state.docs.map((doc: any, di: number) => (
+                      <details key={di} className="bg-white/[0.01] border border-white/5 rounded p-2 text-xs font-mono group">
+                        <summary className="text-white font-bold cursor-pointer hover:text-cyber-blue flex justify-between items-center select-none outline-none">
+                          <span>📚 {doc.title.toUpperCase()}</span>
+                          <span className="text-cyber-gray text-[9px]">CYCLE_{doc.created_cycle}</span>
+                        </summary>
+                        <p className="text-[10px] text-slate-400 mt-2 whitespace-pre-wrap leading-relaxed border-t border-slate-900 pt-2 font-mono">
+                          {doc.content}
+                        </p>
+                      </details>
+                    ))
+                  ) : (
+                    <div className="text-xs text-cyber-gray italic">No system documentation available.</div>
+                  )}
+                </div>
+
+                <div className="text-[10px] text-cyber-amber font-bold tracking-wider uppercase mt-2 mb-1">
+                  📋 NEURAL_MEMO_RECORDS //
+                </div>
+                <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-1">
+                  {state.memos && state.memos.filter((m: any) => m.agent_id === selectedAgent.id).length > 0 ? (
+                    state.memos.filter((m: any) => m.agent_id === selectedAgent.id).map((memo: any, mi: number) => (
+                      <details key={mi} className="bg-white/[0.01] border border-white/5 rounded p-2 text-xs font-mono group">
+                        <summary className="text-amber-100 font-bold cursor-pointer hover:text-cyber-amber flex justify-between items-center select-none outline-none">
+                          <span>📝 {memo.title?.toUpperCase() || `MEMO_RECORD_${memo.id}`}</span>
+                          <span className="text-cyber-gray text-[9px]">CYCLE_{memo.created_cycle}</span>
+                        </summary>
+                        <p className="text-[10px] text-slate-400 mt-2 whitespace-pre-wrap leading-relaxed border-t border-slate-900 pt-2 font-mono">
+                          {memo.content}
+                        </p>
+                      </details>
+                    ))
+                  ) : (
+                    <div className="text-xs text-cyber-gray italic">No personal neural memos archived for this agent.</div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -419,6 +481,52 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                       </div>
                     );
                   })()}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'wiki' && (
+              <div className="flex flex-col gap-2.5 overflow-hidden">
+                <div className="text-[10px] text-cyber-blue font-bold tracking-wider uppercase mb-1">
+                  📡 CENTRAL_DATABANK_ARCHIVE / WIKI //
+                </div>
+                <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-1">
+                  {state.docs && state.docs.length > 0 ? (
+                    state.docs.map((doc: any, di: number) => (
+                      <details key={di} className="bg-white/[0.01] border border-white/5 rounded p-2 text-xs font-mono group">
+                        <summary className="text-white font-bold cursor-pointer hover:text-cyber-blue flex justify-between items-center select-none outline-none">
+                          <span>📚 {doc.title.toUpperCase()}</span>
+                          <span className="text-cyber-gray text-[9px]">CYCLE_{doc.created_cycle}</span>
+                        </summary>
+                        <p className="text-[10px] text-slate-400 mt-2 whitespace-pre-wrap leading-relaxed border-t border-slate-900 pt-2 font-mono">
+                          {doc.content}
+                        </p>
+                      </details>
+                    ))
+                  ) : (
+                    <div className="text-xs text-cyber-gray italic">No system documentation available.</div>
+                  )}
+                </div>
+
+                <div className="text-[10px] text-cyber-amber font-bold tracking-wider uppercase mt-2 mb-1">
+                  📋 SECTOR_NEURAL_MEMOS //
+                </div>
+                <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-1">
+                  {state.memos && state.memos.filter((m: any) => m.location === selectedSystem.name).length > 0 ? (
+                    state.memos.filter((m: any) => m.location === selectedSystem.name).map((memo: any, mi: number) => (
+                      <details key={mi} className="bg-white/[0.01] border border-white/5 rounded p-2 text-xs font-mono group">
+                        <summary className="text-amber-100 font-bold cursor-pointer hover:text-cyber-amber flex justify-between items-center select-none outline-none">
+                          <span>📝 {memo.title?.toUpperCase() || `MEMO_RECORD_${memo.id}`}</span>
+                          <span className="text-cyber-gray text-[9px]">CYCLE_{memo.created_cycle}</span>
+                        </summary>
+                        <p className="text-[10px] text-slate-400 mt-2 whitespace-pre-wrap leading-relaxed border-t border-slate-900 pt-2 font-mono">
+                          {memo.content}
+                        </p>
+                      </details>
+                    ))
+                  ) : (
+                    <div className="text-xs text-cyber-gray italic">No neural memos archived in this stellar system.</div>
+                  )}
                 </div>
               </div>
             )}

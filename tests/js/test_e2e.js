@@ -54,7 +54,7 @@ async function runE2ETest() {
         const db = new sqlite3.Database(dbPath);
         
         // Agent 'Instance-1' (Default ID from build.py) must exist and have collected matter.
-        db.get("SELECT s.raw_matter_inventory, s.energy_inventory, a.active_ship_id FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='Instance-1'", (err, row) => {
+        db.get("SELECT s.raw_matter_inventory, s.energy_inventory, s.system_name, a.active_ship_id FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='Instance-1'", (err, row) => {
             if (err) throw err;
             if (!row) throw new Error("Agent 'Instance-1' was not created in the DB! [PRERUN FAIL]");
             
@@ -73,7 +73,7 @@ async function runE2ETest() {
             }
             console.log("  ✅ Distillation successfully triggered and saved.");
 
-            db.get("SELECT extractable_matter_in_core FROM systems WHERE name='Alpha_Centauri'", (err, sysRow) => {
+            db.get("SELECT extractable_matter_in_core FROM systems WHERE name=?", [row.system_name], (err, sysRow) => {
                 if (err) throw err;
                 console.log(`  System Resources: ${sysRow.extractable_matter_in_core}`);
                 if (sysRow.extractable_matter_in_core >= 100000) throw new Error("Core resources were not mined!");

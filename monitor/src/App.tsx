@@ -78,11 +78,20 @@ export default function App() {
   };
 
   const focusHome = useCallback(() => {
-     cameraX.value = 0;
-     cameraY.value = 0;
+     let targetX = 0;
+     let targetY = 0;
+     if (state && state.systems && state.systems.length > 0) {
+        const firstSys = state.systems[0];
+        if (firstSys && typeof firstSys.x === 'number' && typeof firstSys.y === 'number') {
+           targetX = firstSys.x;
+           targetY = firstSys.y;
+        }
+     }
+     cameraX.value = targetX;
+     cameraY.value = targetY;
      zoom.value = 1;
      updateTransformDOM();
-  }, [updateTransformDOM]);
+  }, [state, updateTransformDOM]);
 
   const tick = state?.tick;
   useEffect(() => {

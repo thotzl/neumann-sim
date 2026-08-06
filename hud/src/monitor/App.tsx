@@ -25,6 +25,22 @@ export default function MonitorApp() {
   const [isConnected, setIsConnected] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'explorer' | 'inspector'>('explorer');
 
+  const [hasAutofocused, setHasAutofocused] = useState(false);
+
+  // Auto-focus camera on the home system upon initial state load
+  useEffect(() => {
+    if (state && state.systems && state.systems.length > 0 && !hasAutofocused) {
+      const firstSys = state.systems[0];
+      if (firstSys && typeof firstSys.x === 'number' && typeof firstSys.y === 'number') {
+        console.log(`[C2 Auto-Focus] Centering on home system: ${firstSys.name} (${firstSys.x}, ${firstSys.y})`);
+        cameraX.value = firstSys.x;
+        cameraY.value = firstSys.y;
+        zoom.value = 0.5;
+        setHasAutofocused(true);
+      }
+    }
+  }, [state, hasAutofocused]);
+
   // Sidebar sizing states
   const [sidebarWidth, setSidebarWidth] = useState(360);
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
@@ -83,11 +99,11 @@ export default function MonitorApp() {
     }
   }, [selection]);
 
-  // Connect to Mock WebSocket on Port 3005
+  // Connect to Live VoG WebSocket on Port 3001
   useEffect(() => {
     const host = window.location.hostname || 'localhost';
-    console.log(`[C2 Websocket] Initiating connection to ws://${host}:3005`);
-    const socket = new WebSocket(`ws://${host}:3005`);
+    console.log(`[C2 Websocket] Initiating connection to ws://${host}:3001`);
+    const socket = new WebSocket(`ws://${host}:3001`);
 
     socket.onopen = () => {
       console.log('[C2 Websocket] Connected successfully.');
@@ -137,7 +153,8 @@ export default function MonitorApp() {
         title="NASA_APOLLON_C2_TERMINAL"
         isConnected={isConnected}
         statusText={isConnected ? 'SOCKET_ONLINE' : 'OFFLINE_STANDBY'}
-        cycle={state?.round || 0}
+        cycle={state?.tick || 0}
+        stardate={state?.stardate}
         population={state?.agents?.length || 0}
         vessels={state?.ships?.length || 0}
 

@@ -360,7 +360,8 @@ export default function SandboxApp() {
         title="NASA_APOLLON_C2_SANDBOX"
         isConnected={true}
         statusText="LOCAL_SANDBOX_SIMULATOR_ACTIVE"
-        cycle={mockState ? mockState.round : 0}
+        cycle={mockState ? (mockState.tick || mockState.round || 0) : 0}
+        stardate={mockState ? mockState.stardate : undefined}
         population={mockState ? mockState.agents?.length : 1}
         vessels={mockState ? mockState.ships?.length : 0}
 

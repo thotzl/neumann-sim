@@ -6,6 +6,7 @@ import sys
 
 from core.lib.db_config import get_connection
 from core.lib import config_service
+from core.lib import generator
 
 def seed():
     conn = get_connection()
@@ -24,22 +25,28 @@ def seed():
         agents_data = cfg.get('agents', [])
         pop_data = {"version": 1, "agents": []}
         
+        # Deterministically fetch procedural starting system based on Seed (Pillar 2 / Seeder Flow)
+        cfg_full = config_service.get_config()
+        seed_str = str(cfg_full.get("seed", "BobOS_V12"))
+        start_sys = generator.UniverseGenerator.getStartingSystem(seed_str, 1.0)
+        location = start_sys["id"]
+        
         created_systems = set()
         
         for idx, agent_cfg in enumerate(agents_data):
             agent_id = agent_cfg.get('id', f'Instance-{idx+1}')
             chosen_name = agent_cfg.get('chosen_name', agent_id)
-            location = agent_cfg.get('location', 'SYS_X0_Y0')
             prompt = agent_cfg.get('system_prompt', '')
             
-            # Ensure the starting system exists
+            # Ensure the starting system exists inside SQLite DB
             if location not in created_systems:
-                # First system at 0,0, others offset
-                x, y = (0, 0) if not created_systems else (random.randint(100, 500), random.randint(100, 500))
-                
-                # Normal Production Geology Seeding: Randomized between [50,000 - 500,000]
-                start_matter = random.randint(50000, 500000)
-                cursor.execute("INSERT OR IGNORE INTO systems (name, x, y, extractable_matter_in_core, max_extractable_matter) VALUES (?, ?, ?, ?, ?)", (location, x, y, start_matter, start_matter))
+                # Normal Production Geology Seeding: Determined by generator's matterDepot
+                start_matter = start_sys["matterDepot"]
+                cursor.execute("""
+                    INSERT OR IGNORE INTO systems 
+                    (name, x, y, extractable_matter_in_core, max_extractable_matter) 
+                    VALUES (?, ?, ?, ?, ?)
+                """, (location, start_sys["x"], start_sys["y"], start_matter, start_matter))
                 created_systems.add(location)
             
             # Create agent (active, physically decoupled)
@@ -72,7 +79,7 @@ def seed():
 
     conn.commit()
     conn.close()
-    print("V10.0 Bootstrap Logic (Seeding) completed.")
+    print("V11.0 Bootstrap Logic (Seeding) completed.")
 
 if __name__ == "__main__":
     seed()

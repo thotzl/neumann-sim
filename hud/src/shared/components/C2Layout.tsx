@@ -6,6 +6,7 @@ interface C2LayoutProps {
   isConnected: boolean;
   statusText: string;
   cycle: number;
+  stardate?: string;
   population: number;
   vessels: number;
   
@@ -45,6 +46,7 @@ export const C2Layout = ({
   isConnected,
   statusText,
   cycle,
+  stardate,
   population,
   vessels,
 
@@ -155,7 +157,7 @@ export const C2Layout = ({
         </div>
 
         <div className="flex gap-5 text-cyber-gray font-mono">
-          <div>CYCLE: <strong className="text-white">{cycle}</strong></div>
+          <div>STARDATE: <strong className="text-white">{stardate || `${cycle}::1`}</strong></div>
           <div>POPULATION: <strong className="text-cyber-blue">{population}</strong></div>
           <div>VESSELS: <strong className="text-cyber-amber">{vessels}</strong></div>
         </div>

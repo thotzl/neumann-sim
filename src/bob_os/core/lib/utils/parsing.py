@@ -58,3 +58,21 @@ def format_system_id(x: float, y: float) -> str:
     snapped_x = int(round(float(x) / 100.0) * 100.0)
     snapped_y = int(round(float(y) / 100.0) * 100.0)
     return f"SYS_X{snapped_x}_Y{snapped_y}"
+
+def generate_replicant_id(x: float, y: float, cycle: int, suffix: str = None) -> str:
+    """
+    Symmetrically generates a unique Replicant ID following the RSNS standard:
+    Format: X{x_code}Y{y_code}-C{cycle}-{suffix}
+    Example: 2200, -20300, 0, 'ROBERT' -> 'X22Y-203-C0-ROBERT'
+    """
+    x_code = int(float(x) / 100.0)
+    y_code = int(float(y) / 100.0)
+    loc_seg = f"X{x_code}Y{y_code}"
+    cycle_seg = f"C{int(cycle)}"
+    
+    # If no suffix provided, generate a unique 6-digit alphanumeric string
+    if not suffix:
+        uniq_chars = string.ascii_uppercase + string.digits
+        suffix = "".join(random.choices(uniq_chars, k=6))
+        
+    return f"{loc_seg}-{cycle_seg}-{suffix}"

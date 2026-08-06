@@ -53,20 +53,25 @@ async function runE2ETest() {
         console.log("- Validating results in the database...");
         const db = new sqlite3.Database(dbPath);
         
-        // Agent 'Instance-1' (Default ID from build.py) must exist and have collected matter.
-        db.get("SELECT s.raw_matter_inventory, s.energy_inventory, s.system_name, a.active_ship_id FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='Instance-1'", (err, row) => {
+        // Dynamically get actual procedural agent ID
+        db.get("SELECT id FROM agents LIMIT 1", (err, agentRow) => {
             if (err) throw err;
-            if (!row) throw new Error("Agent 'Instance-1' was not created in the DB! [PRERUN FAIL]");
-            
-            console.log(`  Instance-1 Status: Matter=${row.raw_matter_inventory}, Energy=${row.energy_inventory}, Ship=${row.active_ship_id}`);
+            if (!agentRow) throw new Error("No agent was created in the DB! [PRERUN FAIL]");
+            const agentId = agentRow.id;
 
-            // In 3 rounds, the mock mines 3 times (300M).
-            if (row.raw_matter_inventory < 100) throw new Error(`Instance does not have the expected matter (Has: ${row.raw_matter_inventory}, Expected: >=100)`);
-            
-            // Validate if memory was distilled
-            console.log("- Validating memory distillation...");
-            const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
-            const history = state.histories['Instance-1'];
+            db.get(`SELECT s.raw_matter_inventory, s.energy_inventory, s.system_name, a.active_ship_id FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='${agentId}'`, (err, row) => {
+                if (err) throw err;
+                if (!row) throw new Error(`Agent '${agentId}' was not created in the DB! [PRERUN FAIL]`);
+                
+                console.log(`  ${agentId} Status: Matter=${row.raw_matter_inventory}, Energy=${row.energy_inventory}, Ship=${row.active_ship_id}`);
+
+                // In 3 rounds, the mock mines 3 times (300M).
+                if (row.raw_matter_inventory < 100) throw new Error(`Instance does not have the expected matter (Has: ${row.raw_matter_inventory}, Expected: >=100)`);
+                
+                // Validate if memory was distilled
+                console.log("- Validating memory distillation...");
+                const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+                const history = state.histories[agentId];
             const hasExtract = history.some(h => h.text.includes('[MEMORY-EXTRACT]'));
             if (!hasExtract) {
                 throw new Error("❌ Distillation was not performed, even though token limit was extremely low!");
@@ -81,7 +86,8 @@ async function runE2ETest() {
                 console.log("✅ E2E Mock-Loop, Boot Sequence, and Memory Management successfully completed.");
                 db.close();
             });
-        });
+          }); // Closes SELECT s.raw_matter_inventory ...
+        }); // Closes SELECT id FROM agents ...
 
     } catch (error) {
         console.error("❌ E2E Test failed:", error.message);

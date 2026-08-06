@@ -33,9 +33,14 @@ def seed():
         
         created_systems = set()
         
+        from core.lib.utils import parsing
+        
         for idx, agent_cfg in enumerate(agents_data):
-            agent_id = agent_cfg.get('id', f'Instance-{idx+1}')
-            chosen_name = agent_cfg.get('chosen_name', agent_id)
+            # 1:1 suffix query from config (completely hack-free)
+            id_suffix = agent_cfg.get('id_suffix', None)
+            
+            agent_id = parsing.generate_replicant_id(start_sys["x"], start_sys["y"], 0, suffix=id_suffix)
+            chosen_name = agent_cfg.get('chosen_name', '')
             prompt = agent_cfg.get('system_prompt', '')
             
             # Ensure the starting system exists inside SQLite DB

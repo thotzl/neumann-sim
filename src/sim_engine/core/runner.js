@@ -55,15 +55,30 @@ async function run() {
         } catch (e) {
             console.error("[BOOTSTRAP ERROR] Seeding failed. Continuing with empty state.", e.message);
         }
+        const sqlite3 = require('sqlite3').verbose();
+        const dbPath = path.join(universeDir, 'universe.db');
+        const db = new sqlite3.Database(dbPath);
+
+        const dbAgents = await new Promise((resolve, reject) => {
+            db.all("SELECT id FROM agents", (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows || []);
+            });
+        });
+        db.close();
+
         state = {
             round: 0,
-            agents: config.agents.map(a => ({
-                id: a.id,
-                system_prompt: a.system_prompt || a.prompt,
-                location: a.location || ".",
-                alive: true,
-                needsResumeNotify: false
-            })),
+            agents: dbAgents.map((a, idx) => {
+                const cfgAgent = config.agents[idx] || {};
+                return {
+                    id: a.id,
+                    system_prompt: cfgAgent.system_prompt || cfgAgent.prompt,
+                    location: cfgAgent.location || ".",
+                    alive: true,
+                    needsResumeNotify: false
+                };
+            }),
             histories: {},
             turnSequence: [],
             currentTurnIndex: 0,

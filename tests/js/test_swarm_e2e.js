@@ -35,13 +35,23 @@ async function runSwarmE2E() {
         await runSql(db, "INSERT OR IGNORE INTO systems (name, extractable_matter_in_core, x, y) VALUES ('SYS_B', 5000, 600, 0)");
         await runSql(db, `UPDATE ships SET energy_inventory = 500 WHERE id IN (1, 2)`);
 
+        // Resolve generated agent IDs dynamically before running mock steps (Steel-man Fix)
+        const firstAgent = await getSql(db, "SELECT id FROM agents LIMIT 1");
+        const agentId = firstAgent.id;
+
+        const secondAgent = await getSql(db, `SELECT id FROM agents WHERE id != '${agentId}' LIMIT 1`);
+        const agentId2 = secondAgent.id;
+
         process.env.E2E_MOCK = 'true';
-        process.env.E2E_MOCK_STEP_1_INSTANCE1 = "ANALYSE: Skript.\nAKTION:\n[WRITE: scripts/active/auto.py (READ_KEY: secret)]\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n[END]\n[RUN: me scut(receiver_id=Instance-2, message=secret)]";
-        process.env.E2E_MOCK_STEP_2_INSTANCE2 = `ANALYSE: Move.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: me move(target_x=600, target_y=0)]`;
+        const envKey1 = `E2E_MOCK_STEP_1_${agentId.toUpperCase().replace(/-/g, '')}`;
+        process.env[envKey1] = `ANALYSE: Skript.\nAKTION:\n[WRITE: scripts/active/auto.py (READ_KEY: secret)]\nimport bob_sdk; me = bob_sdk.Agent(); me.mine()\n[END]\n[RUN: me scut(receiver_id=${agentId2}, message=secret)]`;
+
+        const envKey2 = `E2E_MOCK_STEP_2_${agentId2.toUpperCase().replace(/-/g, '')}`;
+        process.env[envKey2] = `ANALYSE: Move.\nAKTION:\n[KEY: ADD auth secret]\n[READ: scripts/active/auto.py]\n[RUN: me move(target_x=600, target_y=0)]`;
 
         execSync(`node src/sim_engine/core/runner.js ${version}`, { stdio: 'inherit', env: process.env });
 
-        const bob1 = await getSql(db, "SELECT s.raw_matter_inventory FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='Instance-1'");
+        const bob1 = await getSql(db, `SELECT s.raw_matter_inventory FROM agents a JOIN ships s ON a.active_ship_id = s.id WHERE a.id='${agentId}'`);
         if (bob1.raw_matter_inventory < 100) throw new Error("Automation failed!");
 
         const bob2 = await getSql(db, `
@@ -53,7 +63,7 @@ async function runSwarmE2E() {
                     ELSE 'Unknown'
                 END AS location,
                 last_seen_event_id
-            FROM agents WHERE id='Instance-2'
+            FROM agents WHERE id='${agentId2}'
         `);
         if (bob2.location !== 'SYS_B') throw new Error(`Arrival failed! Is: ${bob2.location}`);
         
@@ -63,7 +73,7 @@ async function runSwarmE2E() {
 
         // 2. Check JS State Location Desynchronization
         const finalState = JSON.parse(fs.readFileSync(path.join(expDir, 'state.json'), 'utf8'));
-        const jsBob2 = finalState.agents.find(a => a.id === 'Instance-2');
+        const jsBob2 = finalState.agents.find(a => a.id === agentId2);
         if (jsBob2.location !== 'SYS_B') throw new Error(`JS State Location Desynchronization! Is in JS State: ${jsBob2.location}, but should be SYS_B.`);
 
         console.log("✅ Swarm E2E Test successful!");

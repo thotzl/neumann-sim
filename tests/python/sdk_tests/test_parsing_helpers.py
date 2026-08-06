@@ -25,5 +25,19 @@ class TestParsingHelpers(unittest.TestCase):
         self.assertEqual(parsing.format_system_id(-504.0, 12349.0), 'SYS_X-500_Y12300')
         self.assertEqual(parsing.format_system_id(0, 0), 'SYS_X0_Y0')
 
+    def test_generate_replicant_id(self):
+        # Test 1: Symmetrical ID generation with custom suffix
+        id_custom = parsing.generate_replicant_id(2200, -20300, 0, 'ROBERT')
+        self.assertEqual(id_custom, 'X22Y-203-C0-ROBERT')
+        
+        id_custom_cycle = parsing.generate_replicant_id(1800, 1200, 105, 'DELTA')
+        self.assertEqual(id_custom_cycle, 'X18Y12-C105-DELTA')
+
+        # Test 2: Symmetrical ID generation with random suffix (omitted suffix arg)
+        id_random = parsing.generate_replicant_id(1800, 1200, 48)
+        self.assertTrue(id_random.startswith('X18Y12-C48-'))
+        # 11 chars prefix ('X18Y12-C48-') + 6 chars suffix = 17 chars
+        self.assertEqual(len(id_random), 17)
+
 if __name__ == '__main__':
     unittest.main()

@@ -311,5 +311,36 @@ class TestAnomaliesFixes(unittest.TestCase):
         # Withdraw should FAIL because energy_capacity is 0!
         self.assertFalse(success)
 
+    def test_transit_telemetry_type_error_prevention(self):
+        """
+        Verify that physics_update handles missing or NULL ship energy inventory 
+        for traveling agents without crashing with a TypeError (Fix: Transit Telemetry TypeError).
+        """
+        seed_test_db.seed()
+        
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Get Bob's ID
+        cursor.execute("SELECT id FROM agents LIMIT 1")
+        agent_id = cursor.fetchone()['id']
+        
+        # 1. Set Bob's status to traveling but clear host_id (NULL ship, forces s.energy_inventory to be NULL!)
+        cursor.execute("UPDATE agents SET status = 'traveling', host_id = NULL, current_x = 100, current_y = 100, target_x = 500, target_y = 500, transit_ticks_total = 10, transit_ticks_passed = 1 WHERE id = ?", (agent_id,))
+        conn.commit()
+        conn.close()
+        
+        # 2. Execute physics update - should run 100% successfully with no TypeError crash!
+        from core.bin import physics_update
+        try:
+            physics_update.update(1)
+            success = True
+        except TypeError as e:
+            print("TypeError caught:", e)
+            success = False
+            
+        self.assertTrue(success)
+
 if __name__ == '__main__':
     unittest.main()

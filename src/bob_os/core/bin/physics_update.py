@@ -36,7 +36,8 @@ def update(current_tick=1):
     cursor.execute("""
         SELECT 
             a.id, a.current_x, a.current_y, a.target_x, a.target_y, a.transit_ticks_total, a.transit_ticks_passed, a.target_system,
-            s.energy_inventory, s.max_speed
+            COALESCE(s.energy_inventory, 0) AS energy_inventory,
+            COALESCE(s.max_speed, 300) AS max_speed
         FROM agents a
         LEFT JOIN ships s ON CAST(a.host_id AS INTEGER) = s.id
         WHERE a.status = 'traveling'
@@ -71,7 +72,8 @@ def update(current_tick=1):
             arrived = False
 
         # Interstellar Stranding: Suspended if propulsion battery is depleted
-        if t['energy_inventory'] < tick_cost:
+        energy_inv = float(t['energy_inventory']) if t['energy_inventory'] is not None else 0.0
+        if energy_inv < tick_cost:
             cursor.execute("""
                 INSERT INTO visual_events (cycle, actor_id, description)
                 VALUES (?, ?, ?)

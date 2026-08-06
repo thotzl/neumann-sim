@@ -111,5 +111,38 @@ class TestAnomaliesFixes(unittest.TestCase):
         # Mining should fail because total cargo (100 raw + 400 refined = 500) equals capacity (500)
         self.assertFalse(success)
 
+    def test_scut_timeline_purity(self):
+        """
+        Verify that SCUT messages capture the sender's current BOB_STARDATE 
+        and store it inside the database column 'sent_at' (Fix: Timeline Dissonance).
+        """
+        # 1. Seed test DB and set current Stardate in environment
+        seed_test_db.seed()
+        os.environ['BOB_STARDATE'] = '42::7'
+        
+        # 2. Open connection and retrieve Bob's seeded ID
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM agents LIMIT 1")
+        agent_id = cursor.fetchone()['id']
+        conn.close()
+        
+        # 3. Transmit SCUT message using Bob's SDK agent
+        os.environ['BOB_ID'] = agent_id
+        agent = bob_sdk.Agent()
+        # Direct private message
+        agent.scut(receiver_id=agent_id, message="Timeline test!")
+        
+        # 4. Read from database and assert 'sent_at' equals the BOB_STARDATE environment variable
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT sent_at FROM messages LIMIT 1")
+        msg_row = cursor.fetchone()
+        self.assertIsNotNone(msg_row)
+        self.assertEqual(msg_row['sent_at'], '42::7')
+        conn.close()
+
 if __name__ == '__main__':
     unittest.main()

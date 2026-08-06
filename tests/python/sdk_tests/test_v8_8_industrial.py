@@ -34,7 +34,7 @@ class TestV8_8Industrial(unittest.TestCase):
             id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, 
             progress_matter INTEGER, required_matter INTEGER,
             health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1, maintenance_cooldown INTEGER DEFAULT 0)""")
-        c.execute("CREATE TABLE messages (sender TEXT, receiver TEXT, content TEXT, priority INTEGER DEFAULT 0)")
+        c.execute("CREATE TABLE messages (sender TEXT, receiver TEXT, content TEXT, priority INTEGER DEFAULT 0, sent_at TEXT DEFAULT NULL)")
         c.execute("CREATE TABLE ships (id INTEGER PRIMARY KEY, name TEXT, chassis TEXT, pilot_id TEXT, system_name TEXT, energy_capacity INTEGER DEFAULT 10000, energy_inventory INTEGER DEFAULT 0)")
         c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
         

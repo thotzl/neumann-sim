@@ -71,7 +71,8 @@ class Comms:
                         if system_service.has_active_infrastructure(cursor, other['location'], 'comms_relay'):
                             reachable_count += 1
             
-            cursor.execute("INSERT INTO messages (sender, receiver, content, priority) VALUES (?, 'ALL', ?, ?)", (self.agent.id, message, priority_int))
+            current_stardate = os.environ.get('BOB_STARDATE', '1::1')
+            cursor.execute("INSERT INTO messages (sender, receiver, content, priority, sent_at) VALUES (?, 'ALL', ?, ?, ?)", (self.agent.id, message, priority_int, current_stardate))
             print(f"[SUCCESS] Message buffered for transmission. {reachable_count} receivers.")
             return True
         else:
@@ -124,7 +125,6 @@ class Comms:
                     return False
 
             # Check Hibernation and DND status (Self-healing for legacy test DB schemas)
-            import os
             current_cycle = int(os.environ.get('BOB_CYCLE', 0))
             
             target_keys = target_agent.keys() if hasattr(target_agent, 'keys') else []
@@ -149,5 +149,6 @@ class Comms:
             else:
                 print(f"[SUCCESS] Message buffered for transmission to {target_name}.")
 
-            cursor.execute("INSERT INTO messages (sender, receiver, content, priority) VALUES (?, ?, ?, ?)", (self.agent.id, real_target_id, message, priority_int))
+            current_stardate = os.environ.get('BOB_STARDATE', '1::1')
+            cursor.execute("INSERT INTO messages (sender, receiver, content, priority, sent_at) VALUES (?, ?, ?, ?, ?)", (self.agent.id, real_target_id, message, priority_int, current_stardate))
             return True

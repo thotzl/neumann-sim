@@ -32,7 +32,8 @@ class TestOutsourcedBinaries(unittest.TestCase):
                 sender TEXT, 
                 receiver TEXT, 
                 content TEXT, 
-                priority INTEGER DEFAULT 0
+                priority INTEGER DEFAULT 0,
+                sent_at TEXT DEFAULT NULL
             )
         """)
         self.cursor.execute("""

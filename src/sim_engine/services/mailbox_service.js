@@ -39,12 +39,12 @@ function routeMessages(vDir, universeDir, state) {
                 // Global Broadcast (SCUT)
                 state.agents.filter(a => a.alive && a.id !== m.sender).forEach(a => {
                     if (!state.global_inbox[a.id]) state.global_inbox[a.id] = [];
-                    state.global_inbox[a.id].push({ type: 'scut', sender: m.sender, content: m.content });
+                    state.global_inbox[a.id].push({ type: 'scut', sender: m.sender, content: m.content, sent_at: m.sent_at });
                 });
             } else {
                 // Direct Private SCUT Msg
                 if (!state.global_inbox[m.receiver]) state.global_inbox[m.receiver] = [];
-                state.global_inbox[m.receiver].push({ type: 'scut', sender: m.sender, content: m.content });
+                state.global_inbox[m.receiver].push({ type: 'scut', sender: m.sender, content: m.content, sent_at: m.sent_at });
             }
         });
     } catch (e) {

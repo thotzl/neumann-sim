@@ -98,7 +98,8 @@ CREATE TABLE IF NOT EXISTS messages (
     sender TEXT, 
     receiver TEXT, 
     content TEXT, 
-    priority INTEGER DEFAULT 0
+    priority INTEGER DEFAULT 0,
+    sent_at TEXT DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS knowledge_base (

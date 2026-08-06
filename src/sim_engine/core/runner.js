@@ -43,6 +43,25 @@ async function run() {
         path.join(__dirname, '../config/core-config.json'),
         path.join(vDir, 'config.json')
     );
+
+    // === STARTUP AI DRIVER LOGGING (Single Source of Truth) ===
+    console.log("==================================================");
+    console.log("🤖 [STARTUP-AI-LOG] Initializing AI Drivers & Roles:");
+    const rawApiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
+    const maskedKey = rawApiKey 
+        ? `${rawApiKey.slice(0, 6)}...${rawApiKey.slice(-4)}` 
+        : "NOT SET (Using Mock Mode)";
+        
+    if (config.roles) {
+        Object.entries(config.roles).forEach(([role, cfg]) => {
+            const driverName = path.basename(cfg.driver_path || "unknown");
+            console.log(`   - Role: ${role.toUpperCase()} | Driver: ${driverName} | Model: ${cfg.model || "default"} | API Key: ${maskedKey}`);
+        });
+    } else {
+        console.log(`   - Default Mode | API Key: ${maskedKey}`);
+    }
+    console.log("==================================================");
+
     let state = stateManager.loadState(stateFile);
     if (!state) {
         console.log(`\n[PRERUN] Initializing world from config.json...`);

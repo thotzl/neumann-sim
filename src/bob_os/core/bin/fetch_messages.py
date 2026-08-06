@@ -25,7 +25,7 @@ def main():
         c = conn.cursor()
         
         # 1. Fetch all messages
-        c.execute("SELECT sender, receiver, content FROM messages")
+        c.execute("SELECT sender, receiver, content, sent_at FROM messages")
         msgs = [dict(r) for r in c.fetchall()]
         
         # 2. Clear messages

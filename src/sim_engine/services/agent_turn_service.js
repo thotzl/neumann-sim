@@ -58,7 +58,8 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
             if (m.type === 'scut') {
                 const chosenName = (state.agentNames && state.agentNames[m.sender]) || "Unnamed";
                 const senderName = `${chosenName} (ID: ${m.sender})`;
-                scutText += `---\n[SCUT] From ${senderName} at ${fractionalStardate}: ${m.content}\n`;
+                const displayStardate = m.sent_at || fractionalStardate;
+                scutText += `---\n[SCUT] From ${senderName} at ${displayStardate}: ${m.content}\n`;
             } else if (m.type === 'vog') {
                 inboxText += `[VOICE OF GOD]: ${m.text}\n`;
             } else if (m.type === 'system') {

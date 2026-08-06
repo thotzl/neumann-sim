@@ -235,6 +235,8 @@ class TestAnomaliesFixes(unittest.TestCase):
         
         # 1. Update Bob's status to traveling and his coordinates close to SYS_A (docked!)
         cursor.execute("UPDATE agents SET status = 'traveling', target_system = 'SYS_B', current_x = ?, current_y = ? WHERE id = ?", (startX, startY, agent_id))
+        # Ensure Bob's ship is not full of energy (Drain to 100E so he can withdraw!)
+        cursor.execute("UPDATE ships SET energy_inventory = 100 WHERE pilot_id = ?", (agent_id,))
         # Ensure system depot has some energy
         cursor.execute("UPDATE systems SET energy_depot = 1000 WHERE name = ?", (sys_name,))
         conn.commit()
@@ -278,6 +280,36 @@ class TestAnomaliesFixes(unittest.TestCase):
         ship_row = cursor.fetchone()
         self.assertEqual(ship_row['energy_inventory'], 130) # Solar successfully recharged on flyby!
         conn.close()
+
+    def test_zero_battery_logistics_leak(self):
+        """
+        Verify that withdrawing energy checks the ship's energy_capacity,
+        preventing batteryless ships from loading energy (Fix: Zero-Battery Logistics Leak).
+        """
+        seed_test_db.seed()
+        
+        conn = sqlite3.connect(self.test_db)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Get Bob's ID
+        cursor.execute("SELECT id FROM agents LIMIT 1")
+        agent_id = cursor.fetchone()['id']
+        os.environ['BOB_ID'] = agent_id
+        
+        # Set ship with ZERO battery capacity (energy_capacity = 0)
+        cursor.execute("UPDATE ships SET energy_inventory = 0, energy_capacity = 0 WHERE pilot_id = ?", (agent_id,))
+        # Ensure system depot has energy
+        cursor.execute("UPDATE systems SET energy_depot = 1000")
+        conn.commit()
+        conn.close()
+        
+        # Attempt to withdraw energy
+        agent = bob_sdk.Agent()
+        success = agent.withdraw("energy", 50)
+        
+        # Withdraw should FAIL because energy_capacity is 0!
+        self.assertFalse(success)
 
 if __name__ == '__main__':
     unittest.main()

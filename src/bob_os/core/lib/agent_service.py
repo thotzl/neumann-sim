@@ -63,8 +63,13 @@ def get_agent_or_fail(cursor, agent_id, required_columns="*"):
                     ELSE 100
                 END AS energy_inventory,
                 CASE 
+                    WHEN a.host_type = 'ship' THEN (SELECT s.energy_capacity FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
+                    WHEN a.host_type = 'matrix' THEN (SELECT sys.depot_energy_capacity FROM systems sys WHERE sys.name = (SELECT system_name FROM infrastructure WHERE id = CAST(a.host_id AS INTEGER)))
+                    ELSE 500
+                END AS energy_capacity,
+                CASE 
                     WHEN a.host_type = 'ship' THEN (SELECT s.matter_storage_capacity FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
-                    WHEN a.host_type = 'matrix' THEN 1000000
+                    WHEN a.host_type = 'matrix' THEN (SELECT sys.depot_matter_capacity FROM systems sys WHERE sys.name = (SELECT system_name FROM infrastructure WHERE id = CAST(a.host_id AS INTEGER)))
                     ELSE 100
                 END AS matter_storage_capacity
             FROM agents a

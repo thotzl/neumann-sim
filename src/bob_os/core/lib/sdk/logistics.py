@@ -92,9 +92,15 @@ class Logistics:
         amount_to_withdraw = min(quantity, avail)
         
         if resource_type == 'energy':
-            agent_service.update_agent_resources(cursor, self.agent.id, energy=amount_to_withdraw)
-            cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (amount_to_withdraw, agent['location']))
-            print(f"[SUCCESS] {amount_to_withdraw} energy withdrawn.")
+            space_left = agent['energy_capacity'] - agent['energy_inventory']
+            if space_left <= 0:
+                print(f"[ERROR] Your battery is full ({agent['energy_inventory']}/{agent['energy_capacity']}).")
+                return False
+            actual_withdraw = min(amount_to_withdraw, space_left)
+            
+            agent_service.update_agent_resources(cursor, self.agent.id, energy=actual_withdraw)
+            cursor.execute("UPDATE systems SET energy_depot = energy_depot - ? WHERE name = ?", (actual_withdraw, agent['location']))
+            print(f"[SUCCESS] {actual_withdraw} energy withdrawn.")
             return True
         elif resource_type in ['matter', 'raw_matter']:
             current_total = agent['raw_matter_inventory'] + agent['refined_matter_inventory']

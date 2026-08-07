@@ -192,15 +192,14 @@ async function run() {
                 tick: state.round,
                 agents: state.agents
             });
-            return true;
-        }
-
-        // Active turn completed! Broadcast the full updated world state immediately (100% disk-free)
-        // This ensures all newly generated visual_events, logs, and state updates flash instantly on the monitor!
-        try {
-            stateExporter.exportWorldState(universeDir, state, agentId);
-        } catch (e) {
-            // Fail silently
+        } else {
+            // Active turn completed! Broadcast the full updated world state immediately (100% disk-free)
+            // This ensures all newly generated visual_events, logs, and state updates flash instantly on the monitor!
+            try {
+                stateExporter.exportWorldState(universeDir, state, agentId);
+            } catch (e) {
+                // Fail silently
+            }
         }
 
         // Turn-Cursor inkrementieren & verarbeiten

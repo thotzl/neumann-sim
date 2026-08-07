@@ -77,6 +77,13 @@ class Agent:
     def talk(self, target_id, message): return self.comms.talk(target_id, message)
     def sleep(self, duration=5, ignore_scut=False):
         duration = int(duration)
+        # Block me.sleep() from background automation scripts to prevent permanent coma (Bugfix)
+        import sys, os
+        main_script = os.path.basename(sys.argv[0]) if sys.argv else ""
+        if "auto.py" in main_script or "scripts" in (sys.argv[0] if sys.argv else ""):
+            print("[ERROR] sleep() is forbidden inside background automation scripts. To enter standby, execute sleep() from your main prompt actions (direct cognitive command) only.")
+            raise Exception("sleep() is forbidden inside background automation scripts.")
+
         ignore_scut_int = 2 if ignore_scut in [True, "True", "true", 1, "1"] else 1
         try:
             from core.lib.db_config import get_connection
@@ -87,7 +94,7 @@ class Agent:
                 from bob_os.core.lib.db_config import get_connection
         import os
         current_cycle = int(os.environ.get('BOB_CYCLE', 0))
-        
+
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("UPDATE agents SET sleep_state = ?, sleep_until_round = ? WHERE id = ?", (ignore_scut_int, current_cycle + duration, self.id))

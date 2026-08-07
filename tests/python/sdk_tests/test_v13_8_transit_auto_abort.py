@@ -194,5 +194,32 @@ class TestTransitAutoAbortAndSolar(unittest.TestCase):
         self.assertEqual(ship_row['energy_inventory'], 130.0)
         conn.close()
 
+    def test_forbidden_sleep_in_scripts(self):
+        """
+        Verify that calling sleep() inside a background automation script 
+        throws an Exception and prints a clear, lore-friendly [ERROR] message.
+        """
+        # 1. Load the SDK Agent
+        from core.lib.bob_sdk import Agent
+        os.environ['BOB_ID'] = 'Instance-1'
+        
+        agent = Agent()
+        
+        # 2. Mock sys.argv to simulate running inside auto.py background script
+        import sys
+        original_argv0 = sys.argv[0] if sys.argv else ""
+        sys.argv[0] = "auto.py"
+        
+        # 3. Executing sleep() inside script must raise an Exception
+        with self.assertRaises(Exception) as context:
+            agent.sleep(5)
+            
+        self.assertTrue("forbidden inside background automation scripts" in str(context.exception))
+        
+        # 4. Restore original sys.argv[0]
+        sys.argv[0] = original_argv0
+        if 'BOB_ID' in os.environ:
+            del os.environ['BOB_ID']
+
 if __name__ == '__main__':
     unittest.main()

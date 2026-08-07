@@ -99,7 +99,7 @@ export const useC2Store = create<C2Store>((set) => ({
       }
       
       const thought = rawThought
-        .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '')
+        .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?LOGBOOK\s*[：:]*(?:\*\*|\*)?/i, '')
         .trim();
         
       if (thought) {

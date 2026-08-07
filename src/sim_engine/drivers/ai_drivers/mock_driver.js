@@ -55,7 +55,7 @@ const MockDriver = {
         if (process.env[respVar]) return process.env[respVar];
 
         // Fallback Mock
-        return "1. ANALYSIS:\nI will extract resources.\n2. ACTION:\n[RUN: me mine()]";
+        return "1. LOGBOOK:\nI will extract resources.\n2. ACTION:\n[RUN: me mine()]";
     }
 };
 

@@ -56,7 +56,7 @@ async function callGemini(url, payload) {
             }
         }
     }
-    return "ANALYZE:\\nTest\\n\\nACTION:\\n" + action;
+    return "LOGBOOK:\\nTest\\n\\nACTION:\\n" + action;
 }
 function buildAgentContext(agentId, histories, memory, envState, globalInstr, systemPrompt, anonymity) {
     return { contents: [{ role: 'user', parts: [{ text: \`Agent: \${agentId}\\nEnv: \${envState}\\nHist: \${JSON.stringify(histories)}\` }] }] };

@@ -14,7 +14,7 @@ export const parseManifestation = (manifestation: string | undefined) => {
     
     // Clean up analysis tags and numbering from thought
     const thought = thoughtRaw
-      .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '')
+      .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?LOGBOOK\s*[：:]*(?:\*\*|\*)?/i, '')
       .trim();
       
     return { thought, action: actionRaw };
@@ -26,13 +26,13 @@ export const parseManifestation = (manifestation: string | undefined) => {
     const thoughtRaw = raw.substring(0, runMatch).trim();
     const actionRaw = raw.substring(runMatch).trim();
     const thought = thoughtRaw
-      .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '')
+      .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?LOGBOOK\s*[：:]*(?:\*\*|\*)?/i, '')
       .trim();
     return { thought, action: actionRaw };
   }
 
   const cleanedThought = raw
-    .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?ANALYSIS\s*[：:]*(?:\*\*|\*)?/i, '')
+    .replace(/^(?:>\s*)?(?:\d+\.\s*)?(?:\*\*|\*|#\s*)?LOGBOOK\s*[：:]*(?:\*\*|\*)?/i, '')
     .trim();
   return { thought: cleanedThought, action: '' };
 };

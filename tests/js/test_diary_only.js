@@ -4,9 +4,9 @@ console.log("Testing 'Diary-Only' Semantic Memory Model...");
 
 // 1. Simulate the Regex-Matching Logic from runner.js (English)
 function extractThoughts(responseText) {
-    const analyseMatch = responseText.match(/1\.\s*ANALYSIS:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
-                         || responseText.match(/ANALYSIS:([\s\S]*?)(?=ACTION:|$)/i);
-    return analyseMatch ? "1. ANALYSIS:\n" + analyseMatch[1].trim() : responseText;
+    const logbookMatch = responseText.match(/1\.\s*LOGBOOK:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
+                         || responseText.match(/LOGBOOK:([\s\S]*?)(?=ACTION:|$)/i);
+    return logbookMatch ? "1. LOGBOOK:\n" + logbookMatch[1].trim() : responseText;
 }
 
 function extractAction(responseText) {
@@ -17,7 +17,7 @@ function extractAction(responseText) {
 }
 
 // Test Case 1: Standard V10 Protocol Format
-const response1 = `1. ANALYSIS:
+const response1 = `1. LOGBOOK:
 I plan to build a mine in the home system to accumulate raw resources.
 2. ACTION:
 [RUN: me mine()]`;
@@ -25,12 +25,12 @@ I plan to build a mine in the home system to accumulate raw resources.
 const thoughts1 = extractThoughts(response1);
 const action1 = extractAction(response1);
 
-assert.strictEqual(thoughts1, "1. ANALYSIS:\nI plan to build a mine in the home system to accumulate raw resources.");
+assert.strictEqual(thoughts1, "1. LOGBOOK:\nI plan to build a mine in the home system to accumulate raw resources.");
 assert.strictEqual(action1, "2. ACTION:\n[RUN: me mine()]");
 console.log("  ✅ Test 1 (Standard Format) successful.");
 
 // Test Case 2: Robustness with deviations (without digits)
-const response2 = `ANALYSIS:
+const response2 = `LOGBOOK:
 Bottleneck identified. Erecting solar collector.
 ACTION:
 [RUN: me build(building_type=solar_collector)]`;
@@ -38,7 +38,7 @@ ACTION:
 const thoughts2 = extractThoughts(response2);
 const action2 = extractAction(response2);
 
-assert.strictEqual(thoughts2, "1. ANALYSIS:\nBottleneck identified. Erecting solar collector.");
+assert.strictEqual(thoughts2, "1. LOGBOOK:\nBottleneck identified. Erecting solar collector.");
 assert.strictEqual(action2, "ACTION:\n[RUN: me build(building_type=solar_collector)]");
 console.log("  ✅ Test 2 (Deviations without digits) successful.");
 

@@ -53,7 +53,10 @@ Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstruktur
 | **TCK-114** | Großes Struktur- & Architektur-Refactoring | V13.0 Clean Architecture | `closed` | `high` | [Link](../.tickets/closed/TCK-114-codebase-restructuring.md) | [SYSTEM_ARCHITECTURE](../docs/SYSTEM_ARCHITECTURE.md) |
 | **TCK-115** | Procedural Universe Sandbox (2D Canvas Prototyp) | Epic 5 / Runway | `ongoing` | `medium` | [Link](../.tickets/ongoing/TCK-115-procedural-universe-sandbox.md) | [TCK-108](../.tickets/open/TCK-108-deeper-verse-runway-setup.md) |
 | **TCK-116** | Deeper Verse Simulator-Integration (0-Byte-Footprint) | Epic 5 / Integration | `closed` | `high` | [Link](../.tickets/closed/TCK-116-deeper-verse-sim-integration.md) | [Handoff SSoT Guide](../../docs/DEEPER_VERSE_HANDOFF.md) |
+| **TCK-117** | Frontend Consolidation & Shared Resources | Epic 5 / Integration | `closed` | `high` | [Link](../.tickets/closed/TCK-117-frontend-consolidation-shared-resources.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-118** | Timeline Purity, Coordinates Seeding, .env & Masked Logs | Epic 5 / Security & Optimization | `closed` | `high` | [Link](../.tickets/closed/TCK-118-timeline-purity-and-masked-logging.md) | [Central Test Hub](../../tests/test_all.js) |
+| **TCK-119** | HOTFIX: Rebrand SSoT Cognitive Protocol from ANALYSIS to LOGBOOK | Cognitive Alignment | `closed` | `high` | [Link](../.tickets/closed/TCK-119-logbook-cognitive-rebranding.md) | [Central Test Hub](../../tests/test_all.js) |
+| **TCK-120** | SSoT: SOS-Beacon Proximity Logistics and Peer-to-Peer Talk | Logistics and Communication Upgrade | `open` | `high` | [Link](../.tickets/open/TCK-120-sos-proximity-logistics.md) | [Central Test Hub](../../tests/test_all.js) |
 
 ---
 

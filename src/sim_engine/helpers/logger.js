@@ -39,7 +39,7 @@ function appendTurnLog(logFile, stardate, agentId, totalTurns, historyLength, ma
     const manifestStr = typeof manifestation === 'string' ? manifestation : JSON.stringify(manifestation);
     const feedbackStr = typeof feedback === 'string' ? feedback : JSON.stringify(feedback);
 
-    let content = `${logHeader}${stats}${sensorStr}${keyStr}${preEventsStr}\n**Manifestation (Cognitive Logs):**\n> ${manifestStr.replace(/\n/g, '\n> ')}\n\n**Actions (Resonance Feedback):**\n\`\`\`\n${feedbackStr || "*(No Actions)*"}\n\`\`\`\n`;
+    let content = `${logHeader}${stats}${sensorStr}${keyStr}${preEventsStr}\n**Consciousness Logbook (1. LOGBOOK):**\n> ${manifestStr.replace(/\n/g, '\n> ')}\n\n**Actions (Resonance Feedback):**\n\`\`\`\n${feedbackStr || "*(No Actions)*"}\n\`\`\`\n`;
     fs.appendFileSync(logFile, content);
 }
 

@@ -133,7 +133,7 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     promptText += `\nCurrent Environment:\n${envState}\n`;
     
     // System formatting constraints
-    promptText += `\nRespond strictly in protocol format (1. ANALYSIS followed by 2. ACTION).\n`;
+    promptText += `\nRespond strictly in protocol format (1. LOGBOOK followed by 2. ACTION).\n`;
     
     contextArray.push({ agent: "System", text: promptText });
 
@@ -154,7 +154,7 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         responseText = await agentBridge.generateText(payload);
     } catch (err) {
         console.error(`    [LLM-ERROR] ${agent.id} failed:`, err.message);
-        responseText = "1. ANALYSIS:\nI am waiting.\n2. ACTION:\n[RUN: me.sleep(duration=1)]"; // Graceful fail-safe fallback (deprecated wait equivalent)
+        responseText = "1. LOGBOOK:\nI am waiting.\n2. ACTION:\n[RUN: me.sleep(duration=1)]"; // Graceful fail-safe fallback (deprecated wait equivalent)
     }
 
     // 4. --- ACTIONS PARSING & SIMULATION EXECUTION ---
@@ -186,12 +186,12 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         formattedTurnHistory = `${formattedTurnHistory}\n\n[ACTIONS FEEDBACK]:\n${feedback.trim()}`;
     }
 
-    // Save history (Diary-Only model: Extract and store ONLY the thoughts/ANALYSIS for permanent history)
+    // Save history (Diary-Only model: Extract and store ONLY the thoughts/LOGBOOK for permanent history)
     let thoughts = responseText;
     if (responseText) {
-        const analyseMatch = responseText.match(/1\.\s*ANALYSIS:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
-                             || responseText.match(/ANALYSIS:([\s\S]*?)(?=ACTION:|$)/i);
-        thoughts = analyseMatch ? "1. ANALYSIS:\n" + analyseMatch[1].trim() : responseText;
+        const logbookMatch = responseText.match(/1\.\s*LOGBOOK:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
+                             || responseText.match(/LOGBOOK:([\s\S]*?)(?=ACTION:|$)/i);
+        thoughts = logbookMatch ? "1. LOGBOOK:\n" + logbookMatch[1].trim() : responseText;
         state.histories[agent.id].push({ agent: agent.id, text: thoughts });
     }
 
@@ -208,7 +208,7 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         const salt = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
         if (thoughts) {
-            const cleanedThoughts = thoughts.replace("1. ANALYSIS:\n", "").trim();
+            const cleanedThoughts = thoughts.replace("1. LOGBOOK:\n", "").trim();
             realtimeLogs.push({
                 tick: state.round,
                 agentId: agent.id,

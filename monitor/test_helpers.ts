@@ -4,7 +4,7 @@ import { expect, test, describe } from "bun:test";
 describe("Frontend Dashboard Helpers", () => {
   test("parseManifestation extracts thoughts and actions cleanly under V10.5 English protocol", () => {
     const raw = `
-1. ANALYSIS:
+1. LOGBOOK:
 I need to gather some energy.
 
 2. ACTION:
@@ -18,11 +18,11 @@ me.scut(type="gather_energy")
   test("parseManifestation handles [SELF-IMPULSE]: tags correctly", () => {
     const raw = `
 [SELF-IMPULSE]:
-1. ANALYSIS:
-Analyzing world state.
+1. LOGBOOK:
+Recording world state.
 `;
     const { thought, action } = parseManifestation(raw);
-    expect(thought).toBe("Analyzing world state.");
+    expect(thought).toBe("Recording world state.");
     expect(action).toBe("");
   });
 

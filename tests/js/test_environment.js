@@ -35,7 +35,7 @@ function testEnvState() {
 function testPhantomActions() {
     console.log("Testing Phantom Action Isolation...");
     const llmOutput = `
-ANALYSIS:
+LOGBOOK:
 I am thinking about whether I should run [RUN: echo "phantom"] later.
 But right now I do nothing.
 
@@ -50,7 +50,7 @@ ACTION:
     let mockState = { security: { acl: {}, wallets: {} } };
     const feedback = envManager.processActions(llmOutput, mockDir, "Instance-1", mockState);    
     if (feedback.includes("phantom")) {
-        console.error("❌ Phantom Action Test FAILED. Command in analysis block was executed!\nFeedback was:\n", feedback);
+        console.error("❌ Phantom Action Test FAILED. Command in logbook block was executed!\nFeedback was:\n", feedback);
         process.exit(1);
     }
     if (!feedback.includes("echt")) {

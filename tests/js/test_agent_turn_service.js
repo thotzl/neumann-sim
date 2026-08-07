@@ -71,7 +71,7 @@ fs.mkdirSync(universeDir, { recursive: true });
                 return { contents: [] };
             },
             generateText: async (payload) => {
-                return "1. ANALYSIS:\nI am active.\n2. ACTION:\n[RUN: me.sleep(duration=1)]";
+                return "1. LOGBOOK:\nI am active.\n2. ACTION:\n[RUN: me.sleep(duration=1)]";
             }
         };
 

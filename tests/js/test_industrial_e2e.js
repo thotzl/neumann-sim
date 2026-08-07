@@ -47,7 +47,7 @@ async function runIndustrialE2E() {
         console.log("- Tick 1: Instance-1 repairs Tier-2 and builds Tier-1...");
         process.env.E2E_MOCK = 'true';
         process.env.E2E_MOCK_RESPONSE_INSTANCE1 = `
-ANALYZE: Repair Tier-2 building and start Tier-1 construction.
+LOGBOOK: Repair Tier-2 building and start Tier-1 construction.
 ACTION:
 [RUN: me repair(structure_id=99, hp_to_restore=10)]
 [RUN: me build(building_type=comms_relay, matter_to_invest=300)]`;
@@ -65,7 +65,7 @@ ACTION:
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
         
         process.env.E2E_MOCK_RESPONSE_INSTANCE1 = `
-ANALYZE: Waiting.
+LOGBOOK: Waiting.
 ACTION:
 [RUN: me sleep(duration=1)]`;
 

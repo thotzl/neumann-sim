@@ -531,7 +531,13 @@ class Sensors:
        cost_per_dist = phys.get('cost_per_distance', 0.1)
        energy_cost = round(dist * cost_per_dist, 2)
 
-       speed = config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300)
+       speed = float(config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300))
+       if agent['active_ship_id']:
+           cursor.execute("SELECT max_speed FROM ships WHERE id = CAST(? AS INTEGER)", (agent['active_ship_id'],))
+           ship_row = cursor.fetchone()
+           if ship_row and ship_row[0] is not None:
+               speed = float(ship_row[0])
+       
        ticks = max(1, int(math.ceil(dist / speed)))
 
        return {
@@ -617,7 +623,13 @@ class Sensors:
 
         phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
         cost_per_dist = phys.get('cost_per_distance', 0.1)
-        speed = config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300)
+        
+        speed = float(config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300))
+        if agent['active_ship_id']:
+            cursor.execute("SELECT max_speed FROM ships WHERE id = CAST(? AS INTEGER)", (agent['active_ship_id'],))
+            ship_row = cursor.fetchone()
+            if ship_row and ship_row[0] is not None:
+                speed = float(ship_row[0])
 
         while queue:
             (f_score, cost, current, path) = heapq.heappop(queue)

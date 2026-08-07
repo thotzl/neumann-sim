@@ -531,7 +531,13 @@ class Actuators:
         if agent['energy_inventory'] < cost:
             print(f"[WARNING] Energy shortage! Journey initiated, but energy (available: {agent['energy_inventory']}, required: {cost}) is insufficient for the entire distance. Arrival with 0 energy likely.")
         
-        speed = self.rules.get('global_settings', {}).get('travel_speed_per_tick', 300)
+        speed = float(self.rules.get('global_settings', {}).get('travel_speed_per_tick', 300))
+        if agent['active_ship_id']:
+            cursor.execute("SELECT max_speed FROM ships WHERE id = CAST(? AS INTEGER)", (agent['active_ship_id'],))
+            ship_row = cursor.fetchone()
+            if ship_row and ship_row[0] is not None:
+                speed = float(ship_row[0])
+        
         ticks = max(1, int(math.ceil(dist / speed)))
         
         # We start the transit from the agent's current precise coordinates

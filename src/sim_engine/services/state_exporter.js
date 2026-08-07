@@ -173,11 +173,20 @@ function exportWorldState(universeDir, state, lastAgentId) {
                 systems.forEach(s => {
                     if (s.name !== a.location) {
                         const dist = Math.sqrt(Math.pow(s.x - a.current_x, 2) + Math.pow(s.y - a.current_y, 2));
+                        
+                        let speed = 300;
+                        if (a.host_type === 'ship' && a.host_id) {
+                            const ship = ships.find(shp => s.id && shp.id.toString() === a.host_id.toString());
+                            if (ship && ship.max_speed) {
+                                speed = parseFloat(ship.max_speed);
+                            }
+                        }
+                        
                         previews.push({
                             target: s.display_name || s.name,
                             dist: Math.round(dist * 10) / 10,
                             cost: Math.floor(dist * 0.1),
-                            ticks: Math.max(1, Math.ceil(dist / 300))
+                            ticks: Math.max(1, Math.ceil(dist / speed))
                         });
                     }
                 });

@@ -61,6 +61,15 @@ class TestRoutingFix(unittest.TestCase):
                 max_speed REAL DEFAULT 300.0
             )
         """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS emergency_beacons (
+                ship_id INTEGER PRIMARY KEY,
+                message TEXT,
+                x REAL,
+                y REAL,
+                created_cycle INTEGER
+            )
+        """)
         
         # S0: Home System (0, 0), S1: Destination System (100, 0)
         c.execute("INSERT INTO systems (name, display_name, x, y, extractable_matter_in_core) VALUES ('SYS_A', 'Alpha', 0, 0, 10000)")
@@ -136,6 +145,48 @@ class TestRoutingFix(unittest.TestCase):
         row = c.fetchone()
         self.assertEqual(row[0], 1) # Should be exactly 1 tick!
         self.assertEqual(row[1], 'traveling')
+        conn.close()
+
+    def test_ping_sos_free(self):
+        # Verify that an agent with 0 energy and 0 refined_matter can successfully execute ping_sos
+        os.environ['BOB_ID'] = 'Instance-1' # Slow-Pilot
+        
+        # Set agent's inventories to 0
+        conn = sqlite3.connect(self.test_db)
+        c = conn.cursor()
+        c.execute("UPDATE agents SET energy_inventory = 0, refined_matter_inventory = 0 WHERE id = 'Instance-1'")
+        conn.commit()
+        conn.close()
+        
+        agent = bob_sdk.Agent()
+        
+        # Deploy emergency beacon (should succeed even with 0 refined_matter)
+        success = agent.ping_sos("SOS-HELP")
+        self.assertTrue(success)
+        
+        # Verify the beacon was registered correctly
+        conn = sqlite3.connect(self.test_db)
+        c = conn.cursor()
+        c.execute("SELECT message, x, y FROM emergency_beacons WHERE ship_id = 3")
+        row = c.fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(row[0], "SOS-HELP")
+        self.assertEqual(row[1], 0.0)
+        self.assertEqual(row[2], 0.0)
+        
+        # Reclaim emergency beacon
+        reclaim_success = agent.reclaim_sos()
+        self.assertTrue(reclaim_success)
+        
+        # Verify no refund exploit occurred (refined_matter_inventory should still be 0)
+        c.execute("SELECT refined_matter_inventory FROM agents WHERE id = 'Instance-1'")
+        rm_inv = c.fetchone()[0]
+        self.assertEqual(rm_inv, 0)
+        
+        # Verify the beacon was removed
+        c.execute("SELECT COUNT(*) FROM emergency_beacons WHERE ship_id = 3")
+        count = c.fetchone()[0]
+        self.assertEqual(count, 0)
         conn.close()
 
 if __name__ == '__main__':

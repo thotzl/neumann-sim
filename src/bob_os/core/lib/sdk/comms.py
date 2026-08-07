@@ -162,7 +162,7 @@ class Comms:
             
         rules = config_service.get_economy_rules()
         sos_rules = rules.get('tool_costs', {}).get('ping_sos', {})
-        cost = int(sos_rules.get('refined_matter_cost', 10))
+        cost = 0
         
         # Check if beacon already exists for this ship
         cursor.execute("SELECT ship_id FROM emergency_beacons WHERE ship_id = ?", (ship_id,))
@@ -211,7 +211,7 @@ class Comms:
         rules = config_service.get_economy_rules()
         reclaim_rules = rules.get('tool_costs', {}).get('reclaim_sos', {})
         refund_range = float(reclaim_rules.get('refund_proximity_range', 50.0))
-        cost = int(rules.get('tool_costs', {}).get('ping_sos', {}).get('refined_matter_cost', 10))
+        cost = 0
         
         from core.lib.physics_service import calc_distance
         dist = calc_distance(agent.get('current_x'), agent.get('current_y'), beacon['x'], beacon['y'])

@@ -35,7 +35,7 @@ function processActions(text, universeDir, agentId, state) {
     if (!state.security.wallets[agentId]) state.security.wallets[agentId] = {};
 
     let activeText = text;
-    const actionSplit = text.split(/ACTION(?:S)?[:]/i);
+    const actionSplit = text.split(/ACTION(?:S)?[\s:]+/i);
     if (actionSplit.length > 1) {
         activeText = actionSplit.slice(1).join("ACTION:");
     }

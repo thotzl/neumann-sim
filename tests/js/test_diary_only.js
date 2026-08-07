@@ -4,15 +4,15 @@ console.log("Testing 'Diary-Only' Semantic Memory Model...");
 
 // 1. Simulate the Regex-Matching Logic from runner.js (English)
 function extractThoughts(responseText) {
-    const logbookMatch = responseText.match(/1\.\s*LOGBOOK[\s:]*([\s\S]*?)(?=2\.\s*ACTION|$)/i) 
-                         || responseText.match(/LOGBOOK[\s:]*([\s\S]*?)(?=ACTION|$)/i);
+    const logbookMatch = responseText.match(/1\.\s*LOGBOOK[\s:]*([\s\S]*?)(?=2\.\s*ACTION\b|$)/i) 
+                         || responseText.match(/LOGBOOK[\s:]*([\s\S]*?)(?=ACTION\b|$)/i);
     return logbookMatch ? "1. LOGBOOK:\n" + logbookMatch[1].trim() : responseText;
 }
 
 function extractAction(responseText) {
-    const actionPart = responseText.match(/2\.\s*ACTION:[\s\S]*/i) 
-                       ? responseText.match(/2\.\s*ACTION:[\s\S]*/i)[0] 
-                       : (responseText.match(/ACTION:[\s\S]*/i) ? responseText.match(/ACTION:[\s\S]*/i)[0] : "No action.");
+    const actionPart = responseText.match(/2\.\s*ACTION[\s:]*[\s\S]*/i) 
+                       ? responseText.match(/2\.\s*ACTION[\s:]*[\s\S]*/i)[0] 
+                       : (responseText.match(/ACTION[\s:]*[\s\S]*/i) ? responseText.match(/ACTION[\s:]*[\s\S]*/i)[0] : "No action.");
     return actionPart.trim();
 }
 

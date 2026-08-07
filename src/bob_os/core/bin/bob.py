@@ -87,7 +87,7 @@ DESCRIPTIONS = {
     "map": "Active stellar map directory. Optional arguments: range (integer), query (string), system_id (string).",
     "route": "Calculates an energy-optimal multi-hop flight trajectory to a discovered destination (Plots safe staging waypoints).",
     "eta": "Estimates travel duration and propulsion grid energy costs for a direct vector flight.",
-    "network": "Queries active replicants. Masked as Unknown if out of range with no active comms_relay.",
+    "network": "Queries active replicants and global SOS/emergency beacons. Masked as Unknown if out of range with no active comms_relay.",
     "memo": "Manage your private memos, diary entries, and logs (Actions: add, check, uncheck, remove, list, find; Optional list filter: status='all').",
     "docs": "Manage sector documents and public relics (Actions: add, list, find, remove).",
     "sleep": "Enters stateful standby. Suspends physical systems instantly; must be placed at the end of your action sequence.",

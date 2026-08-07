@@ -24,6 +24,7 @@ class TestNavigationSystem(unittest.TestCase):
         c.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1, maintenance_cooldown INTEGER DEFAULT 0, linked_system TEXT DEFAULT NULL)")
         c.execute("CREATE TABLE ships (id INTEGER PRIMARY KEY, name TEXT, chassis TEXT, pilot_id TEXT, system_name TEXT, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, raw_matter_inventory INTEGER DEFAULT 0, refined_matter_inventory INTEGER DEFAULT 0, energy_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER DEFAULT 5000, energy_capacity INTEGER DEFAULT 10000, max_speed REAL DEFAULT 300, thrust INTEGER DEFAULT 500, mass INTEGER DEFAULT 1200, blueprint_name TEXT, has_drill INTEGER DEFAULT 0, has_fabricator INTEGER DEFAULT 0, has_logic_core INTEGER DEFAULT 0, progress_matter INTEGER DEFAULT 0, required_matter INTEGER DEFAULT 0)")
         c.execute("CREATE TABLE memos (id INTEGER PRIMARY KEY, agent_id TEXT, content TEXT, status TEXT)")
+        c.execute("CREATE TABLE IF NOT EXISTS emergency_beacons (ship_id INTEGER PRIMARY KEY, message TEXT, x REAL, y REAL, created_cycle INTEGER)")
         
         # Populate systems (3 systems on a grid)
         # SYS_A: current position (0, 0)

@@ -15,6 +15,19 @@ except ImportError:
     from core.lib import physics_service
     from core.lib.utils.formatting import get_display_name_with_id
 
+def has_active_relay(cursor, system_name):
+    if not system_name or system_name == 'Interstellar':
+        return False
+    cursor.execute("SELECT COUNT(*) FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (system_name,))
+    row = cursor.fetchone()
+    return row[0] > 0 if row else False
+
+def get_ship_system_name(cursor, ship_id):
+    if not ship_id: return 'Interstellar'
+    cursor.execute("SELECT system_name FROM ships WHERE id = CAST(? AS INTEGER)", (ship_id,))
+    row = cursor.fetchone()
+    return row[0] if row else 'Interstellar'
+
 class Comms:
     def __init__(self, agent): self.agent = agent
     
@@ -192,7 +205,43 @@ class Comms:
             VALUES (?, ?, ?, ?, ?)
         """, (ship_id, final_msg, current_x, current_y, current_cycle))
         
-        print(f"[SUCCESS] Emergency beacon deployed at Coordinates ({current_x}, {current_y}).")
+        # Säule II: One-time Transient Prio-1 Emergency Broadcast (Relais-Symmetrie 3b)
+        cursor.execute("SELECT id, current_x, current_y, chosen_name, location, active_ship_id FROM agents WHERE id != ?", (self.agent.id,))
+        other_agents = cursor.fetchall()
+        
+        sender_system = get_ship_system_name(cursor, ship_id)
+        sender_has_relay = has_active_relay(cursor, sender_system)
+        
+        current_stardate = os.environ.get('BOB_STARDATE', '1::1')
+        
+        receivers_count = 0
+        for r in other_agents:
+            target_id = r['id']
+            
+            # Resolve target system
+            target_ship_id = r['active_ship_id']
+            target_system = get_ship_system_name(cursor, target_ship_id) if r['location'] == 'Interstellar' and target_ship_id else r['location']
+            target_has_relay = has_active_relay(cursor, target_system)
+            
+            # Proximity calculation
+            dist = physics_service.calc_distance(float(current_x), float(current_y), float(r['current_x']), float(r['current_y']))
+            
+            # 3b Relais-Symmetrie or Proximity
+            if sender_has_relay or target_has_relay or dist <= 100.0:
+                broadcast_content = (
+                    f"[EMERGENCY BROADCAST (Sub-Etheric Grid)]\n"
+                    f"TIMESTAMP: Cycle {current_cycle} | Stardate {current_stardate}\n"
+                    f"SENDER: {agent.get('chosen_name')} (ID: {self.agent.id}) piloting Ship-{ship_id}\n"
+                    f"COORDINATES: Coordinates ({current_x}, {current_y})\n"
+                    f"MESSAGE: {final_msg}"
+                )
+                cursor.execute("""
+                    INSERT INTO messages (sender, receiver, content, priority, sent_at)
+                    VALUES (?, ?, ?, ?, ?)
+                """, ("System", target_id, broadcast_content, 1, current_stardate))
+                receivers_count += 1
+        
+        print(f"[SUCCESS] Emergency beacon deployed at Coordinates ({current_x}, {current_y}). Emergency broadcast received by {receivers_count} bots.")
         return True
 
     @agent_service.with_agent_context(allow_disembodied=False)

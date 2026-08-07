@@ -21,10 +21,12 @@ class TestAnomaliesFixes(unittest.TestCase):
         if os.path.exists(self.test_db):
             os.remove(self.test_db)
             
-        # Apply standard Ground Zero schema to our testing connection
+        # Apply standard schema and migrations to our testing connection
         conn = sqlite3.connect(self.test_db)
-        with open(os.path.join(PROJECT_ROOT, 'src', 'bob_os', 'core', 'migrations', '0001_ground_zero.sql'), 'r') as f:
-            conn.executescript(f.read())
+        migrations_dir = os.path.join(PROJECT_ROOT, 'src', 'bob_os', 'core', 'migrations')
+        for migration in ['0001_ground_zero.sql', '0002_add_emergency_beacons.sql', '0003_unified_views.sql']:
+            with open(os.path.join(migrations_dir, migration), 'r') as f:
+                conn.executescript(f.read())
         conn.commit()
         conn.close()
             

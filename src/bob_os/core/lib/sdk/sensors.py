@@ -34,11 +34,8 @@ def get_ship_system_name(cursor, ship_id):
     return row[0] if row else 'Interstellar'
 
 def count_eligible_beacons(cursor, caller_system, caller_x, caller_y):
-    try:
-        cursor.execute("SELECT ship_id, x, y FROM emergency_beacons")
-        beacons_raw = cursor.fetchall()
-    except sqlite3.OperationalError:
-        return 0
+    cursor.execute("SELECT ship_id, x, y FROM emergency_beacons")
+    beacons_raw = cursor.fetchall()
         
     count = 0
     caller_has_relay = has_active_relay(cursor, caller_system)
@@ -803,11 +800,8 @@ class Sensors:
             })
             
         # Fetch and append eligible active emergency SOS beacons (Säule I / III)
-        try:
-            cursor.execute("SELECT ship_id, message, x, y, created_cycle FROM emergency_beacons")
-            beacons_raw = cursor.fetchall()
-        except sqlite3.OperationalError:
-            beacons_raw = []
+        cursor.execute("SELECT ship_id, message, x, y, created_cycle FROM emergency_beacons")
+        beacons_raw = cursor.fetchall()
             
         for b in beacons_raw:
             b_ship_id = b['ship_id']

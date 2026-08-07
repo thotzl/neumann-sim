@@ -106,7 +106,7 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         promptText += `\n[INBOX (Events of the last cycle)]:\n${inboxText}`;
     }
     if (scutText) {
-        promptText += `\n[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${scutText}---\n`;
+        promptText += `\n[INCOMING TRANSMISSIONS (SCUT)]:\n${scutText}---\n`;
     }
 
     let contextArray = [...state.histories[agent.id]];
@@ -176,7 +176,7 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     // Combine output feedback and inbox responses for history tracking
     let preTurnEvents = "";
     if (inboxText) preTurnEvents += inboxText;
-    if (scutText) preTurnEvents += `\n[EINGEHENDE FUNKSPRÜCHE (SCUT)]:\n${scutText}---\n`;
+    if (scutText) preTurnEvents += `\n[INCOMING TRANSMISSIONS (SCUT)]:\n${scutText}---\n`;
     preTurnEvents = preTurnEvents.trim();
     let formattedTurnHistory = responseText;
     if (preTurnEvents) {

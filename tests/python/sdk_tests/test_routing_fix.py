@@ -37,7 +37,10 @@ class TestRoutingFix(unittest.TestCase):
                 target_x REAL,
                 target_y REAL,
                 transit_ticks_total INTEGER,
-                transit_ticks_passed INTEGER
+                transit_ticks_passed INTEGER,
+                last_seen_event_id INTEGER DEFAULT 0,
+                host_type TEXT,
+                host_id TEXT
             )
         """)
         c.execute("""
@@ -46,7 +49,12 @@ class TestRoutingFix(unittest.TestCase):
                 display_name TEXT, 
                 x INTEGER, 
                 y INTEGER, 
-                extractable_matter_in_core INTEGER
+                extractable_matter_in_core INTEGER,
+                raw_matter_depot INTEGER DEFAULT 0,
+                depot_matter_capacity INTEGER DEFAULT 1000,
+                energy_depot INTEGER DEFAULT 0,
+                depot_energy_capacity INTEGER DEFAULT 1000,
+                refined_matter_depot INTEGER DEFAULT 0
             )
         """)
         c.execute("""
@@ -56,9 +64,22 @@ class TestRoutingFix(unittest.TestCase):
                 chassis TEXT, 
                 pilot_id TEXT, 
                 system_name TEXT, 
+                health INTEGER DEFAULT 100,
+                max_health INTEGER DEFAULT 100,
                 energy_capacity INTEGER DEFAULT 10000, 
                 energy_inventory INTEGER DEFAULT 5000,
-                max_speed REAL DEFAULT 300.0
+                raw_matter_inventory INTEGER DEFAULT 0,
+                refined_matter_inventory INTEGER DEFAULT 0,
+                matter_storage_capacity INTEGER DEFAULT 5000,
+                max_speed REAL DEFAULT 300.0,
+                thrust REAL DEFAULT 500.0,
+                mass REAL DEFAULT 500.0,
+                blueprint_name TEXT,
+                has_drill INTEGER DEFAULT 0,
+                has_fabricator INTEGER DEFAULT 0,
+                has_logic_core INTEGER DEFAULT 1,
+                progress_matter INTEGER DEFAULT 0,
+                required_matter INTEGER DEFAULT 0
             )
         """)
         c.execute("""
@@ -70,6 +91,57 @@ class TestRoutingFix(unittest.TestCase):
                 created_cycle INTEGER
             )
         """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS infrastructure (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                system_name TEXT,
+                type TEXT,
+                status TEXT,
+                progress_matter INTEGER DEFAULT 0,
+                required_matter INTEGER DEFAULT 0,
+                health INTEGER DEFAULT 100,
+                max_health INTEGER DEFAULT 100,
+                level INTEGER DEFAULT 1,
+                maintenance_cooldown INTEGER DEFAULT 0,
+                linked_system TEXT
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                sender TEXT,
+                receiver TEXT,
+                content TEXT,
+                priority INTEGER,
+                sent_at TEXT
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS visual_events (
+                cycle INTEGER,
+                location TEXT,
+                actor_id TEXT,
+                event_type TEXT,
+                description TEXT
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS memos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_id TEXT,
+                content TEXT,
+                status TEXT,
+                created_cycle INTEGER
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS blueprints (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                author_id TEXT,
+                matrix_json TEXT,
+                stats_json TEXT
+            )
+        """)
         
         # S0: Home System (0, 0), S1: Destination System (100, 0)
         c.execute("INSERT INTO systems (name, display_name, x, y, extractable_matter_in_core) VALUES ('SYS_A', 'Alpha', 0, 0, 10000)")
@@ -77,8 +149,8 @@ class TestRoutingFix(unittest.TestCase):
         
         # Test Case 1: Agent on a slow ship (Speed: 10.0) -> Expected Ticks for Distance 100: 10
         c.execute("""
-            INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id)
-            VALUES ('Instance-1', 'Slow-Pilot', 'SYS_A', 1000, 0, 1000, 'active', 0.0, 0.0, 3)
+            INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id, host_type, host_id)
+            VALUES ('Instance-1', 'Slow-Pilot', 'SYS_A', 1000, 0, 1000, 'active', 0.0, 0.0, 3, 'ship', '3')
         """)
         c.execute("""
             INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory, max_speed)
@@ -87,8 +159,8 @@ class TestRoutingFix(unittest.TestCase):
         
         # Test Case 2: Agent on a fast ship (Speed: 100.0) -> Expected Ticks for Distance 100: 1
         c.execute("""
-            INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id)
-            VALUES ('Instance-2', 'Fast-Pilot', 'SYS_A', 1000, 0, 1000, 'active', 0.0, 0.0, 4)
+            INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id, host_type, host_id)
+            VALUES ('Instance-2', 'Fast-Pilot', 'SYS_A', 1000, 0, 1000, 'active', 0.0, 0.0, 4, 'ship', '4')
         """)
         c.execute("""
             INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory, max_speed)
@@ -188,6 +260,50 @@ class TestRoutingFix(unittest.TestCase):
         count = c.fetchone()[0]
         self.assertEqual(count, 0)
         conn.close()
+
+    def test_seeg_monitoring_and_network_visibility(self):
+        # Verify that active beacons are reflected in:
+        # 1. me.local_system() as 'active_sos_pings'
+        # 2. me.network() as EMERGENCY BEACON elements
+        os.environ['BOB_ID'] = 'Instance-1' # Slow-Pilot
+        agent = bob_sdk.Agent()
+        
+        # Deploy SOS beacon
+        self.assertTrue(agent.ping_sos("SOS-HELP"))
+        
+        # Verify the transient Prio-1 Broadcast (Säule II) was inserted into the messages table
+        conn = sqlite3.connect(self.test_db)
+        c = conn.cursor()
+        c.execute("SELECT sender, receiver, content, priority FROM messages WHERE receiver = 'Instance-2'")
+        row = c.fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(row[0], "System")
+        self.assertEqual(row[1], "Instance-2")
+        self.assertIn("[EMERGENCY BROADCAST (Sub-Etheric Grid)]", row[2])
+        self.assertIn("SOS-HELP", row[2])
+        self.assertEqual(row[3], 1) # Priority 1 (Zwangswecken)
+        conn.close()
+        
+        # 1. Verify dashboard/local_system counts the beacon under 'global_emergency_grid'
+        sys_state = agent.local_system()
+        self.assertIn('global_emergency_grid', sys_state)
+        self.assertEqual(sys_state['global_emergency_grid']['active_sos_pings'], 1)
+        
+        # 2. Verify network() lists the beacon correctly
+        net = agent.network()
+        # Should contain Instance-2 AND the emergency beacon!
+        self.assertEqual(len(net), 2)
+        beacon_entry = next((item for item in net if "EMERGENCY BEACON:" in item['name']), None)
+        self.assertIsNotNone(beacon_entry)
+        self.assertEqual(beacon_entry['location'], "Coordinates (0.0, 0.0)")
+        self.assertIn("SOS-HELP", beacon_entry['status'])
+        
+        # Cleanup
+        self.assertTrue(agent.reclaim_sos())
+        
+        # Dashboard pings should fall back to 0
+        sys_state_cleared = agent.local_system()
+        self.assertEqual(sys_state_cleared['global_emergency_grid']['active_sos_pings'], 0)
 
 if __name__ == '__main__':
     unittest.main()

@@ -11,7 +11,11 @@
     "scan": { "energy_cost": 40, "matter_cost": 0 },
     "move": { "energy_cost": 0, "matter_cost": 0, "cost_per_distance": 0.1 },
     "replicate": { "energy_cost": 180, "matter_cost": 1000 },
-    "refine": { "energy_cost": 20, "raw_matter_cost": 100, "refined_yield": 100 }
+    "refine": { "energy_cost": 20, "raw_matter_cost": 100, "refined_yield": 100 },
+    "ping_sos": { "refined_matter_cost": 10, "max_beacons_per_ship": 1 },
+    "reclaim_sos": { "refund_proximity_range": 50.0 },
+    "talk": { "energy_cost": 0, "proximity_range": 100.0 },
+    "docking": { "proximity_range": 50.0 }
   },
   "infrastructure": {
     "matter_silo": { "matter_cost": 400, "required_material": "raw_matter", "matter_capacity_bonus": 1000, "maintenance_energy_cost": 0 },

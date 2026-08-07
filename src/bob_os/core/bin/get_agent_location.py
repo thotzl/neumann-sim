@@ -49,7 +49,9 @@ def main():
         
         res = {}
         for r in c_outer.execute('SELECT * FROM agents'):
-            loc = resolve_agent_location(c_inner, r['host_type'], r['host_id'], r['status'])
+            cur_x = r['current_x'] if 'current_x' in r.keys() else None
+            cur_y = r['current_y'] if 'current_y' in r.keys() else None
+            loc = resolve_agent_location(c_inner, r['host_type'], r['host_id'], r['status'], cur_x, cur_y)
             res[r['id']] = {
                 "location": loc,
                 "sleep_state": r['sleep_state'] if 'sleep_state' in r.keys() else 0,

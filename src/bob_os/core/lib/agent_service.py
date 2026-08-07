@@ -1,34 +1,61 @@
 import sqlite3
 import functools
 from .db_config import get_connection
+from . import config_service
 
 def resolve_agent_location(cursor, host_type, host_id, status, current_x=None, current_y=None):
     if status == 'traveling':
-        # Dynamic Spatial Docking check based on Stellar Influence Zone (Pillar 5)
-        if current_x is not None and current_y is not None:
-            cursor.execute("SELECT name, x, y, mass FROM systems")
-            all_systems = cursor.fetchall()
-            for sys_row in all_systems:
-                from .physics_service import calc_distance
-                import math
-                dist = calc_distance(current_x, current_y, sys_row['x'], sys_row['y'])
-                r_inf = 150.0 * math.sqrt(sys_row['mass'] or 1.0)
-                if dist <= r_inf:
-                    return sys_row['name'] # Dynamically snapped location!
         return 'Interstellar'
-    if host_type == 'ship' and host_id:
-        try:
-            cursor.execute("SELECT system_name FROM ships WHERE id = ?", (host_id,))
-            row = cursor.fetchone()
-            if row: return row['system_name']
-        except: pass
-    if host_type == 'matrix' and host_id:
-        try:
-            cursor.execute("SELECT system_name FROM infrastructure WHERE id = ?", (host_id,))
-            row = cursor.fetchone()
-            if row: return row['system_name']
-        except: pass
-    return 'Unknown'
+    if current_x is None or current_y is None:
+        return 'Unknown'
+    
+    cursor.execute("SELECT name, x, y FROM systems")
+    all_systems = cursor.fetchall()
+    if not all_systems:
+        return 'Unknown'
+        
+    nearest_sys = None
+    min_dist = float('inf')
+    for sys_row in all_systems:
+        from .physics_service import calc_distance
+        dist = calc_distance(current_x, current_y, sys_row['x'], sys_row['y'])
+        if dist < min_dist:
+            min_dist = dist
+            nearest_sys = sys_row['name']
+            
+    rules = config_service.get_economy_rules()
+    dock_range = float(rules.get('tool_costs', {}).get('docking', {}).get('proximity_range', 50.0))
+    
+    if min_dist <= dock_range:
+        return nearest_sys
+    return 'Interstellar'
+
+def check_physical_state(cursor, agent):
+    """
+    Computes Euclidean coordinates and returns (is_moving, nearest_system_name, min_distance).
+    """
+    is_moving = (agent.get('status') == 'traveling')
+    current_x = agent.get('current_x')
+    current_y = agent.get('current_y')
+    
+    if current_x is None or current_y is None:
+        raise ValueError("Agent coordinates are missing! Cannot determine physical state.")
+        
+    cursor.execute("SELECT name, x, y FROM systems")
+    systems_rows = cursor.fetchall()
+    if not systems_rows:
+        raise ValueError("No systems populated in the database! Cannot determine physical state.")
+        
+    from .physics_service import calc_distance
+    min_dist = float('inf')
+    nearest_sys = None
+    for row in systems_rows:
+        dist = calc_distance(current_x, current_y, row['x'], row['y'])
+        if dist < min_dist:
+            min_dist = dist
+            nearest_sys = row['name']
+            
+    return is_moving, nearest_sys, min_dist
 
 def get_agent_or_fail(cursor, agent_id, required_columns="*"):
     try:
@@ -84,17 +111,15 @@ def get_agent_or_fail(cursor, agent_id, required_columns="*"):
         print(f"[ERROR] Agent '{agent_id}' not found.")
         return None
     agent_dict = dict(row)
-    # Enable dynamic coordinate-based spatial docking only for traveling status,
-    # or if location is missing/unresolved (Pillar 5 / SSoT / Legacy Tests Compatibility)
-    if agent_dict.get('status') == 'traveling' or not agent_dict.get('location') or agent_dict.get('location') == 'Unknown':
-        agent_dict['location'] = resolve_agent_location(
-            cursor, 
-            agent_dict.get('host_type'), 
-            agent_dict.get('host_id'), 
-            agent_dict.get('status'),
-            agent_dict.get('current_x'),
-            agent_dict.get('current_y')
-        )
+    # Enable dynamic coordinate-based spatial docking dynamically based on true euklidische coordinates (Pillar 5 / SSoT)
+    agent_dict['location'] = resolve_agent_location(
+        cursor, 
+        agent_dict.get('host_type'), 
+        agent_dict.get('host_id'), 
+        agent_dict.get('status'),
+        agent_dict.get('current_x'),
+        agent_dict.get('current_y')
+    )
     return agent_dict
 
 def require_active_status(agent, tool_name):

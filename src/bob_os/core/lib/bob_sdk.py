@@ -72,6 +72,9 @@ class Agent:
 
     # --- COMMS DELEGATES ---
     def scut(self, receiver_id, message, priority=False): return self.comms.scut(receiver_id, message, priority)
+    def ping_sos(self, message=None): return self.comms.ping_sos(message)
+    def reclaim_sos(self): return self.comms.reclaim_sos()
+    def talk(self, target_id, message): return self.comms.talk(target_id, message)
     def sleep(self, duration=5, ignore_scut=False):
         duration = int(duration)
         ignore_scut_int = 2 if ignore_scut in [True, "True", "true", 1, "1"] else 1

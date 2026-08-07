@@ -242,8 +242,18 @@ class TestAnomaliesFixes(unittest.TestCase):
         conn.commit()
         conn.close()
         
-        # Call withdraw - should SUCCEED because of dynamic spatial docking (within influence zone!)
+        # Call withdraw - should be DENIED because of active-proximity transit block!
         agent = bob_sdk.Agent()
+        success = agent.withdraw("energy", 50)
+        self.assertFalse(success)
+
+        # Stop the vessel (status = 'active') - should now SUCCEED (within influence zone!)
+        conn = sqlite3.connect(self.test_db)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE agents SET status = 'active' WHERE id = ?", (agent_id,))
+        conn.commit()
+        conn.close()
+
         success = agent.withdraw("energy", 50)
         self.assertTrue(success)
         
@@ -252,7 +262,7 @@ class TestAnomaliesFixes(unittest.TestCase):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         # Set Bob to active status (stationary) to bypass physics trajectory recalculations (Steel-man Fix)
-        cursor.execute("UPDATE agents SET status = 'active' WHERE id = ?", (agent_id,))
+        cursor.execute("UPDATE agents SET status = 'active', current_x = 9999, current_y = 9999 WHERE id = ?", (agent_id,))
         # Set Bob's ship location to Interstellar (deep space solar blackout!)
         cursor.execute("UPDATE ships SET system_name = 'Interstellar', energy_inventory = 100, energy_capacity = 500 WHERE pilot_id = ?", (agent_id,))
         # Equip ship with solar charging capabilities by inserting blueprint stats
@@ -269,6 +279,7 @@ class TestAnomaliesFixes(unittest.TestCase):
         self.assertEqual(ship_row['energy_inventory'], 90) # Solar was blacked out in interstellar space, so it drained!
         
         # 3. Test Solar Recharge in System range
+        cursor.execute("UPDATE agents SET current_x = ?, current_y = ? WHERE id = ?", (startX, startY, agent_id))
         cursor.execute("UPDATE ships SET system_name = ? WHERE pilot_id = ?", (sys_name, agent_id))
         conn.commit()
         

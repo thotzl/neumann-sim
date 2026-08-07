@@ -4,10 +4,12 @@ import sys
 try:
     from .. import agent_service
     from .. import system_service
+    from .. import config_service
     from ..utils.formatting import get_display_name_with_id
 except ImportError:
     from core.lib import agent_service
     from core.lib import system_service
+    from core.lib import config_service
     from core.lib.utils.formatting import get_display_name_with_id
 
 class Logistics:
@@ -127,10 +129,24 @@ class Logistics:
             print(f"[SUCCESS] {actual_withdraw} refined_matter withdrawn.")
             return True
 
-    @agent_service.with_agent_context(allow_disembodied=True)
+    @agent_service.with_agent_context(require_active=True, allow_disembodied=True, action_name='Transfer')
     def transfer(self, cursor, agent, receiver_id, resource_type, quantity):
         target = agent_service.get_agent_or_fail(cursor, receiver_id)
-        if not target or agent['location'] != target['location']: return False
+        if not target: return False
+        
+        rules = config_service.get_economy_rules()
+        dock_range = float(rules.get('tool_costs', {}).get('docking', {}).get('proximity_range', 50.0))
+        
+        same_system = (agent.get('location') == target.get('location') and agent.get('location') not in ('Interstellar', 'Unknown'))
+        
+        # Euclidean proximity transfer check (Pillar 5 / TCK-120)
+        from core.lib.physics_service import calc_distance
+        dist = calc_distance(agent['current_x'], agent['current_y'], target['current_x'], target['current_y'])
+        
+        if not (same_system or dist <= dock_range):
+            print(f"[DENIED] Transfer target is out of range (Distance: {round(dist, 1)} > {dock_range}).")
+            return False
+            
         quantity = int(quantity)
         
         if resource_type == 'energy':

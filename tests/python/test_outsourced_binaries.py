@@ -75,7 +75,9 @@ class TestOutsourcedBinaries(unittest.TestCase):
 
     def test_get_agent_location_binary(self):
         """Test the get_agent_location.py binary correctly resolves decoupled agent system locations."""
-        # 1. Setup mock schema and data
+        # Create tables
+        self.cursor.execute("DROP TABLE IF EXISTS agents")
+        self.cursor.execute("DROP TABLE IF EXISTS ships")
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS agents (
                 id TEXT PRIMARY KEY,
@@ -84,23 +86,36 @@ class TestOutsourcedBinaries(unittest.TestCase):
                 host_type TEXT,
                 status TEXT,
                 sleep_state INTEGER DEFAULT 0,
-                sleep_until_round INTEGER DEFAULT 0
+                sleep_until_round INTEGER DEFAULT 0,
+                current_x REAL DEFAULT 0.0,
+                current_y REAL DEFAULT 0.0
             )
         """)
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS ships (
                 id INTEGER PRIMARY KEY,
-                system_name TEXT
+                system_name TEXT,
+                x REAL DEFAULT 0.0,
+                y REAL DEFAULT 0.0
             )
         """)
-        
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS systems (
+                name TEXT PRIMARY KEY,
+                x REAL,
+                y REAL
+            )
+        """)
+
         # Insert pilot-host ship
-        self.cursor.execute("INSERT INTO ships (id, system_name) VALUES (?, ?)", (5, "SYS_X100_Y200"))
+        self.cursor.execute("INSERT INTO ships (id, system_name, x, y) VALUES (?, ?, ?, ?)", (5, "SYS_X100_Y200", 100.0, 200.0))
+        # Insert system
+        self.cursor.execute("INSERT INTO systems (name, x, y) VALUES (?, ?, ?)", ("SYS_X100_Y200", 100.0, 200.0))
         # Insert decoupled agent piloted in ship #5
         self.cursor.execute("""
-            INSERT INTO agents (id, chosen_name, host_id, host_type, status, sleep_state, sleep_until_round) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, ("Instance-2", "Xyla", "5", "ship", "active", 1, 10))
+            INSERT INTO agents (id, chosen_name, host_id, host_type, status, sleep_state, sleep_until_round, current_x, current_y) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, ("Instance-2", "Xyla", "5", "ship", "active", 1, 10, 100.0, 200.0))
         self.conn.commit()
         
         # 2. Spawn get_agent_location.py subprocess

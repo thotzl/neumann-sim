@@ -20,6 +20,37 @@ def get_dynamic_build_desc():
     except:
         return "Invests matter in buildings or upgrades."
 
+def get_dynamic_sos_ping_desc():
+    try:
+        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'ECONOMY_RULES.json')
+        with open(rules_path, 'r') as f:
+            rules = json.load(f)
+        cost = rules.get('tool_costs', {}).get('ping_sos', {}).get('refined_matter_cost', 10)
+        return f"Deploys an active emergency SOS beacon at your exact interstellar coordinates. Costs {cost} refined_matter from ship inventory (Optional argument: message)."
+    except:
+        return "Deploys an active emergency SOS beacon at your exact interstellar coordinates."
+
+def get_dynamic_sos_reclaim_desc():
+    try:
+        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'ECONOMY_RULES.json')
+        with open(rules_path, 'r') as f:
+            rules = json.load(f)
+        range_val = rules.get('tool_costs', {}).get('reclaim_sos', {}).get('refund_proximity_range', 50.0)
+        return f"Reclaims your active emergency beacon. Reclaiming within <= {range_val} units proximity refunds 100% of material cost."
+    except:
+        return "Reclaims your active emergency beacon."
+
+def get_dynamic_talk_desc():
+    try:
+        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'ECONOMY_RULES.json')
+        with open(rules_path, 'r') as f:
+            rules = json.load(f)
+        cost = rules.get('tool_costs', {}).get('talk', {}).get('energy_cost', 0)
+        range_val = rules.get('tool_costs', {}).get('docking', {}).get('proximity_range', 50.0)
+        return f"Peer-to-peer proximity communication with nearby vessels/agents within <= {range_val} units range. Cost is {cost} Energy (bypasses blackout constraints)."
+    except:
+        return "Peer-to-peer proximity communication with nearby vessels/agents."
+
 DESCRIPTIONS = {
     "mine": "Extracts matter at the current location.",
     "build": get_dynamic_build_desc(),
@@ -28,6 +59,9 @@ DESCRIPTIONS = {
     "deconstruct": "Deconstructs infrastructure and refunds part of the matter cost.",
     "move": "Initiates sub-light vector propulsion transit to precise coordinates (target_x, target_y).",
     "replicate": "Creates an autonomous probe replican inside an active mind_forge (ID is generated dynamically by the probe kernel).",
+    "ping_sos": get_dynamic_sos_ping_desc(),
+    "reclaim_sos": get_dynamic_sos_reclaim_desc(),
+    "talk": get_dynamic_talk_desc(),
     "set_name": "Sets an individual identity (name) for the probe.",
     "rename_system": "Gives the current system a new display name.",
     "link_gate": "Synchronizes and links the local wormhole gate to a target portal in another sector (Arguments: target_sector).",
@@ -136,6 +170,9 @@ def main():
         elif method == "withdraw": agent.withdraw(resource_type=params.get('resource_type', 'energy'), quantity=safe_int(params.get('quantity'), 'quantity', 50))
         elif method == "transfer": agent.transfer(receiver_id=params.get('receiver_id'), resource_type=params.get('resource_type'), quantity=safe_int(params.get('quantity'), 'quantity'))
         elif method == "scut": agent.scut(receiver_id=params.get('receiver_id'), message=params.get('message'), priority=params.get('priority'))
+        elif method == "ping_sos": agent.ping_sos(message=params.get('message'))
+        elif method == "reclaim_sos": agent.reclaim_sos()
+        elif method == "talk": agent.talk(target_id=params.get('target_id'), message=params.get('message'))
         elif method == "sleep": agent.sleep(duration=safe_int(params.get('duration'), 'duration', 5), ignore_scut=params.get('ignore_scut'))
         elif method == "_poll":
             res = agent._internal_poll()

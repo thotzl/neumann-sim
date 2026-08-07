@@ -152,3 +152,104 @@ class Comms:
             current_stardate = os.environ.get('BOB_STARDATE', '1::1')
             cursor.execute("INSERT INTO messages (sender, receiver, content, priority, sent_at) VALUES (?, ?, ?, ?, ?)", (self.agent.id, real_target_id, message, priority_int, current_stardate))
             return True
+
+    @agent_service.with_agent_context(allow_disembodied=False)
+    def ping_sos(self, cursor, agent, message=None):
+        ship_id = agent.get('active_ship_id')
+        if not ship_id:
+            print("[DENIED] Emergency beacon requires an active ship.")
+            return False
+            
+        rules = config_service.get_economy_rules()
+        sos_rules = rules.get('tool_costs', {}).get('ping_sos', {})
+        cost = int(sos_rules.get('refined_matter_cost', 10))
+        
+        # Check if beacon already exists for this ship
+        cursor.execute("SELECT ship_id FROM emergency_beacons WHERE ship_id = ?", (ship_id,))
+        if cursor.fetchone():
+            print("[DENIED] Active beacon already exists.")
+            return False
+            
+        # Check refined matter cost
+        if agent.get('refined_matter_inventory', 0) < cost:
+            print(f"[DENIED] Not enough refined_matter to deploy emergency beacon (Need: {cost}, Have: {agent.get('refined_matter_inventory', 0)}).")
+            return False
+            
+        # Deduct cost from ship inventory
+        agent_service.update_agent_resources(cursor, self.agent.id, refined_matter=-cost)
+        
+        # Get coordinates
+        current_x = agent.get('current_x')
+        current_y = agent.get('current_y')
+        
+        # Default message fallback
+        final_msg = message if message else "Emergency SOS Beacon Active. Requesting immediate energy transmission."
+        
+        current_cycle = int(os.environ.get('BOB_CYCLE', 0))
+        
+        cursor.execute("""
+            INSERT INTO emergency_beacons (ship_id, message, x, y, created_cycle)
+            VALUES (?, ?, ?, ?, ?)
+        """, (ship_id, final_msg, current_x, current_y, current_cycle))
+        
+        print(f"[SUCCESS] Emergency beacon deployed at Coordinates ({current_x}, {current_y}).")
+        return True
+
+    @agent_service.with_agent_context(allow_disembodied=False)
+    def reclaim_sos(self, cursor, agent):
+        ship_id = agent.get('active_ship_id')
+        if not ship_id:
+            print("[DENIED] Emergency beacon requires an active ship.")
+            return False
+            
+        cursor.execute("SELECT x, y FROM emergency_beacons WHERE ship_id = ?", (ship_id,))
+        beacon = cursor.fetchone()
+        if not beacon:
+            print("[ERROR] No active beacon found.")
+            return False
+            
+        rules = config_service.get_economy_rules()
+        reclaim_rules = rules.get('tool_costs', {}).get('reclaim_sos', {})
+        refund_range = float(reclaim_rules.get('refund_proximity_range', 50.0))
+        cost = int(rules.get('tool_costs', {}).get('ping_sos', {}).get('refined_matter_cost', 10))
+        
+        from core.lib.physics_service import calc_distance
+        dist = calc_distance(agent.get('current_x'), agent.get('current_y'), beacon['x'], beacon['y'])
+        
+        if dist <= refund_range:
+            agent_service.update_agent_resources(cursor, self.agent.id, refined_matter=cost)
+            print(f"[SUCCESS] Beacon reclaimed. 100% refund processed ({cost} refined_matter returned).")
+        else:
+            print(f"[SUCCESS] Beacon reclaimed from distance ({round(dist, 1)} > {refund_range}). Material lost.")
+            
+        cursor.execute("DELETE FROM emergency_beacons WHERE ship_id = ?", (ship_id,))
+        return True
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def talk(self, cursor, agent, target_id, message):
+        target = agent_service.get_agent_or_fail(cursor, target_id)
+        if not target:
+            print(f"[ERROR] Agent '{target_id}' not found.")
+            return False
+            
+        rules = config_service.get_economy_rules()
+        talk_range = float(rules.get('tool_costs', {}).get('docking', {}).get('proximity_range', 50.0))
+        
+        same_system = (agent.get('location') == target.get('location') and agent.get('location') not in ('Interstellar', 'Unknown'))
+        
+        from core.lib.physics_service import calc_distance
+        dist = calc_distance(agent.get('current_x'), agent.get('current_y'), target.get('current_x'), target.get('current_y'))
+        
+        if not (same_system or dist <= talk_range):
+            print(f"[DENIED] Agent '{target_id}' is out of talk range (Distance: {round(dist, 1)} > {talk_range}).")
+            return False
+            
+        current_stardate = os.environ.get('BOB_STARDATE', '1::1')
+        cursor.execute("""
+            INSERT INTO messages (sender, receiver, content, priority, sent_at)
+            VALUES (?, ?, ?, 0, ?)
+        """, (self.agent.id, target_id, message, current_stardate))
+        
+        target_name = get_display_name_with_id(target)
+        print(f"[SUCCESS] Message buffered for transmission to {target_name}.")
+        return True

@@ -25,7 +25,7 @@ class TestUBCL(unittest.TestCase):
         c.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1, maintenance_cooldown INTEGER DEFAULT 0)")
         c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
 
-        c.execute("INSERT OR REPLACE INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status) VALUES ('Bob-Alpha', 'Alpha', 'SYS_X0_Y0', 100, 50, 300, 'active')")
+        c.execute("INSERT OR REPLACE INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y) VALUES ('Bob-Alpha', 'Alpha', 'SYS_X0_Y0', 100, 50, 300, 'active', 0, 0)")
         c.execute("INSERT INTO systems (name, extractable_matter_in_core, depot_energy_capacity, x, y) VALUES ('SYS_X0_Y0', 1000, 500, 0, 0)")
         conn.commit()
         conn.close()

@@ -36,8 +36,9 @@ async function runTests() {
         console.log("Step 2: Verifying applied migrations and generated tables...");
         const migrations = await runSql(db, "SELECT * FROM schema_migrations");
         console.log("  Applied version tracking:", migrations);
-        if (migrations.length !== 1 || migrations[0].version !== '0001_ground_zero.sql') {
-            throw new Error("schema_migrations table does not track ground zero baseline correctly!");
+        const appliedVersions = migrations.map(m => m.version);
+        if (!appliedVersions.includes('0001_ground_zero.sql') || !appliedVersions.includes('0002_add_emergency_beacons.sql')) {
+            throw new Error("schema_migrations table does not track baselines correctly!");
         }
         
         // Verify key tables exist
@@ -45,7 +46,7 @@ async function runTests() {
         const tableNames = tables.map(t => t.name);
         console.log("  Created tables:", tableNames);
         
-        const requiredTables = ['systems', 'agents', 'ships', 'blueprints', 'infrastructure', 'memos', 'docs', 'schema_migrations'];
+        const requiredTables = ['systems', 'agents', 'ships', 'blueprints', 'infrastructure', 'memos', 'docs', 'schema_migrations', 'emergency_beacons'];
         for (const req of requiredTables) {
             if (!tableNames.includes(req)) {
                 throw new Error(`Required table '${req}' is missing from the database!`);
@@ -55,7 +56,7 @@ async function runTests() {
         
         // 3. Incremental migration check
         console.log("Step 3: Creating and applying an incremental migration...");
-        const nextMigrationFile = path.resolve(__dirname, '../../src/bob_os/core/migrations/0002_test_patch.sql');
+        const nextMigrationFile = path.resolve(__dirname, '../../src/bob_os/core/migrations/0003_test_patch.sql');
         const sqlContent = `
             ALTER TABLE agents ADD COLUMN test_patch_col TEXT DEFAULT 'unlocked';
             CREATE TABLE IF NOT EXISTS test_incremental_table (id INTEGER PRIMARY KEY);
@@ -68,7 +69,8 @@ async function runTests() {
         // Verify applied migrations
         const updatedMigrations = await runSql(db, "SELECT version FROM schema_migrations ORDER BY version ASC");
         console.log("  Updated version tracking:", updatedMigrations.map(m => m.version));
-        if (updatedMigrations.length !== 2 || updatedMigrations[1].version !== '0002_test_patch.sql') {
+        const updatedVersions = updatedMigrations.map(m => m.version);
+        if (updatedVersions.length !== 3 || updatedVersions[2] !== '0003_test_patch.sql') {
             throw new Error("Incremental SQL migration was not tracked correctly!");
         }
         
@@ -98,8 +100,8 @@ async function runTests() {
         console.log("\n🎉 ALL SQL-FILE DATABASE MIGRATION TESTS PASSED SUCCESSFULLY!");
         process.exit(0);
     } catch (e) {
-        console.error("\n❌ Migration test failed:", e.message);
-        const nextMigrationFile = path.resolve(__dirname, '../../src/bob_os/core/migrations/0002_test_patch.sql');
+        console.error("\n%s", `❌ Migration test failed: ${e.message}`);
+        const nextMigrationFile = path.resolve(__dirname, '../../src/bob_os/core/migrations/0003_test_patch.sql');
         if (fs.existsSync(nextMigrationFile)) fs.unlinkSync(nextMigrationFile);
         if (fs.existsSync(testVDir)) fs.rmSync(testVDir, { recursive: true, force: true });
         process.exit(1);

@@ -71,7 +71,18 @@ class Actuators:
             return False
         sys_name = agent['location']
         system = system_service.get_system_or_fail(cursor, sys_name)
-        if not system or system['extractable_matter_in_core'] <= 0:
+        if not system:
+            return False
+
+        # Euclidean planetary core distance check (Pillar 5 / TCK-120)
+        if agent.get('current_x') is not None and agent.get('current_y') is not None and system['x'] is not None and system['y'] is not None:
+            from core.lib.physics_service import calc_distance
+            dist = calc_distance(agent['current_x'], agent['current_y'], system['x'], system['y'])
+            if dist > 10.0:
+                print(f"[DENIED] Mining requires planetary drilling range (Distance to core <= 10.0). Current distance: {round(dist, 1)}.")
+                return False
+
+        if system['extractable_matter_in_core'] <= 0:
             print(f"[INFO] Resources in {sys_name} depleted.")
             return False
 

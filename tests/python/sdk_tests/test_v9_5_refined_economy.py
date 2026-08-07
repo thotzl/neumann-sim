@@ -35,9 +35,9 @@ class TestRefinedEconomy(unittest.TestCase):
             health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1,
             maintenance_cooldown INTEGER DEFAULT 0)""")
             
-        c.execute("INSERT INTO systems (name, extractable_matter_in_core) VALUES ('SYS_A', 1000)")
+        c.execute("INSERT INTO systems (name, extractable_matter_in_core, x, y) VALUES ('SYS_A', 1000, 0, 0)")
         # Start with 0 refined
-        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, status) VALUES ('Instance-1', 'SYS_A', 1000, 1000, 0, 'active')")
+        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, refined_matter_inventory, status, current_x, current_y) VALUES ('Instance-1', 'SYS_A', 1000, 1000, 0, 'active', 0, 0)")
         c.execute("INSERT INTO infrastructure (id, system_name, type, status, level, health) VALUES (100, 'SYS_A', 'solar_collector', 'active', 1, 100)")
         conn.commit()
         

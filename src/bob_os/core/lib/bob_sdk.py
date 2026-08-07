@@ -61,8 +61,8 @@ class Agent:
     def inspect(self, ship_id=None, structure_id=None, system_name=None, blueprint_name=None):
         return self.sensors.inspect(ship_id, structure_id, system_name, blueprint_name)
     def map(self, range=None, query=None, system_id=None): return self.sensors.map(range, query, system_id)
-    def route(self, destination): return self.sensors.route(destination)
-    def eta(self, destination): return self.sensors.eta(destination)
+    def route(self, target_x, target_y): return self.sensors.route(target_x, target_y)
+    def eta(self, target_x, target_y): return self.sensors.eta(target_x, target_y)
     def network(self): return self.sensors.network()
 
     # --- LOGISTICS DELEGATES ---

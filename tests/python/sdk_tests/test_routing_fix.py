@@ -179,7 +179,7 @@ class TestRoutingFix(unittest.TestCase):
         agent = bob_sdk.Agent()
         
         # 1. Test me.eta()
-        eta_res = agent.eta("SYS_B")
+        eta_res = agent.eta(100, 0)
         self.assertEqual(eta_res['distance'], 100.0)
         # Expected ticks = max(1, ceil(100.0 / 10.0)) = 10 turns
         self.assertEqual(eta_res['estimated_ticks'], 10)
@@ -202,7 +202,7 @@ class TestRoutingFix(unittest.TestCase):
         agent = bob_sdk.Agent()
         
         # 1. Test me.eta()
-        eta_res = agent.eta("SYS_B")
+        eta_res = agent.eta(100, 0)
         self.assertEqual(eta_res['distance'], 100.0)
         # Expected ticks = max(1, ceil(100.0 / 100.0)) = 1 turn
         self.assertEqual(eta_res['estimated_ticks'], 1)

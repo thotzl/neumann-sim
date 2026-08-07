@@ -64,7 +64,7 @@ class TestEndgamePhase4(unittest.TestCase):
         # 3. Call A* Pathfinding route!
         # Destination is 70,000 units away. Spatial routing would fail due to fuel range, 
         # but wormhole portal shortcut cost=0 should connect them instantly!
-        route_data = self.agent.route("SYS_X50000_Y50000")
+        route_data = self.agent.route(50000, 50000)
         self.assertEqual(route_data['status'], 'routable', "Pathfinder should successfully route through the stargate!")
         
         flight_plan = route_data['flight_plan']

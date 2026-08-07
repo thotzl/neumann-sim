@@ -43,8 +43,8 @@ class TestNavigationSystem(unittest.TestCase):
         # Populate infrastructure (Instance-2's host matrix in SYS_B)
         c.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (2, 'SYS_B', 'sem_matrix', 'active')")
         
-        # Populate ships (Active host ship for Instance-1 - Energy capacity set to 600 to force hop-by-hop routing!)
-        c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory) VALUES (1, 'Pioneer-1', 'Scout-MK1', 'Instance-1', 'SYS_A', 600, 5000)")
+        # Populate ships (Active host ship for Instance-1 - Energy capacity set to 60 to force hop-by-hop routing!)
+        c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory) VALUES (1, 'Pioneer-1', 'Scout-MK1', 'Instance-1', 'SYS_A', 60, 5000)")
         
         # Populate memos (1 open, 1 completed)
         c.execute("INSERT INTO memos (agent_id, content, status) VALUES ('Instance-1', 'Establish Beta Cluster', 'open')")
@@ -89,11 +89,10 @@ class TestNavigationSystem(unittest.TestCase):
         self.assertEqual(m_id[0]['system_id'], 'SYS_B')
 
     def test_eta_calculation(self):
-        # Estimate travel to SYS_B (distance 500, default speed 300, default cost_per_distance 0.1)
-        eta = self.agent.eta(destination="SYS_B")
+        # Estimate travel to SYS_B at (300, 400) (distance 500, default speed 300, default cost_per_distance 0.1)
+        eta = self.agent.eta(target_x=300, target_y=400)
         self.assertTrue(eta)
-        self.assertEqual(eta['destination_id'], 'SYS_B')
-        self.assertEqual(eta['name'], 'Alpha Sektor')
+        self.assertEqual(eta['destination_coords'], 'X300.0-Y400.0')
         self.assertEqual(eta['distance'], 500.0)
         self.assertEqual(eta['estimated_ticks'], 2) # math.ceil(500/300) = 2
         self.assertEqual(eta['estimated_energy_cost'], 50.0) # 500 * 0.1 = 50
@@ -102,7 +101,7 @@ class TestNavigationSystem(unittest.TestCase):
         # Setup ship's energy/fuel jump range limit to 600
         # Direct path from SYS_A -> SYS_C is 1000 units (impossible with 600 energy range!).
         # But Hop-by-Hop route is possible: SYS_A -> SYS_B (500 units) -> SYS_C (500 units).
-        route = self.agent.route(destination="SYS_C")
+        route = self.agent.route(target_x=600, target_y=800)
         self.assertTrue(route)
         self.assertEqual(route['status'], 'routable')
         self.assertEqual(route['origin'], 'SYS_A')
@@ -113,12 +112,16 @@ class TestNavigationSystem(unittest.TestCase):
         self.assertEqual(len(plan), 2)
         self.assertEqual(plan[0]['leg'], 1)
         self.assertEqual(plan[0]['system_id'], 'SYS_B')
+        self.assertEqual(plan[0]['target_x'], 300)
+        self.assertEqual(plan[0]['target_y'], 400)
         self.assertEqual(plan[0]['segment_distance'], 500.0)
         self.assertEqual(plan[0]['travel_time'], '2 turns')
         self.assertEqual(plan[0]['cumulative_time'], '2 turns') # Cumulative elapsed turns at Leg 1
         
         self.assertEqual(plan[1]['leg'], 2)
         self.assertEqual(plan[1]['system_id'], 'SYS_C')
+        self.assertEqual(plan[1]['target_x'], 600)
+        self.assertEqual(plan[1]['target_y'], 800)
         self.assertEqual(plan[1]['segment_distance'], 500.0)
         self.assertEqual(plan[1]['travel_time'], '2 turns')
         self.assertEqual(plan[1]['cumulative_time'], '4 turns') # Cumulative elapsed turns at Leg 2 (Final Destination!)

@@ -557,18 +557,15 @@ class Sensors:
        return discovered
 
     @agent_service.with_agent_context(allow_disembodied=True)
-    def eta(self, cursor, agent, destination):
+    def eta(self, cursor, agent, target_x, target_y):
        """Calculates transit duration and energy cost for a direct flight."""
-       cursor.execute("SELECT name, x, y, display_name FROM systems WHERE name = ? OR display_name = ?", (destination, destination))
-       target = cursor.fetchone()
-       if not target:
-           print(f"[ERROR] Destination '{destination}' has not been discovered yet.")
-           return False
+       tx = float(target_x)
+       ty = float(target_y)
 
        cx = float(agent['current_x'])
        cy = float(agent['current_y'])
 
-       dist = physics_service.calc_distance(cx, cy, target['x'], target['y'])
+       dist = physics_service.calc_distance(cx, cy, tx, ty)
 
        phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
        cost_per_dist = phys.get('cost_per_distance', 0.1)
@@ -584,20 +581,22 @@ class Sensors:
        ticks = max(1, int(math.ceil(dist / speed)))
 
        return {
-           "destination_id": target['name'],
-           "name": target['display_name'] if target['display_name'] else "Unnamed",
+           "destination_coords": f"X{round(tx,1)}-Y{round(ty,1)}",
            "distance": round(dist, 1),
            "estimated_ticks": ticks,
            "estimated_energy_cost": energy_cost
        }
 
     @agent_service.with_agent_context(allow_disembodied=True)
-    def route(self, cursor, agent, destination):
+    def route(self, cursor, agent, target_x, target_y):
         """Calculates a hop-by-hop flight route based on Dijkstra pathfinding and ship fuel range."""
-        cursor.execute("SELECT name, x, y, display_name FROM systems WHERE name = ? OR display_name = ?", (destination, destination))
+        tx = float(target_x)
+        ty = float(target_y)
+        
+        cursor.execute("SELECT name, x, y, display_name FROM systems WHERE x = CAST(? AS INTEGER) AND y = CAST(? AS INTEGER)", (int(tx), int(ty)))
         target_row = cursor.fetchone()
         if not target_row:
-            print(f"[ERROR] Destination '{destination}' has not been discovered yet.")
+            print(f"[ERROR] Destination coordinates ({tx}, {ty}) do not match any discovered system.")
             return False
             
         start_sys = agent['location']
@@ -710,6 +709,8 @@ class Sensors:
                         "leg": i + 1,
                         "system_id": s2['name'],
                         "name": s2['display_name'] if s2['display_name'] else "Unnamed",
+                        "target_x": s2['x'],
+                        "target_y": s2['y'],
                         "segment_distance": round(seg_dist, 1),
                         "travel_time": f"{seg_ticks} turns" if not is_wormhole else "Instant",
                         "cumulative_time": f"{cumulative_ticks} turns",
@@ -730,7 +731,7 @@ class Sensors:
                     continue
                 d = physics_service.calc_distance(all_systems[current]['x'], all_systems[current]['y'], n_data['x'], n_data['y'])
                 # If within fuel/energy jump range
-                if d <= max_energy_range:
+                if d * cost_per_dist <= max_energy_range:
                     new_cost = cost + d
                     if neighbor not in min_dist or new_cost < min_dist[neighbor]:
                         min_dist[neighbor] = new_cost

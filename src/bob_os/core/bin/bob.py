@@ -85,8 +85,8 @@ DESCRIPTIONS = {
     "delete_blueprint": "Deletes a draft from the blueprint archive (Arguments: name).",
     "inspect": "Performs a detailed local or espionage inspection (Arguments: ship_id, structure_id, system_name).",
     "map": "Active stellar map directory. Optional arguments: range (integer), query (string), system_id (string).",
-    "route": "Calculates an energy-optimal multi-hop flight trajectory to a discovered destination (Plots safe staging waypoints).",
-    "eta": "Estimates travel duration and propulsion grid energy costs for a direct vector flight.",
+    "route": "Calculates an energy-optimal multi-hop flight trajectory to absolute target coordinates (Plots safe staging waypoints).",
+    "eta": "Estimates travel duration and propulsion grid energy costs for a direct vector flight to target coordinates.",
     "network": "Queries active replicants and global SOS/emergency beacons. Masked as Unknown if out of range with no active comms_relay.",
     "memo": "Manage your private memos, diary entries, and logs (Actions: add, check, uncheck, remove, list, find; Optional list filter: status='all').",
     "docs": "Manage sector documents and public relics (Actions: add, list, find, remove).",
@@ -242,13 +242,15 @@ def main():
                 print(yaml.dump([clean_dict(r) for r in res], sort_keys=False, default_flow_style=False).strip())
         elif method == "route":
             res = agent.route(
-                destination=params.get('destination')
+                target_x=safe_float(params.get('target_x'), 'target_x'),
+                target_y=safe_float(params.get('target_y'), 'target_y')
             )
             if res:
                 print(yaml.dump(clean_dict(res), sort_keys=False, default_flow_style=False).strip())
         elif method == "eta":
             res = agent.eta(
-                destination=params.get('destination')
+                target_x=safe_float(params.get('target_x'), 'target_x'),
+                target_y=safe_float(params.get('target_y'), 'target_y')
             )
             if res:
                 print(yaml.dump(clean_dict(res), sort_keys=False, default_flow_style=False).strip())

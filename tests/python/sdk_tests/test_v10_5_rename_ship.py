@@ -33,7 +33,8 @@ class TestV105RenameShip(unittest.TestCase):
             CREATE TABLE agents (
                 id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, status TEXT, host_type TEXT, host_id TEXT, active_ship_id INTEGER,
                 raw_matter_inventory INTEGER DEFAULT 0, refined_matter_inventory INTEGER DEFAULT 0, energy_inventory INTEGER DEFAULT 100,
-                matter_storage_capacity INTEGER DEFAULT 1000, last_seen_event_id INTEGER DEFAULT 0
+                matter_storage_capacity INTEGER DEFAULT 1000, last_seen_event_id INTEGER DEFAULT 0,
+                current_x REAL, current_y REAL
             )
         """)
         conn.execute("""
@@ -49,7 +50,8 @@ class TestV105RenameShip(unittest.TestCase):
                 health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100,
                 raw_matter_inventory INTEGER DEFAULT 0, refined_matter_inventory INTEGER DEFAULT 0, energy_inventory INTEGER DEFAULT 100,
                 matter_storage_capacity INTEGER DEFAULT 300, energy_capacity INTEGER DEFAULT 500, max_speed REAL, thrust INTEGER, mass INTEGER,
-                blueprint_name TEXT, has_drill INTEGER DEFAULT 0, has_fabricator INTEGER DEFAULT 0, has_logic_core INTEGER DEFAULT 0
+                blueprint_name TEXT, has_drill INTEGER DEFAULT 0, has_fabricator INTEGER DEFAULT 0, has_logic_core INTEGER DEFAULT 0,
+                x REAL, y REAL
             )
         """)
         conn.execute("""
@@ -64,15 +66,15 @@ class TestV105RenameShip(unittest.TestCase):
         """)
 
         # Seed data
-        conn.execute("INSERT INTO agents (id, chosen_name, location, status, host_type, host_id, active_ship_id) VALUES ('Instance-1', 'Robert', 'SYS_A', 'active', 'ship', '1', 1)")
+        conn.execute("INSERT INTO agents (id, chosen_name, location, status, host_type, host_id, active_ship_id, current_x, current_y) VALUES ('Instance-1', 'Robert', 'SYS_A', 'active', 'ship', '1', 1, 0, 0)")
         conn.execute("INSERT INTO systems (name, x, y) VALUES ('SYS_A', 0, 0)")
         conn.execute("INSERT INTO systems (name, x, y) VALUES ('SYS_B', 1000, 1000)")
         
         # Ship 1 (SYS_A, Robert's Ship)
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, mass, max_speed, thrust, energy_capacity, matter_storage_capacity) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_A', 100, 300, 500, 500, 300)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, mass, max_speed, thrust, energy_capacity, matter_storage_capacity, x, y) VALUES (1, 'Ship-1', 'Scout', 'Instance-1', 'SYS_A', 100, 300, 500, 500, 300, 0, 0)")
         
         # Ship 2 (SYS_B, Out of sector range)
-        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, mass, max_speed, thrust, energy_capacity, matter_storage_capacity) VALUES (2, 'Ship-2', 'Miner', NULL, 'SYS_B', 100, 300, 500, 500, 300)")
+        conn.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, mass, max_speed, thrust, energy_capacity, matter_storage_capacity, x, y) VALUES (2, 'Ship-2', 'Miner', NULL, 'SYS_B', 100, 300, 500, 500, 300, 1000, 1000)")
 
         conn.commit()
         conn.close()

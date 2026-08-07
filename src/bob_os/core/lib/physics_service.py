@@ -1,6 +1,8 @@
 import math
 
 def calc_distance(x1, y1, x2, y2):
+    if x1 is None or y1 is None or x2 is None or y2 is None:
+        return 0.0
     dx = x2 - x1
     dy = y2 - y1
     return math.sqrt(dx*dx + dy*dy)

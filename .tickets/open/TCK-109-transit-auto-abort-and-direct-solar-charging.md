@@ -25,25 +25,28 @@ In `physics_update.py` (modular passive energy loop):
   - In addition, it receives a **base passive star-light recharge of `+10.0` energy per cycle** directly into its battery (representing passive hull-level solar harvesting under stellar proximity).
   - This ensures that a ship parked stationary inside a system recovers energy passively over time, allowing a 0E stranded ship to naturally recover enough energy to run local logistics (like `withdraw` or `abort_transit` maneuvers).
 
-### 2. Automatic Transit Abort on Blackout
-In `physics_update.py` (transit processing loop), we will refactor the stranded blackout handler:
-- **Trigger:** If `energy_inventory < tick_cost` (propulsion grid offline due to energy depletion):
-  - Instead of calling `continue` and keeping the agent in `'traveling'` status, the engine **immediately aborts the transit** of this agent:
+### 2. Automatic Transit Abort on Blackout (Mid-Flight or Start)
+In `physics_update.py` (transit processing loop), we will refactor how energy shortages are handled. Currently, if a ship's energy is below `tick_cost` (energy needed for the next segment), the engine calls `continue`, leaving the ship suspended in `'traveling'` status indefinitely. 
+
+Under TCK-109, we will implement an **immediate flight abortion** instead of a silent suspension:
+- **Trigger:** During the transit loop, if `energy_inventory < tick_cost` (which occurs when the ship's battery is depleted below the fuel cost of the next segment, including when it is at `0` energy):
+  - The physics engine **instantly aborts the transit** for this agent:
     - Sets agent's `status = 'active'`.
     - Resets `transit_ticks_total = 0` and `transit_ticks_passed = 0`.
     - Snaps location:
-      - Calculate `Euclidean_Distance` to the nearest known star system.
-      - If `distance <= R_inf` (within a system's influence zone, which is always true at `transit_ticks_passed == 0` or when still touching the starting system), set `location = nearest_system_name`.
-      - Otherwise, set `location = 'Interstellar'`.
-    - Update both `agents.location` and `ships.system_name` to this calculated location.
+      - Calculate the distance to the nearest known star system.
+      - If `distance <= R_inf` (within a system's gravitational snapping radius, which is true at `transit_ticks_passed == 0` or when still within the starting system's vicinity), set `location = nearest_system_name`.
+      - Otherwise, set `location = 'Interstellar'` (stationary in the interstellar void).
+    - Synchronize both `agents.location` and `ships.system_name` to this calculated location.
     - Write a critical event to `visual_events` to notify the agent:  
-      `[CRITICAL BLACKOUT] Interstellar transit automatically aborted for [agent_id] due to complete energy depletion. Shipboard systems stabilized at stationary location: [location].`
-  - This instantly unlocks the agent and ship, transitioning them back to `'active'` status so they can execute P2P logistics, wait for rescue, or withdraw energy if they are snapped back to a system.
+      `[CRITICAL BLACKOUT] Interstellar transit automatically aborted for [agent_id] because shipboard energy ([energy] E) is insufficient for the next transit segment ([tick_cost] E). Shipboard systems stabilized at stationary location: [location].`
+  - **The Result:** The agent is immediately freed from the `'traveling'` status lock in the next round. If they are still at the starting system (passed ticks = 0), they snap back into that system and can immediately perform local actions (such as withdrawing energy from the system depot). If they are stranded mid-void, they are stationary in `'Interstellar'` space and can perform rescue or communication actions.
 
 ---
 
 ## Verification Plan
 1. **Unit Tests:** Add a new test file `tests/python/sdk_tests/test_v13_8_transit_auto_abort.py` to verify:
-   - Initiating transit with insufficient energy triggers an **instant automatic transit abort** on the very first physics update tick, snapping the ship's location cleanly back to the starting system.
+   - Trying to fly with empty battery (energy < tick_cost) triggers an **instant automatic transit abort**, snapping the ship's location cleanly back to the starting system.
+   - If a ship runs out of energy mid-flight (energy becomes < tick_cost after a few ticks of transit), the next physics update tick **automatically aborts the flight**, leaving the ship stationary at its current coordinates in `'Interstellar'` space (with status `'active'`).
    - Stranded ships (0E) parked stationary in a system passively recharge by `+10` energy per cycle.
 2. **Integration Tests:** Execute `node tests/test_all.js` to ensure all existing test suites remain completely green.

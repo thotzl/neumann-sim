@@ -20,6 +20,43 @@ except ImportError:
     from core.lib import generator
     from core.lib.utils.formatting import get_display_name, aggregate_ship_telemetry
 
+def has_active_relay(cursor, system_name):
+    if not system_name or system_name == 'Interstellar':
+        return False
+    cursor.execute("SELECT COUNT(*) FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (system_name,))
+    row = cursor.fetchone()
+    return row[0] > 0 if row else False
+
+def get_ship_system_name(cursor, ship_id):
+    if not ship_id: return 'Interstellar'
+    cursor.execute("SELECT system_name FROM ships WHERE id = CAST(? AS INTEGER)", (ship_id,))
+    row = cursor.fetchone()
+    return row[0] if row else 'Interstellar'
+
+def count_eligible_beacons(cursor, caller_system, caller_x, caller_y):
+    try:
+        cursor.execute("SELECT ship_id, x, y FROM emergency_beacons")
+        beacons_raw = cursor.fetchall()
+    except sqlite3.OperationalError:
+        return 0
+        
+    count = 0
+    caller_has_relay = has_active_relay(cursor, caller_system)
+    for b in beacons_raw:
+        ship_id = b['ship_id']
+        b_x = float(b['x'])
+        b_y = float(b['y'])
+        
+        beacon_system = get_ship_system_name(cursor, ship_id)
+        beacon_has_relay = has_active_relay(cursor, beacon_system)
+        
+        from core.lib.physics_service import calc_distance
+        dist = calc_distance(caller_x, caller_y, b_x, b_y)
+        
+        if caller_has_relay or beacon_has_relay or dist <= 100.0:
+            count += 1
+    return count
+
 class Sensors:
     def __init__(self, agent): self.agent = agent
     
@@ -239,6 +276,9 @@ class Sensors:
                     "target_system": agent['target_system'] if agent['target_system'] else 'Unknown',
                     "transit_ticks_passed": agent['transit_ticks_passed'],
                     "transit_ticks_total": agent['transit_ticks_total']
+                },
+                "global_emergency_grid": {
+                    "active_sos_pings": count_eligible_beacons(cursor, 'Interstellar', float(agent.get('current_x', 0)), float(agent.get('current_y', 0)))
                 }
             }
             if warning:
@@ -439,6 +479,9 @@ class Sensors:
                 }
 
         current_stardate = os.environ.get('BOB_STARDATE', '1::1')
+        
+        # Calculate active eligible SOS beacons
+        active_sos_pings = count_eligible_beacons(cursor, sys_name, float(agent.get('current_x', 0)), float(agent.get('current_y', 0)))
 
         return {
             "local_system": {
@@ -458,6 +501,9 @@ class Sensors:
                 "infrastructure": infra_list,
                 "ships": local_ships,
                 "present_entities": local_bobs
+            },
+            "global_emergency_grid": {
+                "active_sos_pings": active_sos_pings
             },
             "last_system_perceptions": unread_events,
             "your_status": {
@@ -725,10 +771,9 @@ class Sensors:
         """, (self.agent.id,))
         
         rows = cursor.fetchall()
-        
         # Check if caller's system has an active comms link
         caller_location = agent['location']
-        caller_has_relay = system_service.has_active_infrastructure(cursor, caller_location, ('comms_relay', 'sat_link'))
+        caller_has_relay = has_active_relay(cursor, caller_location)
         
         network_list = []
         for r in rows:
@@ -738,7 +783,7 @@ class Sensors:
             is_same_system = (target_location == caller_location)
             
             # Check if target system has an active comms link
-            target_has_relay = system_service.has_active_infrastructure(cursor, target_location, ('comms_relay', 'sat_link'))
+            target_has_relay = has_active_relay(cursor, target_location)
             
             has_comms_link = caller_has_relay or target_has_relay
             
@@ -756,6 +801,47 @@ class Sensors:
                 "location": loc_status,
                 "status": status
             })
+            
+        # Fetch and append eligible active emergency SOS beacons (Säule I / III)
+        try:
+            cursor.execute("SELECT ship_id, message, x, y, created_cycle FROM emergency_beacons")
+            beacons_raw = cursor.fetchall()
+        except sqlite3.OperationalError:
+            beacons_raw = []
+            
+        for b in beacons_raw:
+            b_ship_id = b['ship_id']
+            b_x = float(b['x'])
+            b_y = float(b['y'])
+            
+            # Resolve beacon system
+            b_sys = get_ship_system_name(cursor, b_ship_id)
+            b_has_relay = has_active_relay(cursor, b_sys)
+            
+            from core.lib.physics_service import calc_distance
+            dist = calc_distance(float(agent.get('current_x', 0)), float(agent.get('current_y', 0)), b_x, b_y)
+            
+            # 3b Relais-Symmetrie or Proximity
+            if caller_has_relay or b_has_relay or dist <= 100.0:
+                # Fetch ship name and pilot name
+                cursor.execute("SELECT name, pilot_id, blueprint_name, chassis FROM ships WHERE id = CAST(? AS INTEGER)", (b_ship_id,))
+                ship_row = cursor.fetchone()
+                ship_name = ship_row['name'] if ship_row else "Unknown Ship"
+                ship_class = ship_row['blueprint_name'] or ship_row['chassis'] if ship_row else "unclassified"
+                pilot_id = ship_row['pilot_id'] if ship_row else "None"
+                pilot_name = "None"
+                if pilot_id and pilot_id != "None":
+                    cursor.execute("SELECT chosen_name FROM agents WHERE id = ?", (pilot_id,))
+                    p_row = cursor.fetchone()
+                    pilot_name = p_row['chosen_name'] if p_row else pilot_id
+                
+                network_list.append({
+                    "id": f"beacon-ship-{b_ship_id}",
+                    "name": f"EMERGENCY BEACON: {ship_name} (Class: {ship_class}, Pilot: {pilot_name})",
+                    "location": f"Coordinates ({b_x}, {b_y})",
+                    "status": f"SOS: {b['message']} (Triggered at cycle {b['created_cycle']})"
+                })
+                
         return network_list
 
     @agent_service.with_agent_context(allow_disembodied=True)

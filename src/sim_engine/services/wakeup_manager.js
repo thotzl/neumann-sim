@@ -180,11 +180,6 @@ async function handleStandby(agent, state, config, universeDir, logFile, dbPath)
     } else {
         console.log(`  [SLEEPING] ${agent.id} is in deep sleep mode (Until cycle: ${agent.sleep_until_cycle}).`);
         fs.appendFileSync(logFile, `### [STANDBY] Replicant ${agent.id} is in deep sleep mode (Current cycle: ${state.round}).\n\n`);
-        
-        state.currentTurnIndex++;
-        if (state.turnSequence && state.currentTurnIndex >= state.turnSequence.length) {
-            state.currentTurnIndex = 0;
-        }
         return true; // Remained in standby, turn skipped!
     }
 }

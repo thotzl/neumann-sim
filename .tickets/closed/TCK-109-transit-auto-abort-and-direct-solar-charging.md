@@ -2,7 +2,7 @@
 id: TCK-109
 title: "SSoT: Transit Auto-Abort on Blackout and Direct Ship-Level Solar Charging"
 epic_phase: "Industrial Polish and Safety-Grid"
-status: "open"
+status: "closed"
 priority: "highest"
 created: 2026-08-07
 dependencies: [TCK-120]

@@ -76,7 +76,7 @@ export const LogPanel = ({ logs, filters, setFilters, vogMsg, setVogMsg }: LogPa
                 <span style={{ fontWeight: 700, color: badgeColor, letterSpacing: '1px', textTransform: 'uppercase' }}>
                   {entry.agentName && entry.agentName !== entry.agentId ? `${entry.agentName.toUpperCase()} (ID: ${entry.agentId})` : (entry.agentName || entry.agentId || 'UNKNOWN').toUpperCase()}
                 </span>
-                <span className="mono-text" style={{ color: '#475569' }}>SD_{entry.tick}</span>
+                <span className="mono-text" style={{ color: '#475569' }}>SD_{entry.stardate || entry.tick}</span>
               </div>
               {(() => {
                 // Parse out multiplier like (3x) or (2x) from entry.text (Point 26)

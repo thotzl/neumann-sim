@@ -192,7 +192,12 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
         const logbookMatch = responseText.match(/1\.\s*LOGBOOK[\s:]*([\s\S]*?)(?=2\.\s*ACTION\b|$)/i) 
                              || responseText.match(/LOGBOOK[\s:]*([\s\S]*?)(?=ACTION\b|$)/i);
         thoughts = logbookMatch ? "1. LOGBOOK:\n" + logbookMatch[1].trim() : responseText;
-        state.histories[agent.id].push({ agent: agent.id, text: thoughts });
+        state.histories[agent.id].push({ 
+            tick: state.round, 
+            stardate: process.env.BOB_STARDATE || `${state.round}::${state.actualRoundTicks || 1}`,
+            agent: agent.id, 
+            text: thoughts 
+        });
     }
 
     // Console Logging & File Log writes

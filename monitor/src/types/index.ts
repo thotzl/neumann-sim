@@ -127,6 +127,7 @@ export type LogCategory = 'thought' | 'action' | 'system' | 'scut';
 export interface LogEntry { 
   id: string; 
   tick: number; 
+  stardate?: string | null;
   agentId: string; 
   agentName?: string;
   type: LogCategory; 
@@ -139,6 +140,7 @@ export type HistoryEntry = {
   agent?: string;
   agentId?: string;
   tick: number | string;
+  stardate?: string | null;
   text: string;
 };
 

@@ -212,15 +212,36 @@ function exportWorldState(universeDir, state, lastAgentId) {
                 if (isMeta) {
                     const metaKey = `${entry.tick}-${entry.agent}-${entry.text}`;
                     if (!seenTexts.has(metaKey)) {
-                        fullHistory.push({ tick: entry.tick || state.round, agentId: entry.agent, text: entry.text });
+                        fullHistory.push({ 
+                            tick: entry.tick || state.round, 
+                            stardate: entry.stardate || null,
+                            agentId: entry.agent, 
+                            text: entry.text 
+                        });
                         seenTexts.add(metaKey);
                     }
                 } else if (entry.agent === agentId) {
-                    fullHistory.push({ tick: entry.tick || "?", agentId: agentId, text: entry.text });
+                    fullHistory.push({ 
+                        tick: entry.tick || "?", 
+                        stardate: entry.stardate || null,
+                        agentId: agentId, 
+                        text: entry.text 
+                    });
                 }
             });
         });
-        fullHistory.sort((a, b) => (a.tick === "?" ? 0 : a.tick) - (b.tick === "?" ? 0 : b.tick));
+        
+        fullHistory.sort((a, b) => {
+            const parseSD = (sd) => {
+                if (!sd) return [0, 0];
+                const parts = sd.toString().split('::');
+                return [parseInt(parts[0], 10) || 0, parseInt(parts[1], 10) || 0];
+            };
+            const [c_a, t_a] = parseSD(a.stardate || a.tick);
+            const [c_b, t_b] = parseSD(b.stardate || b.tick);
+            if (c_a !== c_b) return c_a - c_b;
+            return t_a - t_b;
+        });
 
         // ========================================================
         // V12.0 AUGMENTED REAL-TIME WEB_BROADCAST (Silently Decoupled)

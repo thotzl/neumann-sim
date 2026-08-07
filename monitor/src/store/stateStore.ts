@@ -43,15 +43,28 @@ export const useC2Store = create<C2Store>((set) => ({
       return {
         id: logId,
         tick: event.tick,
+        stardate: event.stardate || null,
         agentId: event.agentId,
         agentName: event.agentName || event.agentId,
         type: event.type,
         text: event.text
       };
     });
+    
+    const parseSD = (sd?: string | number | null) => {
+      if (!sd) return [0, 0];
+      const parts = sd.toString().split('::');
+      return [parseInt(parts[0], 10) || 0, parseInt(parts[1], 10) || 0];
+    };
+    
     const finalLogs = [...prev.logs, ...newEntries]
       .filter((ne, index, self) => self.findIndex(p => p.id === ne.id) === index)
-      .sort((a, b) => a.tick - b.tick);
+      .sort((a, b) => {
+        const [c_a, t_a] = parseSD(a.stardate || a.tick);
+        const [c_b, t_b] = parseSD(b.stardate || b.tick);
+        if (c_a !== c_b) return c_a - c_b;
+        return t_a - t_b;
+      });
     return { logs: finalLogs };
   }),
   
@@ -70,6 +83,7 @@ export const useC2Store = create<C2Store>((set) => ({
         parsedLogs.push({
           id: `hist-${i}-sys`,
           tick: tickNum,
+          stardate: d.stardate || null,
           agentId,
           agentName,
           type: 'system',
@@ -106,6 +120,7 @@ export const useC2Store = create<C2Store>((set) => ({
         parsedLogs.push({
           id: `hist-${i}-thought-${getSimpleHash(thought)}`,
           tick: tickNum,
+          stardate: d.stardate || null,
           agentId,
           agentName,
           type: 'thought',
@@ -123,6 +138,7 @@ export const useC2Store = create<C2Store>((set) => ({
           parsedLogs.push({
             id: `hist-${i}-action-${lineIdx}-${getSimpleHash(line)}`,
             tick: tickNum,
+            stardate: d.stardate || null,
             agentId,
             agentName,
             type: isScut ? 'scut' : 'action',

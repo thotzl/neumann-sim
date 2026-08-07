@@ -4,8 +4,8 @@ console.log("Testing 'Diary-Only' Semantic Memory Model...");
 
 // 1. Simulate the Regex-Matching Logic from runner.js (English)
 function extractThoughts(responseText) {
-    const logbookMatch = responseText.match(/1\.\s*LOGBOOK:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
-                         || responseText.match(/LOGBOOK:([\s\S]*?)(?=ACTION:|$)/i);
+    const logbookMatch = responseText.match(/1\.\s*LOGBOOK[\s:]*([\s\S]*?)(?=2\.\s*ACTION|$)/i) 
+                         || responseText.match(/LOGBOOK[\s:]*([\s\S]*?)(?=ACTION|$)/i);
     return logbookMatch ? "1. LOGBOOK:\n" + logbookMatch[1].trim() : responseText;
 }
 

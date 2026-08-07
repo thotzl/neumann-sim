@@ -189,8 +189,8 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     // Save history (Diary-Only model: Extract and store ONLY the thoughts/LOGBOOK for permanent history)
     let thoughts = responseText;
     if (responseText) {
-        const logbookMatch = responseText.match(/1\.\s*LOGBOOK:([\s\S]*?)(?=2\.\s*ACTION:|$)/i) 
-                             || responseText.match(/LOGBOOK:([\s\S]*?)(?=ACTION:|$)/i);
+        const logbookMatch = responseText.match(/1\.\s*LOGBOOK[\s:]*([\s\S]*?)(?=2\.\s*ACTION|$)/i) 
+                             || responseText.match(/LOGBOOK[\s:]*([\s\S]*?)(?=ACTION|$)/i);
         thoughts = logbookMatch ? "1. LOGBOOK:\n" + logbookMatch[1].trim() : responseText;
         state.histories[agent.id].push({ agent: agent.id, text: thoughts });
     }

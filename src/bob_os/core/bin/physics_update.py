@@ -71,14 +71,51 @@ def update(current_tick=1):
             tick_cost = speed * energy_cost_per_distance + drain_idle
             arrived = False
 
-        # Interstellar Stranding: Suspended if propulsion battery is depleted
+        # Interstellar Stranding: Automatically abort transit if propulsion battery is depleted below tick_cost (TCK-109)
         energy_inv = float(t['energy_inventory']) if t['energy_inventory'] is not None else 0.0
         if energy_inv < tick_cost:
+            # 1. Reset agent status to active and clear transit parameters
+            cursor.execute("""
+                UPDATE agents SET 
+                    status = 'active',
+                    transit_ticks_total = 0,
+                    transit_ticks_passed = 0
+                WHERE id = ?
+            """, (t['id'],))
+            
+            # 2. Re-calculate and snap location
+            cursor.execute("SELECT name, x, y, mass FROM systems")
+            all_known = cursor.fetchall()
+            
+            final_location = 'Interstellar'
+            for k in all_known:
+                s_mass = k['mass'] if k['mass'] is not None else 1.0
+                r_inf = 150.0 * math.sqrt(s_mass)
+                dist_to_star = physics_service.calc_distance(start_x, start_y, k['x'], k['y'])
+                if dist_to_star <= r_inf:
+                    final_location = k['name']
+                    break
+                    
+            try:
+                cursor.execute("UPDATE agents SET location = ? WHERE id = ?", (final_location, t['id']))
+            except sqlite3.OperationalError:
+                pass
+            
+            # Sync ship location and mark arrived sector as inspected if it is a system
+            if t['id']:
+                cursor.execute("""
+                    UPDATE ships SET system_name = ? 
+                    WHERE id = (SELECT active_ship_id FROM agents WHERE id = ?)
+                """, (final_location, t['id']))
+                if final_location != 'Interstellar':
+                    cursor.execute("UPDATE systems SET is_inspected = 1 WHERE name = ?", (final_location,))
+                    
+            # Emit a critical blackout abort event
             cursor.execute("""
                 INSERT INTO visual_events (cycle, actor_id, description)
                 VALUES (?, ?, ?)
-            """, (current_tick, t['id'], f"[CRITICAL BLACKOUT] Interstellar transit suspended for {t['id']}. Propulsion grid offline due to complete energy depletion."))
-            continue # Halts coordinates and progress increments completely
+            """, (current_tick, t['id'], f"[CRITICAL BLACKOUT] Interstellar transit automatically aborted for {t['id']} because shipboard energy ({energy_inv} E) is insufficient for the next transit segment ({round(tick_cost, 2)} E). Shipboard systems stabilized at stationary location: {final_location}."))
+            continue # Aborts this traveling tick
 
         # Passive Proximity Discovery (Sight-Erkundung - Pillar 5)
         # Scan segment AB against all prozedural stars in bounding box with a 300 unit visual range
@@ -181,17 +218,24 @@ def update(current_tick=1):
         ship_regen = float(stats.get('regen', 0.0))
         ship_drain = float(stats.get('drain', 0.0))
         
-        # Enforce Deep Space Solar Blackout (Pillar 1 / Active Constraints)
-        from core.lib.agent_service import resolve_agent_location
-        location = resolve_agent_location(
-            cursor, 
-            'ship', 
-            ship['id'], 
-            ship['pilot_status'], 
-            ship['current_x'], 
-            ship['current_y']
-        )
-        if location == 'Interstellar':
+        # Determine if the ship is physically within any star system's solar proximity (R_inf = 150.0 * sqrt(mass)) (TCK-109)
+        cursor.execute("SELECT name, x, y, mass FROM systems")
+        all_stars = cursor.fetchall()
+        
+        in_stellar_proximity = False
+        cx = float(ship['current_x']) if ship['current_x'] is not None else 0.0
+        cy = float(ship['current_y']) if ship['current_y'] is not None else 0.0
+        
+        for star in all_stars:
+            s_mass = star['mass'] if star['mass'] is not None else 1.0
+            r_inf = 150.0 * math.sqrt(s_mass)
+            d = physics_service.calc_distance(cx, cy, star['x'], star['y'])
+            if d <= r_inf:
+                in_stellar_proximity = True
+                break
+                
+        if not in_stellar_proximity:
+            # Solar blackout in deep space (Interstellar void)
             solar_regen = ship_regen - 150.0 if has_fusion else ship_regen
             ship_regen -= max(0.0, solar_regen)
         

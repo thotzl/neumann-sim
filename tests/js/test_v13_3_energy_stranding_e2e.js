@@ -72,7 +72,7 @@ async function run() {
                 console.log(`- Checked generated visual events count: ${events.length}`);
                 assert.ok(events.length > 0, "No visual event was generated for stranded agent!");
                 
-                const hasBlackoutAlert = events.some(e => e.description.includes("[CRITICAL BLACKOUT] Interstellar transit suspended"));
+                const hasBlackoutAlert = events.some(e => e.description.includes("[CRITICAL BLACKOUT] Interstellar transit automatically aborted"));
                 assert.ok(hasBlackoutAlert, "Expected critical blackout alert was not generated!");
                 console.log(`- Visual Event: "${events[0].description}"`);
                 resolve();

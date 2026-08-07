@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useC2Store } from '../store/stateStore';
 import { buildBobDashboard, jsonToYaml } from '../utils/dashboardHelpers';
 import { getStellarProperties } from '../../shared/generator';
+import { selectAgentById, selectSystemByName, selectHostShipForAgent } from '../store/stateSelectors';
 
 interface InspectorPanelProps {
   onOpenShipyard: () => void;
@@ -52,23 +53,21 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
     );
   }
 
-  // Resolve selected entity
+  // Resolve selected entity using unified selectors (TCK-121)
   const selectedAgent = selection.type === 'agent' 
-    ? state.agents.find(a => a.id === selection.id) 
+    ? selectAgentById(state, selection.id) 
     : null;
 
   const selectedSystem = selection.type === 'system'
-    ? state.systems.find(s => s.name === selection.id)
+    ? selectSystemByName(state, selection.id)
     : null;
 
   // Build the live dashboard YAML once selectedAgent is loaded
   const dashboardObj = selectedAgent ? buildBobDashboard(selectedAgent, state) : null;
   const dashboardYaml = dashboardObj ? jsonToYaml(dashboardObj) : '';
 
-  // Setup ship for CAD schematic
-  const hostRawShip = selectedAgent && selectedAgent.host_type === 'ship' 
-    ? state.ships?.find(s => s.id.toString() === selectedAgent.host_id?.toString()) 
-    : null;
+  // Setup ship for CAD schematic using unified selector (TCK-121)
+  const hostRawShip = selectHostShipForAgent(state, selectedAgent);
 
   return (
     <div className="flex flex-col h-full overflow-hidden font-mono bg-cyber-panel">

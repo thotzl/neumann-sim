@@ -49,6 +49,7 @@ async function start() {
         { name: "JS Standby Wakeup Manager Unit", cmd: "node tests/js/test_v10_6_wakeup_manager.js" },
         { name: "JS Decentralized Clone Compression", cmd: "node tests/js/test_v10_6_clone_compression.js" },
         { name: "Database Migrator Integration", cmd: "node tests/js/test_migrations.js" },
+        { name: "SQLite Unified Views Integration", cmd: "node tests/js/test_v12_1_views.js" },
         { name: "Meta-Pipeline (Build/Inject)", cmd: "node tests/js/test_pipeline.js" },
         { name: "Runner Hard-Boot & Inheritance", cmd: "node tests/js/test_runner_boot.js" },
         { name: "E2E Mock Simulation Loop", cmd: "node tests/js/test_e2e.js" },

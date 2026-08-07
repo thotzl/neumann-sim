@@ -56,7 +56,11 @@ async function runTests() {
         
         // 3. Incremental migration check
         console.log("Step 3: Creating and applying an incremental migration...");
-        const nextMigrationFile = path.resolve(__dirname, '../../src/bob_os/core/migrations/0003_test_patch.sql');
+        const migrationsDir = path.resolve(__dirname, '../../src/bob_os/core/migrations');
+        const baselineFiles = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql'));
+        const baselineCount = baselineFiles.length;
+
+        const nextMigrationFile = path.resolve(migrationsDir, '0009_test_patch.sql');
         const sqlContent = `
             ALTER TABLE agents ADD COLUMN test_patch_col TEXT DEFAULT 'unlocked';
             CREATE TABLE IF NOT EXISTS test_incremental_table (id INTEGER PRIMARY KEY);
@@ -70,7 +74,7 @@ async function runTests() {
         const updatedMigrations = await runSql(db, "SELECT version FROM schema_migrations ORDER BY version ASC");
         console.log("  Updated version tracking:", updatedMigrations.map(m => m.version));
         const updatedVersions = updatedMigrations.map(m => m.version);
-        if (updatedVersions.length !== 3 || updatedVersions[2] !== '0003_test_patch.sql') {
+        if (updatedVersions.length !== baselineCount + 1 || !updatedVersions.includes('0009_test_patch.sql')) {
             throw new Error("Incremental SQL migration was not tracked correctly!");
         }
         

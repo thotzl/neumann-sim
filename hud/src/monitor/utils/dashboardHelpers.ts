@@ -1,4 +1,5 @@
 import { Agent, WorldState, Ship } from '../types';
+import { selectHostShipForAgent, selectSystemByName, selectLocalAgents, selectLocalShips } from '../store/stateSelectors';
 
 interface ShipWithCAD extends Ship {
   capabilities?: {
@@ -177,7 +178,7 @@ export const buildBobDashboard = (agent: Agent, state: WorldState) => {
     .filter(m => m.agent_id === agent.id)
     .map(m => `[Memo #${m.id}] ${m.content} (Status: ${m.status})`) : [];
 
-  const rawShip = agent.host_type === 'ship' ? state.ships?.find(s => s.id.toString() === agent.host_id?.toString()) : null;
+  const rawShip = selectHostShipForAgent(state, agent);
   const ship = resolveShipCADTelemetry(rawShip);
 
   const buildHostObject = () => {
@@ -237,14 +238,14 @@ export const buildBobDashboard = (agent: Agent, state: WorldState) => {
   };
 
   const sysNameRaw = agent.location || 'Unknown';
-  const sys = state.systems.find(s => s.name === sysNameRaw);
+  const sys = selectSystemByName(state, sysNameRaw);
   const sysName = sys ? (sys.display_name ? `${sys.display_name} (ID: ${sys.name})` : sys.name) : sysNameRaw;
   
   // 1. Infrastructure at location
   const infraList = sys?.infra || [];
   
   // 2. Ships at location
-  const localShips = state.ships ? state.ships.filter(ship => ship.system_name === sysNameRaw).map(ship => {
+  const localShips = selectLocalShips(state, sysNameRaw).map(ship => {
     const s = resolveShipCADTelemetry(ship);
     return {
       id: s?.id,
@@ -256,10 +257,10 @@ export const buildBobDashboard = (agent: Agent, state: WorldState) => {
       stats: s?.stats,
       capabilities: s?.capabilities
     };
-  }) : [];
+  });
   
   // 3. Other Bobs at location
-  const localBobs = state.agents.filter(a => a.location === sysNameRaw && a.id !== agent.id).map(a => ({
+  const localBobs = selectLocalAgents(state, sysNameRaw, agent.id).map(a => ({
     id: a.id,
     chosen_name: a.chosen_name,
     status: a.status,

@@ -178,23 +178,6 @@ export const useC2Store = create<C2Store>((set) => ({
       if (a.parent_id === undefined && a.sensors?.parent_id) {
         a.parent_id = a.sensors.parent_id;
       }
-      if (a.status === 'traveling') {
-        a.location = 'Interstellar';
-      } else if (a.host_type === 'ship' && a.host_id) {
-        const ship = mergedState.ships?.find((s: any) => s.id.toString() === a.host_id?.toString());
-        a.location = ship ? ship.system_name : 'Unknown';
-      } else if (a.host_type === 'matrix' && a.host_id) {
-        let systemName = 'Unknown';
-        for (const sys of mergedState.systems) {
-          if (sys.infra && sys.infra.some((inf: any) => inf.id.toString() === a.host_id?.toString())) {
-            systemName = sys.name;
-            break;
-          }
-        }
-        a.location = systemName;
-      } else if (!a.location) {
-        a.location = 'Unknown';
-      }
     });
 
     // 4. Transform newly arrived visual events from SQLite database into logs

@@ -57,6 +57,7 @@ Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstruktur
 | **TCK-118** | Timeline Purity, Coordinates Seeding, .env & Masked Logs | Epic 5 / Security & Optimization | `closed` | `high` | [Link](../.tickets/closed/TCK-118-timeline-purity-and-masked-logging.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-119** | HOTFIX: Rebrand SSoT Cognitive Protocol from ANALYSIS to LOGBOOK | Cognitive Alignment | `closed` | `high` | [Link](../.tickets/closed/TCK-119-logbook-cognitive-rebranding.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-120** | SSoT: SOS-Beacon Proximity Logistics and Peer-to-Peer Talk | Logistics and Communication Upgrade | `closed` | `high` | [Link](../.tickets/closed/TCK-120-sos-proximity-logistics.md) | [Central Test Hub](../../tests/test_all.js) |
+| **TCK-121** | DRY-Up: Unified Database Queries and State Selectors | Refactoring & Code Quality | `ongoing` | `medium` | [Link](../.tickets/ongoing/TCK-121-dry-queries-and-selectors.md) | [Central Test Hub](../../tests/test_all.js) |
 
 ---
 

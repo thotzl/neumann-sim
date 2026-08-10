@@ -78,6 +78,8 @@ export type Ship = {
   chassis: string;
   pilot_id: string | null;
   system_name: string | null;
+  x?: number;
+  y?: number;
   health?: number;
   max_health?: number;
   raw_matter_inventory?: number;
@@ -160,8 +162,8 @@ export interface LogEntry {
   text: string; 
 }
 
-export type Selection = { 
-  type: 'agent' | 'system' | 'theoretical'; 
+export type Selection = {
+  type: 'agent' | 'system' | 'theoretical' | 'ship';
   id: string;
   x?: number;
   y?: number;

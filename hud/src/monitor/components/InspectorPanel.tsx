@@ -716,8 +716,8 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                     CHASSIS: <span className="text-white font-bold">{selectedShip.chassis}</span><br />
                     VESSEL ID: #{selectedShip.id}<br />
                     LOCATION: {selectedShip.system_name || 'DEEP SPACE'}<br />
-                    COORDINATES: X: {selectedShip.x} | Y: {selectedShip.y}<br />
-                    HULL INTEGRITY: <span className={`font-bold ${selectedShip.health < 40 ? 'text-cyber-red' : selectedShip.health < 80 ? 'text-cyber-amber' : 'text-emerald-500'}`}>{selectedShip.health}/{selectedShip.max_health} HP</span><br />
+                    COORDINATES: X: {selectedShip.x ?? 0} | Y: {selectedShip.y ?? 0}<br />
+                    HULL INTEGRITY: <span className={`font-bold ${(selectedShip.health ?? 0) < 40 ? 'text-cyber-red' : (selectedShip.health ?? 0) < 80 ? 'text-cyber-amber' : 'text-emerald-500'}`}>{selectedShip.health ?? 0}/{selectedShip.max_health ?? 100} HP</span><br />
                   </div>
                 </div>
 
@@ -728,10 +728,10 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                       🔋 POWER_GRID //
                     </div>
                     <div className="text-xs text-white font-bold font-mono">
-                      {selectedShip.energy_inventory} / {selectedShip.energy_capacity} E
+                      {selectedShip.energy_inventory ?? 0} / {selectedShip.energy_capacity ?? 0} E
                     </div>
                     <div className="w-full h-1 bg-slate-900 mt-1.5 rounded-sm overflow-hidden">
-                      <div className="h-full bg-cyber-blue" style={{ width: `${(selectedShip.energy_inventory / selectedShip.energy_capacity) * 100}%` }} />
+                      <div className="h-full bg-cyber-blue" style={{ width: `${((selectedShip.energy_inventory ?? 0) / (selectedShip.energy_capacity ?? 1)) * 100}%` }} />
                     </div>
                   </div>
 
@@ -740,11 +740,11 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                       📦 CARGO_HOLD //
                     </div>
                     <div className="text-xs text-white font-bold font-mono">
-                      {selectedShip.raw_matter_inventory + selectedShip.refined_matter_inventory} / {selectedShip.matter_storage_capacity} M
+                      {(selectedShip.raw_matter_inventory ?? 0) + (selectedShip.refined_matter_inventory ?? 0)} / {selectedShip.matter_storage_capacity ?? 0} M
                     </div>
                     <div className="text-[10px] text-slate-400 mt-1.5 font-mono">
-                      RAW: {selectedShip.raw_matter_inventory} M<br />
-                      REFINED: {selectedShip.refined_matter_inventory} RM
+                      RAW: {selectedShip.raw_matter_inventory ?? 0} M<br />
+                      REFINED: {selectedShip.refined_matter_inventory ?? 0} RM
                     </div>
                   </div>
                 </div>

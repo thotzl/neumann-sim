@@ -467,6 +467,20 @@ export const TacticalCanvas = ({
     updateCursor(e.clientX, e.clientY);
   };
 
+  const handleMouseLeave = () => {
+    const wasDragging = isDragging.current;
+    const hasMoved = hasMovedRef.current;
+
+    isDragging.current = false;
+    hasMovedRef.current = false;
+
+    if (wasDragging && hasMoved) {
+      if (onCameraChange) {
+        onCameraChange(panXRef.current, panYRef.current, zoomRef.current);
+      }
+    }
+  };
+
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const zoomFactor = 1.15;
@@ -487,7 +501,7 @@ export const TacticalCanvas = ({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
       onWheel={handleWheel}
       className="block w-full h-full"
     />

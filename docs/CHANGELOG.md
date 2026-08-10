@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.9** | **2026-08-10** | `RELEASED` | Polymorphic Navigation & Batched Mining Loops | `[TCK-129]` |
 | **v13.8** | **2026-08-10** | `RELEASED` | WAL-Turbo Write, Safe Concurrency & Index Cover (v13.8) | `[TCK-122]`, `[TCK-127]` |
 | **v13.6** | **2026-08-06** | `RELEASED` | Symmetrisches Seeding, Sovereign DB-First Loading & Timeline Purity (v13.6) | `[TCK-111]`, `[TCK-116]`, `[TCK-118]` |
 | **v13.5** | **2026-07-30** | `RELEASED` | Symmetrie-Feinabstimmung & Interstellare Härte (V13.5) | `[TCK-114]` |
@@ -21,6 +22,17 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.9] - 2026-08-10
+*Das "Polymorphic Navigation & Batched Loops" Upgrade. Dieser Meilenstein führt ein hocheffizientes, polymorphes Navigationssystem ein, das @-adressierte Zielbezeichner (sys@, ship@, probe@) direkt auflöst. Es integriert außerdem transaktionssichere, gebündelte Bergbau-Zyklen (Batched Mining Loops), die Energie- und Speicherplatzschwellen dynamisch im SQLite-Kern validieren.*
+
+#### Added (Neue Features)
+- **Hocheffiziente, polymorphe Navigationsadressierung:** Unterstützung für `sys@<name>`, `ship@<id>` und `probe@<id>` in `me.move()`. Der Resolver löst Adressen über schnelle SQLite-Suchen auf und navigiert direkt zu den entsprechenden Koordinaten. Strikte Entweder-Oder-Argumentvalidierung verhindert unsauberen Code.
+  - *Ticket:* `[TCK-129]` ([Link](../.tickets/closed/TCK-129-navigation-and-batched-loops.md))
+- **Transaktionssicheres Batched Mining (Bündel-Schleifen):** Ein neuer `times`-Parameter in `me.mine(times=X)` führt Bergbau-Operationen in einer datenbank-internen Schleife aus. Bei unzureichender Energie oder vollem Speicher bricht die Schleife sicher ab und liefert eine konsolidierte Resonanz-Rückmeldung.
+  - *Ticket:* `[TCK-129]` ([Link](../.tickets/closed/TCK-129-navigation-and-batched-loops.md))
+- **Sensor-Dashboard-Ziel-IDs:** Integration von `target_id` im Sensor-Dashboard (`local_system()`) für das Sternensystem (`sys@<id>`), Schiffe (`ship@<id>`) und andere Sonden (`probe@<id>`), um Agenten direkt kopierbare Zielanker bereitzustellen.
+  - *Ticket:* `[TCK-129]` ([Link](../.tickets/closed/TCK-129-navigation-and-batched-loops.md))
 
 ### [v13.8] - 2026-08-10
 *Das "WAL-Turbo Write & Multicore-Sicherheit" Upgrade. Dieses fundamentale System-Tuning beschleunigt alle Datenbank-Schreibvorgänge um das 20-fache (20x), schützt parallele Transaktionen durch eine ausgeklügelte Sperrverzögerung (busy_timeout) vor SQLITE_BUSY, fügt nicht-einzigartige Performance-Indizes für alle hochfrequenten Sektor-Suchen hinzu und führt ein hocheffizientes Lazy-Automation-Laden ein.*

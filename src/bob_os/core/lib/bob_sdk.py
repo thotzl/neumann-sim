@@ -36,12 +36,12 @@ class Agent:
         return f"<BobAgent id='{self.id}'>"
 
     # --- ACTUATORS DELEGATES ---
-    def mine(self): return self.actuators.mine()
+    def mine(self, times=1): return self.actuators.mine(times)
     def build(self, building_type, matter_to_invest=100): return self.actuators.build(building_type, matter_to_invest)
     def refine(self, raw_matter_to_refine=100): return self.actuators.refine(raw_matter_to_refine)
     def repair(self, structure_id, hp_to_restore=50): return self.actuators.repair(structure_id, hp_to_restore)
     def deconstruct(self, structure_id): return self.actuators.deconstruct(structure_id)
-    def move(self, target_x, target_y): return self.actuators.move(target_x, target_y)
+    def move(self, target_x=None, target_y=None, force=False, target=None): return self.actuators.move(target_x, target_y, force, target)
     def replicate(self): return self.actuators.replicate()
     def set_name(self, name): return self.actuators.set_name(name)
     def rename_system(self, new_name): return self.actuators.rename_system(new_name)

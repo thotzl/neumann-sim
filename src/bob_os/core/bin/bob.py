@@ -52,12 +52,12 @@ def get_dynamic_talk_desc():
         return "Peer-to-peer proximity communication with nearby vessels/agents."
 
 DESCRIPTIONS = {
-    "mine": "Extracts matter at the current location.",
+    "mine": "Extracts matter at the current location. Supports optional batch loops via 'times' argument (e.g., mine(times=5)).",
     "build": get_dynamic_build_desc(),
     "refine": "Converts raw matter into refined matter (Requires matter_refinery).",
     "repair": "Repairs damaged infrastructure (Requires structure_id from dashboard).",
     "deconstruct": "Deconstructs infrastructure and refunds part of the matter cost.",
-    "move": "Initiates sub-light vector propulsion transit to precise coordinates (target_x, target_y).",
+    "move": "Initiates sub-light vector propulsion transit. Can accept absolute coordinates (target_x, target_y) OR a single named target ID with location-anchor (sys@<id>, ship@<id>, probe@<id>) via target='...' or as the first positional argument.",
     "replicate": "Creates an autonomous probe replican inside an active mind_forge (ID is generated dynamically by the probe kernel).",
     "ping_sos": get_dynamic_sos_ping_desc(),
     "reclaim_sos": get_dynamic_sos_reclaim_desc(),
@@ -156,12 +156,22 @@ def main():
 
     try:
         agent = bob_sdk.Agent()
-        if method == "mine": agent.mine()
+        if method == "mine":
+            agent.mine(times=safe_int(params.get('times'), 'times', 1))
         elif method == "refine": agent.refine(raw_matter_to_refine=safe_int(params.get('raw_matter_to_refine'), 'raw_matter_to_refine', 100))
         elif method == "repair": agent.repair(structure_id=safe_int(params.get('structure_id'), 'structure_id'), hp_to_restore=safe_int(params.get('hp_to_restore'), 'hp_to_restore', 50))
         elif method == "build": agent.build(building_type=params.get('building_type'), matter_to_invest=safe_int(params.get('matter_to_invest'), 'matter_to_invest', 100))
         elif method == "deconstruct": agent.deconstruct(structure_id=safe_int(params.get('structure_id'), 'structure_id'))
-        elif method == "move": agent.move(target_x=safe_float(params.get('target_x'), 'target_x'), target_y=safe_float(params.get('target_y'), 'target_y'))
+        elif method == "move":
+            tx_raw = params.get('target') or params.get('target_x')
+            ty_raw = params.get('target_y')
+            if ty_raw is None or (isinstance(tx_raw, str) and "@" in tx_raw):
+                agent.move(target_x=None, target_y=None, target=tx_raw)
+            else:
+                agent.move(
+                    target_x=safe_float(tx_raw, 'target_x'), 
+                    target_y=safe_float(ty_raw, 'target_y')
+                )
         elif method == "replicate": agent.replicate()
         elif method == "set_name": agent.set_name(name=params.get('name'))
         elif method == "rename_system": agent.rename_system(new_name=params.get('new_name'))

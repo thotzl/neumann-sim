@@ -47,7 +47,15 @@ class Actuators:
         except: pass
 
     @agent_service.with_agent_context(require_active=True, action_name='Mining')
-    def mine(self, cursor, agent):
+    def mine(self, cursor, agent, times=1):
+        try:
+            times = int(times)
+        except (ValueError, TypeError):
+            times = 1
+        if times < 1:
+            print("[ERROR] 'times' parameter must be at least 1.")
+            return False
+
         # COLUMN 3: Capability Locking (Hardware check for ships)
         if agent.get('host_type') == 'ship':
             cursor.execute("SELECT has_drill FROM ships WHERE id = CAST(? AS INTEGER)", (agent['host_id'],))
@@ -55,20 +63,7 @@ class Actuators:
             if ship and ship['has_drill'] == 0:
                 print("[DENIED] Action failed. Your ship chassis lacks a 'drill' module.")
                 return False
-                
-        rule = self.rules.get('tool_costs', {}).get('mine', {})
-        cost = rule.get('energy_cost', 30)
-        matter_yield = rule.get('matter_yield', 100)
-        if agent['energy_inventory'] < cost:
-            print(f"[ERROR] Battery empty (requires {cost} energy).")
-            return False
-            
-        raw_inv = agent.get('raw_matter_inventory') or 0
-        ref_inv = agent.get('refined_matter_inventory') or 0
-        total_inv = raw_inv + ref_inv
-        if total_inv >= agent['matter_storage_capacity']:
-            print(f"[ERROR] Storage full ({total_inv}/{agent['matter_storage_capacity']}).")
-            return False
+
         sys_name = agent['location']
         system = system_service.get_system_or_fail(cursor, sys_name)
         if not system:
@@ -82,19 +77,61 @@ class Actuators:
                 print(f"[DENIED] Mining requires planetary drilling range (Distance to core <= 10.0). Current distance: {round(dist, 1)}.")
                 return False
 
-        if system['extractable_matter_in_core'] <= 0:
-            print(f"[INFO] Resources in {sys_name} depleted.")
-            return False
+        rule = self.rules.get('tool_costs', {}).get('mine', {})
+        cost = rule.get('energy_cost', 30)
+        matter_yield = rule.get('matter_yield', 100)
 
-        # Update raw matter and deduct energy (-cost) from the host (Column 1)
-        actual_add = min(matter_yield, agent['matter_storage_capacity'] - total_inv)
-        agent_service.update_agent_resources(cursor, self.agent.id, raw_matter=actual_add, energy=-cost)
-        cursor.execute("UPDATE systems SET extractable_matter_in_core = extractable_matter_in_core - ? WHERE name = ?", (actual_add, sys_name))
-        
-        self_name = get_display_name_with_id(agent)
-        self._emit_visual(cursor, "MINING", f"{self_name} mined matter.")
-        print(f"[SUCCESS] {actual_add} matter mined. Energy -{cost}.")
-        return True
+        success_count = 0
+        total_mined = 0
+        fail_reason = None
+
+        # In-Transaction loop (Sequential checking & uncommitted reads)
+        for i in range(times):
+            curr_agent = agent_service.get_agent_or_fail(cursor, self.agent.id)
+            
+            if curr_agent['energy_inventory'] < cost:
+                fail_reason = f"Battery empty (requires {cost} energy)"
+                break
+                
+            raw_inv = curr_agent.get('raw_matter_inventory') or 0
+            ref_inv = curr_agent.get('refined_matter_inventory') or 0
+            total_inv = raw_inv + ref_inv
+            if total_inv >= curr_agent['matter_storage_capacity']:
+                fail_reason = f"Storage full ({total_inv}/{curr_agent['matter_storage_capacity']})"
+                break
+                
+            system = system_service.get_system_or_fail(cursor, sys_name)
+            if not system or system['extractable_matter_in_core'] <= 0:
+                fail_reason = "Core resources depleted"
+                break
+
+            actual_add = min(matter_yield, curr_agent['matter_storage_capacity'] - total_inv)
+            if actual_add <= 0:
+                fail_reason = "Storage full"
+                break
+
+            # SSoT Database State update
+            agent_service.update_agent_resources(cursor, self.agent.id, raw_matter=actual_add, energy=-cost)
+            cursor.execute("UPDATE systems SET extractable_matter_in_core = extractable_matter_in_core - ? WHERE name = ?", (actual_add, sys_name))
+            
+            success_count += 1
+            total_mined += actual_add
+
+        # Aggregated Resonance Output & Visual Event emission
+        if success_count > 0:
+            self_name = get_display_name_with_id(agent)
+            self._emit_visual(cursor, "MINING", f"{self_name} mined matter.")
+
+        if times == 1:
+            if success_count == 1:
+                print(f"[SUCCESS] {total_mined} matter mined. Energy -{cost}.")
+                return True
+            else:
+                print(f"[ERROR] {fail_reason}.")
+                return False
+        else:
+            print(f"[RESONANCE] Mining requested {times} times: {success_count}x SUCCESS ({total_mined} total matter mined, -{success_count * cost} energy), {times - success_count}x FAILED (Reason: {fail_reason or 'None'}).")
+            return success_count > 0
 
     @agent_service.with_agent_context(require_active=True, action_name='Refining')
     def refine(self, cursor, agent, raw_matter_to_refine=100):
@@ -506,7 +543,7 @@ class Actuators:
         return False
 
     @agent_service.with_agent_context(require_active=False, action_name='Move')
-    def move(self, cursor, agent, target_x, target_y, force=False):
+    def move(self, cursor, agent, target_x=None, target_y=None, force=False, target=None):
         if agent['status'] not in ('active', 'traveling'):
             print(f"[DENIED] Move is only allowed when active or traveling. Current: {agent['status']}")
             return False
@@ -514,18 +551,105 @@ class Actuators:
         # Parse force argument robustly (Hebel 3)
         force_val = str(force).strip().upper() in ["1", "TRUE"] or force is True or force == 1
 
-        tx = float(target_x)
-        ty = float(target_y)
-        sys_id = 'Interstellar'
-        display_name = f"Coordinates ({round(tx, 1)}, {round(ty, 1)})"
+        # 1. Strict either-or parameter verification
+        if target is not None and (target_x is not None or target_y is not None):
+            print("[DENIED] Invalid navigation arguments. You must provide EITHER coordinates (target_x and target_y) OR a single named target ID (target). Mixing them is not allowed.")
+            return False
 
-        # Check if there is a known system at exactly these coordinates (or snapping)
-        # to set the target_system name in the DB (Pillar 2 / Seeding Integration)
-        cursor.execute("SELECT name FROM systems WHERE x = CAST(? AS INTEGER) AND y = CAST(? AS INTEGER)", (int(tx), int(ty)))
-        matched_sys = cursor.fetchone()
-        if matched_sys:
-            sys_id = matched_sys['name']
-            display_name = sys_id
+        actual_target = target or target_x
+
+        # 2. Check if we are in Address Mode
+        is_address_mode = (target is not None) or (isinstance(target_x, str) and "@" in target_x)
+
+        tx, ty = None, None
+        sys_id = 'Interstellar'
+        display_name = ""
+
+        if is_address_mode:
+            if target_y is not None:
+                print("[DENIED] Invalid navigation arguments. If using Address Mode, Y-coordinate must not be provided.")
+                return False
+
+            target_str = str(actual_target).strip()
+            
+            # Guard: Catch obsolete separator
+            if "::" in target_str and not any(x in target_str for x in ["ship@", "sys@", "probe@"]):
+                print("[DENIED] Obsolete separator '::' detected. For Address Mode, you MUST use the '@' separator. Correct usage: me.move(target=\"sys@SYS_X10200_Y13200\")")
+                return False
+                
+            if "@" not in target_str:
+                try:
+                    float(target_str)
+                    print("[DENIED] Invalid navigation arguments. If using coordinates, you MUST provide both X and Y. Example: me.move(10200, 13200).")
+                    return False
+                except ValueError:
+                    print(f"[DENIED] Missing address type prefix. Please use the '@' format, e.g., me.move(target=\"sys@{target_str}\").")
+                    return False
+
+            # Parse Address Components
+            parts = target_str.split("@", 1)
+            target_type = parts[0].lower().strip()
+            target_val = parts[1].strip()
+
+            if target_type == 'sys':
+                cursor.execute("SELECT x, y, name FROM systems WHERE name = ? COLLATE NOCASE", (target_val,))
+                row = cursor.fetchone()
+                if row:
+                    tx, ty = float(row['x']), float(row['y'])
+                    sys_id = row['name']
+                    display_name = sys_id
+                else:
+                    print(f"[ERROR] Named destination '{target_str}' could not be resolved. System is unmapped.")
+                    return False
+
+            elif target_type == 'ship':
+                try:
+                    ship_id = int(target_val)
+                except ValueError:
+                    print(f"[DENIED] Address Mode error: ship@ expects an integer ID target, but received '{target_val}'.")
+                    return False
+
+                cursor.execute("SELECT sys.x AS x, sys.y AS y, s.name AS name FROM ships s LEFT JOIN systems sys ON s.system_name = sys.name WHERE s.id = ?", (ship_id,))
+                row = cursor.fetchone()
+                if row:
+                    tx, ty = float(row['x']), float(row['y'])
+                    display_name = row['name']
+                else:
+                    print(f"[ERROR] Target vessel '{target_str}' could not be resolved in sector registry.")
+                    return False
+
+            elif target_type == 'probe':
+                cursor.execute("SELECT current_x, current_y, id FROM agents WHERE id = ?", (target_val,))
+                row = cursor.fetchone()
+                if row:
+                    tx, ty = float(row['current_x']), float(row['current_y'])
+                    display_name = row['id']
+                else:
+                    print(f"[ERROR] Replicant probe target '{target_str}' is offline or out of range.")
+                    return False
+            else:
+                print(f"[DENIED] Unknown address type '{target_type}'. Supported types: sys@, ship@, probe@.")
+                return False
+
+        # 3. Coordinates Mode
+        else:
+            if target_x is None or target_y is None:
+                print("[DENIED] Invalid navigation arguments. If using coordinates, you MUST provide both X and Y. Example: me.move(10200, 13200).")
+                return False
+
+            try:
+                tx = float(target_x)
+                ty = float(target_y)
+                display_name = f"Coordinates ({round(tx, 1)}, {round(ty, 1)})"
+                
+                cursor.execute("SELECT name FROM systems WHERE x = CAST(? AS INTEGER) AND y = CAST(? AS INTEGER)", (int(tx), int(ty)))
+                matched_sys = cursor.fetchone()
+                if matched_sys:
+                    sys_id = matched_sys['name']
+                    display_name = sys_id
+            except (ValueError, TypeError):
+                print("[DENIED] Coordinate format error. target_x and target_y must be numeric. For named targets, use single-string Address Mode, e.g., me.move(target=\"sys@SYS_X10200_Y13200\").")
+                return False
 
         phys = self.rules.get('tool_costs', {}).get('move', {})
         dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], tx, ty)

@@ -1,6 +1,6 @@
 import { WorldState, Ship } from '../types';
 import { useC2Store } from '../store/stateStore';
-import { generateVesselGeometry } from '../../shared/vesselGeometry';
+import { generateVesselGeometry, calculateCapabilities } from '../../shared/vesselGeometry';
 
 interface VesselSchematicModalProps {
   modalShip: Ship | null;
@@ -48,9 +48,13 @@ export const VesselSchematicModal = ({ modalShip, state, onClose }: VesselSchema
   const speed = modalShip.max_speed || blueprintStats?.speed || 34.48;
   const storage = modalShip.matter_storage_capacity || blueprintStats?.cargo || blueprintStats?.storage_capacity || 500;
   const energyCapacity = modalShip.energy_capacity || blueprintStats?.battery || blueprintStats?.energy_capacity || 5000;
-  const hasDrill = modalShip.has_drill === 1 || modalShip.has_drill === true || blueprintStats?.has_drill === 1 || blueprintStats?.has_drill === true;
-  const hasFab = modalShip.has_fabricator === 1 || modalShip.has_fabricator === true || blueprintStats?.has_fabricator === 1 || blueprintStats?.has_fabricator === true;
-  const hasLogic = modalShip.has_logic_core === 1 || modalShip.has_logic_core === true || blueprintStats?.has_logic_core === 1 || blueprintStats?.has_logic_core === true;
+  
+  // Resolve hardware installation states dynamically from both live attributes AND blueprint grid slots
+  const caps = calculateCapabilities(modalShip, blueprintGrid);
+  
+  const hasDrill = caps.hasDrill;
+  const hasFab = caps.hasFab;
+  const hasLogic = caps.hasLogic;
 
   const classicNetEnergy = hasFab ? 120 : (hasDrill ? 80 : 150);
   const classicCommRange = hasLogic ? 5000 : 1500;
@@ -89,10 +93,10 @@ export const VesselSchematicModal = ({ modalShip, state, onClose }: VesselSchema
   const requiredMatter = modalShip.required_matter ?? 500;
   const buildRatio = requiredMatter > 0 ? progressMatter / requiredMatter : 0;
 
-  // Operational capabilities (can move, can drill, can build) with direct database diagnostics fallback
-  const canMove = diags.can_move !== undefined ? diags.can_move : (thrust > 0 && energyInventory > 0);
-  const canDrill = diags.can_mine !== undefined ? diags.can_mine : (hasDrill && energyInventory > 0);
-  const canBuild = diags.can_build !== undefined ? diags.can_build : (hasFab && energyInventory > 0);
+  // Operational capabilities calculated purely based on the presence of physical modules in the Blueprint!
+  const canMove = caps.canMove;
+  const canDrill = caps.canDrill;
+  const canBuild = caps.canBuild;
 
   // Installed module levels (lvl | false)
   const resolveModuleLevel = (val: number | boolean | undefined) => {

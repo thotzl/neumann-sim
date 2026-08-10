@@ -184,3 +184,32 @@ export const generateVesselGeometry = (ship: any, grid: string[][], worldSeed: s
     rawPoints: allOuterPoints 
   };
 };
+
+export const calculateCapabilities = (ship: any, grid: string[][]) => {
+  const gridModules = (grid || []).flat().map(m => m ? m.trim().toLowerCase() : '');
+  const hasGridDrill = gridModules.some(m => m.includes('drill') || m.includes('mine'));
+  const hasGridFab = gridModules.some(m => m.includes('fab') || m.includes('build') || m.includes('assembler'));
+  const hasGridLogic = gridModules.some(m => m.includes('logic') || m.includes('core'));
+  const hasGridEngine = gridModules.some(m => m.includes('engine') || m.includes('thrust'));
+  const hasGridBattery = gridModules.some(m => m.includes('battery') || m.includes('cell'));
+
+  const thrust = ship?.thrust || 0;
+  const energyCapacity = ship?.energy_capacity || 0;
+
+  const hasDrill = hasGridDrill || ship?.has_drill === 1 || ship?.has_drill === true;
+  const hasFab = hasGridFab || ship?.has_fabricator === 1 || ship?.has_fabricator === true;
+  const hasLogic = hasGridLogic || ship?.has_logic_core === 1 || ship?.has_logic_core === true;
+  const hasBattery = hasGridBattery || energyCapacity > 0;
+  const hasEngine = hasGridEngine || thrust > 0;
+
+  return {
+    hasDrill,
+    hasFab,
+    hasLogic,
+    hasBattery,
+    hasEngine,
+    canMove: !!(hasEngine && hasBattery),
+    canDrill: !!(hasDrill && hasBattery),
+    canBuild: !!(hasFab && hasBattery)
+  };
+};

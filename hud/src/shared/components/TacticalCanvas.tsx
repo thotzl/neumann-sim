@@ -466,9 +466,7 @@ export const TacticalCanvas = ({
       }
     } else if (!isBrushActive && e.button === 0 && controllerRef.current) {
       const clickedItem = getInteractiveElementAtPosition(e.clientX, e.clientY);
-      if (clickedItem) {
-        onSelectionChange(clickedItem);
-      }
+      onSelectionChange(clickedItem); // Safely sets null to deselect if clicked on empty space
     }
     updateCursor(e.clientX, e.clientY);
   };

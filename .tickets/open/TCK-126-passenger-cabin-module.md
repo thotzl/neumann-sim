@@ -1,11 +1,11 @@
 ---
 id: TCK-126
-title: "FEAT: Passenger Cabin Ship Module (Hitchhiking & Pilot Ferrying)"
+title: "FEAT: Passenger Cabin Ship Module (Core Engine, SDK & DB Implementation)"
 epic_phase: "Logistics and Swarm Mobility"
 status: "open"
 priority: "high"
 created: 2026-08-07
-dependencies: ["TCK-120"]
+dependencies: ["TCK-120", "TCK-133"]
 ---
 
 ## Description
@@ -13,14 +13,16 @@ This ticket mandates the design and implementation of a new physical ship module
 
 Currently, Bobs frequently find themselves stranded in a sector without a vessel (e.g., when newly cloned in a matrix, or after deconstructing their old ship). Furthermore, new advanced vessels may be constructed in highly industrialized sectors (such as Node Alpha), but the intended pilot Bob is stuck in a different sector with no way to get there.
 
-By introducing the `passenger` module, any active vessel can carry up to **3 disembodied passenger Bobs** per module level in a single grid tile. This enables a robust "hitchhiking" and "pilot ferrying" mechanic across the universe.
+By introducing the `passenger` module, any active vessel can carry up to **3 disembodied passenger Bobs** per module level in a single grid tile. This enables a robust \"hitchhiking\" and \"pilot ferrying\" mechanic across the universe.
+
+The Frontend layout and visual schematics are already implemented under **TCK-133**.
 
 ---
 
 ## Technical Requirements (MECE)
 
 ```
-Passenger Cabin Module
+Passenger Cabin Module (Backend Core)
 ├── 1. Hardware Module Specs (Grid Tile & Balancing)
 ├── 2. SDK Actuators (Boarding, Hitchhiking, and Exiting)
 └── 3. Physics & State Synchronization (Transit & Blackouts)
@@ -67,3 +69,6 @@ Passenger Cabin Module
 1.  Add `is_passenger` boolean column to the `agents` table via SQL migrations.
 2.  Add `passenger` module properties to `ECONOMY_RULES.json` under `ship_modules`.
 3.  Implement the actuators (`board_as_passenger`, `exit_passenger_cabin`, `take_helm`) in the Python SDK and JS environment processor.
+
+## References
+- Completed Frontend Work: [TCK-133](../closed/TCK-133-passenger-schematics-mockup.md)

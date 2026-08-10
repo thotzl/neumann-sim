@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node tests/test_all.js",
+    "clean": "python3 -c \"import glob, os, shutil; [os.remove(f) for f in glob.glob('*.db*') if os.path.isfile(f)]; [shutil.rmtree(d) for d in glob.glob('_verse') + glob.glob('tests/js/test_*_fs') if os.path.isdir(d)]\"",
     "build": "python3 scripts/build.py",
     "analyze": "python3 scripts/analyze_run.py",
     "migrate": "node scripts/migrate.js",

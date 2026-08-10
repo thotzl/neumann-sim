@@ -19,6 +19,10 @@ sim_engine/reproduce_*.py
 repro_*.js
 repro_*.py
 *.db
+*.db-shm
+*.db-wal
+_verse/
+tests/js/test_*_fs/
 /node_modules
 coverage/
 mock_db

@@ -64,6 +64,7 @@ Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstruktur
 | **TCK-128** | FEAT: Bob-OS Cognitive Navigation, Energy Safety & Anti-Stranding Shields | Industrial Polish and Safety-Grid | `closed` | `high` | [Link](../.tickets/closed/TCK-128-bob-os-cognitive-navigation-and-energy-safety.md) | [Safety Grid Test Suite](../../tests/js/test_v14_safety_grid.js) |
 | **TCK-129** | FEAT: Polymorphic Navigation (sys@, ship@, probe@ ID-only via target) & Batched Mining Loop | Cognitive Navigation & Operational Polish | `closed` | `high` | [Link](../.tickets/closed/TCK-129-navigation-and-batched-loops.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-130** | REFACTOR: Unified SSoT Schema Consolidation (agents->instances & system_name->system_id) | Cognitive Navigation & Operational Polish | `open` | `high` | [Link](../.tickets/open/TCK-130-unified-ssot-schema-consolidation.md) | [Central Test Hub](../tests/test_all.js) |
+| **TCK-131** | BUGFIX: Emergency Beacon Location Join & Clean Keyword Navigation API | Cognitive Navigation & Operational Polish | `closed` | `high` | [Link](../.tickets/closed/TCK-131-emergency-beacon-and-navigation-cleanup.md) | [Central Test Hub](../tests/test_all.js) |
 
 ---
 

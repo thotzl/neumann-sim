@@ -41,7 +41,7 @@ class Agent:
     def refine(self, raw_matter_to_refine=100): return self.actuators.refine(raw_matter_to_refine)
     def repair(self, structure_id, hp_to_restore=50): return self.actuators.repair(structure_id, hp_to_restore)
     def deconstruct(self, structure_id): return self.actuators.deconstruct(structure_id)
-    def move(self, target_x=None, target_y=None, force=False, target=None): return self.actuators.move(target_x, target_y, force, target)
+    def move(self, target_x=None, target_y=None, force=False, system_id=None, ship_id=None, instance_id=None): return self.actuators.move(target_x, target_y, force, system_id, ship_id, instance_id)
     def replicate(self): return self.actuators.replicate()
     def set_name(self, name): return self.actuators.set_name(name)
     def rename_system(self, new_name): return self.actuators.rename_system(new_name)
@@ -58,8 +58,8 @@ class Agent:
     def dashboard(self): return self.sensors.local_system()
     def local_system(self): return self.sensors.local_system()
     def entities(self): return self.sensors.entities()
-    def inspect(self, ship_id=None, structure_id=None, system_name=None, blueprint_name=None):
-        return self.sensors.inspect(ship_id, structure_id, system_name, blueprint_name)
+    def inspect(self, ship_id=None, structure_id=None, system_id=None, blueprint_name=None, system_name=None):
+        return self.sensors.inspect(ship_id, structure_id, system_id, blueprint_name, system_name)
     def map(self, range=None, query=None, system_id=None): return self.sensors.map(range, query, system_id)
     def route(self, target_x, target_y): return self.sensors.route(target_x, target_y)
     def eta(self, target_x, target_y): return self.sensors.eta(target_x, target_y)

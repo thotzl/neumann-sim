@@ -54,7 +54,7 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
 
     def test_polymorphic_navigation_sys(self):
         # 1. Keyword-based Address Mode
-        res = self.agent.move(target="sys@SYS_B")
+        res = self.agent.move(system_id="SYS_B")
         self.assertTrue(res)
         
         # Verify db updates
@@ -69,24 +69,9 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
         self.assertEqual(row['target_y'], 400.0)
         conn.close()
 
-    def test_polymorphic_navigation_sys_positional(self):
-        # 2. Positional Address Mode
-        res = self.agent.move("sys@SYS_B")
-        self.assertTrue(res)
-        
-        conn = sqlite3.connect(self.test_db)
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        c.execute("SELECT target_system, target_x, target_y FROM agents WHERE id='Instance-1'")
-        row = c.fetchone()
-        self.assertEqual(row['target_system'], 'SYS_B')
-        self.assertEqual(row['target_x'], 300.0)
-        self.assertEqual(row['target_y'], 400.0)
-        conn.close()
-
     def test_polymorphic_navigation_ship(self):
         # 3. Ship Address Mode
-        res = self.agent.move(target="ship@3")
+        res = self.agent.move(ship_id=3)
         self.assertTrue(res)
         
         conn = sqlite3.connect(self.test_db)
@@ -100,7 +85,7 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
 
     def test_polymorphic_navigation_probe(self):
         # 4. Probe Address Mode
-        res = self.agent.move(target="probe@Instance-2")
+        res = self.agent.move(instance_id="Instance-2")
         self.assertTrue(res)
         
         conn = sqlite3.connect(self.test_db)
@@ -114,7 +99,7 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
 
     def test_polymorphic_navigation_invalid_probe_name(self):
         # Banned: using name ('CloneB') instead of agent ID
-        res = self.agent.move(target="probe@CloneB")
+        res = self.agent.move("CloneB")
         self.assertFalse(res)
 
     def test_polymorphic_navigation_coordinates_only(self):
@@ -133,10 +118,7 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
 
     def test_polymorphic_navigation_mixed_denied(self):
         # Rule: target OR coordinates - not both!
-        res = self.agent.move(300, 400, target="sys@SYS_B")
-        self.assertFalse(res)
-
-        res = self.agent.move("sys@SYS_B", 400)
+        res = self.agent.move(300, 400, system_id="SYS_B")
         self.assertFalse(res)
 
         # Coordinate format error: only one provided

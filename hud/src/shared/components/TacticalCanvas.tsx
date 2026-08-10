@@ -18,6 +18,7 @@ interface TacticalCanvasProps {
   ships?: any[];
   selection: any;
   onSelectionChange: (sel: any) => void;
+  activeRound?: number;
 
   // Sandbox Generative Toggles & States
   isSandbox?: boolean;
@@ -56,6 +57,7 @@ export const TacticalCanvas = ({
   ships = [],
   selection,
   onSelectionChange,
+  activeRound = 0,
 
   isSandbox = false,
   showUnmapped = true,
@@ -234,8 +236,8 @@ export const TacticalCanvas = ({
 
     // 5. Draw active Fleet assets (dashed flight paths, stationed triangles, traveling Bobs)
     controller.drawTransitLines(agents, camera);
-    controller.drawStationaryAssets(systems, ships, agents, camera, selection?.id || null, 0, useBetaView, blueprints, seed);
-    controller.drawTravelingAgents(agents, ships, camera, selection?.id || null, 0, useBetaView, blueprints, seed);
+    controller.drawStationaryAssets(systems, ships, agents, camera, selection?.id || null, activeRound, useBetaView, blueprints, seed);
+    controller.drawTravelingAgents(agents, ships, camera, selection?.id || null, activeRound, useBetaView, blueprints, seed);
 
     // 6. Draw active Brush circles
     if (isBrushActive) {
@@ -313,13 +315,7 @@ export const TacticalCanvas = ({
         const dist = Math.sqrt((clickX - sx) ** 2 + (clickY - sy) ** 2);
         if (dist < minDist) {
           minDist = dist;
-          const pilot = bobsHere.find((a) => a.active_ship_id === ship.id);
-          if (pilot) {
-            foundItem = { type: 'agent', id: pilot.id };
-          } else {
-            // Fallback to selecting the system if there is no pilot
-            foundItem = { type: 'system', id: sysId };
-          }
+          foundItem = { type: 'ship', id: ship.id.toString() };
         }
       });
 

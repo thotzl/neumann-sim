@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useC2Store } from '../store/stateStore';
 import { buildBobDashboard, jsonToYaml } from '../utils/dashboardHelpers';
 import { getStellarProperties } from '../../shared/generator';
-import { selectAgentById, selectSystemByName, selectHostShipForAgent } from '../store/stateSelectors';
+import { selectAgentById, selectSystemByName, selectHostShipForAgent, selectShipById } from '../store/stateSelectors';
 
 interface InspectorPanelProps {
   onOpenShipyard: () => void;
@@ -12,7 +12,8 @@ interface InspectorPanelProps {
 export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPanelProps) => {
   const state = useC2Store((store) => store.state);
   const selection = useC2Store((store) => store.selection);
-  const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'cv' | 'meta' | 'raw' | 'wiki'>('status');
+  const setSelection = useC2Store((store) => store.setSelection);
+  const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'cv' | 'meta' | 'raw' | 'wiki' | 'pilot'>('status');
 
   // Reset tab to 'status' whenever selection changes
   useEffect(() => {
@@ -62,12 +63,20 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
     ? selectSystemByName(state, selection.id)
     : null;
 
+  const selectedShip = selection.type === 'ship'
+    ? selectShipById(state, selection.id)
+    : null;
+
+  const pilotOfSelectedShip = selectedShip
+    ? state.agents.find(a => a.active_ship_id === selectedShip.id)
+    : null;
+
   // Build the live dashboard YAML once selectedAgent is loaded
   const dashboardObj = selectedAgent ? buildBobDashboard(selectedAgent, state) : null;
   const dashboardYaml = dashboardObj ? jsonToYaml(dashboardObj) : '';
 
   // Setup ship for CAD schematic using unified selector (TCK-121)
-  const hostRawShip = selectHostShipForAgent(state, selectedAgent);
+  const hostRawShip = selectedShip ? selectedShip : selectHostShipForAgent(state, selectedAgent);
 
   return (
     <div className="flex flex-col h-full overflow-hidden font-mono bg-cyber-panel">
@@ -165,6 +174,45 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                 }`}
               >
                 [WIKI]
+              </button>
+            </>
+          )}
+
+          {selectedShip && (
+            <>
+              <button
+                onClick={() => setActiveTab('status')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
+                  activeTab === 'status' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [STATUS]
+              </button>
+              {pilotOfSelectedShip && (
+                <button
+                  onClick={() => setActiveTab('pilot')}
+                  className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
+                    activeTab === 'pilot' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                  }`}
+                >
+                  [PILOT]
+                </button>
+              )}
+              <button
+                onClick={() => setActiveTab('meta')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
+                  activeTab === 'meta' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [SPECS]
+              </button>
+              <button
+                onClick={() => setActiveTab('raw')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors ${
+                  activeTab === 'raw' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [RAW]
               </button>
             </>
           )}
@@ -647,6 +695,165 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                     <div className="text-xs text-cyber-gray italic">No neural memos archived in this stellar system.</div>
                   )}
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {selectedShip && (
+          <div className="flex flex-col gap-4">
+            {activeTab === 'status' && (
+              <div className="flex flex-col gap-4">
+                {/* Ship main specs card */}
+                <div className="bg-white/[0.01] border border-white/5 rounded p-3">
+                  <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1.5">
+                    🛸 VESSEL_HULL_TELEMETRY //
+                  </div>
+                  <div className="text-xs text-white font-semibold">
+                    NAME: <span className="text-cyber-blue font-bold">{selectedShip.name || `Ship-${selectedShip.id}`}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-1 leading-normal font-mono">
+                    CHASSIS: <span className="text-white font-bold">{selectedShip.chassis}</span><br />
+                    VESSEL ID: #{selectedShip.id}<br />
+                    LOCATION: {selectedShip.system_name || 'DEEP SPACE'}<br />
+                    COORDINATES: X: {selectedShip.x} | Y: {selectedShip.y}<br />
+                    HULL INTEGRITY: <span className={`font-bold ${selectedShip.health < 40 ? 'text-cyber-red' : selectedShip.health < 80 ? 'text-cyber-amber' : 'text-emerald-500'}`}>{selectedShip.health}/{selectedShip.max_health} HP</span><br />
+                  </div>
+                </div>
+
+                {/* Cargo and Fuel resources */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/[0.01] border border-white/5 rounded p-3">
+                    <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1">
+                      🔋 POWER_GRID //
+                    </div>
+                    <div className="text-xs text-white font-bold font-mono">
+                      {selectedShip.energy_inventory} / {selectedShip.energy_capacity} E
+                    </div>
+                    <div className="w-full h-1 bg-slate-900 mt-1.5 rounded-sm overflow-hidden">
+                      <div className="h-full bg-cyber-blue" style={{ width: `${(selectedShip.energy_inventory / selectedShip.energy_capacity) * 100}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="bg-white/[0.01] border border-white/5 rounded p-3">
+                    <div className="text-[10px] text-cyber-amber font-bold tracking-wider mb-1">
+                      📦 CARGO_HOLD //
+                    </div>
+                    <div className="text-xs text-white font-bold font-mono">
+                      {selectedShip.raw_matter_inventory + selectedShip.refined_matter_inventory} / {selectedShip.matter_storage_capacity} M
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-1.5 font-mono">
+                      RAW: {selectedShip.raw_matter_inventory} M<br />
+                      REFINED: {selectedShip.refined_matter_inventory} RM
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pilot linkage indicator */}
+                <div className="bg-white/[0.01] border border-white/5 rounded p-3">
+                  <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1.5">
+                    🔗 NEURAL_PILOT_LINK //
+                  </div>
+                  {pilotOfSelectedShip ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="text-[11px] text-slate-300 font-mono">
+                        Active Pilot: <strong className="text-cyber-blue">{pilotOfSelectedShip.chosen_name}</strong> ({pilotOfSelectedShip.id})
+                      </div>
+                      <button
+                        onClick={() => setSelection({ type: 'agent', id: pilotOfSelectedShip.id })}
+                        className="bg-cyber-blue/10 border border-cyber-blue/20 text-cyber-blue font-mono text-[10px] py-1.5 rounded-sm font-bold cursor-pointer transition-all hover:bg-cyber-blue/20 hover:border-cyber-blue/40"
+                      >
+                        [INSPECT PILOT COGNITION]
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-cyber-gray italic font-mono">
+                      No active neural link. Vessel is currently unmanned or automated.
+                    </div>
+                  )}
+                </div>
+
+                {/* CAD Schematic Button */}
+                <button
+                  onClick={() => onOpenSchematic(selectedShip)}
+                  className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-mono text-[10px] py-2 rounded-sm font-bold cursor-pointer transition-all hover:bg-emerald-500/20 hover:border-emerald-500/40"
+                >
+                  [VIEW VESSEL CAD SCHEMATICS]
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'pilot' && pilotOfSelectedShip && (
+              <div className="flex flex-col gap-4">
+                <div className="bg-white/[0.01] border border-white/5 rounded p-3">
+                  <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-1.5">
+                    🧠 COGNITIVE_PILOT_STATUS //
+                  </div>
+                  <div className="text-xs text-white font-semibold">
+                    NAME: <span className="text-cyber-blue font-bold">{pilotOfSelectedShip.chosen_name}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-1 leading-normal font-mono">
+                    ID: {pilotOfSelectedShip.id}<br />
+                    COGNITIVE STATE: {(() => {
+                      if (pilotOfSelectedShip.status === 'traveling') {
+                        return <span className="text-cyber-blue font-bold">● INTERSTELLAR TRAVEL</span>;
+                      }
+                      if (pilotOfSelectedShip.sleep_state && pilotOfSelectedShip.sleep_state > 0) {
+                        return <span className="text-cyber-amber font-bold">● STANDBY (SLEEPING)</span>;
+                      }
+                      return <span className="text-emerald-500 font-bold">● ACTIVE</span>;
+                    })()}<br />
+                    BIRTH: Cycle {pilotOfSelectedShip.birth_cycle}<br />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setSelection({ type: 'agent', id: pilotOfSelectedShip.id })}
+                  className="bg-cyber-blue/10 border border-cyber-blue/20 text-cyber-blue font-mono text-[10px] py-2 rounded-sm font-bold cursor-pointer transition-all hover:bg-cyber-blue/20 hover:border-cyber-blue/40"
+                >
+                  [SWITCH TO PILOT COGNITION]
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'meta' && (
+              <div className="bg-white/[0.01] border border-white/5 rounded p-3 flex flex-col gap-2 font-mono text-xs">
+                <div className="text-[10px] text-cyber-blue font-bold tracking-wider uppercase mb-1">
+                  📐 HOLOGRAPHIC_HARDWARE_SPECS //
+                </div>
+                <div className="grid grid-cols-2 gap-y-2 mt-1.5 text-slate-400 text-[11px]">
+                  <div>CHASSIS CLASS:</div>
+                  <div className="text-white font-bold">{selectedShip.chassis}</div>
+
+                  <div>MASS FOOTPRINT:</div>
+                  <div className="text-white">{selectedShip.mass} T</div>
+
+                  <div>PROPULSION THRUST:</div>
+                  <div className="text-white">{selectedShip.thrust} kN</div>
+
+                  <div>CRUISING SPEED:</div>
+                  <div className="text-white">{selectedShip.max_speed} km/s</div>
+
+                  <div>DRILL UNIT:</div>
+                  <div className="text-white">{selectedShip.has_drill ? 'YES' : 'NONE'}</div>
+
+                  <div>FABRICATOR COUPLER:</div>
+                  <div className="text-white">{selectedShip.has_fabricator ? 'YES' : 'NONE'}</div>
+
+                  <div>LOGIC CORE MODULE:</div>
+                  <div className="text-white">{selectedShip.has_logic_core ? 'YES' : 'NONE'}</div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'raw' && (
+              <div className="flex flex-col h-full min-h-0 bg-slate-950/40 border border-slate-900 rounded p-3">
+                <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-2 font-mono uppercase">
+                  💾 RAW_TELEMETRY_STREAM //
+                </div>
+                <pre className="text-[9px] text-slate-400 leading-normal overflow-auto custom-scrollbar font-mono whitespace-pre-wrap select-text">
+                  {jsonToYaml(selectedShip)}
+                </pre>
               </div>
             )}
           </div>

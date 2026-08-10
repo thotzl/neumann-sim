@@ -543,98 +543,65 @@ class Actuators:
         return False
 
     @agent_service.with_agent_context(require_active=False, action_name='Move')
-    def move(self, cursor, agent, target_x=None, target_y=None, force=False, target=None):
+    def move(self, cursor, agent, target_x=None, target_y=None, force=False, system_id=None, ship_id=None, instance_id=None):
         if agent['status'] not in ('active', 'traveling'):
             print(f"[DENIED] Move is only allowed when active or traveling. Current: {agent['status']}")
             return False
 
-        # Parse force argument robustly (Hebel 3)
+        # Parse force argument robustly
         force_val = str(force).strip().upper() in ["1", "TRUE"] or force is True or force == 1
-
-        # 1. Strict either-or parameter verification
-        if target is not None and (target_x is not None or target_y is not None):
-            print("[DENIED] Invalid navigation arguments. You must provide EITHER coordinates (target_x and target_y) OR a single named target ID (target). Mixing them is not allowed.")
-            return False
-
-        actual_target = target or target_x
-
-        # 2. Check if we are in Address Mode
-        is_address_mode = (target is not None) or (isinstance(target_x, str) and "@" in target_x)
 
         tx, ty = None, None
         sys_id = 'Interstellar'
         display_name = ""
 
-        if is_address_mode:
-            if target_y is not None:
-                print("[DENIED] Invalid navigation arguments. If using Address Mode, Y-coordinate must not be provided.")
+        # 1. Parameter-based Mode (Pre-Query named targets directly to x & y coordinates)
+        if system_id is not None or ship_id is not None or instance_id is not None:
+            if target_x is not None or target_y is not None:
+                print("[DENIED] Invalid navigation arguments. Mixing coordinates and named targets is not allowed.")
                 return False
 
-            target_str = str(actual_target).strip()
-            
-            # Guard: Catch obsolete separator
-            if "::" in target_str and not any(x in target_str for x in ["ship@", "sys@", "probe@"]):
-                print("[DENIED] Obsolete separator '::' detected. For Address Mode, you MUST use the '@' separator. Correct usage: me.move(target=\"sys@SYS_X10200_Y13200\")")
-                return False
-                
-            if "@" not in target_str:
-                try:
-                    float(target_str)
-                    print("[DENIED] Invalid navigation arguments. If using coordinates, you MUST provide both X and Y. Example: me.move(10200, 13200).")
-                    return False
-                except ValueError:
-                    print(f"[DENIED] Missing address type prefix. Please use the '@' format, e.g., me.move(target=\"sys@{target_str}\").")
-                    return False
-
-            # Parse Address Components
-            parts = target_str.split("@", 1)
-            target_type = parts[0].lower().strip()
-            target_val = parts[1].strip()
-
-            if target_type == 'sys':
-                cursor.execute("SELECT x, y, name FROM systems WHERE name = ? COLLATE NOCASE", (target_val,))
+            if system_id is not None:
+                cursor.execute("SELECT x, y, name FROM systems WHERE name = ? COLLATE NOCASE", (system_id,))
                 row = cursor.fetchone()
                 if row:
                     tx, ty = float(row['x']), float(row['y'])
                     sys_id = row['name']
                     display_name = sys_id
                 else:
-                    print(f"[ERROR] Named destination '{target_str}' could not be resolved. System is unmapped.")
+                    print(f"[ERROR] System '{system_id}' could not be resolved. System is unmapped.")
                     return False
 
-            elif target_type == 'ship':
+            elif ship_id is not None:
                 try:
-                    ship_id = int(target_val)
+                    s_id = int(ship_id)
                 except ValueError:
-                    print(f"[DENIED] Address Mode error: ship@ expects an integer ID target, but received '{target_val}'.")
+                    print(f"[DENIED] ship_id expects an integer, but received '{ship_id}'.")
                     return False
 
-                cursor.execute("SELECT sys.x AS x, sys.y AS y, s.name AS name FROM ships s LEFT JOIN systems sys ON s.system_name = sys.name WHERE s.id = ?", (ship_id,))
+                cursor.execute("SELECT sys.x AS x, sys.y AS y, s.name AS name FROM ships s LEFT JOIN systems sys ON s.system_name = sys.name WHERE s.id = ?", (s_id,))
                 row = cursor.fetchone()
                 if row:
                     tx, ty = float(row['x']), float(row['y'])
                     display_name = row['name']
                 else:
-                    print(f"[ERROR] Target vessel '{target_str}' could not be resolved in sector registry.")
+                    print(f"[ERROR] Target vessel #{ship_id} could not be resolved.")
                     return False
 
-            elif target_type == 'probe':
-                cursor.execute("SELECT current_x, current_y, id FROM agents WHERE id = ?", (target_val,))
+            elif instance_id is not None:
+                cursor.execute("SELECT current_x, current_y, id FROM agents WHERE id = ?", (instance_id,))
                 row = cursor.fetchone()
                 if row:
                     tx, ty = float(row['current_x']), float(row['current_y'])
                     display_name = row['id']
                 else:
-                    print(f"[ERROR] Replicant probe target '{target_str}' is offline or out of range.")
+                    print(f"[ERROR] Instance target '{instance_id}' is offline or out of range.")
                     return False
-            else:
-                print(f"[DENIED] Unknown address type '{target_type}'. Supported types: sys@, ship@, probe@.")
-                return False
 
-        # 3. Coordinates Mode
+        # 2. Coordinates Mode (Both target_x and target_y must be provided and numeric)
         else:
             if target_x is None or target_y is None:
-                print("[DENIED] Invalid navigation arguments. If using coordinates, you MUST provide both X and Y. Example: me.move(10200, 13200).")
+                print("[DENIED] Invalid navigation arguments. Use coordinates: me.move(target_x, target_y) or named targets: me.move(system_id='SYS_A').")
                 return False
 
             try:
@@ -648,7 +615,7 @@ class Actuators:
                     sys_id = matched_sys['name']
                     display_name = sys_id
             except (ValueError, TypeError):
-                print("[DENIED] Coordinate format error. target_x and target_y must be numeric. For named targets, use single-string Address Mode, e.g., me.move(target=\"sys@SYS_X10200_Y13200\").")
+                print("[DENIED] Coordinate format error. target_x and target_y must be numeric.")
                 return False
 
         phys = self.rules.get('tool_costs', {}).get('move', {})

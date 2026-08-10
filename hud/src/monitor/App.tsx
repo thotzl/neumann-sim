@@ -324,6 +324,7 @@ export default function MonitorApp() {
           seed={state?.seed}
           useBetaView={useBetaView}
           blueprints={state?.blueprints}
+          activeRound={state?.round || 0}
         />
       </C2Layout>
 

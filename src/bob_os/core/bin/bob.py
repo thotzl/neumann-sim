@@ -47,17 +47,17 @@ def get_dynamic_talk_desc():
             rules = json.load(f)
         cost = rules.get('tool_costs', {}).get('talk', {}).get('energy_cost', 0)
         range_val = rules.get('tool_costs', {}).get('docking', {}).get('proximity_range', 50.0)
-        return f"Peer-to-peer proximity communication with nearby vessels/agents within <= {range_val} units range. Cost is {cost} Energy (bypasses blackout constraints)."
+        return f"Peer-to-peer proximity communication with nearby vessels/agents within <= {range_val} units range. Cost is {cost} Energy. Requires the raw Clone/Agent Database ID (e.g., 'X107Y132-C0-ROBERT') to establish mind-to-mind contact."
     except:
-        return "Peer-to-peer proximity communication with nearby vessels/agents."
+        return "Peer-to-peer proximity communication. Requires the raw Clone/Agent Database ID (e.g., 'X107Y132-C0-ROBERT') to establish mind-to-mind contact."
 
 DESCRIPTIONS = {
     "mine": "Extracts matter at the current location. Supports optional batch loops via 'times' argument (e.g., mine(times=5)).",
     "build": get_dynamic_build_desc(),
     "refine": "Converts raw matter into refined matter (Requires matter_refinery).",
-    "repair": "Repairs damaged infrastructure (Requires structure_id from dashboard).",
-    "deconstruct": "Deconstructs infrastructure and refunds part of the matter cost.",
-    "move": "Initiates sub-light vector propulsion transit. Can accept absolute coordinates (target_x, target_y) OR a single named target ID with location-anchor (sys@<id>, ship@<id>, probe@<id>) via target='...' or as the first positional argument.",
+    "repair": "Repairs damaged infrastructure. Requires the raw, integer ID of the structure (e.g., structure_id=3).",
+    "deconstruct": "Deconstructs infrastructure and refunds part of the matter cost. Requires the raw, integer ID of the structure (e.g., structure_id=3).",
+    "move": "Initiates sub-light vector propulsion transit. Requires absolute coordinates (target_x, target_y) or a single explicit target parameter (system_id='SYS_A', ship_id=2, instance_id='X107Y132-C0-ROBERT'). Mixing coordinates and named targets is strictly denied.",
     "replicate": "Creates an autonomous probe replican inside an active mind_forge (ID is generated dynamically by the probe kernel).",
     "ping_sos": get_dynamic_sos_ping_desc(),
     "reclaim_sos": get_dynamic_sos_reclaim_desc(),
@@ -68,23 +68,23 @@ DESCRIPTIONS = {
     "scan": "Performs an active long-range sub-space sensor sweep to detect and map distant stellar signatures (Base Range: 1500+).",
     "deposit": "Deposits matter/energy into the local sector depot.",
     "withdraw": "Withdraws energy or matter from the local sector depot.",
-    "transfer": "Transfers resources directly to another instance in the same sector.",
-    "scut": "Sends a radio message. Range > 1000 or broadcasts to 'ALL' require an active 'comms_relay'. Priority must be strictly 0 (Normal) or 1 (EMERGENCY, bypasses DND).",
+    "transfer": "Transfers resources directly to another instance in the same sector. Requires the raw Clone/Agent Database ID (e.g., 'X107Y132-C0-ROBERT') to locate the target's cargo grid.",
+    "scut": "Sends a sub-space radio message. Requires the raw Clone/Agent Database ID (e.g., 'X107Y132-C0-ROBERT') to route the message. Range > 1000 or broadcasts to 'ALL' require an active 'comms_relay'. Priority must be strictly 0 (Normal) or 1 (EMERGENCY, bypasses DND).",
     "storage": "Displays the current fill level of your inventory.",
     "entities": "Scans for other active instances in the current sector.",
     "routines": "Displays the Sektor Software Registry of all active background and idle manual routines (Arguments: none).",
     "list_routines": "Displays the Sektor Software Registry of all active background and idle manual routines (Arguments: none).",
-    "board": "Boards a physical vessel at the current location (ID required). Enables physical actions (mine, build, move).",
+    "board": "Boards a physical vessel at the current location. Requires the raw, integer ID of the vessel (e.g., ship_id=2). Enables physical actions (mine, build, move).",
     "exit_ship": "Exits the current ship and transfers your mind back into the SEM-Matrix.",
     "build_ship": "Constructs a new vessel at the location instantly or in several financial installments (Arguments: blueprint_name, matter_to_invest).",
-    "deconstruct_ship": "Deconstructs an unmanned vessel at the location and refunds 50% of the cost to the sector depot (Arguments: ship_id).",
-    "rename_ship": "Renames a physical vessel at the current location (Arguments: ship_id, new_name).",
+    "deconstruct_ship": "Deconstructs an unmanned vessel at the location and refunds 50% of the cost to the sector depot. Requires the raw, integer ID of the vessel (e.g., ship_id=2).",
+    "rename_ship": "Renames a physical vessel at the current location. Requires the raw, integer ID of the vessel (e.g., ship_id=2, new_name='Sovereign').",
     "design_blueprint": "Simulates and plans a new ship class based on a grid matrix (Arguments: name, matrix_json).",
     "save_blueprint": "Simulates, plans, and saves a new ship class permanently into the sector database (Arguments: name, matrix_json).",
     "view_blueprint": "Displays detailed grid layout and performance metrics of a designed ship class (Arguments: name).",
     "list_blueprints": "Lists all registered ship blueprints in the current sector.",
     "delete_blueprint": "Deletes a draft from the blueprint archive (Arguments: name).",
-    "inspect": "Performs a detailed local or espionage inspection (Arguments: ship_id, structure_id, system_name).",
+    "inspect": "Performs a detailed local or espionage inspection. Requires the raw, integer ID of the vessel (e.g., ship_id=2) or structure (e.g., structure_id=3) or raw system_name.",
     "map": "Active stellar map directory. Optional arguments: range (integer), query (string), system_id (string).",
     "route": "Calculates an energy-optimal multi-hop flight trajectory to absolute target coordinates (Plots safe staging waypoints).",
     "eta": "Estimates travel duration and propulsion grid energy costs for a direct vector flight to target coordinates.",
@@ -163,14 +163,18 @@ def main():
         elif method == "build": agent.build(building_type=params.get('building_type'), matter_to_invest=safe_int(params.get('matter_to_invest'), 'matter_to_invest', 100))
         elif method == "deconstruct": agent.deconstruct(structure_id=safe_int(params.get('structure_id'), 'structure_id'))
         elif method == "move":
-            tx_raw = params.get('target') or params.get('target_x')
+            tx_raw = params.get('target_x')
             ty_raw = params.get('target_y')
-            if ty_raw is None or (isinstance(tx_raw, str) and "@" in tx_raw):
-                agent.move(target_x=None, target_y=None, target=tx_raw)
+            system_id = params.get('system_id')
+            ship_id = params.get('ship_id')
+            instance_id = params.get('instance_id')
+            
+            if system_id is not None or ship_id is not None or instance_id is not None:
+                agent.move(system_id=system_id, ship_id=ship_id, instance_id=instance_id)
             else:
                 agent.move(
-                    target_x=safe_float(tx_raw, 'target_x'), 
-                    target_y=safe_float(ty_raw, 'target_y')
+                    target_x=safe_float(tx_raw, 'target_x') if tx_raw is not None else None, 
+                    target_y=safe_float(ty_raw, 'target_y') if ty_raw is not None else None
                 )
         elif method == "replicate": agent.replicate()
         elif method == "set_name": agent.set_name(name=params.get('name'))

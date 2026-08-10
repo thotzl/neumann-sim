@@ -150,7 +150,8 @@ class Sensors:
         }
 
     @agent_service.with_agent_context(allow_disembodied=True)
-    def inspect(self, cursor, agent, ship_id=None, structure_id=None, system_name=None, blueprint_name=None):
+    def inspect(self, cursor, agent, ship_id=None, structure_id=None, system_id=None, blueprint_name=None, system_name=None):
+        system_id = system_id or system_name
         rules = config_service.get_economy_rules()
         
         # 1. Target A: Ship Inspection (Grid, Inventories, Capabilities, Diagnostics)
@@ -207,19 +208,19 @@ class Sensors:
             return infra_dict
             
         # 3. Target C: Sector Geology & Wiki Espionage
-        elif system_name is not None:
-            sys_dict = system_service.get_resolved_system_state(cursor, system_name)
+        elif system_id is not None:
+            sys_dict = system_service.get_resolved_system_state(cursor, system_id)
             if not sys_dict:
-                print(f"[ERROR] Sector '{system_name}' not mapped.")
+                print(f"[ERROR] Sector '{system_id}' not mapped.")
                 return False
             
-            if system_name != agent['location']:
+            if system_id != agent['location']:
                 has_sat = system_service.has_active_infrastructure(cursor, agent['location'], ('sat_link', 'comms_relay'))
                 if not has_sat:
-                    print(f"[DENIED] Espionage failed. Sector '{system_name}' is out of range. Build a 'sat_link' or 'comms_relay'.")
+                    print(f"[DENIED] Espionage failed. Sector '{system_id}' is out of range. Build a 'sat_link' or 'comms_relay'.")
                     return False
             
-            cursor.execute("SELECT id, author_id, title FROM docs WHERE system_name = ? ORDER BY id ASC", (system_name,))
+            cursor.execute("SELECT id, author_id, title FROM docs WHERE system_name = ? ORDER BY id ASC", (system_id,))
             sys_dict['public_sector_wiki_docs'] = [dict(r) for r in cursor.fetchall()]
             return sys_dict
 

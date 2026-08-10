@@ -8,7 +8,7 @@ METHOD_META = {
     "refine": {"params": ["raw_matter_to_refine"], "greedy": None},
     "repair": {"params": ["structure_id", "hp_to_restore"], "greedy": None},
     "deconstruct": {"params": ["structure_id"], "greedy": None},
-    "move": {"params": ["target_x", "target_y", "target"], "greedy": None},
+    "move": {"params": ["target_x", "target_y", "system_id", "ship_id", "instance_id"], "greedy": None},
     "replicate": {"params": [], "greedy": None},
     "set_name": {"params": ["name"], "greedy": "name"},
     "rename_system": {"params": ["new_name"], "greedy": "new_name"},

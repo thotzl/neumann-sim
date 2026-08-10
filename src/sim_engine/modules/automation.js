@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const { runPython } = require('./python_executor');
 const envManager = require('./environment');
 
@@ -9,8 +10,67 @@ function runSystemAutomations(vDir, universeDir, state) {
 
     if (!fs.existsSync(activeScriptsDir)) return "";
 
-    const scripts = fs.readdirSync(activeScriptsDir).filter(f => f.endsWith('.py') && f !== 'me.py' && f !== 'sitecustomize.py');
-    if (scripts.length === 0) return "";
+    // SSoT: Query all active target-bound scripts from the database
+    const dbPath = path.join(universeDir, "universe.db");
+    if (!fs.existsSync(dbPath)) return "";
+
+    const getScriptsScript = `
+import sqlite3, json, os
+conn = sqlite3.connect('${dbPath}')
+conn.row_factory = sqlite3.Row
+cursor = conn.cursor()
+
+# Query all registered scripts with an active target
+try:
+    cursor.execute("SELECT id, name, path, target, owner_id FROM scripts WHERE target IS NOT NULL AND target != ''")
+    rows = cursor.fetchall()
+except sqlite3.OperationalError:
+    rows = []
+
+active_scripts = []
+for r in rows:
+    target = r['target']
+    target_type, target_id = target.split('::')
+    
+    is_valid = False
+    location = 'Deep Space'
+    
+    if target_type == 'ship':
+        cursor.execute("SELECT system_name, has_logic_core FROM ships WHERE id = CAST(? AS INTEGER)", (target_id,))
+        ship = cursor.fetchone()
+        if ship and ship['has_logic_core'] == 1:
+            is_valid = True
+            location = ship['system_name']
+    elif target_type == 'system':
+        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'ami_hub' AND status = 'active'", (target_id,))
+        if cursor.fetchone():
+            is_valid = True
+            location = target_id
+            
+    if is_valid:
+        active_scripts.append({
+            'id': r['id'],
+            'name': r['name'],
+            'path': r['path'],
+            'target': target,
+            'owner_id': r['owner_id'],
+            'target_type': target_type,
+            'target_id': target_id,
+            'location': location
+        })
+conn.close()
+print(json.dumps(active_scripts))
+`.trim();
+
+    let activeScripts = [];
+    try {
+        const jsonOut = execSync(`python3 -c "${getScriptsScript.replace(/"/g, '\\"')}"`).toString().trim();
+        activeScripts = JSON.parse(jsonOut);
+    } catch (e) {
+        // Fallback silently if table doesn't exist yet
+    }
+
+    if (activeScripts.length === 0) return "";
 
     // Cleanup logic: Completely remove old, unprotected files from the Bob sandbox
     const oldMePy = path.join(activeScriptsDir, "me.py");
@@ -89,32 +149,66 @@ builtins.me = me
 `;
     fs.writeFileSync(sitePyPath, sitePyContent);
 
-    for (const script of scripts) {
-        const scriptRelPath = `scripts/active/${script}`;
-        const acl = state.security?.acl?.[scriptRelPath];
-        const ownerId = acl ? acl.owner : "Unknown";
+    for (const item of activeScripts) {
+        const proxyId = item.target_type === 'ship' ? `Ship-${item.target_id}` : `System-${item.target_id}`;
+        
+        // Relational Proxy Agent Seeding (Synchronous db-sync block)
+        const syncProxyScript = `
+import sqlite3
+conn = sqlite3.connect('${dbPath}')
+conn.row_factory = sqlite3.Row
+cursor = conn.cursor()
 
-        // Determine location for local delivery
-        const ownerAgent = state.agents.find(a => a.id === ownerId) || state.agents[0];
-        const targetLocation = ownerAgent ? ownerAgent.location : "Deep Space";
+target_type = '${item.target_type}'
+target_id = '${item.target_id}'
+proxy_id = '${proxyId}'
+
+if target_type == 'ship':
+    cursor.execute("SELECT name, x, y, system_name FROM ships WHERE id = CAST(? AS INTEGER)", (target_id,))
+    ship = cursor.fetchone()
+    if ship:
+        cursor.execute("INSERT OR IGNORE INTO agents (id, chosen_name, host_type, host_id, active_ship_id, current_x, current_y) VALUES (?, ?, 'ship', ?, ?, ?, ?)",
+                       (proxy_id, ship[0], target_id, int(target_id), ship[1], ship[2]))
+        cursor.execute("UPDATE agents SET current_x = ?, current_y = ? WHERE id = ?", (ship[1], ship[2], proxy_id))
+elif target_type == 'system':
+    cursor.execute("SELECT x, y FROM systems WHERE name = ?", (target_id,))
+    sys = cursor.fetchone()
+    if sys:
+        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type IN ('sem_matrix', 'ami_hub') AND status = 'active'", (target_id,))
+        infra = cursor.fetchone()
+        host_id = str(infra[0]) if infra else '1'
+        cursor.execute("INSERT OR IGNORE INTO agents (id, chosen_name, host_type, host_id, active_ship_id, current_x, current_y) VALUES (?, ?, 'matrix', ?, NULL, ?, ?)",
+                       (proxy_id, 'AMI-' + target_id, host_id, sys[0], sys[1]))
+conn.commit()
+conn.close()
+`.trim();
 
         try {
-            // Execute script on behalf of the owner
-            const out = runPython(vDir, `_verse/${scriptRelPath}`, [], { bobId: ownerId, aclState: state.security?.acl || {} });
+            execSync(`python3 -c "${syncProxyScript.replace(/"/g, '\\"')}"`);
+        } catch (e) {
+            console.error("[AUTOMATION ERROR] Failed to sync proxy:", e.message);
+        }
+
+        const targetLocation = item.location;
+
+        try {
+            // Execute script on behalf of the virtual proxy ID (Ship-8 or System-SYS_A)
+            const out = runPython(vDir, `_verse/${item.path}`, [], { bobId: proxyId, aclState: state.security?.acl || {} });
             
             let feedback = "";
             let reportOut = "No output.";
             
             if (out) {
-                feedback = envManager.processActions(out, universeDir, ownerId, state);
+                feedback = envManager.processActions(out, universeDir, proxyId, state);
                 reportOut = out.trim();
             }
             
             const report = `
 [AUTOMATION-REPORT]
 - System: ${targetLocation}
-- Script: ${script}
-- Owner: ${ownerId}
+- Script: ${item.name}
+- Target: ${item.target}
+- Owner: ${item.owner_id}
 - Status: OK
 - Output: ${reportOut}
 - Result: ${feedback.trim() || 'No engine actions'}`.trim();
@@ -134,8 +228,9 @@ builtins.me = me
             const errorMsg = `
 [AUTOMATION-REPORT]
 - System: ${targetLocation}
-- Script: ${script}
-- Owner: ${ownerId}
+- Script: ${item.name}
+- Target: ${item.target}
+- Owner: ${item.owner_id}
 - Status: FAILED
 - Error: ${err.trim()}`.trim();
 

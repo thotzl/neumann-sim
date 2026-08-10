@@ -33,7 +33,21 @@ class Comms:
     
     @agent_service.with_agent_context(allow_disembodied=True)
     def scut(self, cursor, agent, receiver_id, message, priority=False):
-        priority_int = 1 if priority in [True, "True", "true", 1] else 0
+        # Safely map falsy/undefined/empty states to 0, then cast other states to integer.
+        # Boolean string equivalents ("True", "False") are mapped to 1 and 0.
+        p_str = str(priority).strip().upper()
+        if not priority or p_str in ["", "FALSE"]:
+            priority_int = 0
+        elif p_str == "TRUE":
+            priority_int = 1
+        else:
+            try:
+                priority_int = int(priority)
+                if priority_int not in [0, 1]:
+                    raise ValueError()
+            except (ValueError, TypeError):
+                raise ValueError(f"[ERROR] Invalid SCUT priority: '{priority}'. Priority can ONLY be 0 (Normal) or 1 (EMERGENCY). All other values are invalid and rejected.")
+        
         cursor.execute("SELECT level FROM infrastructure WHERE system_name = ? AND type = 'comms_relay' AND status = 'active'", (agent['location'],))
         relay_row = cursor.fetchone()
         relay_level = relay_row[0] if relay_row else 1

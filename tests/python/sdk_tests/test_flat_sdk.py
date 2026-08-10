@@ -38,12 +38,12 @@ class TestFlatSDK(unittest.TestCase):
         if os.path.exists(self.test_db): os.remove(self.test_db)
 
     def test_flat_mine(self):
-        # 1. Mine (20 Energy, +250 Matter)
+        # 1. Mine (20 Energy, +500 Matter)
         success = self.agent.mine()
         self.assertTrue(success)
         
         status = self.agent.storage()
-        self.assertEqual(status['raw_matter_inventory'], 750) # 500 + 250 = 750!
+        self.assertEqual(status['raw_matter_inventory'], 1000) # 500 + 500 = 1000!
         self.assertEqual(status['energy_inventory'], 80)
 
     def test_flat_scan(self):

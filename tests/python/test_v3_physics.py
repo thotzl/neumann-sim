@@ -26,7 +26,7 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         c.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1, maintenance_cooldown INTEGER DEFAULT 0)")
         c.execute("CREATE TABLE visual_events (cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
 
-        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'SYS_X0_Y0', 500, 0, 300, 'active', 0, 0, 1)")
+        c.execute("INSERT INTO agents (id, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id) VALUES ('Instance-1', 'SYS_X0_Y0', 500, 0, 1000, 'active', 0, 0, 1)")
         c.execute("INSERT INTO systems (name, extractable_matter_in_core, depot_matter_capacity, x, y) VALUES ('SYS_X0_Y0', 10000, 1000, 0, 0)")
         conn.commit()
         conn.close()
@@ -46,7 +46,7 @@ class TestBobOS_v3_Geometry(unittest.TestCase):
         
         self.assertEqual(res['location'], 'SYS_X0_Y0')
         self.assertEqual(res['energy_inventory'], start_energy - mine_cost)
-        self.assertEqual(res['raw_matter_inventory'], 250)
+        self.assertEqual(res['raw_matter_inventory'], 500)
         conn.close()
 
     def test_02_async_build_in_grid(self):

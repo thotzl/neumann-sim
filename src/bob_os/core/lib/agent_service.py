@@ -225,8 +225,12 @@ def with_agent_context(required_columns="*", require_active=False, action_name="
                     return False
 
                 if not allow_disembodied and dict(agent).get('active_ship_id') is None:
-                    print(f"[DENIED] {action_name} requires a physical vessel. You are currently disembodied in a SEM-Matrix.")
-                    return False
+                    # Gantry Crane Bypass: disembodied minds can build/repair if an active gantry exists in the sector
+                    from core.lib import system_service
+                    has_gantry = system_service.has_active_infrastructure(cursor, agent['location'], 'gantry')
+                    if not has_gantry:
+                        print(f"[DENIED] {action_name} requires a physical vessel or an active planetary 'gantry' (service crane).")
+                        return False
 
                 result = func(self, cursor, agent, *args, **kwargs)
                 if result is not False: conn.commit()

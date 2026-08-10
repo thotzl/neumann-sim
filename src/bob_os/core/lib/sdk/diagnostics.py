@@ -18,20 +18,36 @@ class Diagnostics:
             self.base_dir = os.environ.get("VERSE_DIR", os.path.join(cwd, '_verse'))
     
     @agent_service.with_agent_context(allow_disembodied=True)
-    def list_files(self, cursor, agent):
-        acl_data = json.loads(os.environ.get('BOB_ACL', '{}'))
-        scripts_dir = os.path.join(self.base_dir, 'scripts')
-        if not os.path.exists(scripts_dir): return []
+    def routines(self, cursor, agent):
+        # Relational SQL query from the SSoT scripts table
+        cursor.execute("SELECT id, name, path, target, owner_id, created_cycle FROM scripts")
+        rows = cursor.fetchall()
+        
         found_files = []
-        for root, dirs, files in os.walk(scripts_dir):
-            for f in files:
-                if f.endswith('.py') or f.endswith('.txt') or f.endswith('.md'):
-                    full_path = os.path.join(root, f)
-                    rel_path = os.path.relpath(full_path, self.base_dir).replace('\\', '/')
-                    acl = acl_data.get(rel_path, {})
-                    found_files.append({
-                        "path": rel_path, "size": os.path.getsize(full_path),
-                        "owner": acl.get("owner", "Unknown"),
-                        "write_locked": "write_key" in acl, "read_locked": "read_key" in acl
-                    })
+        for r in rows:
+            found_files.append({
+                "id": r['id'],
+                "routine": r['name'],
+                "path": r['path'],
+                "target": r['target'] if r['target'] else "none",
+                "status": "active" if r['target'] else "idle",
+                "owner": r['owner_id'],
+                "created_cycle": r['created_cycle']
+            })
+            
+        import yaml
+        print(yaml.dump({"software_registry": found_files}, sort_keys=False, default_flow_style=False).strip())
+        return True
+
+    @agent_service.with_agent_context(allow_disembodied=True)
+    def list_files(self, cursor, agent):
+        cursor.execute("SELECT id, name, path, target, owner_id, write_key, read_key, content FROM scripts")
+        rows = cursor.fetchall()
+        found_files = []
+        for r in rows:
+            found_files.append({
+                "path": r['path'], "size": len(r['content'] or "") if r['content'] else 0,
+                "owner": r['owner_id'],
+                "write_locked": r['write_key'] is not None, "read_locked": r['read_key'] is not None
+            })
         return found_files

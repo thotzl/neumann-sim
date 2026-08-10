@@ -69,10 +69,11 @@ DESCRIPTIONS = {
     "deposit": "Deposits matter/energy into the local sector depot.",
     "withdraw": "Withdraws energy or matter from the local sector depot.",
     "transfer": "Transfers resources directly to another instance in the same sector.",
-    "scut": "Sends a radio message. Range > 1000 or broadcasts to 'ALL' require an active 'comms_relay'.",
+    "scut": "Sends a radio message. Range > 1000 or broadcasts to 'ALL' require an active 'comms_relay'. Priority must be strictly 0 (Normal) or 1 (EMERGENCY, bypasses DND).",
     "storage": "Displays the current fill level of your inventory.",
     "entities": "Scans for other active instances in the current sector.",
-    "fs": "Lists the files (scripts) in your local filesystem.",
+    "routines": "Displays the Sektor Software Registry of all active background and idle manual routines (Arguments: none).",
+    "list_routines": "Displays the Sektor Software Registry of all active background and idle manual routines (Arguments: none).",
     "board": "Boards a physical vessel at the current location (ID required). Enables physical actions (mine, build, move).",
     "exit_ship": "Exits the current ship and transfers your mind back into the SEM-Matrix.",
     "build_ship": "Constructs a new vessel at the location instantly or in several financial installments (Arguments: blueprint_name, matter_to_invest).",
@@ -180,6 +181,8 @@ def main():
         elif method == "storage": print(yaml.dump(clean_dict(agent.storage()), sort_keys=False, default_flow_style=False).strip())
         elif method == "dashboard": print(yaml.dump(clean_dict(agent.sensors.local_system()), sort_keys=False, default_flow_style=False).strip())
         elif method == "entities": print(yaml.dump(clean_dict(agent.entities()), sort_keys=False, default_flow_style=False).strip())
+        elif method == "routines": agent.routines()
+        elif method == "list_routines": agent.routines()
         elif method == "fs": print(yaml.dump(clean_dict(agent.fs()), sort_keys=False, default_flow_style=False).strip())
         elif method == "board": agent.board(ship_id=safe_int(params.get('ship_id'), 'ship_id'))
         elif method == "exit_ship": agent.exit_ship()

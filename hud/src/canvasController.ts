@@ -682,7 +682,7 @@ export class CanvasController {
     this.ctx.lineWidth = 1;
     this.ctx.setLineDash([4, 8]);
     agents.forEach((agent) => {
-      if (agent.status === 'traveling') {
+      if (agent.status === 'traveling' || agent.location === 'Interstellar') {
         // Zeichne den Vektor vom AKTUELLEN Schiffsort zum ZIEL-Ort
         const currentScreen = this.worldToScreen(agent.current_x || 0, agent.current_y || 0, camera);
         const targetScreen = this.worldToScreen(agent.target_x || 0, agent.target_y || 0, camera);
@@ -822,7 +822,7 @@ export class CanvasController {
     const zoom = camera.zoom;
 
     agents.forEach((agent) => {
-      if (agent.status === 'traveling') {
+      if (agent.status === 'traveling' || agent.location === 'Interstellar') {
         const currentScreen = this.worldToScreen(agent.current_x, agent.current_y, camera);
         // Nutzt current_x/y statt origin_x/y für eine pixelgenaue Echtzeit-Flugrichtung
         const angle = Math.atan2(agent.target_y - agent.current_y, agent.target_x - agent.current_x) + Math.PI / 2;

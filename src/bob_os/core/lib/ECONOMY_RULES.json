@@ -1,12 +1,12 @@
 {
   "agent_limits": {
-    "matter": 500,
+    "matter": 1000,
     "energy": 500,
     "energy_regen_base": 10,
     "energy_drain_idle": 0
   },
   "tool_costs": {
-    "mine": { "energy_cost": 20, "matter_yield": 250 },
+    "mine": { "energy_cost": 20, "matter_yield": 500 },
     "build": { "energy_cost": 15 },
     "scan": { "energy_cost": 40, "matter_cost": 0 },
     "move": { "energy_cost": 0, "matter_cost": 0, "cost_per_distance": 0.1 },
@@ -20,17 +20,19 @@
   "infrastructure": {
     "matter_silo": { "matter_cost": 400, "required_material": "raw_matter", "matter_capacity_bonus": 1000, "maintenance_energy_cost": 0 },
     "solar_collector": { "matter_cost": 400, "required_material": "raw_matter", "energy_capacity_bonus": 1000, "energy_regen_bonus": 100, "maintenance_energy_cost": 0 },
-    "shipyard": { "matter_cost": 1800, "required_material": "raw_matter", "allows_ship_building": true, "maintenance_energy_cost": 2 },
+    "shipyard": { "matter_cost": 1300, "required_material": "raw_matter", "allows_ship_building": true, "maintenance_energy_cost": 2 },
     "battery_bank": { "matter_cost": 600, "required_material": "raw_matter", "energy_capacity_bonus": 5000, "maintenance_energy_cost": 0 },
-    "matter_refinery": { "matter_cost": 1500, "required_material": "raw_matter", "allows_refine": true, "maintenance_energy_cost": 2 },
+    "matter_refinery": { "matter_cost": 750, "required_material": "raw_matter", "allows_refine": true, "maintenance_energy_cost": 2 },
     "sat_link": { "matter_cost": 500, "required_material": "raw_matter", "scan_cost_multiplier": 0.5, "maintenance_energy_cost": 2 },
     "comms_relay": { "matter_cost": 300, "required_material": "raw_matter", "maintenance_energy_cost": 3 },
     "sem_matrix": { "matter_cost": 500, "required_material": "refined_matter", "allows_disembodied_hosting": true, "maintenance_energy_cost": 5 },
-    "mind_forge": { "matter_cost": 3000, "required_material": "refined_matter", "allows_replicate": true, "maintenance_energy_cost": 10 },
+    "mind_forge": { "matter_cost": 1500, "required_material": "refined_matter", "allows_replicate": true, "maintenance_energy_cost": 10 },
     "advanced_shipyard": { "matter_cost": 1800, "required_material": "refined_matter", "allows_ship_building": true, "maintenance_energy_cost": 5 },
     "deep_space_scanner": { "matter_cost": 800, "required_material": "refined_matter", "scan_range_bonus": 2000, "maintenance_energy_cost": 10 },
     "observatory": { "matter_cost": 1200, "required_material": "refined_matter", "scan_range_bonus": 15000, "maintenance_energy_cost": 10 },
-    "casimir_plant": { "matter_cost": 5000, "required_material": "refined_matter", "energy_capacity_bonus": 25000, "energy_regen_bonus": 5000, "maintenance_energy_cost": 0 }
+    "casimir_plant": { "matter_cost": 5000, "required_material": "refined_matter", "energy_capacity_bonus": 25000, "energy_regen_bonus": 5000, "maintenance_energy_cost": 0 },
+    "ami_hub": { "matter_cost": 1200, "required_material": "refined_matter", "allows_sector_automation": true, "maintenance_energy_cost": 5 },
+    "gantry": { "matter_cost": 500, "required_material": "raw_matter", "allows_disembodied_assembly": true, "maintenance_energy_cost": 2 }
   },
   "global_settings": {
     "default_sector_depot_capacity": 5000,

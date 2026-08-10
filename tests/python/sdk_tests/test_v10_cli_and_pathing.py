@@ -47,6 +47,13 @@ class TestV10Fixes(unittest.TestCase):
         with open(script_path, 'w') as f:
             f.write("print('test')")
             
+        # Register in the SSoT scripts table
+        conn = db_config.get_connection()
+        conn.execute("INSERT INTO scripts (name, content, path, target, owner_id) VALUES (?, ?, ?, ?, ?)",
+                     ('test_script.py', "print('test')", 'scripts/active/test_script.py', None, 'Instance-1'))
+        conn.commit()
+        conn.close()
+            
         agent = bob_sdk.Agent('Instance-1')
         files = agent.fs()
         

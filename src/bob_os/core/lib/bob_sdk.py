@@ -104,6 +104,8 @@ class Agent:
         return True
 
     # --- DIAGNOSTICS DELEGATES ---
+    def routines(self): return self.diagnostics.routines()
+    def list_routines(self): return self.diagnostics.routines()
     def fs(self): return self.diagnostics.list_files()
     def list_files(self): return self.diagnostics.list_files()
 

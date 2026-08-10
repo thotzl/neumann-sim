@@ -58,14 +58,13 @@ function processActions(text, universeDir, agentId, state) {
     }
 
     // --- WRITE & REPLACE ---
-    const fileRegex = /\[(?:WRITE|REPLACE):\s*([a-zA-Z0-9._\-\/]+)(?:\s+\(READ_KEY:\s*([a-zA-Z0-9_-]+)\))?(?:\s+\(WRITE_KEY:\s*([a-zA-Z0-9_-]+)\))?\]([\s\S]*?)\[END\]/gi;
+    // Match any [WRITE: ... ] ... [END] block
+    const fileRegex = /\[(?:WRITE|REPLACE):([^\]]+)\]([\s\S]*?)\[END\]/gi;
     let safeRunText = activeText;
 
     while ((match = fileRegex.exec(activeText)) !== null) {
-        const filePath = match[1].trim();
-        const readKey = match[2];
-        const writeKey = match[3];
-        let content = match[4].trim();
+        const tagHeader = match[1].trim();
+        let content = match[2].trim();
 
         safeRunText = safeRunText.replace(match[0], `[FILE_OPERATION_REMOVED_FROM_PARSE_TREE]`);
 
@@ -74,6 +73,34 @@ function processActions(text, universeDir, agentId, state) {
             content = content.replace(/\n```$/, '');
         }
         content = content.split('\n').map(line => line.replace(/^`|`$/g, '')).join('\n');
+
+        // Parse header components
+        const headerParts = tagHeader.split(/\s+/);
+        const rawFileName = headerParts[0].trim();
+
+        const readKeyMatch = tagHeader.match(/\(READ_KEY:\s*([a-zA-Z0-9_-]+)\)/i);
+        const readKey = readKeyMatch ? readKeyMatch[1] : null;
+        const writeKey = tagHeader.match(/\(WRITE_KEY:\s*([a-zA-Z0-9_-]+)\)/i);
+        const writeKeyVal = writeKey ? writeKey[1] : null;
+
+        const targetMatch = tagHeader.match(/target=([a-zA-Z0-9_:-]+)/i);
+        const target = targetMatch ? targetMatch[1].trim() : null;
+
+        // Resolve absolute and relative paths (root is _verse/)
+        let filePath = "";
+        if (target) {
+            const [targetType, targetId] = target.toLowerCase().split('::');
+            const cleanTargetId = target.split('::')[1];
+            if (targetType === 'ship') {
+                filePath = `scripts/active/ships/${cleanTargetId}/${rawFileName}`;
+            } else if (targetType === 'system') {
+                filePath = `scripts/active/systems/${cleanTargetId}/${rawFileName}`;
+            } else {
+                filePath = rawFileName;
+            }
+        } else {
+            filePath = (rawFileName.includes('/') || rawFileName.includes('\\')) ? rawFileName : `scripts/${rawFileName}`;
+        }
 
         const fullPath = path.resolve(universeDir, filePath);
         if (!fullPath.startsWith(path.resolve(universeDir))) continue;
@@ -89,24 +116,165 @@ function processActions(text, universeDir, agentId, state) {
             continue;
         }
 
+        // Proximity & Hardware Verification Lockouts
+        const dbPath = path.join(universeDir, 'universe.db');
+        if (target) {
+            const checkScript = `
+import sqlite3, os, sys
+conn = sqlite3.connect('${dbPath}')
+conn.row_factory = sqlite3.Row
+cursor = conn.cursor()
+
+# Self-healing database structure initialization
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS scripts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    content TEXT,
+    path TEXT NOT NULL,
+    target TEXT DEFAULT NULL,
+    owner_id TEXT NOT NULL,
+    read_key TEXT DEFAULT NULL,
+    write_key TEXT DEFAULT NULL,
+    created_cycle INTEGER DEFAULT 0
+)
+""")
+try:
+    cursor.execute("ALTER TABLE ships ADD COLUMN active_script_id INTEGER DEFAULT NULL")
+except sqlite3.OperationalError:
+    pass
+try:
+    cursor.execute("ALTER TABLE systems ADD COLUMN active_script_id INTEGER DEFAULT NULL")
+except sqlite3.OperationalError:
+    pass
+
+# Query agent location
+cursor.execute("SELECT location FROM v_agents WHERE id = ?", ('${agentId}',))
+agent = cursor.fetchone()
+agent_loc = agent['location'] if agent else 'Unknown'
+
+target = '${target}'
+target_type, target_id = target.lower().split('::')
+clean_target_id = target.split('::')[1]
+
+if target_type == 'ship':
+    cursor.execute("SELECT system_name, has_logic_core FROM ships WHERE id = CAST(? AS INTEGER)", (clean_target_id,))
+    ship = cursor.fetchone()
+    if not ship:
+        print('[DENIED: Target vessel ID ' + clean_target_id + ' not found in sector database.]')
+    elif ship['system_name'] != agent_loc:
+        print('[DENIED: Proximity Lockout. Direct localized flashing of Vessel \\'Ship-' + clean_target_id + '\\' failed. The target vessel is stationed in system \\'' + ship['system_name'] + '\\', but your consciousness is currently located in \\'' + agent_loc + '\\'.]')
+    elif ship['has_logic_core'] != 1:
+        print('[DENIED: Vessel \\'Ship-' + clean_target_id + '\\' lacks a physical \\'logic_core\\' module. Onboard autonomous programming is impossible.]')
+    else:
+        print('[SUCCESS]')
+elif target_type == 'system':
+    if clean_target_id != agent_loc:
+        print('[DENIED: Proximity Lockout. Sektor-level automation deployment failed. You cannot deploy an active AMI routine to the \\'' + clean_target_id + '\\' matrix hub while your own consciousness is stationed in \\'' + agent_loc + '\\'.]')
+    else:
+        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'ami_hub' AND status = 'active'", (clean_target_id,))
+        if not cursor.fetchone():
+            print('[DENIED: Sector \\'' + clean_target_id + '\\' lacks an active \\'ami_hub\\' (Artificial Machine Intelligence Hub). Sector-level background automation is impossible.]')
+        else:
+            print('[SUCCESS]')
+else:
+    print('[SUCCESS]')
+conn.close()
+`.trim();
+            try {
+                const checkOut = execSync(`python3 -c "${checkScript.replace(/"/g, '\\"')}"`).toString().trim();
+                if (checkOut.startsWith('[DENIED:')) {
+                    feedback += checkOut + "\n";
+                    continue;
+                }
+            } catch (err) {
+                feedback += `[ERROR: Hardware validation failed due to internal environment error.]\n`;
+                continue;
+            }
+        }
+
         try {
+            // Write to physical Air-Gapped Silo File
             fs.mkdirSync(path.dirname(fullPath), { recursive: true });
             fs.writeFileSync(fullPath, content);
 
-            // Set or overwrite ACL if keys were provided OR if no ACL exists yet
-            if (readKey || writeKey || !state.security.acl[filePath]) {
+            // Relational SSoT Database Persistence & Linkage
+            const dbWriteScript = `
+import sqlite3, os, sys
+conn = sqlite3.connect('${dbPath}')
+cursor = conn.cursor()
+
+# Self-healing database structure initialization
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS scripts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    content TEXT,
+    path TEXT NOT NULL,
+    target TEXT DEFAULT NULL,
+    owner_id TEXT NOT NULL,
+    read_key TEXT DEFAULT NULL,
+    write_key TEXT DEFAULT NULL,
+    created_cycle INTEGER DEFAULT 0
+)
+""")
+try:
+    cursor.execute("ALTER TABLE ships ADD COLUMN active_script_id INTEGER DEFAULT NULL")
+except sqlite3.OperationalError:
+    pass
+try:
+    cursor.execute("ALTER TABLE systems ADD COLUMN active_script_id INTEGER DEFAULT NULL")
+except sqlite3.OperationalError:
+    pass
+
+cursor.execute("SELECT id FROM scripts WHERE path = ?", ('${filePath}',))
+row = cursor.fetchone()
+
+script_id = None
+if row:
+    script_id = row[0]
+    cursor.execute("UPDATE scripts SET content = ?, owner_id = ?, read_key = ?, write_key = ?, target = ? WHERE id = ?",
+                   (sys.argv[1], '${agentId}', ${readKey ? `'${readKey}'` : 'None'}, ${writeKeyVal ? `'${writeKeyVal}'` : 'None'}, '${target || ""}', script_id))
+else:
+    cursor.execute("INSERT INTO scripts (name, content, path, target, owner_id, read_key, write_key, created_cycle) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                   ('${rawFileName}', sys.argv[1], '${filePath}', '${target || ""}', '${agentId}', ${readKey ? `'${readKey}'` : 'None'}, ${writeKeyVal ? `'${writeKeyVal}'` : 'None'}, ${state.round || 0}))
+    script_id = cursor.lastrowid
+
+target = '${target || ""}'
+if target.startswith('ship::'):
+    clean_target_id = target.split('::')[1]
+    cursor.execute("UPDATE ships SET active_script_id = ? WHERE id = CAST(? AS INTEGER)", (script_id, clean_target_id))
+elif target.startswith('system::'):
+    clean_target_id = target.split('::')[1]
+    cursor.execute("UPDATE systems SET active_script_id = ? WHERE name = ?", (script_id, clean_target_id))
+
+conn.commit()
+conn.close()
+print(script_id)
+`.trim();
+
+            const safeContentArg = content.replace(/'/g, "'\\''");
+            const scriptId = execSync(`python3 -c "${dbWriteScript.replace(/"/g, '\\"')}" '${safeContentArg}'`).toString().trim();
+
+            // Sync with existing ACL state in-memory as backup / UI compatibility
+            if (readKey || writeKeyVal || !state.security.acl[filePath]) {
                 const aclEntry = state.security.acl[filePath] || { owner: agentId };
                 if (readKey) aclEntry.read_key = readKey;
-                if (writeKey) aclEntry.write_key = writeKey;
+                if (writeKeyVal) aclEntry.write_key = writeKeyVal;
                 state.security.acl[filePath] = aclEntry;
             }
-            // Always update owner to current agentId on write/replace to prevent stale ownership on shared files
             if (state.security.acl[filePath]) {
                 state.security.acl[filePath].owner = agentId;
             }
 
-            feedback += `[SUCCESS: '${filePath}' manifested]\n`;
-        } catch (e) {}
+            if (target) {
+                feedback += `[SUCCESS: '${rawFileName}' registered in database as Script ID ${scriptId} and deployed to ${target}]\n`;
+            } else {
+                feedback += `[SUCCESS: '${filePath}' registered in database as Script ID ${scriptId}]\n`;
+            }
+        } catch (e) {
+            feedback += `[ERROR: File write error: ${e.message}]\n`;
+        }
     }
 
     // --- READ ---
@@ -179,7 +347,7 @@ function processActions(text, universeDir, agentId, state) {
         let displayCmd = cmd; // The original command the agent wrote
 
         // Action Chain Short-Circuiting
-        if (chainFailed && (cmd.includes("move(") || cmd.includes("route(") || cmd.includes("jump("))) {
+        if (chainFailed && (cmd.includes("move(") || cmd.includes("route(") || cmd.includes("jump(") || cmd.includes("sleep("))) {
             feedback += `[ABORTED: '${cmd}' was bypassed because a preceding logistics or loading action in this chain failed.]\n`;
             continue;
         }
@@ -232,7 +400,7 @@ function processActions(text, universeDir, agentId, state) {
             feedback += `[RESPONSE: '${displayCmd}' ::\n${out.trim() || "OK"}]\n`;
 
             if (out.includes('[ERROR]') || out.includes('[DENIED]')) {
-                if (displayCmd.includes('withdraw') || displayCmd.includes('deposit') || displayCmd.includes('refine') || displayCmd.includes('build_ship')) {
+                if (displayCmd.includes('withdraw') || displayCmd.includes('deposit') || displayCmd.includes('refine') || displayCmd.includes('build_ship') || displayCmd.includes('build(') || displayCmd.includes('build\n') || displayCmd.includes('mine(') || displayCmd.includes('mine\n')) {
                     chainFailed = true;
                 }
             }
@@ -243,7 +411,7 @@ function processActions(text, universeDir, agentId, state) {
             feedback += `[ERROR-RESPONSE: '${displayCmd}' ::\n${err.trim()}]\n`;
 
             if (err.includes('[ERROR]') || err.includes('[DENIED]')) {
-                if (displayCmd.includes('withdraw') || displayCmd.includes('deposit') || displayCmd.includes('refine') || displayCmd.includes('build_ship')) {
+                if (displayCmd.includes('withdraw') || displayCmd.includes('deposit') || displayCmd.includes('refine') || displayCmd.includes('build_ship') || displayCmd.includes('build(') || displayCmd.includes('build\n') || displayCmd.includes('mine(') || displayCmd.includes('mine\n')) {
                     chainFailed = true;
                 }
             }

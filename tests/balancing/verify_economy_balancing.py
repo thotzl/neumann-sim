@@ -260,6 +260,40 @@ def run_balance_check():
         print(f"  ✅ Ship-to-Factory proportionality optimal. Standard Miner ({miner_cost} RM) costs {round((miner_cost/shipyard_cost)*100, 1)}% of a shipyard ({shipyard_cost} RM).")
 
     # -------------------------------------------------------------
+    # 🏎️ CHECK 7: EXPRESS GROWTH & LOGISTICS COMPLIANCE (v13.8)
+    # -------------------------------------------------------------
+    print("\n[CHECK 7] Express Growth and Logistics Limits...")
+    mine_yield = tool_costs.get('mine', {}).get('matter_yield', 0)
+    agent_matter = agent_limits.get('matter', 0)
+    refinery_cost = infra.get('matter_refinery', {}).get('matter_cost', 0)
+    mind_forge_cost = infra.get('mind_forge', {}).get('matter_cost', 0)
+
+    if mine_yield != 500:
+        errors.append(f"LOGISTICS ERROR: Mine yield is {mine_yield} RM, expected exactly 500 RM for Express Growth!")
+    else:
+        print(f"  ✅ Mine Yield compliant: {mine_yield} RM (Verdoppelt).")
+
+    if agent_matter != 1000:
+        errors.append(f"LOGISTICS ERROR: Replicant cargo capacity is {agent_matter} RM, expected exactly 1000 RM for Express Growth!")
+    else:
+        print(f"  ✅ Replicant Cargo Limit compliant: {agent_matter} RM (Verdoppelt).")
+
+    if refinery_cost != 750:
+        errors.append(f"BALANCE ERROR: matter_refinery cost is {refinery_cost} RM, expected exactly 750 RM (Halbiert)!")
+    else:
+        print(f"  ✅ Refinery Cost compliant: {refinery_cost} RM.")
+
+    if shipyard_cost != 1300:
+        errors.append(f"BALANCE ERROR: shipyard cost is {shipyard_cost} RM, expected exactly 1300 RM!")
+    else:
+        print(f"  ✅ Shipyard Cost compliant: {shipyard_cost} RM.")
+
+    if mind_forge_cost != 1500:
+        errors.append(f"BALANCE ERROR: mind_forge cost is {mind_forge_cost} RM, expected exactly 1500 FM (Halbiert)!")
+    else:
+        print(f"  ✅ Mind Forge Cost compliant: {mind_forge_cost} FM.")
+
+    # -------------------------------------------------------------
     # 🏆 BALANCING SUMMARY
     # -------------------------------------------------------------
     print("\n==========================================")

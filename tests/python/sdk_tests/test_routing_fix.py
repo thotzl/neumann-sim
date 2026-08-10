@@ -22,7 +22,6 @@ class TestRoutingFix(unittest.TestCase):
             CREATE TABLE agents (
                 id TEXT PRIMARY KEY, 
                 chosen_name TEXT, 
-                location TEXT, 
                 energy_inventory INTEGER, 
                 raw_matter_inventory INTEGER, 
                 refined_matter_inventory INTEGER DEFAULT 0, 
@@ -149,8 +148,8 @@ class TestRoutingFix(unittest.TestCase):
         
         # Test Case 1: Agent on a slow ship (Speed: 10.0) -> Expected Ticks for Distance 100: 10
         c.execute("""
-            INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id, host_type, host_id)
-            VALUES ('Instance-1', 'Slow-Pilot', 'SYS_A', 1000, 0, 1000, 'active', 0.0, 0.0, 3, 'ship', '3')
+            INSERT INTO agents (id, chosen_name, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id, host_type, host_id)
+            VALUES ('Instance-1', 'Slow-Pilot', 1000, 0, 1000, 'active', 0.0, 0.0, 3, 'ship', '3')
         """)
         c.execute("""
             INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory, max_speed)
@@ -159,8 +158,8 @@ class TestRoutingFix(unittest.TestCase):
         
         # Test Case 2: Agent on a fast ship (Speed: 100.0) -> Expected Ticks for Distance 100: 1
         c.execute("""
-            INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id, host_type, host_id)
-            VALUES ('Instance-2', 'Fast-Pilot', 'SYS_A', 1000, 0, 1000, 'active', 0.0, 0.0, 4, 'ship', '4')
+            INSERT INTO agents (id, chosen_name, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, active_ship_id, host_type, host_id)
+            VALUES ('Instance-2', 'Fast-Pilot', 1000, 0, 1000, 'active', 0.0, 0.0, 4, 'ship', '4')
         """)
         c.execute("""
             INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory, max_speed)

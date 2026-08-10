@@ -1,5 +1,6 @@
 import { Camera, Sector } from './shared/types';
 import { Galaxy, getStellarProperties, UniverseGenerator } from './shared/generator';
+import { generateVesselGeometry } from './shared/vesselGeometry';
 
 export class CanvasController {
   private canvas: HTMLCanvasElement;
@@ -698,7 +699,7 @@ export class CanvasController {
   /**
    * Draws the stationary ships and matrix bobs on the outer-planetary bounds.
    */
-  drawStationaryAssets(systems: any[], ships: any[], agents: any[], camera: Camera, selectedId: string | null, activeRound: number = 0) {
+  drawStationaryAssets(systems: any[], ships: any[], agents: any[], camera: Camera, selectedId: string | null, activeRound: number = 0, useBetaView: boolean = false, blueprints: any[] = [], worldSeed: string = 'BobOS_V12') {
     const zoom = camera.zoom;
     
     systems.forEach((sys) => {
@@ -736,8 +737,8 @@ export class CanvasController {
         itemIdx++;
 
         const isUnderConstruction = ship.pilot_id === 'UNDER_CONSTRUCTION';
-        const pilot = bobsHere.find((a) => a.active_ship_id === ship.id);
-        const isPilotSelected = pilot && selectedId === pilot.id;
+        const pilot = ship.pilot_id ? bobsHere.find((a) => a.id === ship.pilot_id) : null;
+        const isSelectionHere = selectedId === ship.id.toString() || bobsHere.some((a) => a.active_ship_id === ship.id && selectedId === a.id);
 
         const pilotRemaining = pilot && pilot.sleep_state && pilot.sleep_state > 0 && pilot.sleep_until_round
           ? Math.max(0, pilot.sleep_until_round - activeRound)
@@ -755,23 +756,56 @@ export class CanvasController {
           }
         }
 
-        // Draw triangular ship
         this.ctx.save();
-        this.ctx.fillStyle = shipColor;
-        this.ctx.beginPath();
-        const shipHeight = 8 * Math.max(0.4, Math.min(2.0, zoom));
-        const shipWidth = 6 * Math.max(0.4, Math.min(2.0, zoom));
-        this.ctx.moveTo(sx, sy - shipHeight / 2);
-        this.ctx.lineTo(sx - shipWidth / 2, sy + shipHeight / 2);
-        this.ctx.lineTo(sx + shipWidth / 2, sy + shipHeight / 2);
-        this.ctx.closePath();
-        this.ctx.fill();
+        
+        if (useBetaView) {
+          // BETA PROCEDURAL SCULPTED DRAWING
+          const bp = blueprints.find(b => b.name === ship.blueprint_name);
+          let grid: string[][] = [];
+          if (bp) {
+            try { grid = JSON.parse(bp.matrix_json.replace(/'/g, '"')); } catch (e) {}
+          }
+          const geom = generateVesselGeometry(ship, grid, worldSeed);
+          
+          const scale = 0.05 * Math.max(0.4, Math.min(2.0, zoom)); 
+          
+          this.ctx.strokeStyle = shipColor;
+          this.ctx.lineWidth = 1.0;
+          this.ctx.fillStyle = shipColor;
+          this.ctx.shadowColor = shipColor;
+          this.ctx.shadowBlur = pilotSleeping ? 0 : 4 * zoom;
+          
+          // Outer hull
+          this.ctx.beginPath();
+          geom.rawPoints.forEach((p, idx) => {
+            const px = sx + p.x * scale;
+            const py = sy + p.y * scale;
+            if (idx === 0) this.ctx.moveTo(px, py);
+            else this.ctx.lineTo(px, py);
+          });
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
 
-        if (isPilotSelected) {
+        } else {
+          // CLASSIC TRIANGLE DRAWING
+          this.ctx.fillStyle = shipColor;
+          this.ctx.beginPath();
+          const shipHeight = 8 * Math.max(0.4, Math.min(2.0, zoom));
+          const shipWidth = 6 * Math.max(0.4, Math.min(2.0, zoom));
+          this.ctx.moveTo(sx, sy - shipHeight / 2);
+          this.ctx.lineTo(sx - shipWidth / 2, sy + shipHeight / 2);
+          this.ctx.lineTo(sx + shipWidth / 2, sy + shipHeight / 2);
+          this.ctx.closePath();
+          this.ctx.fill();
+        }
+
+        if (isSelectionHere) {
           this.ctx.strokeStyle = '#ffffff';
           this.ctx.lineWidth = 1;
           this.ctx.beginPath();
-          this.ctx.arc(sx, sy, 8 * Math.max(0.4, Math.min(2.0, zoom)), 0, Math.PI * 2);
+          const radius = useBetaView ? 12 : 8;
+          this.ctx.arc(sx, sy, radius * Math.max(0.4, Math.min(2.0, zoom)), 0, Math.PI * 2);
           this.ctx.stroke();
         }
         this.ctx.restore();
@@ -818,7 +852,7 @@ export class CanvasController {
   /**
    * Draws the traveling couriers along flight vector paths.
    */
-  drawTravelingAgents(agents: any[], camera: Camera, selectedId: string | null, activeRound: number = 0) {
+  drawTravelingAgents(agents: any[], ships: any[], camera: Camera, selectedId: string | null, activeRound: number = 0, useBetaView: boolean = false, blueprints: any[] = [], worldSeed: string = 'BobOS_V12') {
     const zoom = camera.zoom;
 
     agents.forEach((agent) => {
@@ -842,23 +876,87 @@ export class CanvasController {
         this.ctx.translate(currentScreen.x, currentScreen.y);
         this.ctx.rotate(angle);
         
-        this.ctx.fillStyle = shipColor;
-        this.ctx.shadowColor = shipColor;
-        this.ctx.shadowBlur = isSleeping ? 0 : 8 * zoom;
+        if (useBetaView && agent.host_type === 'ship' && agent.host_id) {
+          const ship = ships.find(s => s.id.toString() === agent.host_id.toString());
+          if (ship) {
+            const bp = blueprints.find(b => b.name === ship.blueprint_name);
+            let grid: string[][] = [];
+            if (bp) {
+              try { grid = JSON.parse(bp.matrix_json.replace(/'/g, '"')); } catch (e) {}
+            }
+            const geom = generateVesselGeometry(ship, grid, worldSeed);
+            const scale = 0.06 * Math.max(0.4, Math.min(2.0, zoom)); 
 
-        this.ctx.beginPath();
-        const shipHeight = 12 * Math.max(0.4, Math.min(2.0, zoom));
-        const shipWidth = 8 * Math.max(0.4, Math.min(2.0, zoom));
-        this.ctx.moveTo(0, -shipHeight / 2);
-        this.ctx.lineTo(-shipWidth / 2, shipHeight / 2);
-        this.ctx.lineTo(shipWidth / 2, shipHeight / 2);
-        this.ctx.closePath();
-        this.ctx.fill();
+            this.ctx.strokeStyle = shipColor;
+            this.ctx.lineWidth = 1.0;
+            this.ctx.fillStyle = shipColor;
+            this.ctx.shadowColor = shipColor;
+            this.ctx.shadowBlur = isSleeping ? 0 : 8 * zoom;
+
+            // Outer hull
+            this.ctx.beginPath();
+            geom.rawPoints.forEach((p, idx) => {
+              // We rotate and center the points. Y is already along the axis, but we want Y=0 to be the center.
+              // Actually generateVesselGeometry points are around 0,0 already!
+              const px = p.x * scale;
+              const py = p.y * scale;
+              if (idx === 0) this.ctx.moveTo(px, py);
+              else this.ctx.lineTo(px, py);
+            });
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            // Plume
+            if (!isSleeping && ship.thrust) {
+               const thrust = ship.thrust;
+               this.ctx.fillStyle = 'rgba(14,165,233,0.5)';
+               this.ctx.beginPath();
+               // Thrust plume pointing "down" (tail is positive Y)
+               const plumeY = (geom.exhaustY - 200) * scale;
+               const plumeLen = Math.min(20, thrust / 100) * scale;
+               const plumeW = 5 * scale;
+               this.ctx.moveTo(0, plumeY);
+               this.ctx.lineTo(-plumeW, plumeY + plumeLen * 0.5);
+               this.ctx.lineTo(0, plumeY + plumeLen);
+               this.ctx.lineTo(plumeW, plumeY + plumeLen * 0.5);
+               this.ctx.closePath();
+               this.ctx.fill();
+            }
+          } else {
+             // Fallback if ship not found
+             this.ctx.fillStyle = shipColor;
+             this.ctx.shadowColor = shipColor;
+             this.ctx.shadowBlur = isSleeping ? 0 : 8 * zoom;
+             this.ctx.beginPath();
+             const shipHeight = 12 * Math.max(0.4, Math.min(2.0, zoom));
+             const shipWidth = 8 * Math.max(0.4, Math.min(2.0, zoom));
+             this.ctx.moveTo(0, -shipHeight / 2);
+             this.ctx.lineTo(-shipWidth / 2, shipHeight / 2);
+             this.ctx.lineTo(shipWidth / 2, shipHeight / 2);
+             this.ctx.closePath();
+             this.ctx.fill();
+          }
+        } else {
+          // Classic Triangle
+          this.ctx.fillStyle = shipColor;
+          this.ctx.shadowColor = shipColor;
+          this.ctx.shadowBlur = isSleeping ? 0 : 8 * zoom;
+
+          this.ctx.beginPath();
+          const shipHeight = 12 * Math.max(0.4, Math.min(2.0, zoom));
+          const shipWidth = 8 * Math.max(0.4, Math.min(2.0, zoom));
+          this.ctx.moveTo(0, -shipHeight / 2);
+          this.ctx.lineTo(-shipWidth / 2, shipHeight / 2);
+          this.ctx.lineTo(shipWidth / 2, shipHeight / 2);
+          this.ctx.closePath();
+          this.ctx.fill();
+        }
 
         this.ctx.restore();
 
         // Selection highlight ring
-        const isAgentSelected = selectedId === agent.id;
+        const isAgentSelected = selectedId === agent.id || (agent.active_ship_id && selectedId === agent.active_ship_id.toString());
         if (isAgentSelected) {
           this.ctx.save();
           this.ctx.strokeStyle = '#ffffff';

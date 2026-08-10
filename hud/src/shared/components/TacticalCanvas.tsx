@@ -32,6 +32,8 @@ interface TacticalCanvasProps {
   onBrushAction?: (worldX: number, worldY: number) => void;
   revealedSectors?: Set<string>;
   showTheoreticalUniverse?: boolean;
+  blueprints?: any[];
+  useBetaView?: boolean;
   visualTuning?: {
     sizeScale: number;
     brightnessScale: number;
@@ -67,6 +69,8 @@ export const TacticalCanvas = ({
   onBrushAction,
   revealedSectors,
   showTheoreticalUniverse = false,
+  blueprints = [],
+  useBetaView = false,
   visualTuning = {
     sizeScale: 0.25,
     brightnessScale: 1.1,
@@ -230,8 +234,8 @@ export const TacticalCanvas = ({
 
     // 5. Draw active Fleet assets (dashed flight paths, stationed triangles, traveling Bobs)
     controller.drawTransitLines(agents, camera);
-    controller.drawStationaryAssets(systems, ships, agents, camera, selection?.id || null);
-    controller.drawTravelingAgents(agents, camera, selection?.id || null);
+    controller.drawStationaryAssets(systems, ships, agents, camera, selection?.id || null, 0, useBetaView, blueprints, seed);
+    controller.drawTravelingAgents(agents, ships, camera, selection?.id || null, 0, useBetaView, blueprints, seed);
 
     // 6. Draw active Brush circles
     if (isBrushActive) {

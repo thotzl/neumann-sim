@@ -16,8 +16,10 @@ interface C2Store {
   logs: LogEntry[];
   selection: Selection | null;
   isReady: boolean;
+  useBetaView: boolean;
   setSelection: (sel: Selection | null) => void;
   setReady: (ready: boolean) => void;
+  setUseBetaView: (beta: boolean) => void;
   initializeLogs: (history: any[]) => void;
   updateState: (data: Partial<WorldState>) => void;
   appendRealtimeLogs: (events: any[]) => void;
@@ -28,9 +30,11 @@ export const useC2Store = create<C2Store>((set) => ({
   logs: [],
   selection: null,
   isReady: false,
+  useBetaView: false,
 
   setSelection: (sel) => set({ selection: sel }),
   setReady: (ready) => set({ isReady: ready }),
+  setUseBetaView: (beta) => set({ useBetaView: beta }),
 
   appendRealtimeLogs: (events) => set((prev) => {
     if (!events || events.length === 0) return {};

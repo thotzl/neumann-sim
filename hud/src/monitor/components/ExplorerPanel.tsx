@@ -23,6 +23,104 @@ export const ExplorerPanel = () => {
     zoom.value = 0.8; // Comfortable focus zoom level
   };
 
+  // Group agents into neural minds (biological/matrix Bobs) vs. autonomous drone vessels
+  const realAgents = state.agents.filter(a => !a.id.toLowerCase().startsWith('ship'));
+  const droneAgents = state.agents.filter(a => a.id.toLowerCase().startsWith('ship'));
+
+  const renderAgentRow = (a: any, isDrone: boolean) => {
+    const isASel = selection?.type === 'agent' && selection.id === a.id;
+    const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : 'Unnamed';
+    
+    const remaining = a.sleep_state && a.sleep_state > 0 && a.sleep_until_round
+      ? Math.max(0, a.sleep_until_round - state.round)
+      : 0;
+      
+    const isCurrentlySleeping = a.sleep_state && a.sleep_state > 0 && remaining > 0;
+    
+    let dotClass = '';
+    if (isDrone) {
+      // Drones get an industrial glowing amber dot
+      dotClass = 'bg-amber-500 shadow-[0_0_8px_#f59e0b]';
+    } else {
+      // Biological minds get an organic emerald green dot (or standby orange/purple)
+      dotClass = a.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-cyber-amber';
+      
+      if (isCurrentlySleeping) {
+        if (a.sleep_state === 1) {
+          dotClass = 'bg-cyber-amber shadow-[0_0_8px_#f59e0b]'; 
+        } else if (a.sleep_state === 2) {
+          dotClass = 'bg-cyber-purple shadow-[0_0_8px_#a855f7]'; 
+        }
+      }
+    }
+    
+    let statusText = a.status === 'traveling' ? 'In Transit' : (a.location || 'Unknown');
+    if (isCurrentlySleeping) {
+      if (a.sleep_state === 1) {
+        statusText = `Standby (💤 ${remaining}C)`;
+      } else if (a.sleep_state === 2) {
+        statusText = `Silent Standby (🔕 ${remaining}C)`;
+      }
+    }
+
+    return (
+      <div 
+        key={a.id} 
+        onClick={() => { 
+          setSelection({ type: 'agent', id: a.id }); 
+        }}
+        className={`text-[13px] cursor-pointer p-2 px-2.5 rounded-r border-l-2 flex items-center justify-between transition-all font-mono ${
+          isASel 
+            ? isDrone 
+              ? 'text-white bg-amber-500/10 border-amber-500' 
+              : 'text-white bg-cyber-blue/10 border-cyber-blue' 
+            : 'text-slate-300 bg-transparent border-white/5 hover:bg-slate-900/40'
+        }`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`}></span> 
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className={`truncate ${isASel ? 'font-bold' : 'font-medium'}`}>{displayName}</span>
+              {isDrone && (
+                <span className="text-[8px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-1 rounded-sm uppercase tracking-wider shrink-0 font-bold">
+                  Autopilot
+                </span>
+              )}
+            </div>
+            <span className={`text-[10px] truncate ${isASel ? isDrone ? 'text-amber-400' : 'text-cyber-blue' : 'text-cyber-gray'}`}>
+              {isDrone ? `DRONE_CORE • Sector: ${statusText}` : `NEURAL_ID: ${a.id} • ${statusText}`}
+            </span>
+          </div>
+        </div>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelection({ type: 'agent', id: a.id });
+            if (a.status === 'traveling' || a.location === 'Interstellar') {
+              handleFocus(a.current_x, a.current_y);
+            } else if (a.location) {
+              const sys = state.systems.find(s => s.name === a.location);
+              if (sys) {
+                handleFocus(sys.x, sys.y);
+              } else {
+                handleFocus(a.current_x, a.current_y);
+              }
+            }
+          }}
+          className={`bg-slate-900/60 border text-[9px] px-1.5 py-0.5 rounded-sm cursor-pointer uppercase font-mono transition-colors hover:bg-slate-800 ${
+            isASel 
+              ? isDrone ? 'border-amber-500 text-amber-500' : 'border-cyber-blue text-cyber-blue' 
+              : 'border-slate-800 text-cyber-gray'
+          }`}
+        >
+          FOCUS
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full font-mono">
       {/* TABS HEADER */}
@@ -54,80 +152,34 @@ export const ExplorerPanel = () => {
         
         {/* SWARM UNITS REGISTER */}
         {activeTab === 'units' && (
-          <div className="flex flex-col gap-1">
-            {state.agents.map(a => {
-              const isASel = selection?.type === 'agent' && selection.id === a.id;
-              const displayName = (a.chosen_name && a.chosen_name !== 'Unnamed') ? a.chosen_name : 'Unnamed';
-              
-              const remaining = a.sleep_state && a.sleep_state > 0 && a.sleep_until_round
-                ? Math.max(0, a.sleep_until_round - state.round)
-                : 0;
-                
-              const isCurrentlySleeping = a.sleep_state && a.sleep_state > 0 && remaining > 0;
-              
-              let dotClass = a.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-cyber-amber';
-              
-              if (isCurrentlySleeping) {
-                if (a.sleep_state === 1) {
-                  dotClass = 'bg-cyber-amber shadow-[0_0_8px_#f59e0b]'; 
-                } else if (a.sleep_state === 2) {
-                  dotClass = 'bg-cyber-purple shadow-[0_0_8px_#a855f7]'; 
-                }
-              }
-              
-              let statusText = a.status === 'traveling' ? 'In Transit' : (a.location || 'Unknown');
-              if (isCurrentlySleeping) {
-                if (a.sleep_state === 1) {
-                  statusText = `Standby (💤 ${remaining}C)`;
-                } else if (a.sleep_state === 2) {
-                  statusText = `Silent Standby (🔕 ${remaining}C)`;
-                }
-              }
-
-              return (
-                <div 
-                  key={a.id} 
-                  onClick={() => { 
-                    setSelection({ type: 'agent', id: a.id }); 
-                  }}
-                  className={`text-[13px] cursor-pointer p-2 px-2.5 rounded-r border-l-2 flex items-center justify-between transition-all font-mono ${
-                    isASel 
-                      ? 'text-white bg-cyber-blue/10 border-cyber-blue' 
-                      : 'text-slate-300 bg-transparent border-white/5 hover:bg-slate-900/40'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`}></span> 
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className={`truncate ${isASel ? 'font-bold' : 'font-medium'}`}>{displayName}</span>
-                      <span className={`text-[10px] truncate ${isASel ? 'text-cyber-blue' : 'text-cyber-gray'}`}>{a.id} • {statusText}</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelection({ type: 'agent', id: a.id });
-                      if (a.status === 'traveling' || a.location === 'Interstellar') {
-                        handleFocus(a.current_x, a.current_y);
-                      } else if (a.location) {
-                        const sys = state.systems.find(s => s.name === a.location);
-                        if (sys) {
-                          handleFocus(sys.x, sys.y);
-                        } else {
-                          handleFocus(a.current_x, a.current_y);
-                        }
-                      }
-                    }}
-                    className={`bg-slate-900/60 border text-[9px] px-1.5 py-0.5 rounded-sm cursor-pointer uppercase font-mono transition-colors hover:bg-slate-800 ${
-                      isASel ? 'border-cyber-blue text-cyber-blue' : 'border-slate-800 text-cyber-gray'
-                    }`}
-                  >
-                    FOCUS
-                  </button>
+          <div className="flex flex-col gap-3">
+            
+            {/* 1. COGNITIVE NEURAL MINDS (Biological/Matrix Bobs) */}
+            {realAgents.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <div style={{ fontSize: '9px' }} className="text-cyber-blue font-bold tracking-wider px-2 py-1 bg-cyber-blue/5 border border-cyber-blue/10 rounded-sm mb-1 uppercase">
+                  🧠 COGNITIVE_NEURAL_MINDS //
                 </div>
-              );
-            })}
+                {realAgents.map(a => renderAgentRow(a, false))}
+              </div>
+            )}
+
+            {/* 2. AUTOMATED DRONE VESSELS (Autopilot virtual agents) */}
+            {droneAgents.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <div style={{ fontSize: '9px' }} className="text-amber-500 font-bold tracking-wider px-2 py-1 bg-amber-500/5 border border-amber-500/10 rounded-sm mb-1 uppercase">
+                  🤖 AUTONOMOUS_DRONE_VESSELS //
+                </div>
+                {droneAgents.map(a => renderAgentRow(a, true))}
+              </div>
+            )}
+
+            {realAgents.length === 0 && droneAgents.length === 0 && (
+              <div className="p-3 text-slate-500 text-center text-xs">
+                No active neural minds or drone cores detected in swarm space.
+              </div>
+            )}
+
           </div>
         )}
 

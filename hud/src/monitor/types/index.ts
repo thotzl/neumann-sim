@@ -94,6 +94,7 @@ export type Ship = {
   blueprint_name?: string | null;
   progress_matter?: number;
   required_matter?: number;
+  active_script_id?: number | null;
 };
 
 export type Memo = {

@@ -5,6 +5,7 @@ interface ShipyardCatalogModalProps {
   selectedSystem: System;
   state: WorldState;
   onClose: () => void;
+  onPreviewShip?: (ship: any) => void;
 }
 
 const ProgressBarMini = ({ progress, required }: { progress: number; required: number }) => {
@@ -22,7 +23,7 @@ const ProgressBarMini = ({ progress, required }: { progress: number; required: n
   );
 };
 
-export const ShipyardCatalogModal = ({ selectedSystem, state, onClose }: ShipyardCatalogModalProps) => {
+export const ShipyardCatalogModal = ({ selectedSystem, state, onClose, onPreviewShip }: ShipyardCatalogModalProps) => {
   return (
     <div style={{
       position: 'fixed',
@@ -87,9 +88,63 @@ export const ShipyardCatalogModal = ({ selectedSystem, state, onClose }: Shipyar
               
               {/* System standard Scout class */}
               <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '4px', padding: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center' }}>
                   <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.85rem' }}>Scout (Standard Chassis)</span>
-                  <span style={{ color: '#818cf8', fontSize: '0.75rem', fontWeight: 'bold' }}>Cost: 1000 Raw / 400 Refined</span>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {onPreviewShip && (
+                      <button
+                        onClick={() => {
+                          const mockShip = {
+                            id: 0,
+                            name: `PREVIEW: Scout (Standard)`,
+                            chassis: 'Proto-Neumann',
+                            pilot_id: 'PREVIEW_MODE',
+                            system_name: 'BLUEPRINT WORKSTATION',
+                            health: 100,
+                            max_health: 100,
+                            raw_matter_inventory: 0,
+                            refined_matter_inventory: 0,
+                            energy_inventory: 5000,
+                            matter_storage_capacity: 500,
+                            energy_capacity: 5000,
+                            max_speed: 34.48,
+                            thrust: 500,
+                            mass: 290,
+                            has_drill: true,
+                            has_fabricator: true,
+                            has_logic_core: true,
+                            blueprint_name: 'Scout',
+                            progress_matter: 0,
+                            required_matter: 1000
+                          };
+                          onPreviewShip(mockShip);
+                        }}
+                        style={{
+                          background: 'rgba(129,140,248,0.1)',
+                          border: '1px solid rgba(129,140,248,0.3)',
+                          color: '#818cf8',
+                          fontSize: '0.65rem',
+                          fontWeight: 'bold',
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          cursor: 'pointer',
+                          fontFamily: 'monospace',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#818cf8';
+                          e.currentTarget.style.color = '#000';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(129,140,248,0.1)';
+                          e.currentTarget.style.color = '#818cf8';
+                        }}
+                      >
+                        🔍 VORSCHAU
+                      </button>
+                    )}
+                    <span style={{ color: '#818cf8', fontSize: '0.75rem', fontWeight: 'bold' }}>Cost: 1000 Raw / 400 Refined</span>
+                  </div>
                 </div>
                 <div style={{ fontSize: '0.7rem', color: '#94a3b8', lineHeight: '1.4' }}>
                   Mass: 290t • Speed: 34.48 m/s • Thrust: 500N<br/>
@@ -118,9 +173,63 @@ export const ShipyardCatalogModal = ({ selectedSystem, state, onClose }: Shipyar
                 
                 return (
                   <div key={bp.id} style={{ background: 'rgba(129,140,248,0.02)', border: '1px solid rgba(129,140,248,0.15)', borderRadius: '4px', padding: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center' }}>
                       <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.85rem' }}>{bp.name}</span>
-                      <span style={{ color: '#818cf8', fontSize: '0.75rem', fontWeight: 'bold' }}>Cost: {stats.cost || 2050} Refined</span>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {onPreviewShip && (
+                          <button
+                            onClick={() => {
+                              const mockShip = {
+                                id: -bp.id,
+                                name: `PREVIEW: ${bp.name}`,
+                                chassis: stats.chassis || 'Proto-Neumann',
+                                pilot_id: 'PREVIEW_MODE',
+                                system_name: 'BLUEPRINT WORKSTATION',
+                                health: stats.health || stats.max_health || 100,
+                                max_health: stats.max_health || 100,
+                                raw_matter_inventory: 0,
+                                refined_matter_inventory: 0,
+                                energy_inventory: stats.energy_capacity || 5000,
+                                matter_storage_capacity: stats.cargo || stats.storage_capacity || 500,
+                                energy_capacity: stats.energy_capacity || 5000,
+                                max_speed: stats.speed || stats.max_speed || 34.48,
+                                thrust: stats.thrust || 500,
+                                mass: stats.mass || 290,
+                                has_drill: stats.has_drill === 1 || stats.has_drill === true,
+                                has_fabricator: stats.has_fabricator === 1 || stats.has_fabricator === true,
+                                has_logic_core: stats.has_logic_core === 1 || stats.has_logic_core === true,
+                                blueprint_name: bp.name,
+                                progress_matter: 0,
+                                required_matter: stats.cost || 1000
+                              };
+                              onPreviewShip(mockShip);
+                            }}
+                            style={{
+                              background: 'rgba(129,140,248,0.1)',
+                              border: '1px solid rgba(129,140,248,0.3)',
+                              color: '#818cf8',
+                              fontSize: '0.65rem',
+                              fontWeight: 'bold',
+                              padding: '2px 6px',
+                              borderRadius: '2px',
+                              cursor: 'pointer',
+                              fontFamily: 'monospace',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#818cf8';
+                              e.currentTarget.style.color = '#000';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(129,140,248,0.1)';
+                              e.currentTarget.style.color = '#818cf8';
+                            }}
+                          >
+                            🔍 VORSCHAU
+                          </button>
+                        )}
+                        <span style={{ color: '#818cf8', fontSize: '0.75rem', fontWeight: 'bold' }}>Cost: {stats.cost || 2050} Refined</span>
+                      </div>
                     </div>
                     <div style={{ fontSize: '0.7rem', color: '#94a3b8', lineHeight: '1.4' }}>
                       Mass: {stats.mass || 405}t • Speed: {stats.speed || 24.69} m/s • Thrust: {stats.thrust || 500}N<br/>

@@ -47,7 +47,8 @@ export default function SandboxApp() {
     colorShift: 0,
     colorContrast: 1.0,
     planetSizeScale: 0.35,
-    orbitSpacingScale: 1.0
+    orbitSpacingScale: 1.0,
+    useBetaView: false
   });
 
   // Sync state to static fields of UniverseGenerator
@@ -287,7 +288,8 @@ export default function SandboxApp() {
       colorShift: 0,
       colorContrast: 1.0,
       planetSizeScale: 0.35,
-      orbitSpacingScale: 1.0
+      orbitSpacingScale: 1.0,
+      useBetaView: visualTuning.useBetaView // Preserve beta view state
     });
   };
 
@@ -364,6 +366,47 @@ export default function SandboxApp() {
         stardate={mockState ? mockState.stardate : undefined}
         population={mockState ? mockState.agents?.length : 1}
         vessels={mockState ? mockState.ships?.length : 0}
+        headerControls={
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            userSelect: 'none',
+            background: 'rgba(255,255,255,0.01)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            padding: '2px 8px',
+            borderRadius: '3px',
+            height: '22px'
+          }} onClick={() => setVisualTuning(prev => ({ ...prev, useBetaView: !prev.useBetaView }))}>
+            <span style={{ fontSize: '9px', color: visualTuning.useBetaView ? '#64748b' : '#38bdf8', fontWeight: 'bold' }}>
+              CLASSIC
+            </span>
+            <div style={{
+              width: '24px',
+              height: '12px',
+              borderRadius: '6px',
+              background: 'rgba(255,255,255,0.03)',
+              border: `1px solid ${visualTuning.useBetaView ? '#10b981' : '#38bdf8'}`,
+              position: 'relative',
+              transition: 'all 0.2s ease-in-out'
+            }}>
+              <div style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: visualTuning.useBetaView ? '#10b981' : '#38bdf8',
+                position: 'absolute',
+                top: '2px',
+                left: visualTuning.useBetaView ? '14px' : '2px',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+              }} />
+            </div>
+            <span style={{ fontSize: '9px', color: visualTuning.useBetaView ? '#10b981' : '#64748b', fontWeight: 'bold' }}>
+              BETA_CAD
+            </span>
+          </div>
+        }
 
         // Panel Toggles
         isConsoleMinimized={isConsoleMinimized}
@@ -682,6 +725,8 @@ export default function SandboxApp() {
           onBrushAction={handleBrushAction}
           revealedSectors={revealedSectors}
           visualTuning={visualTuning}
+          useBetaView={visualTuning.useBetaView}
+          blueprints={mockState ? mockState.blueprints : []}
         />
       </C2Layout>
     </>

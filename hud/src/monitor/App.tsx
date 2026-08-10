@@ -20,6 +20,8 @@ export default function MonitorApp() {
   const updateState = useC2Store((store) => store.updateState);
   const appendRealtimeLogs = useC2Store((store) => store.appendRealtimeLogs);
   const initializeLogs = useC2Store((store) => store.initializeLogs);
+  const useBetaView = useC2Store((store) => store.useBetaView);
+  const setUseBetaView = useC2Store((store) => store.setUseBetaView);
 
   // Connection & UI Layout States
   const [isConnected, setIsConnected] = useState(false);
@@ -160,6 +162,47 @@ export default function MonitorApp() {
         stardate={state?.stardate}
         population={state?.agents?.length || 0}
         vessels={state?.ships?.length || 0}
+        headerControls={
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            userSelect: 'none',
+            background: 'rgba(255,255,255,0.01)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            padding: '2px 8px',
+            borderRadius: '3px',
+            height: '22px'
+          }} onClick={() => setUseBetaView(!useBetaView)}>
+            <span style={{ fontSize: '9px', color: useBetaView ? '#64748b' : '#38bdf8', fontWeight: 'bold' }}>
+              CLASSIC
+            </span>
+            <div style={{
+              width: '24px',
+              height: '12px',
+              borderRadius: '6px',
+              background: 'rgba(255,255,255,0.03)',
+              border: `1px solid ${useBetaView ? '#10b981' : '#38bdf8'}`,
+              position: 'relative',
+              transition: 'all 0.2s ease-in-out'
+            }}>
+              <div style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: useBetaView ? '#10b981' : '#38bdf8',
+                position: 'absolute',
+                top: '2px',
+                left: useBetaView ? '14px' : '2px',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+              }} />
+            </div>
+            <span style={{ fontSize: '9px', color: useBetaView ? '#10b981' : '#64748b', fontWeight: 'bold' }}>
+              BETA_CAD
+            </span>
+          </div>
+        }
 
         // Panel Toggles
         isConsoleMinimized={isConsoleMinimized}
@@ -279,6 +322,8 @@ export default function MonitorApp() {
           onSelectionChange={setSelection}
           showTheoreticalUniverse={showTheoreticalUniverse}
           seed={state?.seed}
+          useBetaView={useBetaView}
+          blueprints={state?.blueprints}
         />
       </C2Layout>
 
@@ -293,6 +338,10 @@ export default function MonitorApp() {
               selectedSystem={sys}
               state={state}
               onClose={() => setShowShipyard(false)}
+              onPreviewShip={(ship) => {
+                setSelectedShipForSchematic(ship);
+                setShowSchematic(true);
+              }}
             />
           ) : null;
         })()

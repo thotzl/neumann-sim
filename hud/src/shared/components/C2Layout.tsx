@@ -40,6 +40,7 @@ interface C2LayoutProps {
   leftSidebarContent?: React.ReactNode;
   rightSidebarContent?: React.ReactNode;
   bottomConsoleContent: React.ReactNode;
+  headerControls?: React.ReactNode;
   children: React.ReactNode; // Viewport Canvas
 }
 
@@ -78,6 +79,7 @@ export const C2Layout = ({
   leftSidebarContent,
   rightSidebarContent,
   bottomConsoleContent,
+  headerControls,
   children
 }: C2LayoutProps) => {
 
@@ -169,6 +171,13 @@ export const C2Layout = ({
               >
                 🌌 THEORETICAL_UNIVERSE
               </button>
+            )}
+
+            {headerControls && (
+              <>
+                <span className="w-px h-4 bg-slate-800 self-center mx-1" />
+                {headerControls}
+              </>
             )}
           </div>
         </div>

@@ -59,6 +59,7 @@ Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstruktur
 | **TCK-120** | SSoT: SOS-Beacon Proximity Logistics and Peer-to-Peer Talk | Logistics and Communication Upgrade | `closed` | `high` | [Link](../.tickets/closed/TCK-120-sos-proximity-logistics.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-121** | DRY-Up: Unified Database Queries and State Selectors | Refactoring & Code Quality | `ongoing` | `medium` | [Link](../.tickets/ongoing/TCK-121-dry-queries-and-selectors.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-122** | HOTFIX: Implement Sub-Etheric Emergency Grid (SEEG) | Logistics and Communication Upgrade | `closed` | `high` | [Link](../.tickets/closed/TCK-122-sub-etheric-emergency-grid.md) | [Central Test Hub](../../tests/test_all.js) |
+| **TCK-125** | FEAT: Hardware-Bound Autonomy: Ship Logic Cores, Sector AMI Hubs & Gantries | Automation and Autonomy | `closed` | `medium` | [Link](../.tickets/closed/TCK-125-hardware-bound-scripts-and-kmi-hub.md) | [Autonomy Test Suite](../../tests/js/test_v14_hardware_autonomy.js) |
 | **TCK-127** | Perf: Runner Performance Optimization and Process Caching | Industrial Polish and Safety-Grid | `closed` | `high` | [Link](../.tickets/closed/TCK-127-runner-performance-optimization-and-process-caching.md) | [Central Test Hub](../../tests/test_all.js) |
 
 ---

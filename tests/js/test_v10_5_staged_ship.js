@@ -128,26 +128,26 @@ runBobAction('exit_ship()');
 
 // Step 7: Verify staged construction recycling & 100% refunding
 console.log("\nStep 7: Check 100% refund for incomplete deconstruction...");
-// Start new ship in staged construction (Scout with 400 raw_matter down payment)
-runBobAction('build_ship(blueprint_name="Scout", matter_to_invest=400)');
+// Start new ship in staged construction (E2E-Carrier with 400 refined_matter down payment)
+runBobAction('build_ship(blueprint_name="E2E-Carrier", matter_to_invest=400)');
 // Check depot content before deconstruction via synchronous Python query
-const beforeDeconstructDb = execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); print(conn.execute(\\"SELECT raw_matter_depot FROM systems WHERE name='SYS_A'\\").fetchone()[0])"`).toString().trim();
+const beforeDeconstructDb = execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); print(conn.execute(\\"SELECT refined_matter_depot FROM systems WHERE name='SYS_A'\\").fetchone()[0])"`).toString().trim();
 
 // Perform deconstruction
 const deconstructOutput = runBobAction('deconstruct_ship(ship_id=2)');
-if (!deconstructOutput.includes("Refunded 400 raw_matter (100% of progress) to Sector Depot.")) {
+if (!deconstructOutput.includes("Refunded 400 refined_matter (100% of progress) to Sector Depot.")) {
     console.error("ERROR with 100% refund of incomplete ship:", deconstructOutput);
     process.exit(1);
 }
 
 // Check depot content after deconstruction via synchronous Python query
-const afterDeconstructDb = execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); print(conn.execute(\\"SELECT raw_matter_depot FROM systems WHERE name='SYS_A'\\").fetchone()[0])"`).toString().trim();
+const afterDeconstructDb = execSync(`python3 -c "import sqlite3; conn = sqlite3.connect('${dbPath}'); print(conn.execute(\\"SELECT refined_matter_depot FROM systems WHERE name='SYS_A'\\").fetchone()[0])"`).toString().trim();
 const refundDelta = parseInt(afterDeconstructDb) - parseInt(beforeDeconstructDb);
 if (refundDelta !== 400) {
     console.error(`ERROR: Physical refund in DB does not match! Expected: 400, Received: ${refundDelta}`);
     process.exit(1);
 }
-console.log("  ✅ 100% salvage refund for incomplete deconstruction verified (400 raw_matter refunded).");
+console.log("  ✅ 100% salvage refund for incomplete deconstruction verified (400 refined_matter refunded).");
 
 console.log("\n🎉 ALL TESTS IN STAGED CONSTRUCTION TEST SUITE PASSED SUCCESSFULLY!");
 

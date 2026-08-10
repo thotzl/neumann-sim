@@ -25,6 +25,8 @@ class TestNavigationSystem(unittest.TestCase):
         c.execute("CREATE TABLE ships (id INTEGER PRIMARY KEY, name TEXT, chassis TEXT, pilot_id TEXT, system_name TEXT, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, raw_matter_inventory INTEGER DEFAULT 0, refined_matter_inventory INTEGER DEFAULT 0, energy_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER DEFAULT 5000, energy_capacity INTEGER DEFAULT 10000, max_speed REAL DEFAULT 300, thrust INTEGER DEFAULT 500, mass INTEGER DEFAULT 1200, blueprint_name TEXT, has_drill INTEGER DEFAULT 0, has_fabricator INTEGER DEFAULT 0, has_logic_core INTEGER DEFAULT 0, progress_matter INTEGER DEFAULT 0, required_matter INTEGER DEFAULT 0)")
         c.execute("CREATE TABLE memos (id INTEGER PRIMARY KEY, agent_id TEXT, content TEXT, status TEXT)")
         c.execute("CREATE TABLE IF NOT EXISTS emergency_beacons (ship_id INTEGER PRIMARY KEY, message TEXT, x REAL, y REAL, created_cycle INTEGER)")
+        c.execute("CREATE TABLE IF NOT EXISTS blueprints (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, author_id TEXT, matrix_json TEXT, stats_json TEXT)")
+        c.execute("CREATE TABLE IF NOT EXISTS messages (sender TEXT, receiver TEXT, content TEXT, priority INTEGER DEFAULT 0, sent_at TEXT)")
         
         # Populate systems (3 systems on a grid)
         # SYS_A: current position (0, 0)
@@ -43,8 +45,9 @@ class TestNavigationSystem(unittest.TestCase):
         # Populate infrastructure (Instance-2's host matrix in SYS_B)
         c.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (2, 'SYS_B', 'sem_matrix', 'active')")
         
-        # Populate ships (Active host ship for Instance-1 - Energy capacity set to 60 to force hop-by-hop routing!)
-        c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory) VALUES (1, 'Pioneer-1', 'Scout-MK1', 'Instance-1', 'SYS_A', 60, 5000)")
+        # Populate ships (Active host ship for Instance-1 - Energy capacity set to 15 to force hop-by-hop routing!)
+        c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory, blueprint_name) VALUES (1, 'Pioneer-1', 'Scout-MK1', 'Instance-1', 'SYS_A', 15, 5000, 'Scout-MK1')")
+        c.execute("INSERT INTO blueprints (name, stats_json) VALUES ('Scout-MK1', '{\"cost\":1000}')")
         
         # Populate memos (1 open, 1 completed)
         c.execute("INSERT INTO memos (agent_id, content, status) VALUES ('Instance-1', 'Establish Beta Cluster', 'open')")
@@ -95,7 +98,7 @@ class TestNavigationSystem(unittest.TestCase):
         self.assertEqual(eta['destination_coords'], 'X300.0-Y400.0')
         self.assertEqual(eta['distance'], 500.0)
         self.assertEqual(eta['estimated_ticks'], 2) # math.ceil(500/300) = 2
-        self.assertEqual(eta['estimated_energy_cost'], 50.0) # 500 * 0.1 = 50
+        self.assertEqual(eta['estimated_energy_cost'], 10.0) # 500 * 0.02 = 10
 
     def test_dijkstra_routing(self):
         # Setup ship's energy/fuel jump range limit to 600

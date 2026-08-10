@@ -21,7 +21,7 @@ class TestEpic2BuildShip(unittest.TestCase):
         
         init_db.init()
         conn = db_config.get_connection()
-        conn.execute("INSERT INTO systems (name, x, y, raw_matter_depot) VALUES ('SYS_A', 0, 0, 1500)")
+        conn.execute("INSERT INTO systems (name, x, y, raw_matter_depot, refined_matter_depot) VALUES ('SYS_A', 0, 0, 1500, 1500)")
         conn.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (100, 'SYS_A', 'sem_matrix', 'active')")
         conn.execute("INSERT INTO agents (id, chosen_name, host_id, host_type, status) VALUES ('Instance-1', 'Bob', '100', 'matrix', 'active')")
         conn.commit()
@@ -45,6 +45,14 @@ class TestEpic2BuildShip(unittest.TestCase):
         conn.close()
 
         agent = bob_sdk.Agent('Instance-1')
+        
+        # Save Scout blueprint first! (Hebel 3)
+        scout_matrix = [
+            [{"type": "logic_core"}, {"id": "e_s", "type": "engine", "thrust": 500}],
+            [{"id": "b_s", "type": "battery", "energy": 5000}, None]
+        ]
+        agent.save_blueprint('Scout', scout_matrix)
+
         res = agent.build_ship('Scout')
         self.assertTrue(res)
 
@@ -54,9 +62,9 @@ class TestEpic2BuildShip(unittest.TestCase):
         self.assertEqual(ships[0]['chassis'], 'Scout')
         self.assertEqual(ships[0]['system_name'], 'SYS_A')
         
-        # Check resources
-        sys_data = conn.execute("SELECT raw_matter_depot FROM systems WHERE name='SYS_A'").fetchone()
-        self.assertEqual(sys_data[0], 500) # 1500 - 1000
+        # Check resources (refined matter is deducted!)
+        sys_data = conn.execute("SELECT refined_matter_depot FROM systems WHERE name='SYS_A'").fetchone()
+        self.assertEqual(sys_data[0], 500) # 1500 - 1000 refined_matter
         conn.close()
 
     @patch('sys.argv', ['bob.py', 'build_ship(chassis="Fighter")'])
@@ -67,6 +75,14 @@ class TestEpic2BuildShip(unittest.TestCase):
         conn.commit()
         conn.close()
         
+        agent = bob_sdk.Agent('Instance-1')
+        # Save Fighter blueprint first! (Hebel 3)
+        fighter_matrix = [
+            [{"type": "logic_core"}, {"id": "e_s", "type": "engine", "thrust": 500}],
+            [{"id": "b_s", "type": "battery", "energy": 5000}, None]
+        ]
+        agent.save_blueprint('Fighter', fighter_matrix)
+
         bob.main()
         output = mock_stdout.getvalue()
         self.assertIn("[SUCCESS]", output)

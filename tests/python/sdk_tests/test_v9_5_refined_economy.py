@@ -20,6 +20,7 @@ class TestRefinedEconomy(unittest.TestCase):
         c = conn.cursor()
         
         c.execute("""CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, energy_inventory INTEGER, raw_matter_inventory INTEGER, refined_matter_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER, status TEXT, current_x REAL, current_y REAL, active_ship_id INTEGER DEFAULT 1)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS messages (sender TEXT, receiver TEXT, content TEXT, priority INTEGER DEFAULT 0, sent_at TEXT)""")
             
         c.execute("""CREATE TABLE systems (
             name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, 

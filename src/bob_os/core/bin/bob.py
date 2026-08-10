@@ -126,7 +126,7 @@ def print_help():
     print("-" * 50)
     print("VESSEL CONSTRUCTION MANUAL (FREESTYLE ENGINEERING v10.5)")
     print("Commands: me.design_blueprint(name, matrix_json) / me.save_blueprint(name, matrix_json)")
-    print("The matrix_json MUST be a raw 2D array (list of lists), e.g. '[[\"engine\", \"cargo\"], [\"logic_core\", \"battery\"]]'.")
+    print("The matrix_json MUST be a raw, unescaped 2D array (list of lists) passed directly, e.g. [['engine', 'cargo'], ['logic_core', 'battery']].")
     print("Allowed module tiles (modules):")
     print("  - \"engine\": Engine (Thrust +500)")
     print("  - \"cargo\": Cargo bay (Matter capacity +2500)")

@@ -34,6 +34,13 @@ class TestV105DeconstructShip(unittest.TestCase):
         conn.close()
         
         self.agent = bob_sdk.Agent('Instance-1')
+        
+        # Seed Legacy-Scout blueprint for deconstruction and pilot tests
+        scout_matrix = [
+            [{"type": "logic_core"}, {"id": "e_s", "type": "engine", "thrust": 500}],
+            [{"id": "b_s", "type": "battery", "energy": 5000}, None]
+        ]
+        self.agent.save_blueprint("Legacy-Scout", scout_matrix)
 
     def tearDown(self):
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
@@ -70,20 +77,20 @@ class TestV105DeconstructShip(unittest.TestCase):
         conn.close()
 
     def test_deconstruct_ship_legacy_fallback(self):
-        # 1. Build standard legacy Scout (costs 1000 raw_matter, refunds 750 raw_matter!)
+        # 1. Build standard Legacy-Scout (costs 1000 refined_matter, refunds 750 refined_matter!)
         self.assertTrue(self.agent.build_ship(blueprint_name="Legacy-Scout")) # Spawns Ship 1
         
         conn = db_config.get_connection()
-        sys_before = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
+        sys_before = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
         conn.close()
 
         # 2. Deconstruct the legacy ship
         self.assertTrue(self.agent.deconstruct_ship(1))
         
-        # Verify raw matter is refunded (750)
+        # Verify refined matter is refunded (750)
         conn = db_config.get_connection()
-        sys_after = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
-        self.assertEqual(sys_after['raw_matter_depot'], sys_before['raw_matter_depot'] + 750)
+        sys_after = conn.execute("SELECT refined_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
+        self.assertEqual(sys_after['refined_matter_depot'], sys_before['refined_matter_depot'] + 750)
         conn.close()
 
     def test_deconstruct_ship_fails_pilot_onboard(self):

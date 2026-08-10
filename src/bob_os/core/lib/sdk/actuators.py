@@ -304,9 +304,8 @@ class Actuators:
             cost = stats['cost']
             material_type = 'refined_matter'
         else:
-            # LEGACY FALLBACK: Scout chassis built using 1000 raw_matter
-            cost = 1000
-            material_type = 'raw_matter'
+            print(f"[DENIED] Blueprint '{blueprint_name}' not found inside the sector archive. You must design and save a blueprint first using 'me.save_blueprint()' before constructing a ship!")
+            return False
 
         # 2. Check for existing ship of this blueprint under construction in the current system
         cursor.execute("SELECT * FROM ships WHERE system_name = ? AND pilot_id = 'UNDER_CONSTRUCTION' AND blueprint_name = ?", (sys_name, blueprint_name))
@@ -507,10 +506,13 @@ class Actuators:
         return False
 
     @agent_service.with_agent_context(require_active=False, action_name='Move')
-    def move(self, cursor, agent, target_x, target_y):
+    def move(self, cursor, agent, target_x, target_y, force=False):
         if agent['status'] not in ('active', 'traveling'):
             print(f"[DENIED] Move is only allowed when active or traveling. Current: {agent['status']}")
             return False
+
+        # Parse force argument robustly (Hebel 3)
+        force_val = str(force).strip().upper() in ["1", "TRUE"] or force is True or force == 1
 
         tx = float(target_x)
         ty = float(target_y)
@@ -527,9 +529,64 @@ class Actuators:
 
         phys = self.rules.get('tool_costs', {}).get('move', {})
         dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], tx, ty)
-        cost = dist * phys.get('cost_per_distance', 0.1)
-        if agent['energy_inventory'] < cost:
-            print(f"[WARNING] Energy shortage! Journey initiated, but energy (available: {agent['energy_inventory']}, required: {cost}) is insufficient for the entire distance. Arrival with 0 energy likely.")
+        cost_per_dist = phys.get('cost_per_distance', 0.1)
+        cost = dist * cost_per_dist
+
+        # Determine if ship has fusion reactor fuel capacity (Hebel A)
+        fusion_added_energy = 0.0
+        if agent.get('host_type') == 'ship' and agent.get('host_id'):
+            cursor.execute("""
+                SELECT s.energy_inventory, s.raw_matter_inventory, b.stats_json, b.matrix_json
+                FROM ships s
+                JOIN blueprints b ON s.blueprint_name = b.name
+                WHERE s.id = CAST(? AS INTEGER)
+            """, (agent['host_id'],))
+            s_row = cursor.fetchone()
+
+            if s_row:
+                try:
+                    stats = json.loads(s_row['stats_json']) if s_row['stats_json'] else {}
+                    matrix_str = s_row['matrix_json'] if s_row['matrix_json'] else ""
+                    if "fusion_reactor" in matrix_str:
+                        ship_drain = float(stats.get('drain', 0.0))
+                        raw_matter = float(s_row['raw_matter_inventory']) if s_row['raw_matter_inventory'] is not None else 0.0
+                        deep_space_regen = 150.0 - ship_drain
+                        if deep_space_regen > 0 and raw_matter > 0:
+                            fusion_ticks = raw_matter / 0.05
+                            fusion_added_energy = fusion_ticks * deep_space_regen
+                except Exception:
+                    pass
+
+        effective_energy = agent['energy_inventory'] + fusion_added_energy
+
+        # Safety Gate & Hop-by-Hop Autopilot Integration (Hebel 3 & 4)
+        if effective_energy < cost:
+            # Check if there is an automated Dijkstra hop-by-hop route over discovered systems
+            from core.lib.sdk.sensors import Sensors
+            sensors = Sensors(self.agent)
+            route_res = sensors.route(tx, ty)
+            
+            if route_res and route_res.get('status') == 'routable' and len(route_res.get('flight_plan', [])) > 0:
+                # Hop-by-Hop Autopilot active! Snap target coordinates to the first staging leg
+                first_leg = route_res['flight_plan'][0]
+                tx = float(first_leg['target_x'])
+                ty = float(first_leg['target_y'])
+                sys_id = first_leg['system_id']
+                display_name = first_leg['name'] if first_leg['name'] != "Unnamed" else sys_id
+                
+                # Recalculate distance and cost for this single intermediate staging leg
+                dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], tx, ty)
+                cost = dist * cost_per_dist
+                
+                print(f"[INFO] Destination out of range. Dijkstra Autopilot active! Snapped flight plan to first intermediate staging port: {display_name} at coordinates ({round(tx, 1)}, {round(ty, 1)}).")
+            else:
+                # No staging path available, or unroutable!
+                # Unless force=True is set, block the movement completely to prevent stranding!
+                if not force_val:
+                    print(f"[DENIED] Move blocked due to energy shortage. Available: {agent['energy_inventory']} E, Required: {round(cost, 1)} E. Recharge at local solar collector first. To bypass this safety and risk stranding, use: force=True.")
+                    return False
+                else:
+                    print(f"[WARNING] Energy shortage! Force override active. Journey initiated, but energy (available: {agent['energy_inventory']}, required: {cost}) is insufficient for the entire distance. Arrival with 0 energy likely.")
         
         speed = float(self.rules.get('global_settings', {}).get('travel_speed_per_tick', 300))
         if agent['active_ship_id']:

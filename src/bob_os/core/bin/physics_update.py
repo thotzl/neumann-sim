@@ -183,6 +183,11 @@ def update(current_tick=1):
             """, (final_location, t['id']))
             if final_location != 'Interstellar':
                 cursor.execute("UPDATE systems SET is_inspected = 1 WHERE name = ?", (final_location,))
+                # SSoT: Inject intermediate staging arrival notification into the messages table (Hebel 4)
+                cursor.execute("""
+                    INSERT INTO messages (sender, receiver, content, priority, sent_at)
+                    VALUES ('System', ?, ?, 1, datetime('now'))
+                """, (t['id'], f"[SYSTEM NOTIFICATION]: Intermediate transit stop completed. You have arrived at system {final_location} for recharging. Resume your journey to your final destination once power reserves are restored."))
         else:
             cursor.execute("""
                 UPDATE agents SET 

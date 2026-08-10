@@ -221,19 +221,41 @@ def with_agent_context(required_columns="*", require_active=False, action_name="
                 agent = get_agent_or_fail(cursor, agent_id, required_columns=required_columns)
                 if not agent: return False
 
+                # We track success state of the context setup
+                context_allowed = True
+                
                 if require_active and not require_active_status(agent, action_name):
-                    return False
+                    context_allowed = False
 
-                if not allow_disembodied and dict(agent).get('active_ship_id') is None:
+                if context_allowed and not allow_disembodied and dict(agent).get('active_ship_id') is None:
                     # Gantry Crane Bypass: disembodied minds can build/repair if an active gantry exists in the sector
                     from core.lib import system_service
                     has_gantry = system_service.has_active_infrastructure(cursor, agent['location'], 'gantry')
                     if not has_gantry:
                         print(f"[DENIED] {action_name} requires a physical vessel or an active planetary 'gantry' (service crane).")
-                        return False
+                        context_allowed = False
+
+                if not context_allowed:
+                    # Inject critical action failure alarm on pre-check failure
+                    if action_name in ['ExitShip', 'Board', 'Replication', 'Build', 'Repair', 'Move']:
+                        cursor.execute("""
+                            INSERT INTO messages (sender, receiver, content, priority, sent_at)
+                            VALUES ('System', ?, ?, 1, datetime('now'))
+                        """, (agent_id, f"[CRITICAL ACTION FAILURE]: Your attempt to execute {action_name} failed. Your physical state remains unchanged. Adjust your logbook planning parameters immediately."))
+                        conn.commit()
+                    return False
 
                 result = func(self, cursor, agent, *args, **kwargs)
-                if result is not False: conn.commit()
+                if result is not False: 
+                    conn.commit()
+                else:
+                    # Hebel 2: Inject critical action failure alarm on failure
+                    if action_name in ['ExitShip', 'Board', 'Replication', 'Build', 'Repair', 'Move']:
+                        cursor.execute("""
+                            INSERT INTO messages (sender, receiver, content, priority, sent_at)
+                            VALUES ('System', ?, ?, 1, datetime('now'))
+                        """, (agent_id, f"[CRITICAL ACTION FAILURE]: Your attempt to execute {action_name} failed. Your physical state remains unchanged. Adjust your logbook planning parameters immediately."))
+                        conn.commit()
                 return result
             finally:
                 conn.close()

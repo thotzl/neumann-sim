@@ -92,6 +92,15 @@ class TestCosmicNavigation(unittest.TestCase):
             )
         """)
         c.execute("CREATE TABLE IF NOT EXISTS visual_events (id INTEGER PRIMARY KEY AUTOINCREMENT, cycle INTEGER, actor_id TEXT, description TEXT)")
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                sender TEXT,
+                receiver TEXT,
+                content TEXT,
+                priority INTEGER DEFAULT 0,
+                sent_at TEXT
+            )
+        """)
         c.execute("CREATE TABLE IF NOT EXISTS infrastructure (id INTEGER PRIMARY KEY AUTOINCREMENT, system_name TEXT, type TEXT, status TEXT, level INTEGER DEFAULT 1, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, maintenance_cooldown INTEGER DEFAULT 0)")
         
         # Insert home system at (0, 0)

@@ -123,7 +123,9 @@ class Journal:
         
         try:
             if isinstance(matrix_json, str):
-                matrix = json.loads(matrix_json)
+                # Clean up any escaped quotes or backslashes inserted by LLM tokenizers (Hebel 1)
+                clean_json = matrix_json.replace('\\"', '"').replace('\\\\', '\\')
+                matrix = json.loads(clean_json)
             else:
                 matrix = matrix_json
         except Exception as e:
@@ -151,7 +153,9 @@ class Journal:
         
         try:
             if isinstance(matrix_json, str):
-                matrix = json.loads(matrix_json)
+                # Clean up any escaped quotes or backslashes inserted by LLM tokenizers (Hebel 1)
+                clean_json = matrix_json.replace('\\"', '"').replace('\\\\', '\\')
+                matrix = json.loads(clean_json)
             else:
                 matrix = matrix_json
         except Exception as e:

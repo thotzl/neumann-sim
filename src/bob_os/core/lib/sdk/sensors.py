@@ -628,16 +628,51 @@ class Sensors:
                 "flight_plan": []
             }
             
-        # Determine fuel/energy range limit of the ship
+        phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
+        cost_per_dist = phys.get('cost_per_distance', 0.1)
+
+        # Determine fuel/energy range limit of the ship (Hebel 5)
         max_energy_range = 1200 # Default fallback range
         host_type = agent.get('host_type')
         host_id = agent.get('host_id')
         
+        # We track whether there's fusion fuel to add to our current range calculation (Hebel A)
+        fusion_added_energy = 0.0
+
         if host_type == 'ship' and host_id:
-            cursor.execute("SELECT energy_capacity, blueprint_name, chassis FROM ships WHERE id = CAST(? AS INTEGER)", (host_id,))
+            cursor.execute("""
+                SELECT s.energy_capacity, s.energy_inventory, s.raw_matter_inventory, b.stats_json, b.matrix_json
+                FROM ships s
+                JOIN blueprints b ON s.blueprint_name = b.name
+                WHERE s.id = CAST(? AS INTEGER)
+            """, (host_id,))
             s_row = cursor.fetchone()
+
             if s_row:
                 max_energy_range = s_row['energy_capacity']
+                
+                # Analyze fusion reactor stats (Hebel A)
+                try:
+                    import json
+                    stats = json.loads(s_row['stats_json']) if s_row['stats_json'] else {}
+                    matrix_str = s_row['matrix_json'] if s_row['matrix_json'] else ""
+                    
+                    if "fusion_reactor" in matrix_str:
+                        ship_drain = float(stats.get('drain', 0.0))
+                        raw_matter = float(s_row['raw_matter_inventory']) if s_row['raw_matter_inventory'] is not None else 0.0
+                        
+                        # In deep space (void), fusion reactor regenerates 150.0 E per tick
+                        deep_space_regen = 150.0 - ship_drain
+                        if deep_space_regen > 0 and raw_matter > 0:
+                            # Reactor consumes 0.05 raw_matter per tick
+                            fusion_ticks = raw_matter / 0.05
+                            fusion_added_energy = fusion_ticks * deep_space_regen
+                except Exception:
+                    pass
+
+        # Calculate structural capacity range and real-time range (including fusion fuel!)
+        structural_range_capacity = round(max_energy_range / cost_per_dist, 1)
+        current_charge_range = round((agent['energy_inventory'] + fusion_added_energy) / cost_per_dist, 1)
                 
         # Fetch all discovered systems
         cursor.execute("SELECT name, x, y, display_name FROM systems")
@@ -721,6 +756,8 @@ class Sensors:
                     "origin": start_sys,
                     "destination": dest_sys,
                     "status": "routable",
+                    "structural_range_capacity": structural_range_capacity,
+                    "current_charge_range": current_charge_range,
                     "total_route_eta": f"{cumulative_ticks} turns",
                     "flight_plan": flight_plan
                 }
@@ -730,8 +767,14 @@ class Sensors:
                 if neighbor in seen:
                     continue
                 d = physics_service.calc_distance(all_systems[current]['x'], all_systems[current]['y'], n_data['x'], n_data['y'])
+                
+                # SSoT: First hop from current position is limited by current energy inventory + fusion generation,
+                # but can never exceed the physical maximum energy capacity of the ship.
+                # Subsequent hops are limited by the maximum energy capacity of the ship.
+                hop_limit = min(agent['energy_inventory'] + fusion_added_energy, max_energy_range) if current == start_sys else max_energy_range
+                
                 # If within fuel/energy jump range
-                if d * cost_per_dist <= max_energy_range:
+                if d * cost_per_dist <= hop_limit:
                     new_cost = cost + d
                     if neighbor not in min_dist or new_cost < min_dist[neighbor]:
                         min_dist[neighbor] = new_cost
@@ -751,6 +794,8 @@ class Sensors:
                         
         return {
             "status": "unroutable",
+            "structural_range_capacity": structural_range_capacity,
+            "current_charge_range": current_charge_range,
             "message": f"Target system out of range. No discovered fuel paths within maximum jump range of {max_energy_range} units."
         }
 

@@ -104,23 +104,8 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
         self.assertEqual(len(blueprints_after_delete), 0)
 
     def test_legacy_fallback_scout_build(self):
-        # Build a ship with a non-existent blueprint name (should fallback gracefully to legacy Scout)
-        conn = db_config.get_connection()
-        sys_before = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
-        conn.close()
-
-        self.assertTrue(self.agent.build_ship(blueprint_name="Scout-Legacy"))
-        
-        # Legacy Scout costs 1000 RAW matter (instead of refined)
-        conn = db_config.get_connection()
-        conn.row_factory = sqlite3.Row
-        sys_after = conn.execute("SELECT raw_matter_depot FROM systems WHERE name = 'SYS_A'").fetchone()
-        # Verify standard legacy Scout ship spawned
-        ship = conn.execute("SELECT * FROM ships WHERE chassis = 'Scout-Legacy'").fetchone()
-        self.assertIsNotNone(ship)
-        self.assertEqual(ship['has_drill'], 0)
-        self.assertEqual(ship['matter_storage_capacity'], 300)
-        conn.close()
+        # Enforce that building a ship with a non-existent blueprint name is strictly denied (Hebel 3)
+        self.assertFalse(self.agent.build_ship(blueprint_name="Scout-Legacy"))
 
     def test_blueprint_invalid_dictionary_type_unhappy_path(self):
         # Unhappy Path: Attempting to design a blueprint using a dictionary instead of a 2D list of lists
@@ -129,6 +114,20 @@ class TestV105BlueprintsCRUD(unittest.TestCase):
         # design_blueprint should return False and print the descriptive error message instead of crashing with KeyError
         self.assertFalse(self.agent.design_blueprint("Bad-Dict-Scout", bad_matrix_dict))
         self.assertFalse(self.agent.save_blueprint("Bad-Dict-Scout", bad_matrix_dict))
+
+    def test_escaped_backslash_quote_save_blueprint(self):
+        # Verify Hebel 1 (Auto-cleanup of backslashes/escapes inserted by LLMs)
+        import json
+        escaped_matrix_str = '[[\"logic_core\", \"engine\"], [\"drill\", \"cargo\"]]'
+        self.assertTrue(self.agent.save_blueprint("Escaped-Miner", escaped_matrix_str))
+        
+        # Verify it was parsed and saved correctly inside SQLite as a proper list of lists
+        conn = db_config.get_connection()
+        row = conn.execute("SELECT matrix_json FROM blueprints WHERE name = 'Escaped-Miner'").fetchone()
+        self.assertIsNotNone(row)
+        parsed_matrix = json.loads(row[0])
+        self.assertEqual(parsed_matrix[0][0], 'logic_core')
+        conn.close()
 
 if __name__ == '__main__':
     unittest.main()

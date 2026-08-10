@@ -440,6 +440,14 @@ export const VesselSchematicModal = ({ modalShip, state, onClose }: VesselSchema
                     <strong style={{ color: '#a5b4fc' }}>{sizeClass}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#94a3b8' }}>LENGTH (LÄNGE):</span>
+                    <strong style={{ color: '#fff' }}>{geom.lengthMeters ? `${geom.lengthMeters.toFixed(1)} m` : '—'}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#94a3b8' }}>WIDTH (BREITE):</span>
+                    <strong style={{ color: '#10b981' }}>{geom.widthMeters ? `${geom.widthMeters.toFixed(1)} m` : '—'}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#94a3b8' }}>MAX SECURE RANGE:</span>
                     <strong style={{ color: '#a5b4fc' }}>{commRange} m</strong>
                   </div>
@@ -737,9 +745,29 @@ export const VesselSchematicModal = ({ modalShip, state, onClose }: VesselSchema
                     strokeDasharray="4,2"
                   />
 
+                  {/* High-Contrast Internal Panel Sicken Lines */}
+                  {geom.panelLines && geom.panelLines.map((line, idx) => (
+                    <line
+                      key={`hologram-panel-${idx}`}
+                      x1={200 + line.x1}
+                      y1={200 + line.y1}
+                      x2={200 + line.x2}
+                      y2={200 + line.y2}
+                      stroke="rgba(16,185,129,0.35)"
+                      strokeWidth="1.2"
+                    />
+                  ))}
+
                   {/* Fine coordinate axes inside hull */}
                   <line x1="200" y1="50" x2="200" y2="330" stroke="rgba(16,185,129,0.15)" strokeDasharray="3,3" />
                   <line x1="50" y1="200" x2="350" y2="200" stroke="rgba(16,185,129,0.15)" strokeDasharray="3,3" />
+
+                  {/* Stenciled CAD scale calipers on the left & bottom (Hologram scale indicators) */}
+                  <path d="M 50,60 L 35,60 L 35,330 L 50,330" fill="none" stroke="rgba(16,185,129,0.3)" strokeWidth="1" />
+                  <text x="22" y="195" fill="rgba(16,185,129,0.5)" fontFamily="monospace" fontSize="8" transform="rotate(-90 22 195)" textAnchor="middle">LENGTH / LÄNGE: {geom.lengthMeters?.toFixed(1)}m</text>
+
+                  <path d="M 100,350 L 100,365 L 300,365 L 300,350" fill="none" stroke="rgba(16,185,129,0.3)" strokeWidth="1" />
+                  <text x="200" y="377" fill="rgba(16,185,129,0.5)" fontFamily="monospace" fontSize="8" textAnchor="middle">WIDTH / BREITE: {geom.widthMeters?.toFixed(1)}m</text>
 
                   {/* Custom Decal registration text mapped on wing */}
                   <text 
@@ -773,13 +801,13 @@ export const VesselSchematicModal = ({ modalShip, state, onClose }: VesselSchema
                   {/* Render Modules as Glowing Nodes on the holographic schema */}
                   <g transform="translate(200, 200)">
                     {/* Main reactor Core */}
-                    <rect x="-10" y="-10" width="20" height="20" rx="1" fill="rgba(16,185,129,0.15)" stroke="#10b981" strokeWidth="1" />
+                    <rect x="-10" y="-10" width="20" height="20" rx="1" fill="rgba(16,185,129,0.25)" stroke="#10b981" strokeWidth="1.2" filter="url(#glow-emerald)" />
                     <text x="0" y="2" fill="#10b981" fontSize="6" textAnchor="middle" fontWeight="bold">CELL</text>
 
                     {/* Logic core Node */}
                     {hasLogic && (
                       <>
-                        <circle cx="0" cy="-45" r="8" fill="rgba(168,85,247,0.15)" stroke="#a855f7" strokeWidth="1" />
+                        <circle cx="0" cy="-45" r="8" fill="rgba(168,85,247,0.25)" stroke="#a855f7" strokeWidth="1.2" />
                         <text x="0" y="-42" fill="#a855f7" fontSize="6" textAnchor="middle" fontWeight="bold">LC</text>
                       </>
                     )}
@@ -787,10 +815,10 @@ export const VesselSchematicModal = ({ modalShip, state, onClose }: VesselSchema
                     {/* Fabricator Node */}
                     {hasFab && (
                       <>
-                        <rect x="-35" y="-5" width="14" height="14" rx="1" fill="rgba(244,63,94,0.15)" stroke="#f43f5e" strokeWidth="1" />
+                        <rect x="-35" y="-5" width="14" height="14" rx="1" fill="rgba(244,63,94,0.25)" stroke="#f43f5e" strokeWidth="1.2" />
                         <text x="-28" y="4" fill="#f43f5e" fontSize="5" textAnchor="middle">FAB</text>
                         
-                        <rect x="21" y="-5" width="14" height="14" rx="1" fill="rgba(244,63,94,0.15)" stroke="#f43f5e" strokeWidth="1" />
+                        <rect x="21" y="-5" width="14" height="14" rx="1" fill="rgba(244,63,94,0.25)" stroke="#f43f5e" strokeWidth="1.2" />
                         <text x="28" y="4" fill="#f43f5e" fontSize="5" textAnchor="middle">FAB</text>
                       </>
                     )}
@@ -799,20 +827,20 @@ export const VesselSchematicModal = ({ modalShip, state, onClose }: VesselSchema
                     {energyCapacity >= 10000 && (
                       <>
                         <line x1="-30" y1="-25" x2="-55" y2="-25" stroke="#10b981" strokeWidth="1.2" />
-                        <rect x="-55" y="-32" width="20" height="14" fill="rgba(16,185,129,0.05)" stroke="rgba(16,185,129,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                        <rect x="-55" y="-32" width="20" height="14" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.5)" strokeWidth="0.8" strokeDasharray="3,1" />
 
                         <line x1="30" y1="-25" x2="55" y2="-25" stroke="#10b981" strokeWidth="1.2" />
-                        <rect x="35" y="-32" width="20" height="14" fill="rgba(16,185,129,0.05)" stroke="rgba(16,185,129,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                        <rect x="35" y="-32" width="20" height="14" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.5)" strokeWidth="0.8" strokeDasharray="3,1" />
                       </>
                     )}
 
                     {/* Battery Cells */}
                     {energyCapacity > 5000 && (
                       <>
-                        <rect x="-18" y="15" width="10" height="14" rx="1" fill="rgba(234,179,8,0.06)" stroke="#eab308" strokeWidth="0.8" />
+                        <rect x="-18" y="15" width="10" height="14" rx="1" fill="rgba(234,179,8,0.12)" stroke="#eab308" strokeWidth="0.8" />
                         <text x="-13" y="24" fill="#eab308" fontSize="5" textAnchor="middle">BAT</text>
 
-                        <rect x="8" y="15" width="10" height="14" rx="1" fill="rgba(234,179,8,0.06)" stroke="#eab308" strokeWidth="0.8" />
+                        <rect x="8" y="15" width="10" height="14" rx="1" fill="rgba(234,179,8,0.12)" stroke="#eab308" strokeWidth="0.8" />
                         <text x="13" y="24" fill="#eab308" fontSize="5" textAnchor="middle">BAT</text>
                       </>
                     )}
@@ -820,14 +848,122 @@ export const VesselSchematicModal = ({ modalShip, state, onClose }: VesselSchema
                     {/* Heavy Cargo Pods */}
                     {storage > 500 && (
                       <>
-                        <rect x="-42" y="20" width="14" height="20" rx="1" fill="rgba(245,158,11,0.06)" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="2,1" />
+                        <rect x="-42" y="20" width="14" height="20" rx="1" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="2,1" />
                         <text x="-35" y="32" fill="#f59e0b" fontSize="5" textAnchor="middle" fontWeight="bold">CRG</text>
 
-                        <rect x="28" y="20" width="14" height="20" rx="1" fill="rgba(245,158,11,0.06)" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="2,1" />
+                        <rect x="28" y="20" width="14" height="20" rx="1" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="2,1" />
                         <text x="35" y="32" fill="#f59e0b" fontSize="5" textAnchor="middle" fontWeight="bold">CRG</text>
                       </>
                     )}
                   </g>
+
+                  {/* High-tech CAD callouts and stenciled leader lines (Neat vertical stack on the right side - no grouping!) */}
+                  
+                  {/* 1. Laser Drill (if mounted - center) */}
+                  {hasDrill && (
+                    <>
+                      <polyline points={`200,90 270,70 295,70`} fill="none" stroke="rgba(16,185,129,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="200" cy="90" r="1.5" fill="#10b981" />
+                      <text x="300" y="73" fill="#10b981" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[LASER_DRILL: MOUNTED]</text>
+                    </>
+                  )}
+
+                  {/* 2. Port Solar Array (if mounted - left) */}
+                  {energyCapacity >= 10000 && (
+                    <>
+                      <polyline points={`155,175 270,92 295,92`} fill="none" stroke="rgba(16,185,129,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="155" cy="175" r="1.5" fill="#10b981" />
+                      <text x="300" y="95" fill="#10b981" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[PORT_SOLAR_ARRAY: ONLINE]</text>
+                    </>
+                  )}
+
+                  {/* 3. Starboard Solar Array (if mounted - right) */}
+                  {energyCapacity >= 10000 && (
+                    <>
+                      <polyline points={`245,175 270,114 295,114`} fill="none" stroke="rgba(16,185,129,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="245" cy="175" r="1.5" fill="#10b981" />
+                      <text x="300" y="117" fill="#10b981" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[STBD_SOLAR_ARRAY: ONLINE]</text>
+                    </>
+                  )}
+
+                  {/* 4. Logic Core (if mounted - center) */}
+                  {hasLogic && (
+                    <>
+                      <polyline points={`200,155 270,136 295,136`} fill="none" stroke="rgba(168,85,247,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="200" cy="155" r="1.5" fill="#a855f7" />
+                      <text x="300" y="139" fill="#a855f7" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[LOGIC_CORE: ONLINE]</text>
+                    </>
+                  )}
+
+                  {/* 5. Port Fabricator Array (if mounted - left) */}
+                  {hasFab && (
+                    <>
+                      <polyline points={`172,202 270,158 295,158`} fill="none" stroke="rgba(244,63,94,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="172" cy="202" r="1.5" fill="#f43f5e" />
+                      <text x="300" y="161" fill="#f43f5e" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[PORT_FAB_ARRAY: STANDBY]</text>
+                    </>
+                  )}
+
+                  {/* 6. Starboard Fabricator Array (if mounted - right) */}
+                  {hasFab && (
+                    <>
+                      <polyline points={`228,202 270,180 295,180`} fill="none" stroke="rgba(244,63,94,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="228" cy="202" r="1.5" fill="#f43f5e" />
+                      <text x="300" y="183" fill="#f43f5e" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[STBD_FAB_ARRAY: STANDBY]</text>
+                    </>
+                  )}
+
+                  {/* 7. Reactor Cell (Always mounted - center) */}
+                  <>
+                    <polyline points={`200,200 270,202 295,202`} fill="none" stroke="rgba(16,185,129,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                    <circle cx="200" cy="200" r="1.5" fill="#10b981" />
+                    <text x="300" y="205" fill="#10b981" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[REACTOR_CELL: STABLE]</text>
+                  </>
+
+                  {/* 8. Port Battery Cell (if mounted - left) */}
+                  {energyCapacity > 5000 && (
+                    <>
+                      <polyline points={`187,222 270,224 295,224`} fill="none" stroke="rgba(234,179,8,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="187" cy="222" r="1.5" fill="#eab308" />
+                      <text x="300" y="227" fill="#eab308" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[PORT_BATTERY_CELL: 100%]</text>
+                    </>
+                  )}
+
+                  {/* 9. Starboard Battery Cell (if mounted - right) */}
+                  {energyCapacity > 5000 && (
+                    <>
+                      <polyline points={`213,222 270,246 295,246`} fill="none" stroke="rgba(234,179,8,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="213" cy="222" r="1.5" fill="#eab308" />
+                      <text x="300" y="249" fill="#eab308" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[STBD_BATTERY_CELL: 100%]</text>
+                    </>
+                  )}
+
+                  {/* 10. Port Cargo Deck (if mounted - left) */}
+                  {storage > 500 && (
+                    <>
+                      <polyline points={`165,230 270,268 295,268`} fill="none" stroke="rgba(245,158,11,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="165" cy="230" r="1.5" fill="#f59e0b" />
+                      <text x="300" y="271" fill="#f59e0b" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[PORT_CARGO_DECK: SECURE]</text>
+                    </>
+                  )}
+
+                  {/* 11. Starboard Cargo Deck (if mounted - right) */}
+                  {storage > 500 && (
+                    <>
+                      <polyline points={`235,230 270,290 295,290`} fill="none" stroke="rgba(245,158,11,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="235" cy="230" r="1.5" fill="#f59e0b" />
+                      <text x="300" y="293" fill="#f59e0b" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[STBD_CARGO_DECK: SECURE]</text>
+                    </>
+                  )}
+
+                  {/* 12. Engine / Propulsion */}
+                  {thrust > 0 && (
+                    <>
+                      <polyline points={`200,295 270,312 295,312`} fill="none" stroke="rgba(56,189,248,0.4)" strokeWidth="0.8" strokeDasharray="3,1" />
+                      <circle cx="200" cy="295" r="1.5" fill="#38bdf8" />
+                      <text x="300" y="315" fill="#38bdf8" fontFamily="monospace" fontSize="8" textAnchor="start" fontWeight="bold">[PROPULSION: ONLINE]</text>
+                    </>
+                  )}
                 </>
               )}
             </svg>

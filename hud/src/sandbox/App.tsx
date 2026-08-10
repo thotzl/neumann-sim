@@ -48,7 +48,7 @@ export default function SandboxApp() {
     colorContrast: 1.0,
     planetSizeScale: 0.35,
     orbitSpacingScale: 1.0,
-    useBetaView: false
+    useBetaView: true
   });
 
   // Sync state to static fields of UniverseGenerator

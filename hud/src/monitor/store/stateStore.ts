@@ -37,7 +37,7 @@ export const useC2Store = create<C2Store>((set) => ({
     }
   })(),
   isReady: false,
-  useBetaView: false,
+  useBetaView: true,
 
   setSelection: (sel) => {
     try {

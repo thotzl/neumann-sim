@@ -765,13 +765,33 @@ export class CanvasController {
           if (bp) {
             try { grid = JSON.parse(bp.matrix_json.replace(/'/g, '"')); } catch (e) {}
           }
-          const geom = generateVesselGeometry(ship, grid, worldSeed);
+          const geom = generateVesselGeometry(ship, grid, worldSeed, true);
           
-          const scale = 0.05 * Math.max(0.4, Math.min(2.0, zoom)); 
+          // Dynamic scale based on actual module count (dampened by factor 0.1)
+          const numModules = geom.numModules || 4;
+          const sizeMultiplier = 1.0 + (numModules - 4) * 0.1;
+          const scale = 0.05 * Math.max(0.4, Math.min(2.0, zoom)) * sizeMultiplier; 
           
+          const parseHex = (hex: string) => {
+            const clean = hex.replace('#', '');
+            if (clean.length === 3) {
+              const r = parseInt(clean[0] + clean[0], 16) || 16;
+              const g = parseInt(clean[1] + clean[1], 16) || 185;
+              const b = parseInt(clean[2] + clean[2], 16) || 129;
+              return { r, g, b };
+            }
+            const r = parseInt(clean.substring(0, 2), 16) || 16;
+            const g = parseInt(clean.substring(2, 4), 16) || 185;
+            const b = parseInt(clean.substring(4, 6), 16) || 129;
+            return { r, g, b };
+          };
+          const rgb = parseHex(shipColor);
+          const translucentFill = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.18)`;
+          const panelColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.45)`;
+
           this.ctx.strokeStyle = shipColor;
-          this.ctx.lineWidth = 1.0;
-          this.ctx.fillStyle = shipColor;
+          this.ctx.lineWidth = 1.2;
+          this.ctx.fillStyle = translucentFill;
           this.ctx.shadowColor = shipColor;
           this.ctx.shadowBlur = pilotSleeping ? 0 : 4 * zoom;
           
@@ -786,6 +806,18 @@ export class CanvasController {
           this.ctx.closePath();
           this.ctx.fill();
           this.ctx.stroke();
+
+          // High-contrast internal panel sicken lines
+          if (geom.panelLines && geom.panelLines.length > 0) {
+            this.ctx.strokeStyle = panelColor;
+            this.ctx.lineWidth = 0.8;
+            geom.panelLines.forEach(line => {
+              this.ctx.beginPath();
+              this.ctx.moveTo(sx + line.x1 * scale, sy + line.y1 * scale);
+              this.ctx.lineTo(sx + line.x2 * scale, sy + line.y2 * scale);
+              this.ctx.stroke();
+            });
+          }
 
         } else {
           // CLASSIC TRIANGLE DRAWING
@@ -884,12 +916,33 @@ export class CanvasController {
             if (bp) {
               try { grid = JSON.parse(bp.matrix_json.replace(/'/g, '"')); } catch (e) {}
             }
-            const geom = generateVesselGeometry(ship, grid, worldSeed);
-            const scale = 0.06 * Math.max(0.4, Math.min(2.0, zoom)); 
+            const geom = generateVesselGeometry(ship, grid, worldSeed, true);
+            
+            // Dynamic scale based on actual module count (dampened by factor 0.1)
+            const numModules = geom.numModules || 4;
+            const sizeMultiplier = 1.0 + (numModules - 4) * 0.1;
+            const scale = 0.06 * Math.max(0.4, Math.min(2.0, zoom)) * sizeMultiplier; 
+
+            const parseHex = (hex: string) => {
+              const clean = hex.replace('#', '');
+              if (clean.length === 3) {
+                const r = parseInt(clean[0] + clean[0], 16) || 16;
+                const g = parseInt(clean[1] + clean[1], 16) || 185;
+                const b = parseInt(clean[2] + clean[2], 16) || 129;
+                return { r, g, b };
+              }
+              const r = parseInt(clean.substring(0, 2), 16) || 16;
+              const g = parseInt(clean.substring(2, 4), 16) || 185;
+              const b = parseInt(clean.substring(4, 6), 16) || 129;
+              return { r, g, b };
+            };
+            const rgb = parseHex(shipColor);
+            const translucentFill = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.18)`;
+            const panelColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.45)`;
 
             this.ctx.strokeStyle = shipColor;
-            this.ctx.lineWidth = 1.0;
-            this.ctx.fillStyle = shipColor;
+            this.ctx.lineWidth = 1.2;
+            this.ctx.fillStyle = translucentFill;
             this.ctx.shadowColor = shipColor;
             this.ctx.shadowBlur = isSleeping ? 0 : 8 * zoom;
 
@@ -907,10 +960,24 @@ export class CanvasController {
             this.ctx.fill();
             this.ctx.stroke();
 
+            // High-contrast internal panel sicken lines
+            if (geom.panelLines && geom.panelLines.length > 0) {
+              this.ctx.strokeStyle = panelColor;
+              this.ctx.lineWidth = 0.8;
+              geom.panelLines.forEach(line => {
+                this.ctx.beginPath();
+                this.ctx.moveTo(line.x1 * scale, line.y1 * scale);
+                this.ctx.lineTo(line.x2 * scale, line.y2 * scale);
+                this.ctx.stroke();
+              });
+            }
+
             // Plume
             if (!isSleeping && ship.thrust) {
                const thrust = ship.thrust;
-               this.ctx.fillStyle = 'rgba(14,165,233,0.5)';
+               this.ctx.fillStyle = 'rgba(14,165,233,0.6)';
+               this.ctx.shadowColor = '#0ea5e9';
+               this.ctx.shadowBlur = 8;
                this.ctx.beginPath();
                // Thrust plume pointing "down" (tail is positive Y)
                const plumeY = (geom.exhaustY - 200) * scale;

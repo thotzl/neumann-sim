@@ -58,6 +58,8 @@ Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstruktur
 | **TCK-119** | HOTFIX: Rebrand SSoT Cognitive Protocol from ANALYSIS to LOGBOOK | Cognitive Alignment | `closed` | `high` | [Link](../.tickets/closed/TCK-119-logbook-cognitive-rebranding.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-120** | SSoT: SOS-Beacon Proximity Logistics and Peer-to-Peer Talk | Logistics and Communication Upgrade | `closed` | `high` | [Link](../.tickets/closed/TCK-120-sos-proximity-logistics.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-121** | DRY-Up: Unified Database Queries and State Selectors | Refactoring & Code Quality | `ongoing` | `medium` | [Link](../.tickets/ongoing/TCK-121-dry-queries-and-selectors.md) | [Central Test Hub](../../tests/test_all.js) |
+| **TCK-122** | HOTFIX: Implement Sub-Etheric Emergency Grid (SEEG) | Logistics and Communication Upgrade | `closed` | `high` | [Link](../.tickets/closed/TCK-122-sub-etheric-emergency-grid.md) | [Central Test Hub](../../tests/test_all.js) |
+| **TCK-127** | Perf: Runner Performance Optimization and Process Caching | Industrial Polish and Safety-Grid | `closed` | `high` | [Link](../.tickets/closed/TCK-127-runner-performance-optimization-and-process-caching.md) | [Central Test Hub](../../tests/test_all.js) |
 
 ---
 

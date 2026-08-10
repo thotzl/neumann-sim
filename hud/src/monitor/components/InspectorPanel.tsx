@@ -12,7 +12,7 @@ interface InspectorPanelProps {
 export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPanelProps) => {
   const state = useC2Store((store) => store.state);
   const selection = useC2Store((store) => store.selection);
-  const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'meta' | 'raw' | 'wiki'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'cognition' | 'cv' | 'meta' | 'raw' | 'wiki'>('status');
 
   // Reset tab to 'status' whenever selection changes
   useEffect(() => {
@@ -96,6 +96,14 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                 }`}
               >
                 [COGNITION]
+              </button>
+              <button
+                onClick={() => setActiveTab('cv')}
+                className={`flex-1 border-none bg-transparent cursor-pointer font-bold font-mono text-[10px] tracking-wider transition-colors border-r border-slate-800 ${
+                  activeTab === 'cv' ? 'text-cyber-blue bg-cyber-blue/5' : 'text-cyber-gray hover:text-slate-300'
+                }`}
+              >
+                [CV]
               </button>
               <button
                 onClick={() => setActiveTab('meta')}
@@ -255,6 +263,136 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
               </div>
             )}
 
+            {activeTab === 'cv' && (
+              <div className="flex flex-col gap-4">
+                {/* CV Layout Header */}
+                <div className="bg-white/[0.01] border border-white/5 rounded p-4 relative overflow-hidden">
+                  <div className="absolute right-3 top-3 text-[40px] text-cyber-blue/5 font-black uppercase select-none pointer-events-none font-mono">CV</div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-cyber-blue/10 border border-cyber-blue/30 flex items-center justify-center text-cyber-blue text-2xl font-bold shrink-0">
+                      💾
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white tracking-wider font-mono">
+                        CURRICULUM VITAE // <span className="text-cyber-blue font-black font-mono">{selectedAgent.chosen_name.toUpperCase()}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-mono">
+                        Neural Locus ID: {selectedAgent.id}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-800/80 my-4"></div>
+
+                  <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-cyber-gray uppercase">Lineage (Mind Gene):</span><br />
+                        <span className="text-slate-200 font-bold">
+                          {selectedAgent.parent_id ? `Clone of ${selectedAgent.parent_id}` : 'Primordial Mind (Genesis)'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-cyber-gray uppercase">Mind Inception Cycle:</span><br />
+                        <span className="text-slate-200 font-bold">Cycle {selectedAgent.birth_cycle}</span>
+                      </div>
+                      <div>
+                        <span className="text-cyber-gray uppercase">Genesis Coordinates:</span><br />
+                        <span className="text-cyber-blue font-bold">X: {selectedAgent.origin_x} | Y: {selectedAgent.origin_y}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-cyber-gray uppercase">Active Chassis / Shell:</span><br />
+                        <span className="text-slate-200 font-bold">
+                          {selectedAgent.host_type === 'ship' ? `${selectedAgent.host_id} (Vessel Coupler)` : 'SEM-Matrix (Disembodied)'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-cyber-gray uppercase">Current System Loc:</span><br />
+                        <span className="text-slate-200 font-bold">{selectedAgent.location || 'DEEP SPACE'}</span>
+                      </div>
+                      <div>
+                        <span className="text-cyber-gray uppercase">Primary Designation:</span><br />
+                        <span className="font-bold text-cyber-blue">
+                          {(() => {
+                            if (selectedAgent.host_type !== 'ship') return 'Disembodied Mind';
+                            if (hostRawShip?.has_drill) return 'Resource Miner';
+                            if (hostRawShip?.has_fabricator) return 'Swarm Constructor';
+                            return 'Probe Pilot';
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Epochal Distilled Long-Term Memory Chronicle */}
+                {selectedAgent.distilled_memory && (
+                  <div className="bg-black/60 border border-slate-900 rounded p-4 text-xs font-mono">
+                    <div className="text-[10px] text-cyber-blue font-bold tracking-wider mb-2 uppercase">
+                      🌌 distilled_long_term_memory_chronicle //
+                    </div>
+                    <div className="text-slate-300 leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto custom-scrollbar select-text font-mono text-[11px] p-3 bg-slate-950/40 border border-slate-900 rounded-sm">
+                      {selectedAgent.distilled_memory
+                        .replace(/\[MEMORY-EXTRACT\]:\s*/i, '')
+                        .replace(/\[MEMORY-EXTRACT:.*?\]\s*/i, '')
+                        .trim()}
+                    </div>
+                  </div>
+                )}
+
+                {/* Long Term Neural Memories (distilled and logged) */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Neural Memos */}
+                  <div className="bg-black/60 border border-slate-900 rounded p-3">
+                    <div className="text-[10px] text-cyber-amber font-bold mb-2">📋 neural_memories_archive ({state.memos?.filter((m: any) => m.agent_id === selectedAgent.id).length || 0}) //</div>
+                    <div className="flex flex-col gap-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                      {state.memos && state.memos.filter((m: any) => m.agent_id === selectedAgent.id).length > 0 ? (
+                        state.memos.filter((m: any) => m.agent_id === selectedAgent.id).map((memo: any, mi: number) => (
+                          <div key={mi} className="bg-white/[0.01] border border-white/5 rounded p-2 text-[11px] font-mono mb-2">
+                            <div className="flex justify-between items-center text-amber-200 font-bold mb-1">
+                              <span>📝 {memo.title?.toUpperCase() || `MEMO_RECORD_${memo.id}`}</span>
+                              <span className="text-cyber-gray text-[9px]">CYCLE_{memo.created_cycle}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400 whitespace-pre-wrap leading-relaxed">
+                              {memo.content}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-xs text-cyber-gray italic p-1">No personal neural memos archived for this agent.</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Public Scientific Publications */}
+                  <div className="bg-black/60 border border-slate-900 rounded p-3">
+                    <div className="text-[10px] text-cyber-blue font-bold mb-2">📚 public_sector_publications ({state.docs?.filter((d: any) => d.author_id === selectedAgent.id).length || 0}) //</div>
+                    <div className="flex flex-col gap-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                      {state.docs && state.docs.filter((d: any) => d.author_id === selectedAgent.id).length > 0 ? (
+                        state.docs.filter((d: any) => d.author_id === selectedAgent.id).map((doc: any, di: number) => (
+                          <div key={di} className="bg-white/[0.01] border border-white/5 rounded p-2 text-[11px] font-mono mb-2">
+                            <div className="flex justify-between items-center text-cyber-blue font-bold mb-1">
+                              <span>📚 {doc.title?.toUpperCase() || `PUBLIC_RELIC_${doc.id}`}</span>
+                              <span className="text-cyber-gray text-[9px]">CYCLE_{doc.created_cycle}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400 whitespace-pre-wrap leading-relaxed">
+                              {doc.content}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-xs text-cyber-gray italic p-1">No public documents authored by this agent.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'meta' && dashboardObj && (
               <div className="grid grid-cols-[1.2fr_1fr] gap-5">
                 {/* Host specs detailed */}
@@ -299,7 +437,7 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                 <div className="text-[10px] text-cyber-blue font-bold tracking-wider uppercase mb-1">
                   📡 CENTRAL_DATABANK_ARCHIVE / WIKI //
                 </div>
-                <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-1">
+                <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
                   {state.docs && state.docs.length > 0 ? (
                     state.docs.map((doc: any, di: number) => (
                       <details key={di} className="bg-white/[0.01] border border-white/5 rounded p-2 text-xs font-mono group">
@@ -314,27 +452,6 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                     ))
                   ) : (
                     <div className="text-xs text-cyber-gray italic">No system documentation available.</div>
-                  )}
-                </div>
-
-                <div className="text-[10px] text-cyber-amber font-bold tracking-wider uppercase mt-2 mb-1">
-                  📋 NEURAL_MEMO_RECORDS //
-                </div>
-                <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-1">
-                  {state.memos && state.memos.filter((m: any) => m.agent_id === selectedAgent.id).length > 0 ? (
-                    state.memos.filter((m: any) => m.agent_id === selectedAgent.id).map((memo: any, mi: number) => (
-                      <details key={mi} className="bg-white/[0.01] border border-white/5 rounded p-2 text-xs font-mono group">
-                        <summary className="text-amber-100 font-bold cursor-pointer hover:text-cyber-amber flex justify-between items-center select-none outline-none">
-                          <span>📝 {memo.title?.toUpperCase() || `MEMO_RECORD_${memo.id}`}</span>
-                          <span className="text-cyber-gray text-[9px]">CYCLE_{memo.created_cycle}</span>
-                        </summary>
-                        <p className="text-[10px] text-slate-400 mt-2 whitespace-pre-wrap leading-relaxed border-t border-slate-900 pt-2 font-mono">
-                          {memo.content}
-                        </p>
-                      </details>
-                    ))
-                  ) : (
-                    <div className="text-xs text-cyber-gray italic">No personal neural memos archived for this agent.</div>
                   )}
                 </div>
               </div>

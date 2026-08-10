@@ -9,6 +9,9 @@ function runSystemAutomations(vDir, universeDir, state) {
 
     if (!fs.existsSync(activeScriptsDir)) return "";
 
+    const scripts = fs.readdirSync(activeScriptsDir).filter(f => f.endsWith('.py') && f !== 'me.py' && f !== 'sitecustomize.py');
+    if (scripts.length === 0) return "";
+
     // Cleanup logic: Completely remove old, unprotected files from the Bob sandbox
     const oldMePy = path.join(activeScriptsDir, "me.py");
     const oldSitePy = path.join(activeScriptsDir, "sitecustomize.py");
@@ -86,7 +89,6 @@ builtins.me = me
 `;
     fs.writeFileSync(sitePyPath, sitePyContent);
 
-    const scripts = fs.readdirSync(activeScriptsDir).filter(f => f.endsWith('.py') && f !== 'me.py' && f !== 'sitecustomize.py');
     for (const script of scripts) {
         const scriptRelPath = `scripts/active/${script}`;
         const acl = state.security?.acl?.[scriptRelPath];

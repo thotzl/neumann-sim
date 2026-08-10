@@ -26,6 +26,10 @@ function exportWorldState(universeDir, state, lastAgentId) {
     const db = new sqlite3.Database(dbPath);
 
     db.serialize(() => {
+        db.run("PRAGMA journal_mode = WAL");
+        db.run("PRAGMA synchronous = NORMAL");
+        db.run("PRAGMA busy_timeout = 30000");
+
         db.all("SELECT * FROM systems", (err, systems) => {
             if (err) return;
             let systemsProcessed = 0;
@@ -123,6 +127,14 @@ function exportWorldState(universeDir, state, lastAgentId) {
             }
 
             const history = state.histories[a.id] || [];
+            
+            // SSoT: Fetch the distilled memory extract (always the first entry in history if it exists)
+            const firstHistoryEntry = history[0];
+            if (firstHistoryEntry && firstHistoryEntry.text && firstHistoryEntry.text.includes('[MEMORY-EXTRACT]')) {
+                a.distilled_memory = firstHistoryEntry.text;
+            } else {
+                a.distilled_memory = null;
+            }
             
             // Find the last actual thought process of the agent (backwards)
             let lastThoughtEntry = null;

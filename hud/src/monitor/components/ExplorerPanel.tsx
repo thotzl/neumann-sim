@@ -108,11 +108,15 @@ export const ExplorerPanel = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelection({ type: 'agent', id: a.id });
-                      if (a.status === 'traveling') {
+                      if (a.status === 'traveling' || a.location === 'Interstellar') {
                         handleFocus(a.current_x, a.current_y);
                       } else if (a.location) {
                         const sys = state.systems.find(s => s.name === a.location);
-                        if (sys) handleFocus(sys.x, sys.y);
+                        if (sys) {
+                          handleFocus(sys.x, sys.y);
+                        } else {
+                          handleFocus(a.current_x, a.current_y);
+                        }
                       }
                     }}
                     className={`bg-slate-900/60 border text-[9px] px-1.5 py-0.5 rounded-sm cursor-pointer uppercase font-mono transition-colors hover:bg-slate-800 ${

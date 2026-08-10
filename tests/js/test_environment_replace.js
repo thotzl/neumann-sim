@@ -132,6 +132,10 @@ print("second")
 cmd = sys.argv[1] if len(sys.argv) > 1 else ""
 if "withdraw" in cmd:
     print("[ERROR] Depot is empty.")
+elif "mine" in cmd:
+    print("[ERROR] Storage full.")
+elif "build" in cmd:
+    print("[ERROR] Materials insufficient.")
 elif "move" in cmd:
     print("[SUCCESS] Travel initiated.")
 else:
@@ -163,6 +167,37 @@ else:
     }
     
     console.log("  ✅ Action Chain Short-Circuiting successful.");
+
+    // TEST FASTRACK: Test me.mine() and me.build() failures aborting me.sleep()
+    console.log("Test: Verifying mine() and build() failures abort sleep()...");
+    
+    const sleepShortCircuitMine = `
+[RUN: me.mine()]
+[RUN: me.sleep(duration=10)]
+`;
+    const feedbackSleepMine = processActions(sleepShortCircuitMine, mockVerseDir, "Instance-1", mockState);
+    
+    if (!feedbackSleepMine.includes("Storage full.")) {
+        throw new Error("Sleep Short-Circuit Test FAILED: me.mine response was not captured correctly. Feedback: " + feedbackSleepMine);
+    }
+    if (!feedbackSleepMine.includes("[ABORTED: 'me.sleep(duration=10)' was bypassed because a preceding logistics or loading action in this chain failed.]")) {
+        throw new Error("Sleep Short-Circuit Test FAILED: me.sleep was not aborted after mine failure. Feedback: " + feedbackSleepMine);
+    }
+
+    const sleepShortCircuitBuild = `
+[RUN: me.build(building_type="matter_refinery", matter_to_invest=750)]
+[RUN: me.sleep(duration=10)]
+`;
+    const feedbackSleepBuild = processActions(sleepShortCircuitBuild, mockVerseDir, "Instance-1", mockState);
+    
+    if (!feedbackSleepBuild.includes("Materials insufficient.")) {
+        throw new Error("Sleep Short-Circuit Test FAILED: me.build response was not captured correctly. Feedback: " + feedbackSleepBuild);
+    }
+    if (!feedbackSleepBuild.includes("[ABORTED: 'me.sleep(duration=10)' was bypassed because a preceding logistics or loading action in this chain failed.]")) {
+        throw new Error("Sleep Short-Circuit Test FAILED: me.sleep was not aborted after build failure. Feedback: " + feedbackSleepBuild);
+    }
+
+    console.log("  ✅ mine() and build() Fail-Fast sleep short-circuiting verified.");
 
     console.log("🎉 All Parser & Guard Tests successful.");
 } catch (e) {

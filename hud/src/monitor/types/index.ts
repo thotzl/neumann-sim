@@ -5,6 +5,7 @@ export type Agent = {
   location: string | null;
   status: string; 
   last_manifestation: string; 
+  distilled_memory?: string | null;
   birth_cycle: number;
   current_x: number; 
   current_y: number; 

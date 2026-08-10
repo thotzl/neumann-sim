@@ -83,11 +83,14 @@ export const ExplorerPanel = ({ state, selection, setSelection, focusBounds }: E
               return (
                 <div 
                   key={a.id} 
-                  onClick={() => { 
-                    setSelection({ type: 'agent', id: a.id }); 
+                  onClick={() => {
+                    setSelection({ type: 'agent', id: a.id });
                     const sys = state.systems.find(s => s.name === a.location);
-                    if (sys) focusBounds([{x: sys.x, y: sys.y}]);
-                    else if (a.status === 'traveling') focusBounds([{x: a.current_x, y: a.current_y}]);
+                    if (sys) {
+                      focusBounds([{x: sys.x, y: sys.y}]);
+                    } else {
+                      focusBounds([{x: a.current_x, y: a.current_y}]);
+                    }
                   }}
                   style={{ 
                     fontSize: '0.9rem', 

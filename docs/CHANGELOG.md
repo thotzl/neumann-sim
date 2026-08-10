@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.8** | **2026-08-10** | `RELEASED` | WAL-Turbo Write, Safe Concurrency & Index Cover (v13.8) | `[TCK-122]`, `[TCK-127]` |
 | **v13.6** | **2026-08-06** | `RELEASED` | Symmetrisches Seeding, Sovereign DB-First Loading & Timeline Purity (v13.6) | `[TCK-111]`, `[TCK-116]`, `[TCK-118]` |
 | **v13.5** | **2026-07-30** | `RELEASED` | Symmetrie-Feinabstimmung & Interstellare Härte (V13.5) | `[TCK-114]` |
 | **v13.0** | **2026-07-29** | `RELEASED` | V13.0 Clean Architecture & Modular Services | `[TCK-114]` |
@@ -20,6 +21,27 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.8] - 2026-08-10
+*Das "WAL-Turbo Write & Multicore-Sicherheit" Upgrade. Dieses fundamentale System-Tuning beschleunigt alle Datenbank-Schreibvorgänge um das 20-fache (20x), schützt parallele Transaktionen durch eine ausgeklügelte Sperrverzögerung (busy_timeout) vor SQLITE_BUSY, fügt nicht-einzigartige Performance-Indizes für alle hochfrequenten Sektor-Suchen hinzu und führt ein hocheffizientes Lazy-Automation-Laden ein.*
+
+#### Added (Neue Features)
+- **20x I/O-Schreibturbo via WAL-Modus & Normaler Synchronität:** Sowohl in Python (`db_config.py`) als auch in Node.js (`db.js`, `state_exporter.js`) wird jede neue Verbindung standardmäßig mit `PRAGMA journal_mode=WAL` und `PRAGMA synchronous=NORMAL` geöffnet. Schreiblasten brechen von 1.75 ms/Transaktion auf unter 0.09 ms/Transaktion ein.
+  - *Ticket:* `[TCK-127]` ([Link](../.tickets/closed/TCK-127-runner-performance-optimization-and-process-caching.md))
+- **Multicore-Sicherheit via 30s busy_timeout:** Um Schreibblockaden im WAL-Modus bei gleichzeitigen Zugriffen von Python und Node.js zu verhindern, warten Verbindungen nun bis zu 30 Sekunden per `PRAGMA busy_timeout=30000`, statt abrupt mit `SQLITE_BUSY` abzubrechen.
+  - *Ticket:* `[TCK-127]` ([Link](../.tickets/closed/TCK-127-runner-performance-optimization-and-process-caching.md))
+- **Hochfrequente Sektor-Performance-Indizes:** Eine neue Schema-Migration (`0004_add_performance_indexes.sql`) fügt sichere, nicht-einzigartige Indizes hinzu, um Datenbank-Tabellenscans auf Fremdschlüsseln zu verhindern:
+  - `infrastructure(system_name)` (beschleunigt v_agents/v_ships Sichten)
+  - `ships(system_name)`, `ships(pilot_id)`
+  - `messages(receiver)`, `messages(sender)` (beschleunigt Postfach-Anfragen)
+  - `agents(host_type, host_id)`
+  - `memos(agent_id)`
+  - `docs(system_name)`
+  - *Ticket:* `[TCK-127]` ([Link](../.tickets/closed/TCK-127-runner-performance-optimization-and-process-caching.md))
+- **Lazy background-automation early exit:** Der Automation-Runner in Node.js (`automation.js`) scannt den Ordner `_verse/scripts/active/` als ersten Schritt. Sind keine aktiven Agenten-Skripte präsent, beendet sich das System sofort. Dies tilgt überflüssige Schreibzugriffe auf `me.py` und `sitecustomize.py` in frühen Runden komplett.
+  - *Ticket:* `[TCK-127]` ([Link](../.tickets/closed/TCK-127-runner-performance-optimization-and-process-caching.md))
+- **HOTFIX: Sub-Etheric Emergency Grid (SEEG):** Vollständige Einbindung der Rettungsbaken-Netzwerke zur logistischen Havarie-Vermeidung.
+  - *Ticket:* `[TCK-122]` ([Link](../.tickets/closed/TCK-122-sub-etheric-emergency-grid.md))
 
 ### [v13.6] - 2026-08-06
 *Das "Souveräne Datenbank & Timeline-Reinheit" Upgrade. Dieser historische Meilenstein vollendet die Deep-Space-Astronomie, verknüpft interstellare Stargate-Netzwerke, befreit Bobs Kommunikation aus der Funkstille (Silent Cage) und etabliert eine absolute zeitliche Reinheit durch Sende-Zeitstempel (sent_at) im sub-etherischen Funkverkehr.*

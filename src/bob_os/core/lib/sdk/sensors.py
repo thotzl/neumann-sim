@@ -509,6 +509,8 @@ class Sensors:
             "your_status": {
                 "id": agent['id'],
                 "name": get_display_name(agent),
+                "current_coordinates": f"X{round(agent.get('current_x', 0.0), 1)}-Y{round(agent.get('current_y', 0.0), 1)}",
+                "last_coordinates": f"X{round(agent.get('last_x', 0.0), 1)}-Y{round(agent.get('last_y', 0.0), 1)}" if agent.get('last_x') is not None else "None",
                 "host_type": host_type,
                 "host_id": host_id,
                 "current_inventory_host": current_inventory_host,

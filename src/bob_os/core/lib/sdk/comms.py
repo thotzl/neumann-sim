@@ -220,7 +220,7 @@ class Comms:
         """, (ship_id, final_msg, current_x, current_y, current_cycle))
         
         # Säule II: One-time Transient Prio-1 Emergency Broadcast (Relais-Symmetrie 3b)
-        cursor.execute("SELECT id, current_x, current_y, chosen_name, location, active_ship_id FROM agents WHERE id != ?", (self.agent.id,))
+        cursor.execute("SELECT id, current_x, current_y, chosen_name, host_type, host_id, status, active_ship_id FROM agents WHERE id != ?", (self.agent.id,))
         other_agents = cursor.fetchall()
         
         sender_system = get_ship_system_name(cursor, ship_id)
@@ -232,9 +232,14 @@ class Comms:
         for r in other_agents:
             target_id = r['id']
             
+            # Resolve target location using agent_service
+            target_location = agent_service.resolve_agent_location(
+                cursor, r['host_type'], r['host_id'], r['status'], r['current_x'], r['current_y']
+            )
+            
             # Resolve target system
             target_ship_id = r['active_ship_id']
-            target_system = get_ship_system_name(cursor, target_ship_id) if r['location'] == 'Interstellar' and target_ship_id else r['location']
+            target_system = get_ship_system_name(cursor, target_ship_id) if target_location == 'Interstellar' and target_ship_id else target_location
             target_has_relay = has_active_relay(cursor, target_system)
             
             # Proximity calculation

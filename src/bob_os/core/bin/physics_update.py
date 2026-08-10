@@ -115,6 +115,7 @@ def update(current_tick=1):
                 INSERT INTO visual_events (cycle, actor_id, description)
                 VALUES (?, ?, ?)
             """, (current_tick, t['id'], f"[CRITICAL BLACKOUT] Interstellar transit automatically aborted for {t['id']} because shipboard energy ({energy_inv} E) is insufficient for the next transit segment ({round(tick_cost, 2)} E). Shipboard systems stabilized at stationary location: {final_location}."))
+            
             continue # Aborts this traveling tick
 
         # Passive Proximity Discovery (Sight-Erkundung - Pillar 5)
@@ -348,6 +349,26 @@ def update(current_tick=1):
                         (name, x, y, extractable_matter_in_core, max_extractable_matter, is_inspected) 
                         VALUES (?, ?, ?, ?, ?, 0)
                     """, (s["id"], s["x"], s["y"], s["matterDepot"], s["matterDepot"]))
+
+    # SSoT: Sichern des letzten Zustands (last_x, last_y, last_status) am Ende jeder Runde,
+    # falls sich Koordinaten oder Status im Vergleich zum vorherigen Stand geändert haben.
+    try:
+        cursor.execute("""
+            UPDATE agents SET
+                last_x = current_x,
+                last_y = current_y,
+                last_status = status
+            WHERE 
+                last_x IS NULL OR 
+                last_y IS NULL OR 
+                last_status IS NULL OR
+                current_x != last_x OR
+                current_y != last_y OR
+                status != last_status
+        """)
+    except sqlite3.OperationalError:
+        # Fallback for older/primitive unit test mock databases lacking the last_state columns
+        pass
 
     conn.commit()
     conn.close()

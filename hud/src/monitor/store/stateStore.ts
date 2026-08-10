@@ -28,11 +28,29 @@ interface C2Store {
 export const useC2Store = create<C2Store>((set) => ({
   state: null,
   logs: [],
-  selection: null,
+  selection: (() => {
+    try {
+      const saved = localStorage.getItem('nasa_c2_selection');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  })(),
   isReady: false,
   useBetaView: false,
 
-  setSelection: (sel) => set({ selection: sel }),
+  setSelection: (sel) => {
+    try {
+      if (sel) {
+        localStorage.setItem('nasa_c2_selection', JSON.stringify(sel));
+      } else {
+        localStorage.removeItem('nasa_c2_selection');
+      }
+    } catch (e) {
+      console.error('[C2 Store] localStorage write error:', e);
+    }
+    set({ selection: sel });
+  },
   setReady: (ready) => set({ isReady: ready }),
   setUseBetaView: (beta) => set({ useBetaView: beta }),
 

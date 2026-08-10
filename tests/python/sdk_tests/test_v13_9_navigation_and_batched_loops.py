@@ -12,64 +12,17 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
     def setUp(self):
         self.test_db = "nav_batch_test.db"
         os.environ['TEST_DB_PATH'] = self.test_db
+        os.environ['TEST_DB_PATH'] = self.test_db
         os.environ['BOB_ID'] = 'Instance-1'
         if os.path.exists(self.test_db):
             os.remove(self.test_db)
         
+        # SSoT: Run the production migrations to provision the schema automatically
+        from core.bin.init_db import init as run_migrations
+        run_migrations()
+        
         conn = sqlite3.connect(self.test_db)
         c = conn.cursor()
-        
-        # Create standard schemas matching database migrations
-        c.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, chosen_name TEXT, location TEXT, host_type TEXT DEFAULT 'matrix', host_id INTEGER DEFAULT 1, energy_inventory REAL DEFAULT 0, raw_matter_inventory REAL DEFAULT 0, refined_matter_inventory REAL DEFAULT 0, matter_storage_capacity REAL DEFAULT 1000, status TEXT DEFAULT 'active', current_x REAL DEFAULT 0, current_y REAL DEFAULT 0, active_ship_id INTEGER DEFAULT NULL, last_seen_event_id INTEGER DEFAULT 0, target_system TEXT, origin_x REAL, origin_y REAL, target_x REAL, target_y REAL, transit_ticks_total INTEGER, transit_ticks_passed INTEGER, birth_cycle INTEGER DEFAULT 1, sleep_state INTEGER DEFAULT 0, sleep_until_round INTEGER DEFAULT 0)")
-        c.execute("CREATE TABLE systems (name TEXT PRIMARY KEY, display_name TEXT, x INTEGER, y INTEGER, extractable_matter_in_core INTEGER, max_extractable_matter INTEGER DEFAULT 10000, raw_matter_depot INTEGER DEFAULT 0, depot_matter_capacity INTEGER DEFAULT 5000, energy_depot INTEGER DEFAULT 0, depot_energy_capacity INTEGER DEFAULT 5000, refined_matter_depot INTEGER DEFAULT 0)")
-        c.execute("CREATE TABLE infrastructure (id INTEGER PRIMARY KEY, system_name TEXT, type TEXT, status TEXT, progress_matter INTEGER, required_matter INTEGER, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, level INTEGER DEFAULT 1, maintenance_cooldown INTEGER DEFAULT 0, linked_system TEXT DEFAULT NULL)")
-        c.execute("CREATE TABLE ships (id INTEGER PRIMARY KEY, name TEXT, chassis TEXT, pilot_id TEXT, system_name TEXT, health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100, raw_matter_inventory INTEGER DEFAULT 0, refined_matter_inventory INTEGER DEFAULT 0, energy_inventory INTEGER DEFAULT 0, matter_storage_capacity INTEGER DEFAULT 5000, energy_capacity INTEGER DEFAULT 10000, max_speed REAL DEFAULT 300, thrust INTEGER DEFAULT 500, mass INTEGER DEFAULT 1200, blueprint_name TEXT, has_drill INTEGER DEFAULT 0, has_fabricator INTEGER DEFAULT 0, has_logic_core INTEGER DEFAULT 0, progress_matter INTEGER DEFAULT 0, required_matter INTEGER DEFAULT 0)")
-        c.execute("CREATE TABLE IF NOT EXISTS blueprints (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, author_id TEXT, matrix_json TEXT, stats_json TEXT)")
-        c.execute("CREATE TABLE IF NOT EXISTS visual_events (rowid INTEGER PRIMARY KEY AUTOINCREMENT, cycle INTEGER, location TEXT, actor_id TEXT, event_type TEXT, description TEXT)")
-        c.execute("CREATE TABLE IF NOT EXISTS messages (sender TEXT, receiver TEXT, content TEXT, priority INTEGER DEFAULT 0, sent_at TEXT)")
-        c.execute("CREATE TABLE IF NOT EXISTS emergency_beacons (ship_id INTEGER PRIMARY KEY, message TEXT, x REAL, y REAL, created_cycle INTEGER)")
-        
-        # Create Unified Views
-        c.execute("""
-        CREATE VIEW IF NOT EXISTS v_agents AS
-        SELECT 
-            a.id, a.chosen_name, a.host_id, a.host_type, a.status, a.birth_cycle,
-            a.target_system, a.origin_x, a.origin_y, a.target_x, a.target_y,
-            a.transit_ticks_total, a.transit_ticks_passed, a.current_x, a.current_y,
-            a.active_ship_id, a.last_seen_event_id, a.sleep_state, a.sleep_until_round,
-            CASE 
-                WHEN a.status = 'traveling' THEN 'Interstellar'
-                WHEN a.host_type = 'ship' THEN (SELECT s.system_name FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
-                WHEN a.host_type = 'matrix' THEN (SELECT i.system_name FROM infrastructure i WHERE i.id = CAST(a.host_id AS INTEGER))
-                ELSE 'Unknown'
-            END AS location,
-            CASE 
-                WHEN a.host_type = 'ship' THEN (SELECT s.raw_matter_inventory FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
-                WHEN a.host_type = 'matrix' THEN (SELECT sys.raw_matter_depot FROM systems sys WHERE sys.name = (SELECT i.system_name FROM infrastructure i WHERE i.id = CAST(a.host_id AS INTEGER)))
-                ELSE 0
-            END AS raw_matter_inventory,
-            CASE 
-                WHEN a.host_type = 'ship' THEN (SELECT s.refined_matter_inventory FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
-                WHEN a.host_type = 'matrix' THEN (SELECT sys.refined_matter_depot FROM systems sys WHERE sys.name = (SELECT i.system_name FROM infrastructure i WHERE i.id = CAST(a.host_id AS INTEGER)))
-                ELSE 0
-            END AS refined_matter_inventory,
-            CASE 
-                WHEN a.host_type = 'ship' THEN (SELECT s.energy_inventory FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
-                WHEN a.host_type = 'matrix' THEN MAX(50, COALESCE((SELECT sys.energy_depot FROM systems sys WHERE sys.name = (SELECT i.system_name FROM infrastructure i WHERE i.id = CAST(a.host_id AS INTEGER))), 0))
-                ELSE 100
-            END AS energy_inventory,
-            CASE 
-                WHEN a.host_type = 'ship' THEN (SELECT s.energy_capacity FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
-                WHEN a.host_type = 'matrix' THEN (SELECT sys.depot_energy_capacity FROM systems sys WHERE sys.name = (SELECT i.system_name FROM infrastructure i WHERE i.id = CAST(a.host_id AS INTEGER)))
-                ELSE 500
-            END AS energy_capacity,
-            CASE 
-                WHEN a.host_type = 'ship' THEN (SELECT s.matter_storage_capacity FROM ships s WHERE s.id = CAST(a.host_id AS INTEGER))
-                WHEN a.host_type = 'matrix' THEN (SELECT sys.depot_matter_capacity FROM systems sys WHERE sys.name = (SELECT i.system_name FROM infrastructure i WHERE i.id = CAST(a.host_id AS INTEGER)))
-                ELSE 100
-            END AS matter_storage_capacity
-        FROM agents a
-        """)
         
         # Populate systems
         c.execute("INSERT INTO systems (name, display_name, x, y, extractable_matter_in_core) VALUES ('SYS_A', 'HomeBase', 0, 0, 10000)")
@@ -77,12 +30,12 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
         c.execute("INSERT INTO systems (name, display_name, x, y, extractable_matter_in_core) VALUES ('SYS_C', 'Beta Cluster', 600, 800, 3000)")
         
         # Populate agents
-        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, host_type, host_id, active_ship_id) VALUES ('Instance-1', 'Robert', 'SYS_A', 1000, 100, 10000, 'active', 0, 0, 'ship', 1, 1)")
-        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, host_type, host_id) VALUES ('Instance-2', 'CloneB', 'SYS_B', 100, 500, 1000, 'active', 300, 400, 'matrix', 2)")
+        c.execute("INSERT INTO agents (id, chosen_name, status, current_x, current_y, host_type, host_id, active_ship_id) VALUES ('Instance-1', 'Robert', 'active', 0, 0, 'ship', 1, 1)")
+        c.execute("INSERT INTO agents (id, chosen_name, status, current_x, current_y, host_type, host_id) VALUES ('Instance-2', 'CloneB', 'active', 300, 400, 'matrix', 2)")
         
         # Populate ships
-        # Pilot ship for Instance-1 with drill
-        c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory, has_drill, max_speed) VALUES (1, 'Pioneer-1', 'Scout-MK1', 'Instance-1', 'SYS_A', 1000, 1000, 1, 300)")
+        # Pilot ship for Instance-1 with drill (includes initial 1000 energy, 0 raw matter, and 10000 capacity)
+        c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory, raw_matter_inventory, matter_storage_capacity, has_drill, max_speed) VALUES (1, 'Pioneer-1', 'Scout-MK1', 'Instance-1', 'SYS_A', 10000, 1000, 0, 10000, 1, 300)")
         # Empty ship for testing ship address resolution
         c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, max_speed) VALUES (3, 'TargetShip', 'Miner-MK1', NULL, 'SYS_B', 300)")
         
@@ -203,7 +156,7 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
         c = conn.cursor()
         c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (4, 'LocalShip', 'Miner-MK1', NULL, 'SYS_A')")
         c.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (4, 'SYS_A', 'sem_matrix', 'active')")
-        c.execute("INSERT INTO agents (id, chosen_name, location, energy_inventory, raw_matter_inventory, matter_storage_capacity, status, current_x, current_y, host_type, host_id) VALUES ('Instance-3', 'CloneC', 'SYS_A', 100, 500, 1000, 'active', 0, 0, 'matrix', 4)")
+        c.execute("INSERT INTO agents (id, chosen_name, status, current_x, current_y, host_type, host_id) VALUES ('Instance-3', 'CloneC', 'active', 0, 0, 'matrix', 4)")
         conn.commit()
         conn.close()
         
@@ -221,6 +174,31 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
         probe_3 = [p for p in probes if p['id'] == 'Instance-3']
         self.assertEqual(len(probe_3), 1)
         self.assertEqual(probe_3[0].get('target_id'), "probe@Instance-3")
+
+    def test_coordinates_telemetry_and_history(self):
+        # 1. Fetch current telemetry - last_coordinates should be None initially
+        dash = self.agent.dashboard()
+        status = dash.get('your_status', {})
+        self.assertEqual(status.get('current_coordinates'), "X0.0-Y0.0")
+        self.assertEqual(status.get('last_coordinates'), "None")
+        
+        # 2. Simulate end of round physics update by calling update()
+        # This should populate last_x, last_y, last_status
+        from core.bin.physics_update import update
+        conn = sqlite3.connect(self.test_db)
+        c = conn.cursor()
+        c.execute("CREATE TABLE IF NOT EXISTS global_settings (key TEXT PRIMARY KEY, val TEXT)")
+        c.execute("INSERT OR IGNORE INTO global_settings (key, val) VALUES ('seed', 'BobOS_V12')")
+        conn.commit()
+        conn.close()
+        
+        update(1)
+        
+        # Now query again
+        dash = self.agent.dashboard()
+        status = dash.get('your_status', {})
+        self.assertEqual(status.get('current_coordinates'), "X0.0-Y0.0")
+        self.assertEqual(status.get('last_coordinates'), "X0.0-Y0.0")
 
     # ==========================================
     # BATCHED MINING UNIT TESTS (TCK-129)

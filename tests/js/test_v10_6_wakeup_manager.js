@@ -144,7 +144,8 @@ async function runTests() {
         let agent4 = {
             id: "Instance-1",
             location: "SYS_X0_Y0",
-            last_location: "Interstellar", // Arrived!
+            status: "active",
+            last_status: "traveling", // Arrived/Stopped!
             sleep_state: 1,
             sleep_until_cycle: 10,
             sleep_baselines: {
@@ -177,7 +178,7 @@ async function runTests() {
         skipped = await wakeupManager.handleStandby(agent4, state4, {}, __dirname, dummyLog, "mock_db");
         assert.strictEqual(skipped, false); // False because it woke up!
         assert.strictEqual(agent4.sleep_state, 0);
-        assert.strictEqual(agent4.wake_reason, "Transit complete. Reached destination coordinates.");
+        assert.strictEqual(agent4.wake_reason, "Transit finished. Movement status updated to stationary.");
         console.log("  ✅ Travel arrival correctly triggered NAVI wakeup.");
 
         // --- TEST 5: DEMOGRAPHIC POPULATION WAKEUP SENSOR (NEW_BOB & NEW_SHIP) ---

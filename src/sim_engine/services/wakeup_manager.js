@@ -126,8 +126,8 @@ async function handleStandby(agent, state, config, universeDir, logFile, dbPath)
         },
         // Tier III: Navigational Alarms
         {
-            trigger: () => agent.location !== 'Interstellar' && agent.last_location === 'Interstellar',
-            reason: "Transit complete. Reached destination coordinates."
+            trigger: () => agent.status === 'active' && agent.last_status === 'traveling',
+            reason: "Transit finished. Movement status updated to stationary."
         },
         // Tier IV: Physical Alarms (Unblockable by DND - Triggers on any sector state change)
         {

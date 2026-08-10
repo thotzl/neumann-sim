@@ -116,14 +116,17 @@ def get_agent_or_fail(cursor, agent_id, required_columns="*"):
         return None
     agent_dict = dict(row)
     # Enable dynamic coordinate-based spatial docking dynamically based on true euklidische coordinates (Pillar 5 / SSoT)
-    agent_dict['location'] = resolve_agent_location(
-        cursor, 
-        agent_dict.get('host_type'), 
-        agent_dict.get('host_id'), 
-        agent_dict.get('status'),
-        agent_dict.get('current_x'),
-        agent_dict.get('current_y')
-    )
+    # SSoT-Principle: Accept the resolved location directly from database/physics-engine if present!
+    # Only fall back to resolve_agent_location if 'location' is missing or unmapped (e.g. in primitive legacy test mock schemas)
+    if 'location' not in agent_dict or agent_dict['location'] in ['Unknown', None]:
+        agent_dict['location'] = resolve_agent_location(
+            cursor, 
+            agent_dict.get('host_type'), 
+            agent_dict.get('host_id'), 
+            agent_dict.get('status'),
+            agent_dict.get('current_x'),
+            agent_dict.get('current_y')
+        )
     return agent_dict
 
 def require_active_status(agent, tool_name):

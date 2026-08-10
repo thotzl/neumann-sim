@@ -187,6 +187,7 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1 leading-normal font-mono">
                     ID: {selectedAgent.id}<br />
+                    TARGET ID: <span className="text-cyber-blue font-bold">probe@{selectedAgent.id}</span><br />
                     LOCATION: {selectedAgent.location || 'DEEP SPACE'}<br />
                     STATE: {(() => {
                       if (selectedAgent.status === 'traveling') {
@@ -219,7 +220,8 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                     </div>
                     <div className="text-[11px] text-slate-400 mt-1">
                       TYPE: {dashboardObj.your_status.host.type.toUpperCase()}<br />
-                      ID: {dashboardObj.your_status.host.id}
+                      ID: {dashboardObj.your_status.host.id}<br />
+                      TARGET ID: <span className="text-cyber-blue font-bold">{dashboardObj.your_status.host.type}@{dashboardObj.your_status.host.id}</span>
                     </div>
                     {selectedAgent.host_type === 'ship' && hostRawShip && (
                       <button
@@ -473,6 +475,7 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                   </h3>
                   <div className="text-xs text-slate-300 leading-relaxed font-mono">
                     COORDINATES: <span className="text-white">X:{selectedSystem.x} • Y:{selectedSystem.y}</span><br />
+                    TARGET ID: <span className="text-cyber-blue font-bold">sys@{selectedSystem.name}</span><br />
                     GEOLOGY (Erzgehalt): <span className="text-cyber-amber font-bold">{selectedSystem.extractable_matter_in_core} t Raw</span><br />
                     RAW MAT DEPOT: <span className="text-slate-400">{selectedSystem.raw_matter_depot} / {selectedSystem.depot_matter_capacity} t</span><br />
                     REFINED DEPOT: <span className="text-emerald-500 font-bold">{selectedSystem.refined_matter_depot || 0} t</span><br />

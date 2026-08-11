@@ -252,10 +252,21 @@ def evaluate_ship_matrix(name, matrix, rules):
     cargo_to_mass = round(stats['cargo'] / float(stats['mass']), 4) if stats['mass'] > 0 else 0.0
 
     warnings = []
+    # 1. Kritisch: Absolutes Energie-Gitter-Vakuum (Die klassische Batterie-Falle)
     if stats['battery'] == 0:
-        warnings.append("CRITICAL DESIGN FLAW: This vessel has NO BATTERY modules! It will be a completely dead, non-operational BRICK (has_energy_grid=False) unable to store energy or execute any commands. You MUST install at least one 'battery' module.")
+        warnings.append("CRITICAL DESIGN FLAW: Calculated battery capacity is 0E! Vessel has no energy grid (has_energy_grid=False) and is completely unable to store power or execute commands. You MUST install at least one 'battery' module.")
+        
+    # 2. Warnung: Stationäre Plattform (Triebwerks-Check)
     if stats['thrust'] == 0:
-        warnings.append("WARNING: This vessel has NO ENGINE modules! It will be unable to move under its own power (can_move=False) and will operate solely as a stationary platform.")
+        warnings.append("WARNING: Calculated thrust is 0! Vessel is unable to move under its own power (can_move=False) and will operate solely as a stationary platform.")
+        
+    # 3. Warnung: Energie-Vergaser (Recharge-Check - Keine Solarzellen/Fusionsreaktoren)
+    if stats['battery'] > 0 and stats['regen'] <= 0:
+        warnings.append("WARNING: Calculated energy regeneration is <= 0E/tick! Vessel operates solely on static battery reserves and cannot recharge in deep space.")
+        
+    # 4. Warnung: Sinnloses Bohren (Bohrer verbaut, aber 0 Ladekapazität)
+    if has_drill and stats['cargo'] == 0:
+        warnings.append("WARNING: Vessel has drilling capability but 0 cargo storage capacity! Mined resources will be discarded instantly.")
 
     return {
         "mass": int(stats['mass']), 

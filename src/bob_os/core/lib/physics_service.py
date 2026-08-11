@@ -251,6 +251,12 @@ def evaluate_ship_matrix(name, matrix, rules):
     thrust_to_mass = round(stats['thrust'] / float(stats['mass']), 4) if stats['mass'] > 0 else 0.0
     cargo_to_mass = round(stats['cargo'] / float(stats['mass']), 4) if stats['mass'] > 0 else 0.0
 
+    warnings = []
+    if stats['battery'] == 0:
+        warnings.append("CRITICAL DESIGN FLAW: This vessel has NO BATTERY modules! It will be a completely dead, non-operational BRICK (has_energy_grid=False) unable to store energy or execute any commands. You MUST install at least one 'battery' module.")
+    if stats['thrust'] == 0:
+        warnings.append("WARNING: This vessel has NO ENGINE modules! It will be unable to move under its own power (can_move=False) and will operate solely as a stationary platform.")
+
     return {
         "mass": int(stats['mass']), 
         "cost": int(stats['cost']), 
@@ -279,5 +285,6 @@ def evaluate_ship_matrix(name, matrix, rules):
             "comm_range": total_comm_range,
             "solar_recharge_cycles": solar_recharge,
             "cargo_to_mass_ratio": cargo_to_mass
-        }
+        },
+        "warnings": warnings
     }

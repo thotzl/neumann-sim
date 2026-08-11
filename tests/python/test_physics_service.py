@@ -78,5 +78,29 @@ class TestPhysicsService(unittest.TestCase):
         self.assertFalse(broken_stats["diagnostics"]["has_energy_grid"])
         self.assertEqual(broken_stats["diagnostics"]["comm_range"], 0)
 
+    def test_blueprint_warnings(self):
+        from core.lib import config_service
+        rules = config_service.get_economy_rules()
+
+        # 1. Test Battery FLAW warning (No battery)
+        m1 = [["logic_core", "engine"]]
+        s1 = physics_service.evaluate_ship_matrix("No-Battery-Brick", m1, rules)
+        self.assertTrue(any("Calculated battery capacity is 0E!" in w for w in s1.get("warnings", [])))
+
+        # 2. Test Engine warning (No thrust)
+        m2 = [["logic_core", "battery"]]
+        s2 = physics_service.evaluate_ship_matrix("No-Thrust-Outpost", m2, rules)
+        self.assertTrue(any("Calculated thrust is 0!" in w for w in s2.get("warnings", [])))
+
+        # 3. Test Regen warning (No solar/fusion recharge)
+        m3 = [["logic_core", "engine", "battery"]]
+        s3 = physics_service.evaluate_ship_matrix("No-Recharge-Scout", m3, rules)
+        self.assertTrue(any("Calculated energy regeneration is <= 0E/tick!" in w for w in s3.get("warnings", [])))
+
+        # 4. Test Cargo-less Drill warning (Drill with 0 cargo capacity)
+        m4 = [["logic_core", "engine", "battery", "drill"]]
+        s4 = physics_service.evaluate_ship_matrix("Cargo-less-Drill", m4, rules)
+        self.assertTrue(any("Vessel has drilling capability but 0 cargo storage capacity!" in w for w in s4.get("warnings", [])))
+
 if __name__ == '__main__':
     unittest.main()

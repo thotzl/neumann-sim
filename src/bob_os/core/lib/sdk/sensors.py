@@ -475,6 +475,8 @@ class Sensors:
                     "specs": f"speed {host_dict.get('stats', {}).get('max_speed', 300)} / thrust {host_dict.get('stats', {}).get('thrust', 500)} / mass {host_dict.get('stats', {}).get('mass', 1200)}",
                     "modules": active_modules
                 }
+                if bp_stats and bp_stats.get('warnings'):
+                    host_telemetry['warnings'] = bp_stats['warnings']
 
         current_stardate = os.environ.get('BOB_STARDATE', '1::1')
         

@@ -130,8 +130,8 @@ def get_agent_or_fail(cursor, agent_id, required_columns="*"):
     return agent_dict
 
 def require_active_status(agent, tool_name):
-    if agent.get('location') == 'Interstellar':
-        print(f"[DENIED] Engines active. {tool_name} impossible in interstellar space.")
+    if agent.get('status') == 'traveling':
+        print(f"[DENIED] Engines active. {tool_name} impossible during interstellar transit.")
         return False
     return True
 

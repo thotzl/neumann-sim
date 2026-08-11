@@ -22,3 +22,4 @@ Ermöglicht es Agenten, unbemannte oder eigene Schiffe im Feld (außerhalb einer
 - Source: [ROADMAP.md](../resources/todo/ROADMAP.md)
 - Welt-Physik-Upgrades: [ROADMAP_WORLD_MECHANICS.md](../resources/todo/ROADMAP_WORLD_MECHANICS.md)
 - Archetypen & Chassis-Limits: [ADVANCED_MECHANICS_DUMP.md](../resources/todo/ADVANCED_MECHANICS_DUMP.md)
+- Waffen-Konzept (V14.0): [WEAPON_SYSTEMS_V14.md](../../docs/concepts/WEAPON_SYSTEMS_V14.md)

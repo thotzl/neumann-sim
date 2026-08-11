@@ -23,3 +23,4 @@ Ermöglicht den physischen Aufstieg von Replicanten-Hüllen (nicht Schiffen!) in
 
 ## References
 - Source: [IDEAS_AND_TASKS.md](../resources/todo/IDEAS_AND_TASKS.md)
+- Waffen-Konzept (V14.0): [WEAPON_SYSTEMS_V14.md](../../docs/concepts/WEAPON_SYSTEMS_V14.md)

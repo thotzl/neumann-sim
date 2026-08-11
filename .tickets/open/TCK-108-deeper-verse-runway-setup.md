@@ -24,3 +24,4 @@ Erweiterung des Universums um Sektor-Typisierungen (Standard, Hyper-Solares, Tox
 - Source: [ROADMAP.md](../resources/todo/ROADMAP.md)
 - Terraforming & Isotope: [ADVANCED_MECHANICS_DUMP.md](../resources/todo/ADVANCED_MECHANICS_DUMP.md)
 - Siegbedingungen & Terraforming: [ROADMAP_WORLD_MECHANICS.md](../resources/todo/ROADMAP_WORLD_MECHANICS.md)
+- Waffen-Konzept (V14.0): [WEAPON_SYSTEMS_V14.md](../../docs/concepts/WEAPON_SYSTEMS_V14.md)

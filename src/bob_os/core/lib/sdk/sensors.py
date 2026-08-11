@@ -313,7 +313,6 @@ class Sensors:
         local_ships = []
         for r in local_ships_raw:
             ship_dict = dict(r)
-            ship_dict['target_id'] = f"ship@{r['id']}"
             if r['pilot_id'] == 'UNDER_CONSTRUCTION':
                 bp_name = r['blueprint_name'] or r['chassis'] or 'unclassified'
                 # Check blueprint to see material type
@@ -352,7 +351,6 @@ class Sensors:
                 "status": r['status'],
                 "host_type": r['host_type'] if r['host_type'] else "Unknown",
                 "host_id": r['host_id'] if r['host_id'] else "Unknown",
-                "target_id": f"probe@{r['id']}"
             })
 
         # 4. Observations of other Agents ("Unread Events")
@@ -486,7 +484,6 @@ class Sensors:
         return {
             "local_system": {
                 "name": sys_name,
-                "target_id": f"sys@{sys_name}",
                 "stardate": current_stardate,
                 "coordinates": f"X{system['x']}-Y{system['y']}",
                 "depots": {

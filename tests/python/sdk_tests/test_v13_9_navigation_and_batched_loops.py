@@ -129,11 +129,11 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
         # Retrieve the dashboard telemetry
         dash = self.agent.dashboard()
         
-        # Verify local system target_id
+        # Verify local system target_id is absent
         sys_info = dash.get('local_system', {})
-        self.assertEqual(sys_info.get('target_id'), "sys@SYS_A")
+        self.assertNotIn('target_id', sys_info)
         
-        # Seed local ship and agent to verify their target_ids appear
+        # Seed local ship and agent to verify their target_ids do not appear
         conn = sqlite3.connect(self.test_db)
         c = conn.cursor()
         c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name) VALUES (4, 'LocalShip', 'Miner-MK1', NULL, 'SYS_A')")
@@ -145,17 +145,17 @@ class TestNavigationAndBatchedLoops(unittest.TestCase):
         dash = self.agent.dashboard()
         local_sys = dash.get('local_system', {})
         
-        # Ship should have target_id
+        # Ship should not have target_id
         ships = local_sys.get('ships', [])
         ship_4 = [s for s in ships if s['id'] == 4]
         self.assertEqual(len(ship_4), 1)
-        self.assertEqual(ship_4[0].get('target_id'), "ship@4")
+        self.assertNotIn('target_id', ship_4[0])
         
-        # Peer agent should have target_id
+        # Peer agent should not have target_id
         probes = local_sys.get('present_entities', [])
         probe_3 = [p for p in probes if p['id'] == 'Instance-3']
         self.assertEqual(len(probe_3), 1)
-        self.assertEqual(probe_3[0].get('target_id'), "probe@Instance-3")
+        self.assertNotIn('target_id', probe_3[0])
 
     def test_coordinates_telemetry_and_history(self):
         # 1. Fetch current telemetry - last_coordinates should be None initially

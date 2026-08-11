@@ -249,7 +249,6 @@ export const buildBobDashboard = (agent: Agent, state: WorldState) => {
     const s = resolveShipCADTelemetry(ship);
     return {
       id: s?.id,
-      target_id: s ? `ship@${s.id}` : undefined,
       name: s?.name,
       chassis: s?.chassis,
       pilot_id: s?.pilot_id,
@@ -263,7 +262,6 @@ export const buildBobDashboard = (agent: Agent, state: WorldState) => {
   // 3. Other Bobs at location
   const localBobs = selectLocalAgents(state, sysNameRaw, agent.id).map(a => ({
     id: a.id,
-    target_id: `probe@${a.id}`,
     chosen_name: a.chosen_name,
     status: a.status,
     host_type: a.host_type || null,
@@ -294,7 +292,6 @@ export const buildBobDashboard = (agent: Agent, state: WorldState) => {
   return {
     lokales_system: {
       name: sysName,
-      target_id: sys ? `sys@${sys.name}` : undefined,
       coordinates: sys ? `X${sys.x}-Y${sys.y}` : 'Unknown',
       depots: {
         raw_matter: sys?.raw_matter_depot || 0,

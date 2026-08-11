@@ -291,7 +291,7 @@ export const InspectorPanel = ({ onOpenShipyard, onOpenSchematic }: InspectorPan
                   <div className="text-[10px] text-emerald-500 font-bold mb-2">🧠 ACTIVE_THOUGHT_REGISTER //</div>
                   <div className="text-xs text-emerald-100 leading-relaxed whitespace-pre-wrap">
                     {selectedAgent.last_manifestation ? (
-                      selectedAgent.last_manifestation.replace(/\[SELF-IMPULSE\]:\s*/i, '').split(/action/i)[0].trim()
+                      selectedAgent.last_manifestation.replace(/\[SELF-IMPULSE\]:\s*/i, '').trim()
                     ) : 'Agent is idle / waiting for command cycle.'}
                   </div>
                 </div>

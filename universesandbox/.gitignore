@@ -1,5 +1,0 @@
-# Local Sandbox Git Ignores
-node_modules/
-dist/
-.vite/
-*.log

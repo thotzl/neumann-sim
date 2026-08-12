@@ -600,12 +600,30 @@ class Sensors:
         
         cursor.execute("SELECT name, x, y, display_name FROM systems WHERE x = CAST(? AS INTEGER) AND y = CAST(? AS INTEGER)", (int(tx), int(ty)))
         target_row = cursor.fetchone()
-        if not target_row:
-            print(f"[ERROR] Destination coordinates ({tx}, {ty}) do not match any discovered system.")
-            return False
+        
+        is_raw_coordinates = False
+        dest_sys = None
+        
+        if target_row:
+            dest_sys = target_row['name']
+        else:
+            is_raw_coordinates = True
+            cursor.execute("SELECT name, x, y FROM systems")
+            all_known = cursor.fetchall()
+            closest_sys = None
+            min_d = float('inf')
+            for r in all_known:
+                d = physics_service.calc_distance(tx, ty, r['x'], r['y'])
+                if d < min_d:
+                    min_d = d
+                    closest_sys = r['name']
+            if closest_sys:
+                dest_sys = closest_sys
+            else:
+                print("[ERROR] No discovered systems available for routing.")
+                return False
             
         start_sys = agent['location']
-        dest_sys = target_row['name']
 
         if start_sys == 'Interstellar':
             cx = float(agent['current_x'])
@@ -626,7 +644,7 @@ class Sensors:
                 print("[ERROR] No discovered systems available for routing.")
                 return False
         
-        if start_sys == dest_sys:
+        if start_sys == dest_sys and not is_raw_coordinates:
             return {
                 "status": "arrived",
                 "message": "You are already at the destination.",
@@ -757,9 +775,40 @@ class Sensors:
                         "energy_cost": seg_cost,
                         "recharge_status": recharge_status
                     })
+                
+                if is_raw_coordinates:
+                    s_dest = all_systems[dest_sys]
+                    final_leg_dist = physics_service.calc_distance(s_dest['x'], s_dest['y'], tx, ty)
+                    allowed_dist = current_charge_range if start_sys == dest_sys else structural_range_capacity
+                    
+                    if final_leg_dist > allowed_dist:
+                        return {
+                            "status": "unroutable",
+                            "structural_range_capacity": structural_range_capacity,
+                            "current_charge_range": current_charge_range,
+                            "message": f"Final leg to raw coordinates ({round(tx,1)}, {round(ty,1)}) exceeds maximum ship jump range of {round(allowed_dist,1)} units."
+                        }
+                    
+                    final_leg_ticks = max(1, int(math.ceil(final_leg_dist / speed)))
+                    final_leg_cost = round(final_leg_dist * cost_per_dist, 2)
+                    cumulative_ticks += final_leg_ticks
+                    
+                    flight_plan.append({
+                        "leg": len(flight_plan) + 1,
+                        "system_id": "Interstellar",
+                        "name": f"Coordinates ({round(tx, 1)}, {round(ty, 1)})",
+                        "target_x": tx,
+                        "target_y": ty,
+                        "segment_distance": round(final_leg_dist, 1),
+                        "travel_time": f"{final_leg_ticks} turns",
+                        "cumulative_time": f"{cumulative_ticks} turns",
+                        "energy_cost": final_leg_cost,
+                        "recharge_status": "No local solar generator (empty space)."
+                    })
+
                 return {
                     "origin": start_sys,
-                    "destination": dest_sys,
+                    "destination": f"Coordinates ({round(tx,1)}, {round(ty,1)})" if is_raw_coordinates else dest_sys,
                     "status": "routable",
                     "structural_range_capacity": structural_range_capacity,
                     "current_charge_range": current_charge_range,

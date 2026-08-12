@@ -129,6 +129,28 @@ class TestNavigationSystem(unittest.TestCase):
         self.assertEqual(plan[1]['travel_time'], '2 turns')
         self.assertEqual(plan[1]['cumulative_time'], '4 turns') # Cumulative elapsed turns at Leg 2 (Final Destination!)
 
+    def test_hybrid_coordinates_routing(self):
+        # Target coordinates: (900.0, 1200.0) which does not correspond to any system.
+        # Closest system to (900.0, 1200.0) is SYS_C at (600, 800) with distance 500 units.
+        # Flight route should be: SYS_A -> SYS_B (500 units) -> SYS_C (500 units) -> Coordinates (900.0, 1200.0) (500 units).
+        route = self.agent.route(target_x=900, target_y=1200)
+        self.assertTrue(route)
+        self.assertEqual(route['status'], 'routable')
+        self.assertEqual(route['origin'], 'SYS_A')
+        self.assertEqual(route['destination'], 'Coordinates (900.0, 1200.0)')
+        self.assertEqual(route['total_route_eta'], '6 turns') # 2 turns for each of the 3 legs -> 6 turns total!
+        
+        plan = route['flight_plan']
+        self.assertEqual(len(plan), 3)
+        self.assertEqual(plan[2]['leg'], 3)
+        self.assertEqual(plan[2]['system_id'], 'Interstellar')
+        self.assertEqual(plan[2]['name'], 'Coordinates (900.0, 1200.0)')
+        self.assertEqual(plan[2]['target_x'], 900.0)
+        self.assertEqual(plan[2]['target_y'], 1200.0)
+        self.assertEqual(plan[2]['segment_distance'], 500.0)
+        self.assertEqual(plan[2]['travel_time'], '2 turns')
+        self.assertEqual(plan[2]['cumulative_time'], '6 turns')
+
     def test_network_comms_masking(self):
         # Option B GPS Realismus-Check
         # 1. No comms_relay in SYS_A or SYS_B.

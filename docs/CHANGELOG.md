@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.9.1** | **2026-08-12** | `RELEASED` | Hybrid Dijkstra Routing to Raw Void Coordinates | `[BUGFIX]` |
 | **v13.9** | **2026-08-10** | `RELEASED` | Polymorphic Navigation & Batched Mining Loops | `[TCK-129]` |
 | **v13.8** | **2026-08-10** | `RELEASED` | WAL-Turbo Write, Safe Concurrency & Index Cover (v13.8) | `[TCK-122]`, `[TCK-127]` |
 | **v13.6** | **2026-08-06** | `RELEASED` | Symmetrisches Seeding, Sovereign DB-First Loading & Timeline Purity (v13.6) | `[TCK-111]`, `[TCK-116]`, `[TCK-118]` |
@@ -22,6 +23,12 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.9.1] - 2026-08-12
+*Das "Hybrid Coordinates Dijkstra Routing" Upgrade. Diese Version behebt das Problem, bei dem das Dijkstra-Routing fälschlicherweise fehlschlug, wenn rohe Koordinaten im interstellaren Leerraum anvisiert wurden. Das System berechnet nun intelligent den Pfad zum dichtesten bekannten Refueling-Sternensystem und fügt ein finales Transit-Segment zu den Zielkoordinaten hinzu.*
+
+#### Fixed (Fehlerbehebungen)
+- **Fehlerfreies Leerraum-Routing:** Sonden können jetzt beliebige Koordinaten per `me.move(tx, ty)` und `me.route(tx, ty)` anvisieren. Falls das Ziel kein registriertes Sternensystem ist, ermittelt der Algorithmus das nächstgelegene bekannte System als vorletzte Etappe, berechnet dorthin die Dijkstra-Route und fügt das finale Leg an, sofern es die Reichweite des Schiffs nicht überschreitet.
 
 ### [v13.9] - 2026-08-10
 *Das "Polymorphic Navigation & Batched Loops" Upgrade. Dieser Meilenstein führt ein hocheffizientes, polymorphes Navigationssystem ein, das @-adressierte Zielbezeichner (sys@, ship@, probe@) direkt auflöst. Es integriert außerdem transaktionssichere, gebündelte Bergbau-Zyklen (Batched Mining Loops), die Energie- und Speicherplatzschwellen dynamisch im SQLite-Kern validieren.*

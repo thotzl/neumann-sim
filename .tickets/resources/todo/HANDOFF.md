@@ -13,14 +13,14 @@ All technical knowledge has been distilled into **Local Skills** in `.agents/ski
 
 ## 3. Key Achievements of this Session
 - **Architectural Split:** Strict separation between Agent Sandbox and Admin Kernel.
-- **V4.1 Economy:** High extraction costs, 0-cost logistics, centralized in `ECONOMY_RULES.json`.
+- **V4.1 Economy:** High extraction costs, 0-cost logistics, centralized in `rules.json`.
 - **Security ACL:** Node.js-level cryptographic protection for agent scripts (Read/Write Keys).
 - **V5.3 Awakening:** Neutral clone spawning. Klone receive identity directives, not instructions.
 - **Identity Proofing:** `CURRENT_AGENT_ID` prevents Bobs from impersonating each other via CLI.
 - **Engine Refactoring:** Monolith `runner.js` split into modular utilities (`utils/`).
 
 ## 4. Immediate Next Tasks
-1. **Agent Upgrades (Phase 2.5):** Implement Hardware Leveling (Storage, Engine, Sensors) as defined in `docs/concepts/AGENT_UPGRADE_MANIFEST.md` and `ECONOMY_RULES.json`.
+1. **Agent Upgrades (Phase 2.5):** Implement Hardware Leveling (Storage, Engine, Sensors) as defined in `docs/concepts/AGENT_UPGRADE_MANIFEST.md` and `rules.json`.
 2. **Deep Space Navigation:** Update `move.py` to allow flying to raw X/Y coordinates.
 3. **Python Sandbox:** (Optional/Security) Implement `core/bin/sandbox.py` to block Python-level `open(..., 'w')` exploits.
 

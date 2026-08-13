@@ -16,7 +16,7 @@ Einführung von Warp-Gates als Tier-2 Infrastruktur. Wenn in zwei Sternensysteme
 ## Verified Code Gap
 - **DB Schema:** Keine, da Warp-Gate als Typ in der `infrastructure` Tabelle erfasst werden kann.
 - **Code Path:**
-  - `ECONOMY_RULES.json` enthält keinen Eintrag für `warp_gate` in den Baukosten oder Energie-Verbräuchen.
+  - `rules.json` enthält keinen Eintrag für `warp_gate` in den Baukosten oder Energie-Verbräuchen.
   - `bob_os/core/lib/physics_service.py` -> `calc_travel_cost` und `physics_update.py` besitzen keine Abkürzungs-Logik zur Umgehung linearer Interpolations-Ticks bei Gates.
 
 ## Synergies & Dependencies

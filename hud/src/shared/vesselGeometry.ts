@@ -140,7 +140,7 @@ export const generateVesselGeometry = (ship: any, grid: string[][], worldSeed: s
   });
 
   // Konstruiere die hochauflösenden, scharfkantigen Vertices
-  computedWidths.forEach((slice, idx) => {
+  computedWidths.forEach((slice) => {
     const W = slice.w;
 
     if (slice.type === 'nose') {

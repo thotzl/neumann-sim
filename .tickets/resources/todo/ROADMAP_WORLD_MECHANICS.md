@@ -20,7 +20,7 @@ Dieses Dokument beschreibt die evolutionären Ausbaustufen des Bob-OS Universums
 ### 1. System-Energie-Budget (Betriebskosten) - [DONE]
 *   **Ziel:** Verhindert Over-Building, erzwingt strategischen Abbau von Schrott.
 *   **Mechanik:** Jedes aktive Gebäude zieht pro Tick Energie vom System-Depot. Bei 0 Energie im Depot geht das System in den Blackout (Infrastruktur schaltet ab).
-*   **Umsetzung:** Last-Berechnung in `physics_update.py` basierend auf `ECONOMY_RULES.json`.
+*   **Umsetzung:** Last-Berechnung in `physics_update.py` basierend auf `rules.json`.
 
 ### 2. Infrastructure Upgrades (Level-System)
 *   **Ziel:** Vertikales Wachstum statt nur horizontaler Expansion.

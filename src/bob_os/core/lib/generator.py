@@ -1,4 +1,56 @@
 import math
+import os
+import sys
+import json
+import argparse
+from typing import TypedDict, List, Optional, Union, Dict
+
+class Camera(TypedDict):
+    panX: float
+    panY: float
+    zoom: float
+
+class Planet(TypedDict):
+    id: str
+    orbitIndex: int
+    distance: float       # Orbit distance in Astronomical Units (AU)
+    type: str             # PlanetType
+    radius: float         # Radius relative to Earth (R_earth)
+    mass: float           # Mass relative to Earth (M_earth)
+    temperature: int      # Surface temperature in Kelvin
+    moonsCount: int       # Number of orbiting moons
+
+class SolarSystem(TypedDict):
+    planets: List[Planet]
+    asteroidBelts: List[int] # Orbit indices where debris belts formed instead of planets
+
+class WarpCurrent(TypedDict):
+    angle: float
+    magnitude: float
+
+class Sector(TypedDict):
+    id: str
+    x: int
+    y: int
+    mass: float
+    spectralClass: str     # SpectralClass
+    occurrence: str        # CosmicOccurrence
+    anomaly: str           # AnomalyType
+    anomalyAngle: Optional[float]
+    debrisBelt: bool
+    energyDepot: int
+    matterDepot: int
+    system: Optional[SolarSystem]
+    warpCurrent: Optional[WarpCurrent]
+    isTheoretical: Optional[bool]
+    is_inspected: Optional[int]
+    display_name: Optional[str]
+
+class SandboxConfig(TypedDict):
+    seed: str
+    density: float
+    activeTool: str # 'inspect' | 'reveal' | 'hide'
+    brushSize: int
 
 def int32(val: int) -> int:
     """Emulates JavaScript bitwise conversion to signed 32-bit integer (| 0)."""
@@ -140,13 +192,26 @@ class UniverseGenerator:
 
     @classmethod
     def resolve_params(cls) -> dict:
-        """Resolves all cosmic parameters from config_service or returns class defaults."""
+        """Resolves all cosmic parameters from rules.json and config.json overrides."""
+        cosmic = {}
         try:
+            # 1. Load global SSoT defaults from rules.json next to this file
+            import os, json
+            lib_dir = os.path.dirname(os.path.abspath(__file__))
+            rules_path = os.path.join(lib_dir, 'rules.json')
+            if os.path.exists(rules_path):
+                with open(rules_path, 'r') as f:
+                    cosmic.update(json.load(f).get("cosmic_settings", {}))
+        except Exception:
+            pass
+
+        try:
+            # 2. Load experiment-specific overrides from config.json if available
             from core.lib import config_service
             conf = config_service.get_config()
-            cosmic = conf.get("cosmic_settings", {})
+            cosmic.update(conf.get("cosmic_settings", {}))
         except Exception:
-            cosmic = {}
+            pass
             
         return {
             "CELL_SIZE": cosmic.get("CELL_SIZE", 500),
@@ -177,6 +242,15 @@ class UniverseGenerator:
             "GRAVITY_WELL_SIZE": cosmic.get("GRAVITY_WELL_SIZE", 75000),
             "GRAVITY_WELL_CHANCE": cosmic.get("GRAVITY_WELL_CHANCE", 0.08),
             "GRAVITY_WELL_MULT": cosmic.get("GRAVITY_WELL_MULT", 2.0),
+            "ENERGY_BASE_DEPOT": cosmic.get("ENERGY_BASE_DEPOT", 120000),
+            "MATTER_BASE_DEPOT": cosmic.get("MATTER_BASE_DEPOT", 180000),
+            "SUPERNOVA_BUBBLE_MATTER_MULT": cosmic.get("SUPERNOVA_BUBBLE_MATTER_MULT", 0.25),
+            "SUPERNOVA_BUBBLE_ENERGY_MULT": cosmic.get("SUPERNOVA_BUBBLE_ENERGY_MULT", 0.50),
+            "DUST_LANE_MATTER_MULT": cosmic.get("DUST_LANE_MATTER_MULT", 2.20),
+            "DUST_LANE_ENERGY_MULT": cosmic.get("DUST_LANE_ENERGY_MULT", 0.40),
+            "STELLAR_NURSERY_MATTER_MULT": cosmic.get("STELLAR_NURSERY_MATTER_MULT", 1.25),
+            "STELLAR_NURSERY_ENERGY_MULT": cosmic.get("STELLAR_NURSERY_ENERGY_MULT", 1.35),
+            "DEBRIS_BELT_MATTER_MULT": cosmic.get("DEBRIS_BELT_MATTER_MULT", 2.50)
         }
 
     @classmethod
@@ -529,8 +603,8 @@ class UniverseGenerator:
 
         mass = 1.0
         spectralClass = 'G'
-        energyDepot = 120000
-        matterDepot = 180000
+        energyDepot = p["ENERGY_BASE_DEPOT"]
+        matterDepot = p["MATTER_BASE_DEPOT"]
         anomaly = 'None'
         anomalyAngle = None
 
@@ -557,15 +631,15 @@ class UniverseGenerator:
 
                 props = getStellarProperties(mass)
                 spectralClass = getSpectralClassFromTemp(props["temperature"])
-                energyDepot = int(round(props["luminosity"] * 120000.0))
-                matterDepot = int(round(math.pow(1.0 / mass, 0.45) * 180000.0))
+                energyDepot = int(round(props["luminosity"] * p["ENERGY_BASE_DEPOT"]))
+                matterDepot = int(round(math.pow(1.0 / mass, 0.45) * p["MATTER_BASE_DEPOT"]))
 
         occurrence = 'Normal'
         activeBubble = cls.getBubbleAt(x, y, seed)
         if activeBubble:
             occurrence = 'SupernovaBubble'
-            matterDepot = int(round(matterDepot * 0.25))
-            energyDepot = int(round(energyDepot * 0.50))
+            matterDepot = int(round(matterDepot * p["SUPERNOVA_BUBBLE_MATTER_MULT"]))
+            energyDepot = int(round(energyDepot * p["SUPERNOVA_BUBBLE_ENERGY_MULT"]))
         else:
             inDustLane = False
             for g in nearbyGalaxies:
@@ -584,15 +658,15 @@ class UniverseGenerator:
 
             if inDustLane:
                 occurrence = 'DustLane'
-                matterDepot = int(round(matterDepot * 2.20))
-                energyDepot = int(round(energyDepot * 0.40))
+                matterDepot = int(round(matterDepot * p["DUST_LANE_MATTER_MULT"]))
+                energyDepot = int(round(energyDepot * p["DUST_LANE_ENERGY_MULT"]))
             else:
                 nurseryNoise = math.sin(x * 0.0005) * math.cos(y * 0.0005)
                 baseDensity = cls.getDensityAt(x, y, seed)
                 if baseDensity > 0.08 and nurseryNoise > 0.58:
                     occurrence = 'StellarNursery'
-                    energyDepot = int(round(energyDepot * 1.35))
-                    matterDepot = int(round(matterDepot * 1.25))
+                    energyDepot = int(round(energyDepot * p["STELLAR_NURSERY_ENERGY_MULT"]))
+                    matterDepot = int(round(matterDepot * p["STELLAR_NURSERY_MATTER_MULT"]))
 
         if spectralClass == 'Pulsar':
             anomalyAngle = prng.next_val() * math.pi * 2.0
@@ -605,7 +679,7 @@ class UniverseGenerator:
 
         debrisBelt = cls.getDebrisBeltAt(x, y, seed)
         if debrisBelt and spectralClass != 'BlackHole' and spectralClass != 'Pulsar':
-            matterDepot = int(round(matterDepot * 2.50))
+            matterDepot = int(round(matterDepot * p["DEBRIS_BELT_MATTER_MULT"]))
 
         system_details = cls.generateSolarSystem(x, y, mass, seed)
         warpCurrent = cls.getWarpCurrentAt(x, y, seed)
@@ -695,3 +769,320 @@ class UniverseGenerator:
                         sectors.append(sector)
 
         return sectors
+
+def typed_dict_to_ts(cls, name: str) -> str:
+    lines = [f"export interface {name} {{"]
+    annotations = cls.__annotations__
+    for field_name, t in annotations.items():
+        t_str = str(t)
+        is_optional = False
+        
+        # Check if Optional
+        if "Optional" in t_str or "Union" in t_str and "NoneType" in t_str:
+            is_optional = True
+            if hasattr(t, "__args__"):
+                args = [arg for arg in t.__args__ if type(None) != arg]
+                if args:
+                    t = args[0]
+                    t_str = str(t)
+        
+        # Check List
+        is_list = False
+        if "List" in t_str or "list" in t_str:
+            is_list = True
+            if hasattr(t, "__args__") and t.__args__:
+                t = t.__args__[0]
+                t_str = str(t)
+
+        # Mapping Python type to TS type
+        ts_type = "any"
+        if t == str:
+            ts_type = "string"
+        elif t == int or t == float:
+            ts_type = "number"
+        elif t == bool:
+            ts_type = "boolean"
+        elif hasattr(t, "__name__"):
+            ts_type = t.__name__
+        else:
+            ts_type = "any"
+
+        # Overrides for our custom mapped types
+        if field_name == "spectralClass":
+            ts_type = "SpectralClass"
+        elif field_name == "occurrence":
+            ts_type = "CosmicOccurrence"
+        elif field_name == "anomaly":
+            ts_type = "AnomalyType"
+        elif field_name == "type" and name == "Planet":
+            ts_type = "PlanetType"
+        elif field_name == "activeTool":
+            ts_type = "'inspect' | 'reveal' | 'hide'"
+
+        if is_list:
+            ts_type = f"{ts_type}[]"
+
+        suffix = "?" if is_optional else ""
+        lines.append(f"  {field_name}{suffix}: {ts_type};")
+        
+    lines.append("}")
+    return "\n".join(lines)
+
+def generate_db_types(out_path: str):
+    import sqlite3
+    import glob
+    import os
+    
+    # Connect to in-memory DB
+    conn = sqlite3.connect(":memory:")
+    
+    # Load and execute all SQL migrations sequentially to construct the latest schema
+    lib_dir = os.path.dirname(os.path.abspath(__file__))
+    migrations_dir = os.path.abspath(os.path.join(lib_dir, "../migrations/"))
+    migration_files = sorted(glob.glob(os.path.join(migrations_dir, "*.sql")))
+    
+    for m_file in migration_files:
+        try:
+            with open(m_file, 'r', encoding='utf-8') as f:
+                sql = f.read()
+            conn.executescript(sql)
+        except Exception as e:
+            print(f"Warning: failed to execute migration {os.path.basename(m_file)}: {e}")
+            
+    # Entities to reflect (table/view name, target TypeScript interface name)
+    entities = [
+        ("v_agents", "Agent"),
+        ("systems", "System"),
+        ("v_ships", "Ship"),
+        ("memos", "Memo"),
+        ("docs", "Doc"),
+        ("visual_events", "VisualEvent"),
+        ("blueprints", "Blueprint"),
+        ("infrastructure", "Infrastructure")
+    ]
+    
+    # Fields that the frontend explicitly expects to handle null values for
+    nullable_fields = {
+        "parent_id", "distilled_memory", "location", "target_system",
+        "active_ship_id", "host_id", "host_type", "pilot_id",
+        "system_name", "blueprint_name", "active_script_id", "linked_system"
+    }
+    
+    rendered_interfaces = []
+    
+    for entity_name, ts_name in entities:
+        try:
+            cursor = conn.cursor()
+            cursor.execute(f"PRAGMA table_info({entity_name})")
+            columns = cursor.fetchall()
+            
+            lines = [f"export type {ts_name} = {{"]
+            for col in columns:
+                col_name = col[1]
+                sql_type = col[2]
+                is_nullable = (col_name in nullable_fields)
+                
+                # Mapping SQL types to TypeScript types
+                ts_type = "any"
+                s = sql_type.upper()
+                if "INT" in s:
+                    ts_type = "number"
+                elif "CHAR" in s or "TEXT" in s or "CLOB" in s:
+                    ts_type = "string"
+                elif "REAL" in s or "FLO" in s or "NUM" in s or "DEC" in s:
+                    ts_type = "number"
+                elif "BOOL" in s:
+                    ts_type = "boolean"
+                
+                # Custom exact overrides for specific domain entities
+                if col_name == "host_type":
+                    ts_type = "'ship' | 'matrix'"
+                elif col_name == "status" and ts_name == "Memo":
+                    ts_type = "'open' | 'completed'"
+                elif col_name in ("has_drill", "has_fabricator", "has_logic_core"):
+                    ts_type = "number | boolean"
+                
+                if is_nullable:
+                    ts_type = f"{ts_type} | null"
+                    
+                lines.append(f"  {col_name}: {ts_type};")
+                
+            # Add implicit SQLite columns and specific interface extension properties for full compatibility
+            if ts_name == "Agent":
+                lines.append("""  parent_id?: string | null;
+  distilled_memory?: string | null;
+  last_manifestation?: string;
+  sensors?: {
+    inventory?: {
+      raw_matter_inventory: number;
+      matter_limit: number;
+      energy_inventory: number;
+      energy_limit: number;
+      refined_matter_inventory: number;
+    };
+    transit?: {
+      destination: string;
+      progress_ticks: number;
+      total_ticks: number;
+    };
+    chosen_name: string;
+  };""")
+            elif ts_name == "System":
+                lines.append("""  spectralClass?: string;
+  occurrence?: string;
+  infra?: Array<{ 
+    id?: number | string;
+    type: string; 
+    status: string; 
+    progress_matter: number; 
+    required_matter: number; 
+    health: number; 
+    max_health: number; 
+    level: number;
+    linked_system?: string | null;
+  }>;
+  star?: any;
+  planets?: any[];
+  system?: {
+    planets: any[];
+    asteroidBelts: number[];
+  };""")
+            elif ts_name == "VisualEvent":
+                lines.append("  rowid: number;")
+                
+            lines.append("};")
+            rendered_interfaces.append("\n".join(lines))
+        except Exception as e:
+            print(f"Warning: Failed to reflect {entity_name}: {e}")
+            
+    # Append the non-DB auxiliary types that HUD requires
+    auxiliary_types = """
+export type WorldState = {
+  tick: number; 
+  round: number;
+  seed?: string;
+  stardate?: string | number;
+  total_turns?: number; 
+  last_agent?: string; 
+  timestamp?: number;
+  systems: System[]; 
+  agents: Agent[]; 
+  ships: Ship[];
+  memos?: Memo[];
+  docs?: Doc[];
+  blueprints?: Blueprint[];
+  visual_events?: VisualEvent[];
+  events?: string[];
+};
+
+export type LogCategory = 'thought' | 'action' | 'system' | 'scut';
+
+export interface LogEntry { 
+  id: string; 
+  tick: number; 
+  agentId: string; 
+  agentName?: string;
+  type: LogCategory; 
+  text: string; 
+}
+
+export type Selection = {
+  type: 'agent' | 'system' | 'theoretical' | 'ship';
+  id: string;
+  x?: number;
+  y?: number;
+  mass?: number;
+  spectralClass?: string;
+};
+
+export type HistoryEntry = {
+  agent?: string;
+  agentId?: string;
+  tick: number | string;
+  text: string;
+};
+"""
+    
+    full_content = "\n\n".join(rendered_interfaces) + "\n" + auxiliary_types
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write(full_content)
+    print(f"[SUCCESS] Database-reflected TypeScript types generated at: {out_path}")
+
+def generate_typescript_types(out_path: str):
+    prefix = """export interface Camera {
+  panX: number;
+  panY: number;
+  zoom: number;
+}
+
+export type SpectralClass = 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M' | 'BlackHole' | 'Pulsar';
+
+export type CosmicOccurrence = 'Normal' | 'DustLane' | 'StellarNursery' | 'SupernovaBubble';
+
+export type AnomalyType = 'None' | 'GravityWell';
+
+export type PlanetType = 'Vulcanian' | 'Rocky' | 'Habitable' | 'Desert' | 'GasGiant' | 'IceGiant';
+"""
+    
+    classes_to_generate = [
+        (Planet, "Planet"),
+        (SolarSystem, "SolarSystem"),
+        (WarpCurrent, "WarpCurrent"),
+        (Sector, "Sector"),
+        (SandboxConfig, "SandboxConfig")
+    ]
+    
+    rendered_classes = []
+    for cls, name in classes_to_generate:
+        rendered_classes.append(typed_dict_to_ts(cls, name))
+        
+    full_content = prefix + "\n" + "\n\n".join(rendered_classes) + "\n"
+    
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write(full_content)
+    print(f"[SUCCESS] TypeScript generator types generated at: {out_path}")
+    
+    # Dynamically resolve and generate the DB Schema SSoT types as well!
+    lib_dir = os.path.dirname(os.path.abspath(__file__))
+    db_types_path = os.path.abspath(os.path.join(lib_dir, "../../../../hud/src/monitor/types/index.ts"))
+    generate_db_types(db_types_path)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Bob-OS Procedural Universe Generator CLI")
+    parser.add_argument("--min-x", type=float, help="Minimum X coordinate")
+    parser.add_argument("--max-x", type=float, help="Maximum X coordinate")
+    parser.add_argument("--min-y", type=float, help="Minimum Y coordinate")
+    parser.add_argument("--max-y", type=float, help="Maximum Y coordinate")
+    parser.add_argument("--seed", type=str, default="BobOS_V12", help="World seed string")
+    parser.add_argument("--density", type=float, default=1.0, help="Galaxy density multiplier")
+    parser.add_argument("--generate-types", action="store_true", help="Generate TypeScript types directly from Python TypedDict annotations")
+
+    args = parser.parse_args()
+
+    if args.generate_types:
+        # Resolve target path relative to git root
+        lib_dir = os.path.dirname(os.path.abspath(__file__))
+        target_path = os.path.abspath(os.path.join(lib_dir, "../../../../hud/src/shared/types.ts"))
+        generate_typescript_types(target_path)
+        sys.exit(0)
+
+    if args.min_x is None or args.max_x is None or args.min_y is None or args.max_y is None:
+        parser.print_help()
+        sys.exit(1)
+
+    try:
+        sectors = UniverseGenerator.getSectorsInArea(
+            minX=args.min_x,
+            maxX=args.max_x,
+            minY=args.min_y,
+            maxY=args.max_y,
+            seedStr=args.seed,
+            densityMultiplier=args.density
+        )
+        json.dump(sectors, sys.stdout, indent=None)
+        sys.exit(0)
+    except Exception as e:
+        print(f"Error generating sectors: {e}", file=sys.stderr)
+        sys.exit(1)

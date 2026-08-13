@@ -46,7 +46,7 @@ Die zentralen Säulen dieses Meilensteins sind:
 ### `8a57b3e` - feat(economy): Implement Economy Balancing Simulator, tune parameters, and add Name-First UX
 - *Details:*
   - Implementierung eines statischen, mathematischen Wirtschaftssimulators (`verify_economy_balancing.py`) zur automatisierten Entdeckung von wirtschaftlichen Deadlocks.
-  - Optimierung der Wirtschafts-Konfiguration in `ECONOMY_RULES.json` für eine 2.5x schnellere Pacing-Geschwindigkeit: 5x höhere Sektor-Ressourcen (50.000), 5x größere Sektor-Depots (5.000), 2.5x höherer `mine()`-Ertrag (250) und doppelte Werft-Baugeschwindigkeit.
+  - Optimierung der Wirtschafts-Konfiguration in `rules.json` für eine 2.5x schnellere Pacing-Geschwindigkeit: 5x höhere Sektor-Ressourcen (50.000), 5x größere Sektor-Depots (5.000), 2.5x höherer `mine()`-Ertrag (250) und doppelte Werft-Baugeschwindigkeit.
   - Name-First UX: Prominente Ausgabe von Wunschnamen im Dashboard und Radar an Position 1, sanfter Fallback auf `"Unnamed"`.
 
 ### `21186aa` - feat(lore): Implement mandatory Registry-SerialNumber-System (RSNS) always active during replication

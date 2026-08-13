@@ -70,7 +70,9 @@ Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstruktur
 | **TCK-130** | REFACTOR: Unified SSoT Schema Consolidation (agents->instances & system_name->system_id) | Cognitive Navigation & Operational Polish | `open` | `high` | [Link](../.tickets/open/TCK-130-unified-ssot-schema-consolidation.md) | [Central Test Hub](../tests/test_all.js) |
 | **TCK-131** | BUGFIX: Emergency Beacon Location Join & Clean Keyword Navigation API | Cognitive Navigation & Operational Polish | `closed` | `high` | [Link](../.tickets/closed/TCK-131-emergency-beacon-and-navigation-cleanup.md) | [Central Test Hub](../tests/test_all.js) |
 | **TCK-132** | Frontend: Real-Time Transit Path Lines (Visual Vector Paths) | V12.0 Monitor Upgrade | `closed` | `low` | [Link](../.tickets/closed/TCK-132-transit-path-lines.md) | [Central Test Hub](../tests/test_all.js) |
-| **TCK-133** | Frontend: Passenger Cabin Layout & Schematics Visualization Mockup | Logistics and Swarm Mobility | `closed` | `high` | [Link](../.tickets/closed/TCK-133-passenger-schematics-mockup.md) | [Central Test Hub](../tests/test_all.js) |
+| **TCK-133** | Frontend: Passenger Cabin Layout & Schematics Visualization Mockup | Logistics and Swarm Mobility | `closed` | `high` | [Link](../.tickets/closed/TCK-133-passenger-schematics-mockup.md) | [Central Test Hub](../../tests/test_all.js) |
+| **TCK-134** | Swarm Safety, Autopilot Rescues & Cognitive Energy Preservation | Epic 2 (V10.0) / Phase 2.6 | `open` | `high` | [Link](../.tickets/open/TCK-134-swarm-safety-and-rescue-mechanics.md) | [Central Test Hub](../../tests/test_all.js) |
+| **TCK-135** | Unified SQLite Schema to TypeScript Auto-Compiler (SSoT State Types) | Refactoring & Code Quality | `closed` | `high` | [Link](../.tickets/closed/TCK-135-sqlite-schema-to-typescript-compiler.md) | [Central Test Hub](../../tests/test_all.js) |
 
 ---
 

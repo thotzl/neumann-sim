@@ -82,7 +82,7 @@ class TestV105UniversalInspect(unittest.TestCase):
         self.assertEqual(infra_data['progress_matter'], 150)
         self.assertEqual(infra_data['required_matter'], 400)
         
-        # Verify specifications loaded from ECONOMY_RULES.json
+        # Verify specifications loaded from rules.json
         self.assertEqual(infra_data['specifications']['maintenance_energy_cost'], 0)
         self.assertEqual(infra_data['specifications']['matter_capacity_bonus'], 1000) # 1000 * Lvl 1
 

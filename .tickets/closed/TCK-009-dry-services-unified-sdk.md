@@ -14,13 +14,13 @@ Zerschlagung der alten massiven, hartcodierten Python-Scripte und Zusammenführu
 
 ## Verification (Code SSoT)
 - **Source Code:**
-  - `bob_os/core/lib/config_service.py` -> Lädt Konstanten direkt aus der SSoT JSON (`ECONOMY_RULES.json`).
+  - `bob_os/core/lib/config_service.py` -> Lädt Konstanten direkt aus der SSoT JSON (`rules.json`).
   - `bob_os/core/lib/physics_service.py` -> Zustandlose Berechnungslogik (Upgrade-Kosten, Distanzen, CAD-Evaluator).
   - `bob_os/core/lib/agent_service.py` -> Zentraler DB-Zugriff und Kapselung der Ressourcen-Aktualisierung.
   - `bob_os/core/lib/bob_sdk.py` -> Schlanke Delegations-Facade, die auf modulare Submodule unter `bob_os/core/lib/sdk/` verweist.
 
 ## System Impact
-Erreicht absolute DRY-Präzision und sorgt dafür, dass Änderungen in `ECONOMY_RULES.json` sofort im gesamten Universum greifen.
+Erreicht absolute DRY-Präzision und sorgt dafür, dass Änderungen in `rules.json` sofort im gesamten Universum greifen.
 
 ## References
 - Refactoring-Plan: [REFACTORING_PLAN.md](../resources/done/REFACTORING_PLAN.md)

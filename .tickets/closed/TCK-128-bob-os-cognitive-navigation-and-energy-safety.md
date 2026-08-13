@@ -26,7 +26,7 @@ To resolve these, we implemented five approved, uncompromised architectural meas
 
 ## Technical Specifications (Pure & SSoT-First)
 
-### 1. Fusion Reactor Re-Balancing (`ECONOMY_RULES.json`)
+### 1. Fusion Reactor Re-Balancing (`rules.json`)
 *   Reduced `"cost_per_regen"` of the `"fusion_reactor"` from `50` to `10.0`, lowering the refined matter cost of a 150E reactor tile to `1500 refined_matter`.
 
 ### 2. Dual-Range Telemetry Output (`sensors.py`)

@@ -260,7 +260,7 @@ class Sensors:
             
             phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
             cost_per_dist = phys.get('cost_per_distance', 0.1)
-            drain_idle = config_service.get_economy_rules().get('agent_limits', {}).get('energy_drain_idle', 0)
+            drain_idle = config_service.get_economy_rules().get('global_settings', {}).get('energy_drain_idle', 0)
             tick_cost = ship_speed * cost_per_dist + drain_idle
             
             if energy < tick_cost:

@@ -14,7 +14,7 @@ Vor der Einführung der relationalen Schiffbau-Physik musste das Fundament der p
 ### 2.1 Geologische Regeneration (Planetenkerne)
 Damit ausgebeutete Sektoren nicht als dauerhafte Schlacke-Friedhöfe enden, generieren Planetenkerne kontinuierlich neue abbaufähige Materie pro Zyklus.
 - **Mechanik:** Der automatische Physics-Update Loop (`physics_update.py`) dekrementiert nicht nur Transportzeiten, sondern füllt die `extractable_matter_in_core` eines Systems schrittweise bis zum globalen Maximum (`max_extractable_matter`) auf.
-- **Mathematisches SSoT-Regelwerk (`ECONOMY_RULES.json`):**
+- **Mathematisches SSoT-Regelwerk (`rules.json`):**
   - Basis-Regenerationsrate: `5` Einheiten Materie pro Runde.
 
 ### 2.2 Struktureller HP-Verfall & Maintenance Grace Period

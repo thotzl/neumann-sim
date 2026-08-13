@@ -23,7 +23,7 @@ We created a new SQL-migration file `src/bob_os/core/migrations/0005_hardware_au
 *   Linkage: Added `active_script_id` columns to `ships` and `systems` tables.
 
 ### 2. Immersive Sector-Level Infrastructure
-We registered two new structures inside `src/bob_os/core/lib/ECONOMY_RULES.json`:
+We registered two new structures inside `src/bob_os/core/lib/rules.json`:
 *   `ami_hub` (Artificial Machine Intelligence Hub): `1200 refined_matter`, `allows_sector_automation: true`, `maintenance_energy_cost: 5`.
 *   `gantry` (Werft-Service Kran): `500 raw_matter`, `allows_disembodied_assembly: true`, `maintenance_energy_cost: 2`.
 

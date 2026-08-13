@@ -28,8 +28,8 @@ async function runSafetyTests() {
     const srcCore = path.resolve(__dirname, '../../src/bob_os/core');
     execSync(`cp -r ${srcCore} ${testDir}`);
 
-    // Copy ECONOMY_RULES.json to testDir/core/lib/ to use our updated rules!
-    fs.copyFileSync(path.resolve(__dirname, '../../src/bob_os/core/lib/ECONOMY_RULES.json'), path.join(mockLibDir, 'ECONOMY_RULES.json'));
+    // Copy rules.json to testDir/core/lib/ to use our updated rules!
+    fs.copyFileSync(path.resolve(__dirname, '../../src/bob_os/core/lib/rules.json'), path.join(mockLibDir, 'rules.json'));
 
     // 1. Initialize SQLite Database & apply all migrations
     console.log("Step 1: Initializing test database and applying migrations...");
@@ -179,7 +179,7 @@ conn.close()
     // TEST 1: Fusion Reactor Re-Balancing
     // ==================================================
     console.log("Test 1: Verifying Fusion Reactor Cost Re-Balancing...");
-    const economyRules = JSON.parse(fs.readFileSync(path.join(mockLibDir, 'ECONOMY_RULES.json'), 'utf8'));
+    const economyRules = JSON.parse(fs.readFileSync(path.join(mockLibDir, 'rules.json'), 'utf8'));
     const costPerRegen = economyRules.ship_physics.fusion_reactor.cost_per_regen;
     assert.strictEqual(costPerRegen, 10.0, "Test 1 FAILED: fusion_reactor cost_per_regen is not 10.0. Got: " + costPerRegen);
     console.log("  ✅ Test 1 successful: Cost per regen is exactly 10.0.");

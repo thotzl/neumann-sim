@@ -17,9 +17,9 @@ def update(current_tick=1):
     infra_rules = rules.get('infrastructure', {})
     
     agent_limits = rules.get('agent_limits', {"matter": 300, "energy": 500})
-    regen_base = agent_limits.get('energy_regen_base', 10)
-    drain_idle = agent_limits.get('energy_drain_idle', 0) # Torsten Ref: Default idle drain is 0!
     global_settings = rules.get('global_settings', {})
+    regen_base = global_settings.get('energy_regen_base', 10)
+    drain_idle = global_settings.get('energy_drain_idle', 0) # Torsten Ref: Default idle drain is 0!
     decay_rate = global_settings.get('decay_per_tick', 1)
     decay_interval = global_settings.get('decay_interval', 1)
     core_regen = global_settings.get('core_regen_per_tick', 5)

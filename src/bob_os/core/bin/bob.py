@@ -7,7 +7,7 @@ from core.lib.functional_parser import parse_functional_string, METHOD_META
 
 def get_dynamic_build_desc():
     try:
-        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'ECONOMY_RULES.json')
+        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'rules.json')
         with open(rules_path, 'r') as f:
             rules = json.load(f)
         infra = rules.get('infrastructure', {})
@@ -22,7 +22,7 @@ def get_dynamic_build_desc():
 
 def get_dynamic_sos_ping_desc():
     try:
-        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'ECONOMY_RULES.json')
+        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'rules.json')
         with open(rules_path, 'r') as f:
             rules = json.load(f)
         cost = rules.get('tool_costs', {}).get('ping_sos', {}).get('refined_matter_cost', 10)
@@ -32,7 +32,7 @@ def get_dynamic_sos_ping_desc():
 
 def get_dynamic_sos_reclaim_desc():
     try:
-        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'ECONOMY_RULES.json')
+        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'rules.json')
         with open(rules_path, 'r') as f:
             rules = json.load(f)
         range_val = rules.get('tool_costs', {}).get('reclaim_sos', {}).get('refund_proximity_range', 50.0)
@@ -42,7 +42,7 @@ def get_dynamic_sos_reclaim_desc():
 
 def get_dynamic_talk_desc():
     try:
-        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'ECONOMY_RULES.json')
+        rules_path = os.path.join(os.path.dirname(__file__), '..', 'lib', 'rules.json')
         with open(rules_path, 'r') as f:
             rules = json.load(f)
         cost = rules.get('tool_costs', {}).get('talk', {}).get('energy_cost', 0)

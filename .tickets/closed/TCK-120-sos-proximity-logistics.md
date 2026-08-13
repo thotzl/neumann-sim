@@ -76,5 +76,5 @@ To prevent visual jumble where multiple docked vessels perfectly overlap on top 
 - **Active vs Passive Proximity:** Active actions (`mine`, `refine`, `build`, `exit_ship`, `board`, `deposit`, `withdraw`, `transfer`) strictly require stopped vessels (`is_moving = false`) and are blocked during transit, while passive actions (solar charging, talk, ping_sos) can execute.
 - **SOS Beacons:** `me.ping_sos` has an optional message with fallback and costs 10 refined_matter; `me.reclaim_sos` refunds 100% only if in euklidische proximity <= 50.0 units.
 - **0E Talk:** `me.talk` communicates within range <= 50.0 units (dynamic proximity_range config SSoT) at exactly 0E cost.
-- **Dynamic Help & Config:** `bob.py` dynamically builds help manuals directly pulling thresholds from `ECONOMY_RULES.json` under `"docking": { "proximity_range" }`.
+- **Dynamic Help & Config:** `bob.py` dynamically builds help manuals directly pulling thresholds from `rules.json` under `"docking": { "proximity_range" }`.
 - **E2E and Unit Tests Passing:** All 149 Python and E2E JavaScript tests passed with 100% success.

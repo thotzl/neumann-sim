@@ -164,6 +164,66 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({ status: 'error', message: e.message }));
             }
         });
+    }
+    // Endpoint for procedural universe sector generation using the Python SSoT subprocess
+    else if (req.method === 'GET' && req.url.startsWith('/api/universe/sectors')) {
+        const urlObj = new URL(req.url, `http://${req.headers.host}`);
+        const minX = parseFloat(urlObj.searchParams.get('minX'));
+        const maxX = parseFloat(urlObj.searchParams.get('maxX'));
+        const minY = parseFloat(urlObj.searchParams.get('minY'));
+        const maxY = parseFloat(urlObj.searchParams.get('maxY'));
+        const seed = urlObj.searchParams.get('seed') || 'BobOS_V12';
+        const density = parseFloat(urlObj.searchParams.get('density') || '1.0');
+
+        if (isNaN(minX) || isNaN(maxX) || isNaN(minY) || isNaN(maxY)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ status: 'error', message: 'Missing or invalid coordinate parameters.' }));
+            return;
+        }
+
+        // --- DER GENIALE VIEWPORT-PUFFER (CLIENT-SIDE PADDING) ---
+        // Wir schlagen 40 % Overflow-Puffer auf alle vier Ränder auf,
+        // um angrenzende Sektoren asynchron im Hintergrund vorab zu laden.
+        const width = maxX - minX;
+        const height = maxY - minY;
+        const padX = width * 0.4;
+        const padY = height * 0.4;
+
+        const paddedMinX = minX - padX;
+        const paddedMaxX = maxX + padX;
+        const paddedMinY = minY - padY;
+        const paddedMaxY = maxY + padY;
+
+        // Ausführen des Python-Subprozesses über native child_process
+        const { execFile } = require('child_process');
+        const pythonScript = path.resolve(__dirname, '../src/bob_os/core/lib/generator.py');
+
+        execFile('python3', [
+            pythonScript,
+            '--min-x', paddedMinX.toString(),
+            '--max-x', paddedMaxX.toString(),
+            '--min-y', paddedMinY.toString(),
+            '--max-y', paddedMaxY.toString(),
+            '--seed', seed,
+            '--density', density.toString()
+        ], (error, stdout, stderr) => {
+            if (error) {
+                console.error(`[VoG Server] Subprocess error: ${stderr || error.message}`);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ status: 'error', message: 'Universe generation subprocess failure.', details: stderr }));
+                return;
+            }
+
+            try {
+                const sectors = JSON.parse(stdout);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(sectors));
+            } catch (e) {
+                console.error(`[VoG Server] JSON Parse failure on generator output: ${e.message}`);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ status: 'error', message: 'Malformed JSON output from generator.' }));
+            }
+        });
     } else {
         res.writeHead(404);
         res.end();

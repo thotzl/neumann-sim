@@ -1,9 +1,7 @@
 {
   "agent_limits": {
     "matter": 1000,
-    "energy": 500,
-    "energy_regen_base": 10,
-    "energy_drain_idle": 0
+    "energy": 500
   },
   "tool_costs": {
     "mine": { "energy_cost": 20, "matter_yield": 500 },
@@ -50,6 +48,8 @@
     "scan_range_min": 500,
     "scan_range_max": 1500,
     "grid_snap_size": 100,
+    "energy_regen_base": 10,
+    "energy_drain_idle": 0,
     "ship_constants": {
       "base_mass": 50,
       "base_speed": 20,
@@ -70,5 +70,45 @@
     "logic_core": { "mass": 10, "cost": 300, "idle_drain": 2 },
     "drill": { "mass": 50, "cost": 200 },
     "fabricator": { "mass": 80, "cost": 400 }
+  },
+  "cosmic_settings": {
+    "CELL_SIZE": 500,
+    "MAX_JITTER": 75,
+    "SUPER_CELL_SIZE": 120000,
+    "GALAXY_CHANCE": 0.40,
+    "MIN_GALAXY_RADIUS": 15000,
+    "MAX_GALAXY_RADIUS": 50000,
+    "MIN_PITCH_ANGLE": 6,
+    "MAX_PITCH_ANGLE": 24,
+    "MIN_STELLAR_MASS": 0.08,
+    "MAX_STELLAR_MASS": 40.0,
+    "STELLAR_MASS_IMF": 3.0,
+    "REMNANT_CHANCE": 0.001,
+    "REMNANT_PULSAR_LIMIT": 15.0,
+    "PLANET_MIN_COUNT": 2,
+    "PLANET_MAX_COUNT": 8,
+    "PLANET_TB_OFFSET": 0.22,
+    "PLANET_TB_SPACING": 1.45,
+    "PLANET_ALBEDO_VULCAN": 0.12,
+    "PLANET_ALBEDO_ROCKY": 0.20,
+    "PLANET_ALBEDO_HAB": 0.30,
+    "PLANET_ALBEDO_DESERT": 0.25,
+    "PLANET_ALBEDO_GAS": 0.35,
+    "PLANET_ALBEDO_ICE": 0.40,
+    "SUPERNOVA_BUBBLE_SIZE": 64000,
+    "SUPERNOVA_BUBBLE_CHANCE": 0.09,
+    "GRAVITY_WELL_SIZE": 75000,
+    "GRAVITY_WELL_CHANCE": 0.08,
+    "GRAVITY_WELL_MULT": 2.0,
+    
+    "ENERGY_BASE_DEPOT": 120000,
+    "MATTER_BASE_DEPOT": 180000,
+    "SUPERNOVA_BUBBLE_MATTER_MULT": 0.25,
+    "SUPERNOVA_BUBBLE_ENERGY_MULT": 0.50,
+    "DUST_LANE_MATTER_MULT": 2.20,
+    "DUST_LANE_ENERGY_MULT": 0.40,
+    "STELLAR_NURSERY_MATTER_MULT": 1.25,
+    "STELLAR_NURSERY_ENERGY_MULT": 1.35,
+    "DEBRIS_BELT_MATTER_MULT": 2.50
   }
 }

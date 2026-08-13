@@ -115,7 +115,7 @@ def get_economy_rules():
     
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     # Master path (during build) or Exp path (during run)
-    rules_path = os.path.join(base_dir, 'core', 'lib', 'ECONOMY_RULES.json')
+    rules_path = os.path.join(base_dir, 'core', 'lib', 'rules.json')
     
     if os.path.exists(rules_path):
         with open(rules_path, 'r') as f:

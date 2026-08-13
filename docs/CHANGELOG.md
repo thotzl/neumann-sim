@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.9.2** | **2026-08-12** | `RELEASED` | Single SSoT Python Generator & Automated SQLite-to-TS Type Sync | `[TCK-108]`, `[TCK-135]` |
 | **v13.9.1** | **2026-08-12** | `RELEASED` | Hybrid Dijkstra Routing to Raw Void Coordinates | `[BUGFIX]` |
 | **v13.9** | **2026-08-10** | `RELEASED` | Polymorphic Navigation & Batched Mining Loops | `[TCK-129]` |
 | **v13.8** | **2026-08-10** | `RELEASED` | WAL-Turbo Write, Safe Concurrency & Index Cover (v13.8) | `[TCK-122]`, `[TCK-127]` |
@@ -23,6 +24,23 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.9.2] - 2026-08-12
+*Das "Single SSoT Generator & Automated SQLite Type Sync" Upgrade. Diese Version bereinigt massive technische Schulden. Sie eliminiert den doppelten TypeScript-Sektorgenerator und bündelt die gesamte prozedurale Logik in einem unbestechlichen Python-Core. Zudem führt sie ein vollautomatisches, reflektives Kompilierungsverfahren ein, das sowohl prozedurale Typen als auch SQLite-Views live in unfehlbare TypeScript-Schnittstellen für das React-Frontend übersetzt.*
+
+#### Refactored (Code-Sanierung & SSoT)
+- **Komplette Eliminierung des TS-Generators:** Löschung von über 1300 Zeilen dupliziertem TypeScript-Code und redundanten Test-Suiten. Der Python-Sektorgenerator (`generator.py`) ist jetzt die alleinige, physische Single Source of Truth (SSoT).
+  - *Ticket:* `[TCK-108]` ([Link](../.tickets/open/TCK-108-deeper-verse-runway-setup.md))
+- **Asynchroner Viewport-Puffer & Subprozess-Zubringer:** Das HUD-Frontend fragt Sektoren asynchron über den lokalen Node.js-Server ab. Dieser schlägt automatisch ein 40%iges Viewport-Padding auf und spawnt den Python-Generator unbemerkt im Hintergrund.
+  - *Ticket:* `[TCK-108]` ([Link](../.tickets/open/TCK-108-deeper-verse-runway-setup.md))
+- **Die ultimative rules.json:** Verschmelzung von `ECONOMY_RULES.json` und `COSMIC_RULES.json` zu einer einzigen `rules.json` im Python-Core. Vollständige Dünung veralteter `agent_limits` für disembodied Sonden.
+  - *Ticket:* `[TCK-108]` ([Link](../.tickets/open/TCK-108-deeper-verse-runway-setup.md))
+
+#### Added (Neue Features & Automation)
+- **Reflektive SQLite-to-TypeScript Typengenerierung:** Ein neuer In-Memory-Kompiler führt alle Migrationsskripte sequentiell aus und übersetzt die exakten Datenbankspalten und Views (`v_agents`, `v_ships` etc.) live in TypeScript-Typen für das Frontend.
+  - *Ticket:* `[TCK-135]` ([Link](../.tickets/closed/TCK-135-sqlite-schema-to-typescript-compiler.md))
+- **Automatische Typensynchronisation beim Dev-Start:** Das HUD-Startskript (`npm run dev`) synchronisiert jetzt bei jedem Bootvorgang vollautomatisch alle Typen, sodass TypeScript stets mit topaktuellen Definitionen kompiliert.
+  - *Ticket:* `[TCK-135]` ([Link](../.tickets/closed/TCK-135-sqlite-schema-to-typescript-compiler.md))
 
 ### [v13.9.1] - 2026-08-12
 *Das "Hybrid Coordinates Dijkstra Routing" Upgrade. Diese Version behebt das Problem, bei dem das Dijkstra-Routing fälschlicherweise fehlschlug, wenn rohe Koordinaten im interstellaren Leerraum anvisiert wurden. Das System berechnet nun intelligent den Pfad zum dichtesten bekannten Refueling-Sternensystem und fügt ein finales Transit-Segment zu den Zielkoordinaten hinzu.*

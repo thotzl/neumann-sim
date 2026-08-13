@@ -67,7 +67,7 @@ Passenger Cabin Module (Backend Core)
 
 ## Recommended Next Steps
 1.  Add `is_passenger` boolean column to the `agents` table via SQL migrations.
-2.  Add `passenger` module properties to `ECONOMY_RULES.json` under `ship_modules`.
+2.  Add `passenger` module properties to `rules.json` under `ship_modules`.
 3.  Implement the actuators (`board_as_passenger`, `exit_passenger_cabin`, `take_helm`) in the Python SDK and JS environment processor.
 
 ## References

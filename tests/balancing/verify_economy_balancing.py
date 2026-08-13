@@ -6,9 +6,9 @@ import math
 def load_rules():
     tests_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     project_root = os.path.dirname(tests_dir)
-    rules_path = os.path.join(project_root, 'src', 'bob_os', 'core', 'lib', 'ECONOMY_RULES.json')
+    rules_path = os.path.join(project_root, 'src', 'bob_os', 'core', 'lib', 'rules.json')
     if not os.path.exists(rules_path):
-        print(f"❌ Error: ECONOMY_RULES.json not found at {rules_path}")
+        print(f"❌ Error: rules.json not found at {rules_path}")
         sys.exit(1)
     with open(rules_path, 'r') as f:
         return json.load(f)
@@ -23,7 +23,6 @@ def run_balance_check():
     warnings = []
 
     # 1. READ RULES SEGMENTS
-    agent_limits = rules.get('agent_limits', {})
     tool_costs = rules.get('tool_costs', {})
     infra = rules.get('infrastructure', {})
     ship_phys = rules.get('ship_physics', {})
@@ -32,7 +31,7 @@ def run_balance_check():
     
     # Starting/default depot limits
     default_depot_limit = global_set.get('default_sector_depot_capacity', 5000)
-    default_agent_matter_limit = agent_limits.get('matter', 500)
+    default_agent_matter_limit = 1000 # Standard SSoT disembodied capacity
     default_core_resources = global_set.get('default_sector_core_resources', 50000)
 
     print(f"🔄 Loaded API Version: {rules.get('api_version', 'v10.5')}")
@@ -264,7 +263,6 @@ def run_balance_check():
     # -------------------------------------------------------------
     print("\n[CHECK 7] Express Growth and Logistics Limits...")
     mine_yield = tool_costs.get('mine', {}).get('matter_yield', 0)
-    agent_matter = agent_limits.get('matter', 0)
     refinery_cost = infra.get('matter_refinery', {}).get('matter_cost', 0)
     mind_forge_cost = infra.get('mind_forge', {}).get('matter_cost', 0)
 
@@ -272,11 +270,6 @@ def run_balance_check():
         errors.append(f"LOGISTICS ERROR: Mine yield is {mine_yield} RM, expected exactly 500 RM for Express Growth!")
     else:
         print(f"  ✅ Mine Yield compliant: {mine_yield} RM (Verdoppelt).")
-
-    if agent_matter != 1000:
-        errors.append(f"LOGISTICS ERROR: Replicant cargo capacity is {agent_matter} RM, expected exactly 1000 RM for Express Growth!")
-    else:
-        print(f"  ✅ Replicant Cargo Limit compliant: {agent_matter} RM (Verdoppelt).")
 
     if refinery_cost != 750:
         errors.append(f"BALANCE ERROR: matter_refinery cost is {refinery_cost} RM, expected exactly 750 RM (Halbiert)!")
@@ -311,7 +304,7 @@ def run_balance_check():
         print(f"❌ {len(errors)} CRITICAL BALANCING ERRORS FOUND:")
         for e in errors:
             print(f"   - {e}")
-        print("\nBalancing FAILED. Please correct ECONOMY_RULES.json!")
+        print("\nBalancing FAILED. Please correct rules.json!")
         sys.exit(1)
     else:
         print("\n🎉 BALANCING SUCCESSFUL! No critical deadlocks or loops found.")

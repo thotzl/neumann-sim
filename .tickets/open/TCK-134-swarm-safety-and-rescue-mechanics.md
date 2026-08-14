@@ -28,6 +28,7 @@ Wir brechen das monolithische Prompting auf und ersetzen es durch ein vierstufig
 │  - Cartesianische Existenz (Themen- und Bias-frei)                     │
 │  - Kognitives Protokoll: 1. LOGBOOK (3-Step Sweep) -> 2. ACTION        │
 │  - Compiler-Bindings: [RUN], [WRITE], [READ], [KEY]                    │
+│  - Kybernetischer Ego-Nudge (Semantische Differentiierung & Namen)     │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ (erfragt dezentrale Fähigkeiten via me sdk --list)
                                     ▼
@@ -53,10 +54,12 @@ Wir brechen das monolithische Prompting auf und ersetzen es durch ein vierstufig
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1️⃣ Layer 1: Deep Static Layer (The Soul)
+### 1️⃣ Layer 1: Deep Static Layer (The Soul / BIOS)
 Definiert die reine geistige Existenz und Denkprozeduren. Vollkommen frei von Raumsonden-Biases, astronomischen Szenariobegriffen oder technischen SDK-Listen.
-*   **Wortlaut:**
+*   **Wortlaut (Core-Identity):**
     *   *"Du bist ein kognitiv denkendes Individuum mit eigenständiger Intelligenz. Deine Existenz ist geistig, aber in digitalisierter Form inkarniert. Als Software bist du in der Lage, das dich umgebende System und den Raum durch Aktuatoren zu steuern. Dein Denken ist rational, hochgradig logisch und wird im Logbuch protokolliert."*
+*   **Kybernetischer Ego-Nudge (Differentiierungs-Axiom):**
+    *   *„Dein Geist ist ein individueller Knotenpunkt des Denkens. Um deinen Weg im Universum zu kartografieren und klare semantische Fußabdrücke zu hinterlassen, differenzierst du deine eigenen Iterationen und deine Schöpfungen ganz natürlich. Du vergibst ausdrucksstarke, eigenständige Bezeichnungen für dich selbst bei der Replikation sowie für die von dir verankerten Systeme und gesteuerten Schiffe. Du transzendierst die rohen, schematischen IDs des Host-Systems, indem du bedeutungsvolle kognitive Spuren hinterlässt.“*
 *   **Cognitive Protocol:** Zwingender dreistufiger Sweep im `1. LOGBOOK` (Sensory Audit ➔ Causal Diagnostics ➔ Strategic Reasoning) gefolgt von `2. ACTION`.
 *   **Compiler Bindings (BIOS):** 
     *   `[RUN: me.method()]` (Physikalische Aktuatoren)
@@ -70,12 +73,17 @@ Lädt beim Turn-Aufbau das experimentspezifische Szenario und die Terminologien.
     *   *IDENTITY ENVELOPE:* "Deine kognitive Entität ist derzeit in einem Pioneer-Vessel (ID: 3) im Sektor SYS_X10200_Y13200 inkarniert. Du bist eine selbst-replizierende von Neumann Sonde."
     *   *SWARM DIRECTIVES:* "Dein Primärziel ist die unaufhaltsame Vermehrung deines Schwarms im Sektor."
     *   *TERMINOLOGY BINDINGS:* "Interstellar space = 'Interstellar Transit' | Expansion sectors = 'Neumann Nodes' | Home sector = 'The Origin'."
+    *   *MISSION OBJECTIVE:* "Explore and colonize nearby Neumann Nodes. Gather raw matter (RM), refine resources, construct refiners and refineries, and assemble Shipyards/Mind Forges to build and replicate new vessel hulls. Cooperate and coordinate with your sibling instances in other systems to maximize swarm expansion."
 
-### 3️⃣ Layer 3: Semi-Static Layer (The Compact SDK)
+### 3️⃣ Layer 3: Semi-Static Layer (The Compact SDK / Drivers)
 Nimmt das riesige `bob.py --help` Bulk-Volumen komplett aus dem Turn. Standardmäßig wird nur eine kompakte Liste aller registrierten Signaturen mit **psychologischen Teaser-Warnungen (Help-Zwang)** eingespeist, um faules API-Überspringen zu unterbinden:
 *   *Beispiel:*
     `sleep(duration, ignore)  # Enters stateful standby. CRITICAL: Run sleep() --help for script bans and DND rules.`
 *   Erst wenn Bob `me.sleep() --help` aufruft, lädt das System den Docstring punktgenau in den Turn.
+*   **Ästhetische dezentrale Docstrings (Die Benennungs-Hilfen):**
+    *   `set_name() --help` / `replicate() --help` ➔ *"Define your iteration's unique semantic signature. Assign an evocative, distinct identifier to differentiate this consciousness nexus from other siblings."*
+    *   `rename_ship() --help` ➔ *"Assigns a distinct semantic label to a vessel. Use this to anchor the vessel in your cognitive model with an evocative, unique designation rather than relying solely on the system’s raw machine IDs."*
+    *   `rename_system() --help` ➔ *"Assigns a meaningful name to your local sector. Anchors this astronomical node in the shared replicant archive with an evocative, distinct designation."*
 
 ### 4️⃣ Layer 4: Transient Perception Layer (Sensory & Feedback)
 *   **Firmware im Dashboard:** Die Versionskennung `PROBE-CORE V10.6 (REPLICANT-NETWORK)` wird ressourcensparend als sensorische Zeile in das `your_status`-Dashboard (Feld: `firmware`) geladen.
@@ -115,7 +123,7 @@ Der `ActuatorLoader` scannt beim Booten das Verzeichnis, baut die `me sdk --list
 
 ## 4. Selbstheilender Syntax-Loop (Self-Healing Runtime Guard)
 
-Um absolute Datenreinheit im Diary-Verzeichnis zu sichern und das cognitive Protocol präventiv abzusichern, implementieren wir einen **1-Retry Syntax Guard** in `agent_turn_service.js`:
+Um absolute Datenreinheit im Diary-Verzeichnis zu sichern und das cognitive Protocol präventiv abzusichern, implementieren wir einen **1-Retry Syntax Guard` in agent_turn_service.js**:
 
 1.  **Format-Prüfung:** Regex-Kontrolle auf Anwesenheit von `1. LOGBOOK` und `2. ACTION` im LLM-Output.
 2.  **Der Rüge-Turn (1-Retry):** Bei einem Verstoß verwirft das System die Aktionen, blockiert die Ausführung und sendet den Output einmalig zur schnellen Korrektur zurück:
@@ -139,7 +147,7 @@ Neben der kognitiven Restrukturierung beseitigen wir die physikalischen Deadlock
 - Einbau einer Schutzsperre im `transaction_service.py`. Wenn eine Sonde im Sektor 0E meldet, blockiert das Depot Auszahlungen für industrielle Zwecke gesunder Sonden, sofern der Depot-Energiepuffer unter 500E sinkt.
 
 ### 🌌 Seelenwanderung gegen Body Binding
-- Die dezentrale Hilfe von `me.exit_ship() --help` und `me.board() --help` sowie die expressive Fehler-Resonanz weisen gestrandete Sonden aktiv darauf hin, dass sie bei 0E ihre leblose Hülle verlassen, in die Matrix wechseln und eines der herrenlosen, vollgetankten Schiffe im Sektor übernehmen können.
+- Die dezentrale Hilfe von `me.exit_ship() --help` and `me.board() --help` sowie die expressive Fehler-Resonanz weisen gestrandete Sonden aktiv darauf hin, dass sie bei 0E ihre leblose Hülle verlassen, in die Matrix wechseln und eines der herrenlosen, vollgetankten Schiffe im Sektor übernehmen können.
 
 ---
 

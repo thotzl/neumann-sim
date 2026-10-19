@@ -2,7 +2,8 @@
 id: TCK-123
 title: "FEAT: Simulation Run Recording & Playback Engine (Replay Mode)"
 epic_phase: "Simulation Fidelity"
-status: "open"
+epic: "EPIC-07"
+status: "pool"
 priority: "medium"
 created: 2026-08-07
 dependencies: []

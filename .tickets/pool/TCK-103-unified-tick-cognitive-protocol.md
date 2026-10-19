@@ -2,7 +2,8 @@
 id: TCK-103
 title: "Unified me.tick() Cognitive Protocol (V14.0)"
 epic_phase: "Epic 2 (V14.0) / Phase 2.6 (Kognitive Dichte)"
-status: "open"
+epic: "EPIC-08"
+status: "pool"
 priority: "high"
 version: "v14.0"
 created: 2026-07-30

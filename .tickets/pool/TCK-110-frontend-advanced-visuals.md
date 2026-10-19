@@ -2,7 +2,8 @@
 id: TCK-110
 title: "Frontend Advanced Visualization & Bling-Bling Features (Event Flashes & Time-Scrubber)"
 epic_phase: "V12.0 Monitor Upgrade"
-status: "open"
+epic: "EPIC-07"
+status: "pool"
 priority: "low"
 created: 2026-07-28
 dependencies: ["TCK-132"]

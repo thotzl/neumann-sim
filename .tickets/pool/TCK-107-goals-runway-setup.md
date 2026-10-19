@@ -2,7 +2,8 @@
 id: TCK-107
 title: "SSoT Sektor-Weichen: 'Ready for Goals' (Epic 4 Setup)"
 epic_phase: "Epic 4 / Runway"
-status: "open"
+epic: "EPIC-02"
+status: "pool"
 priority: "medium"
 created: 2026-07-28
 dependencies: []

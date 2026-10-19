@@ -2,11 +2,14 @@
 id: TCK-101
 title: "Agent Hardware Upgrades & Leveling"
 epic_phase: "Epic 2 (V10.0) / Phase 2.5 (Agenten-Upgrades)"
-status: "open"
+epic: "EPIC-05"
+status: "pool"
 priority: "high"
 created: 2026-07-28
 dependencies: ["TCK-DONE-001"]
 ---
+
+> **Revisit 2026-10:** Redesign nötig — widerspricht dem Host-Decoupling (TCK-001): Agenten besitzen keine eigene Hülle mehr. Upgrades müssten am Host (Schiff/Matrix) ansetzen.
 
 ## Description
 Ermöglicht den physischen Aufstieg von Replicanten-Hüllen (nicht Schiffen!) in vier Attributen: `storage_level`, `engine_level`, `sensor_level` und `core_level` über exponentielle Materie-/Energiekosten mittels eines neuen SDK-Befehls `me.upgrade_self(module_type)`.

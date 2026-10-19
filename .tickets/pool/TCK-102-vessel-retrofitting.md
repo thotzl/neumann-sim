@@ -2,7 +2,8 @@
 id: TCK-102
 title: "Vessel Retrofitting (Feld-Upgrades)"
 epic_phase: "Epic 2 (V10.0) / Freestyle Engineering"
-status: "open"
+epic: "EPIC-05"
+status: "pool"
 priority: "medium"
 created: 2026-07-28
 dependencies: ["TCK-DONE-004"]

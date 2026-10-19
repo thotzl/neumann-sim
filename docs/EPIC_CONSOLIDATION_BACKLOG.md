@@ -21,6 +21,28 @@ Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstruktur
 
 ---
 
+## 🔎 REVISIT 2026-10 (EPIC-00 PLATFORM HARDENING)
+
+Audit und Sanierungsplan: [docs/revisit/README.md](revisit/README.md). Neue Struktur: Epics unter [`.tickets/epics/`](../.tickets/epics/), unentschiedene Ideen unter [`.tickets/pool/`](../.tickets/pool/). Die vollständige Index-Generierung inkl. Epics und Pool folgt mit TCK-137.
+
+| Ticket-ID | Titel | Epic | Status | Prio | Ticket-Datei |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **TCK-137** | Ticketing: pool/ und epics/ in GitHub-Sync und Backlog-Index | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-137-ticketing-pool-and-epics-sync.md) |
+| **TCK-138** | SEC: RUN-Allowlist und shell-freie Prozessausführung | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-138-run-allowlist-and-safe-exec.md) |
+| **TCK-139** | SEC: Simulation vollständig im Container isolieren | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-139-containerized-simulation-runtime.md) |
+| **TCK-140** | SEC: VoG-Server absichern | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-140-vog-server-hardening.md) |
+| **TCK-141** | STAB: Linux-Container als Dev-/Test-Laufzeit, deklarierte Abhängigkeiten | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-141-linux-container-dev-and-test-runtime.md) |
+| **TCK-142** | TEST: Test-Hygiene, Hub-Reporting, HUD in CI, verwaiste Tests | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-142-test-hygiene-and-orphan-triage.md) |
+| **TCK-143** | CLEAN: Toter Code und Repo-Artefakte entfernen | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-143-dead-code-and-artifact-cleanup.md) |
+| **TCK-144** | SSOT: Configs und Generator konsolidieren | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-144-config-and-generator-ssot.md) |
+| **TCK-145** | REFAC: Inline-Python in Kernel-Skripte, Laufzeit-DDL in Migration | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-145-extract-inline-python-and-runtime-ddl.md) |
+| **TCK-146** | REFAC: Generischer OpenAI-kompatibler Driver, keine Key-Fragmente im Log | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-146-generic-openai-driver.md) |
+| **TCK-147** | STAB: Atomare State-Persistenz, einheitlicher DB-Zugriff | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-147-atomic-state-and-db-access.md) |
+| **TCK-148** | PERF: Prozess-Overhead pro Turn messen und reduzieren | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-148-turn-process-overhead.md) |
+| **TCK-150** | DOCS: Projekt-Skills, README und Links aktualisieren | EPIC-00 | `open` | `high` | [Link](../.tickets/open/TCK-150-docs-and-skills-refresh.md) |
+
+---
+
 ## 🧭 AKTUELLES TICKET-REGISTER (INDEX)
 
 | Ticket-ID | Titel | Epic / Phase | Status | Prio | Ticket-Datei | Verknüpfte Quell-Ressource |
@@ -39,18 +61,18 @@ Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstruktur
 | **TCK-012** | Memory Heritage & Hard-Boot Chronology | Phase 2.6 (Cognitive Architecture) | `closed` | `high` | [Link](../.tickets/closed/TCK-012-memory-heritage-hardboot.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/todo/IDEAS_AND_TASKS.md) |
 | **TCK-013** | Runner-Level Auto-Radio-Poll (Phase Batching) | System Design Update | `closed` | `high` | [Link](../.tickets/closed/TCK-013-runner-level-auto-poll.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/todo/IDEAS_AND_TASKS.md), [SYNERGY_SPEC](../.tickets/resources/todo/REALTIME_VS_STANDBY_SYNERGY.md) |
 | **TCK-014** | GitHub Issues & Projects Direct Code Sync | Developer Experience & CI | `closed` | `medium` | [Link](../.tickets/closed/TCK-014-github-sync.md) | [EPIC_CONSOLIDATION_BACKLOG](../docs/EPIC_CONSOLIDATION_BACKLOG.md) |
-| **TCK-101** | Agent Hardware Upgrades & Leveling | Epic 2 (V10.0) / Phase 2.5 | `open` | `high` | [Link](../.tickets/open/TCK-101-agent-hardware-upgrades.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/todo/IDEAS_AND_TASKS.md) |
-| **TCK-102** | Vessel Retrofitting (Feld-Upgrades) | Epic 2 (V10.0) / Freestyle Engineering | `open` | `medium` | [Link](../.tickets/open/TCK-102-vessel-retrofitting.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ROADMAP_WORLD](../.tickets/resources/todo/ROADMAP_WORLD_MECHANICS.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
-| **TCK-103** | Unified me.tick() Cognitive Protocol (V14.0) | Epic 2 (V14.0) / Phase 2.6 | `open` | `high` | [Link](../.tickets/open/TCK-103-unified-tick-cognitive-protocol.md) | [SYSTEM_ARCHITECTURE](../docs/SYSTEM_ARCHITECTURE.md) |
+| **TCK-101** | Agent Hardware Upgrades & Leveling | Epic 2 (V10.0) / Phase 2.5 | `pool` | `high` | [Link](../.tickets/pool/TCK-101-agent-hardware-upgrades.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/todo/IDEAS_AND_TASKS.md) |
+| **TCK-102** | Vessel Retrofitting (Feld-Upgrades) | Epic 2 (V10.0) / Freestyle Engineering | `pool` | `medium` | [Link](../.tickets/pool/TCK-102-vessel-retrofitting.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ROADMAP_WORLD](../.tickets/resources/todo/ROADMAP_WORLD_MECHANICS.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
+| **TCK-103** | Unified me.tick() Cognitive Protocol (V14.0) | Epic 2 (V14.0) / Phase 2.6 | `pool` | `high` | [Link](../.tickets/pool/TCK-103-unified-tick-cognitive-protocol.md) | [SYSTEM_ARCHITECTURE](../docs/SYSTEM_ARCHITECTURE.md) |
 | **TCK-105** | SSoT System Instructions Script-Physics Clarification | System Design Update | `open` | `medium` | [Link](../.tickets/open/TCK-105-script-physics-clarification.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/todo/IDEAS_AND_TASKS.md) |
-| **TCK-106** | SSoT Sektor-Weichen: "Ready for Factions" (Epic 3 Setup) | Epic 3 (V11.0) / Runway | `open` | `medium` | [Link](../.tickets/open/TCK-106-factions-runway-setup.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
-| **TCK-107** | SSoT Sektor-Weichen: "Ready for Goals" (Epic 4 Setup) | Epic 4 / Runway | `open` | `medium` | [Link](../.tickets/open/TCK-107-goals-runway-setup.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md) |
+| **TCK-106** | SSoT Sektor-Weichen: "Ready for Factions" (Epic 3 Setup) | Epic 3 (V11.0) / Runway | `pool` | `medium` | [Link](../.tickets/pool/TCK-106-factions-runway-setup.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
+| **TCK-107** | SSoT Sektor-Weichen: "Ready for Goals" (Epic 4 Setup) | Epic 4 / Runway | `pool` | `medium` | [Link](../.tickets/pool/TCK-107-goals-runway-setup.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md) |
 | **TCK-108** | SSoT Sektor-Weichen: "Ready for Deeper Verse" (Epic 5 Setup) | Epic 5 / Runway | `closed` | `low` | [Link](../.tickets/closed/TCK-108-deeper-verse-runway-setup.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md), [ROADMAP_WORLD](../.tickets/resources/todo/ROADMAP_WORLD_MECHANICS.md) |
 | **TCK-109** | SSoT: Transit Auto-Abort on Blackout and Direct Ship-Level Solar Charging | Industrial Polish and Safety-Grid | `closed` | `highest` | [Link](../.tickets/closed/TCK-109-transit-auto-abort-and-direct-solar-charging.md) | [Central Test Hub](../tests/test_all.js) |
-| **TCK-110** | Frontend Advanced Visualization & Bling-Bling Features (Event Flashes & Time-Scrubber) | V12.0 Monitor Upgrade | `open` | `low` | [Link](../.tickets/open/TCK-110-frontend-advanced-visuals.md) | [FRONTEND_ARCH](../.tickets/resources/done/FRONTEND_ARCHITECTURE.md), [V12_REACTIVE_UPGRADE](../.tickets/resources/done/V12_REALTIME_REACTIVE_UPGRADE.md) |
+| **TCK-110** | Frontend Advanced Visualization & Bling-Bling Features (Event Flashes & Time-Scrubber) | V12.0 Monitor Upgrade | `pool` | `low` | [Link](../.tickets/pool/TCK-110-frontend-advanced-visuals.md) | [FRONTEND_ARCH](../.tickets/resources/done/FRONTEND_ARCHITECTURE.md), [V12_REACTIVE_UPGRADE](../.tickets/resources/done/V12_REALTIME_REACTIVE_UPGRADE.md) |
 | **TCK-111** | Interstellar Warp Gates (Warp Tunneling) | Epic 1 (V9.5) / Advanced Hardware | `closed` | `low` | [Link](../.tickets/closed/TCK-111-interstellar-warp-gates.md) | [ROADMAP_WORLD](../.tickets/resources/todo/ROADMAP_WORLD_MECHANICS.md), [REFACTORING](../.tickets/resources/done/REFACTORING_PLAN.md) |
-| **TCK-112** | SCUT 2.0 & Cipher Comms (Diplomacy vs. Eavesdropping) | Epic 3 (V11.0) / Factions | `open` | `medium` | [Link](../.tickets/open/TCK-112-scut-2-cipher-comms.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
-| **TCK-113** | Sovereignty Hacking & Takeovers | Epic 3 (V11.0) / Hacking | `open` | `medium` | [Link](../.tickets/open/TCK-113-sovereignty-hacking.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
+| **TCK-112** | SCUT 2.0 & Cipher Comms (Diplomacy vs. Eavesdropping) | Epic 3 (V11.0) / Factions | `pool` | `medium` | [Link](../.tickets/pool/TCK-112-scut-2-cipher-comms.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
+| **TCK-113** | Sovereignty Hacking & Takeovers | Epic 3 (V11.0) / Hacking | `pool` | `medium` | [Link](../.tickets/pool/TCK-113-sovereignty-hacking.md) | [ROADMAP.md](../.tickets/resources/todo/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md) |
 | **TCK-114** | Großes Struktur- & Architektur-Refactoring | V13.0 Clean Architecture | `closed` | `high` | [Link](../.tickets/closed/TCK-114-codebase-restructuring.md) | [SYSTEM_ARCHITECTURE](../docs/SYSTEM_ARCHITECTURE.md) |
 | **TCK-115** | Procedural Universe Sandbox (2D Canvas Prototyp) | Epic 5 / Runway | `closed` | `medium` | [Link](../.tickets/closed/TCK-115-procedural-universe-sandbox.md) | [TCK-108](../.tickets/open/TCK-108-deeper-verse-runway-setup.md) |
 | **TCK-116** | Deeper Verse Simulator-Integration (0-Byte-Footprint) | Epic 5 / Integration | `closed` | `high` | [Link](../.tickets/closed/TCK-116-deeper-verse-sim-integration.md) | [Handoff SSoT Guide](../../docs/DEEPER_VERSE_HANDOFF.md) |
@@ -60,8 +82,8 @@ Die Ticket-Dateien nutzen standardisiertes **YAML Frontmatter** und hochstruktur
 | **TCK-120** | SSoT: SOS-Beacon Proximity Logistics and Peer-to-Peer Talk | Logistics and Communication Upgrade | `closed` | `high` | [Link](../.tickets/closed/TCK-120-sos-proximity-logistics.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-121** | DRY-Up: Unified Database Queries and State Selectors | Refactoring & Code Quality | `closed` | `medium` | [Link](../.tickets/closed/TCK-121-dry-queries-and-selectors.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-122** | HOTFIX: Implement Sub-Etheric Emergency Grid (SEEG) | Logistics and Communication Upgrade | `closed` | `high` | [Link](../.tickets/closed/TCK-122-sub-etheric-emergency-grid.md) | [Central Test Hub](../../tests/test_all.js) |
-| **TCK-123** | FEAT: Simulation Run Recording & Playback Engine (Replay Mode) | Simulation Fidelity | `open` | `medium` | [Link](../.tickets/open/TCK-123-simulation-recording-and-playback.md) | [Central Test Hub](../tests/test_all.js) |
-| **TCK-124** | FEAT: Visual Main Screen Lobby & Simulation Configurator | User Experience Upgrade | `open` | `medium` | [Link](../.tickets/open/TCK-124-main-lobby-configurator.md) | [Central Test Hub](../tests/test_all.js) |
+| **TCK-123** | FEAT: Simulation Run Recording & Playback Engine (Replay Mode) | Simulation Fidelity | `pool` | `medium` | [Link](../.tickets/pool/TCK-123-simulation-recording-and-playback.md) | [Central Test Hub](../tests/test_all.js) |
+| **TCK-124** | FEAT: Visual Main Screen Lobby & Simulation Configurator | User Experience Upgrade | `pool` | `medium` | [Link](../.tickets/pool/TCK-124-main-lobby-configurator.md) | [Central Test Hub](../tests/test_all.js) |
 | **TCK-125** | FEAT: Hardware-Bound Autonomy: Ship Logic Cores, Sector AMI Hubs & Gantries | Automation and Autonomy | `closed` | `medium` | [Link](../.tickets/closed/TCK-125-hardware-bound-scripts-and-kmi-hub.md) | [Autonomy Test Suite](../../tests/js/test_v14_hardware_autonomy.js) |
 | **TCK-126** | FEAT: Passenger Cabin Ship Module (Core Engine, SDK & DB Implementation) | Logistics and Swarm Mobility | `open` | `high` | [Link](../.tickets/open/TCK-126-passenger-cabin-module.md) | [Central Test Hub](../tests/test_all.js) |
 | **TCK-127** | Perf: Runner Performance Optimization and Process Caching | Industrial Polish and Safety-Grid | `closed` | `high` | [Link](../.tickets/closed/TCK-127-runner-performance-optimization-and-process-caching.md) | [Central Test Hub](../../tests/test_all.js) |

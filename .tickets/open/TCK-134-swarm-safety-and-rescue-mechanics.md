@@ -2,6 +2,7 @@
 id: TCK-134
 title: "Swarm Safety, SDE-Kognition Model & Self-Documenting SDK Architecture"
 epic_phase: "Epic 2 (V10.0) / Phase 2.6 (Swarm Safety & Cognitive Alignment)"
+epic: "EPIC-08"
 status: "open"
 priority: "high"
 created: 2026-08-13

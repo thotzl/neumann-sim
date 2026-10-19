@@ -2,7 +2,8 @@
 id: TCK-124
 title: "FEAT: Visual Main Screen Lobby & Simulation Configurator"
 epic_phase: "User Experience Upgrade"
-status: "open"
+epic: "EPIC-07"
+status: "pool"
 priority: "medium"
 created: 2026-08-07
 dependencies: ["TCK-123"]

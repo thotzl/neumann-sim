@@ -2,6 +2,7 @@
 id: TCK-126
 title: "FEAT: Passenger Cabin Ship Module (Core Engine, SDK & DB Implementation)"
 epic_phase: "Logistics and Swarm Mobility"
+epic: "EPIC-08"
 status: "open"
 priority: "high"
 created: 2026-08-07

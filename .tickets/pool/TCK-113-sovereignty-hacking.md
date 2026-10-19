@@ -2,7 +2,8 @@
 id: TCK-113
 title: "Sovereignty Hacking & Takeovers"
 epic_phase: "Epic 3 (V11.0) / Hacking"
-status: "open"
+epic: "EPIC-01"
+status: "pool"
 priority: "medium"
 created: 2026-07-28
 dependencies: ["TCK-TODO-106"]

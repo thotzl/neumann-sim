@@ -26,3 +26,6 @@ tests/js/test_*_fs/
 /node_modules
 coverage/
 mock_db
+
+# Claude Code (Agent-Worktrees, lokale Settings)
+.claude/

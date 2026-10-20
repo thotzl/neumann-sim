@@ -87,7 +87,7 @@ def build_experiment(args):
             template["seed"] = str(random.randint(10000000, 99999999))
         
         # In V8.0 architecture, system_prompt contains ONLY the mission.
-        # Hardware documentation and ethics are added dynamically by the engine (api_client.js)
+        # Hardware documentation and ethics are added dynamically by the engine (environment.js getEnvState)
         # and the global_system_instruction (core-config.json).
         template["agents"][0]["system_prompt"] = args.mission
         

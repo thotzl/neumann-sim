@@ -43,7 +43,7 @@ E2E_MOCK=true npm run sim:docker -- expanse_2
 
 - **Secrets:** `scripts/sim_docker.js` passes only allowlisted variables from the shell or the root `.env` (`.env` wins) into the container: the LLM driver keys (`API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`, `CEREBRAS_API_KEY`, `SAMBANOVA_API_KEY`, `OPENROUTER_API_KEY`, `DEEP_INFRA_KEY`/`DEEPINFRA_API_KEY`, `GITHUB_TOKEN`/`GITHUB_API_KEY`), `VOG_TOKEN`, `VOG_HOST`, `C2_PORT`, `E2E_MOCK` and `E2E_MOCK_*`. The engine passes no keys or tokens to Python children (`src/sim_engine/helpers/child_env.js`). Use dedicated, rate-limited keys: agent code running as the same user can still read the engine's process environment via `/proc` (see ADR 0002).
 - **Monitor:** the engine in the container reaches the VoG server on the host through `host.docker.internal`; a host-local `VOG_HOST` is mapped automatically. This works with Docker Desktop out of the box. On a Linux host, start the VoG server on the Docker bridge address, e.g. `VOG_HOST=172.17.0.1 npm run dev` in `hud/` (the wrapper always adds `--add-host=host.docker.internal:host-gateway`).
-- **Ollama:** set `"ollama_endpoint": "http://host.docker.internal:11434/api/chat"` in the experiment's `config.json`.
+- **Ollama:** set `"ollama_endpoint": "http://host.docker.internal:11434/api/chat"` in the experiment's `config.json`. An optional Ollama service (AMD ROCm iGPU profile) is defined in the root `docker-compose.yml` (`docker compose up -d ollama`).
 - **Image override:** `NEUMANN_SIM_IMAGE` (default `neumann-sim:runtime`).
 - `npm run inject` / `npm run reset` are native-only. In container mode the image's engine always runs; rebuild an experiment with `npm run build:docker -- <exp> ... --force`.
 

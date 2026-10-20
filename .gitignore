@@ -27,3 +27,6 @@ coverage/
 
 # Claude Code (Agent-Worktrees, lokale Settings)
 .claude/
+
+# IDE
+.idea/

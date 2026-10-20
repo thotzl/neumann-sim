@@ -21,6 +21,7 @@ Projekt-Skills und Dokumentation auf den Stand nach EPIC-00 bringen.
 - 48 tote Links in 19 Dateien.
 - `HANDOFF.md` (v5.3), leeres `REPO_MAP.md`.
 - Ablage des TCK-134-Run-Snapshots klären.
+- Verweise auf entfernte Module (TCK-143): `api_client.js` in `docs/engine/README.md`, `docs/concepts/LOCAL_LLM_MIGRATION.md`, `.agents/skills/project-baseline/*`; `utils/constants.js` in `docs/SIMULATION_GUIDE.md`; `current_conv.txt` in `.dockerignore`; ungenutzte Templates `config_template.json`/`expansion_standard.json` entscheiden.
 
 ## Definition of Done
 - [ ] Skills neu geschrieben (Struktur: Core, SDK, Physik/Economy, Ops/Ticketing, Testing), `core-baseline` aufgelöst.

@@ -280,8 +280,4 @@ async function executeTurn(agent, state, config, agentBridge, compressorBridge, 
     return false;
 }
 
-function currentMessageCount(state, agentId) {
-    return (state.global_inbox?.[agentId] || []).filter(m => m.type === 'scut').length;
-}
-
 module.exports = { executeTurn };

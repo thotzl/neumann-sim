@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.6** | **2026-10-19** | `RELEASED` | Cleanup toter Code & Artefakte | `[TCK-143]` |
 | **v13.10.5** | **2026-10-19** | `RELEASED` | Test-Hygiene & Hub-Reporting | `[TCK-142]` |
 | **v13.10.4** | **2026-10-19** | `RELEASED` | Containerisierte Simulations-Laufzeit | `[TCK-139]` |
 | **v13.10.3** | **2026-10-19** | `RELEASED` | Linux-Container-Laufzeit & deklarierte Abhängigkeiten | `[TCK-141]` |
@@ -30,6 +31,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.6] - 2026-10-19
+*Cleanup toter Code & Artefakte. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Removed
+- **Toter Code & Repo-Artefakte:** ungenutzte Engine-Module (`validator`, `api_client`, `logic_helpers`, `types`), verwaistes Snapshot-Template, Root-Transkript, doppelte Ollama-Compose-Datei; `.idea/` nicht mehr versioniert.
+  - *Ticket:* [TCK-143](../.tickets/closed/TCK-143-dead-code-and-artifact-cleanup.md)
 
 ### [v13.10.5] - 2026-10-19
 *Test-Hygiene & Hub-Reporting. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

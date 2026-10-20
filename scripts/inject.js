@@ -7,7 +7,7 @@ const sourcePath = process.argv[3]; // Can be a path or "engine" or "tools"
 if (!expName || !sourcePath) {
     console.log("Syntax: npm run inject <experiment_name> <file_or_alias>");
     console.log("Examples:");
-    console.log("  npm run inject ONE src/sim_engine/helpers/api_client.js");
+    console.log("  npm run inject ONE src/sim_engine/core/runner.js");
     console.log("  npm run inject ONE engine   (Copies entire sim_engine)");
     console.log("  npm run inject ONE tools    (Copies tools & system_libs)");
     process.exit(1);

@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const { runPython } = require('./python_executor');
+const { PYTHON_BIN } = require('../helpers/python_bin');
 const envManager = require('./environment');
 
 function runSystemAutomations(vDir, universeDir, state) {
@@ -14,9 +15,10 @@ function runSystemAutomations(vDir, universeDir, state) {
     const dbPath = path.join(universeDir, "universe.db");
     if (!fs.existsSync(dbPath)) return "";
 
+    // argv: db_path
     const getScriptsScript = `
-import sqlite3, json, os
-conn = sqlite3.connect('${dbPath}')
+import sqlite3, json, os, sys
+conn = sqlite3.connect(sys.argv[1])
 conn.row_factory = sqlite3.Row
 cursor = conn.cursor()
 
@@ -64,7 +66,7 @@ print(json.dumps(active_scripts))
 
     let activeScripts = [];
     try {
-        const jsonOut = execSync(`python3 -c "${getScriptsScript.replace(/"/g, '\\"')}"`).toString().trim();
+        const jsonOut = execFileSync(PYTHON_BIN, ['-c', getScriptsScript, dbPath]).toString().trim();
         activeScripts = JSON.parse(jsonOut);
     } catch (e) {
         // Fallback silently if table doesn't exist yet
@@ -153,15 +155,13 @@ builtins.me = me
         const proxyId = item.target_type === 'ship' ? `Ship-${item.target_id}` : `System-${item.target_id}`;
         
         // Relational Proxy Agent Seeding (Synchronous db-sync block)
+        // argv: db_path, target_type, target_id, proxy_id
         const syncProxyScript = `
-import sqlite3
-conn = sqlite3.connect('${dbPath}')
+import sqlite3, sys
+db_path, target_type, target_id, proxy_id = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+conn = sqlite3.connect(db_path)
 conn.row_factory = sqlite3.Row
 cursor = conn.cursor()
-
-target_type = '${item.target_type}'
-target_id = '${item.target_id}'
-proxy_id = '${proxyId}'
 
 if target_type == 'ship':
     cursor.execute("SELECT name, x, y, system_name FROM ships WHERE id = CAST(? AS INTEGER)", (target_id,))
@@ -184,7 +184,7 @@ conn.close()
 `.trim();
 
         try {
-            execSync(`python3 -c "${syncProxyScript.replace(/"/g, '\\"')}"`);
+            execFileSync(PYTHON_BIN, ['-c', syncProxyScript, dbPath, String(item.target_type), String(item.target_id), proxyId]);
         } catch (e) {
             console.error("[AUTOMATION ERROR] Failed to sync proxy:", e.message);
         }

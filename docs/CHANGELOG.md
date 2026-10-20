@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.0** | **2026-10-19** | `RELEASED` | RUN-Allowlist & Shell-freie Prozessausführung | `[TCK-138]` |
 | **v13.9.2** | **2026-08-12** | `RELEASED` | Single SSoT Python Generator & Automated SQLite-to-TS Type Sync | `[TCK-108]`, `[TCK-135]` |
 | **v13.9.1** | **2026-08-12** | `RELEASED` | Hybrid Dijkstra Routing to Raw Void Coordinates | `[BUGFIX]` |
 | **v13.9** | **2026-08-10** | `RELEASED` | Polymorphic Navigation & Batched Mining Loops | `[TCK-129]` |
@@ -24,6 +25,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.0] - 2026-10-19
+*RUN-Allowlist & Shell-freie Prozessausführung. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Security
+- **RUN-Allowlist & shell-freie Ausführung:** LLM-Output kann nur noch SDK-Aufrufe (`me …`) und ACL-geprüfte Agenten-Skripte ausführen; beliebige Shell-Befehle werden mit `[DENIED]` abgelehnt. Alle Python-Prozesse starten ohne Shell, dynamische Werte nur als argv. Injection über `[WRITE]`-Dateinamen und Pfad-Präfix-Bypass geschlossen. Interpreter konfigurierbar über `BOB_PYTHON`.
+  - *Ticket:* [TCK-138](../.tickets/closed/TCK-138-run-allowlist-and-safe-exec.md) (schließt TCK-105)
 
 ### [v13.9.2] - 2026-08-12
 *Das "Single SSoT Generator & Automated SQLite Type Sync" Upgrade. Diese Version bereinigt massive technische Schulden. Sie eliminiert den doppelten TypeScript-Sektorgenerator und bündelt die gesamte prozedurale Logik in einem unbestechlichen Python-Core. Zudem führt sie ein vollautomatisches, reflektives Kompilierungsverfahren ein, das sowohl prozedurale Typen als auch SQLite-Views live in unfehlbare TypeScript-Schnittstellen für das React-Frontend übersetzt.*

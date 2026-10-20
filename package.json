@@ -1,6 +1,6 @@
 {
   "name": "ai-testing",
-  "version": "1.0.0",
+  "version": "13.10.0",
   "description": "Projekt zur Erforschung autonomer KI-Interaktion in isolierten Umgebungen.",
   "main": "index.js",
   "scripts": {

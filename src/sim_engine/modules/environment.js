@@ -1,14 +1,24 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const { checkAccess } = require('../services/acl_service');
 const { parseRunBlocks } = require('./action_parser');
+const { PYTHON_BIN } = require('../helpers/python_bin');
+
+// TCK-138: Allowlist & path guards (no shell anywhere)
+const SAFE_FILE_NAME = /^[A-Za-z0-9._/-]+$/;
+const SCRIPT_RUN = /^python3?\s+(scripts\/[A-Za-z0-9._/-]+\.py)$/;
+
+// True if fullPath lies strictly inside root (trailing separator prevents '_verse_evil' prefix bypass)
+function isInside(root, fullPath) {
+    return fullPath.startsWith(path.resolve(root) + path.sep);
+}
 
 function getEnvState(universeDir) {
     const bobPath = path.join(universeDir, '..', 'core', 'bin', 'bob.py');
     const expRoot = path.resolve(universeDir, '..');
     try {
-        const out = execSync(`python3 ${bobPath} --help`, {
+        const out = execFileSync(PYTHON_BIN, [bobPath, '--help'], {
             env: { ...process.env, PYTHONPATH: expRoot }
         }).toString();
         
@@ -78,6 +88,11 @@ function processActions(text, universeDir, agentId, state) {
         const headerParts = tagHeader.split(/\s+/);
         const rawFileName = headerParts[0].trim();
 
+        if (!SAFE_FILE_NAME.test(rawFileName)) {
+            feedback += `[DENIED: '${rawFileName}' - Invalid file name. Allowed characters: A-Z a-z 0-9 . _ - /]\n`;
+            continue;
+        }
+
         const readKeyMatch = tagHeader.match(/\(READ_KEY:\s*([a-zA-Z0-9_-]+)\)/i);
         const readKey = readKeyMatch ? readKeyMatch[1] : null;
         const writeKey = tagHeader.match(/\(WRITE_KEY:\s*([a-zA-Z0-9_-]+)\)/i);
@@ -99,13 +114,14 @@ function processActions(text, universeDir, agentId, state) {
                 filePath = rawFileName;
             }
         } else {
-            filePath = (rawFileName.includes('/') || rawFileName.includes('\\')) ? rawFileName : `scripts/${rawFileName}`;
+            filePath = rawFileName.includes('/') ? rawFileName : `scripts/${rawFileName}`;
         }
+        // Canonical ACL key ('scripts/./x.py' == 'scripts/x.py')
+        filePath = path.posix.normalize(filePath);
 
         const fullPath = path.resolve(universeDir, filePath);
-        if (!fullPath.startsWith(path.resolve(universeDir))) continue;
 
-        if (!filePath.startsWith("scripts/")) {
+        if (!filePath.startsWith("scripts/") || !isInside(path.join(universeDir, 'scripts'), fullPath)) {
             feedback += `[DENIED: '${filePath}' - You are only allowed to modify files in the 'scripts/' directory. Other directories are protected hardware layers.]\n`;
             continue;
         }
@@ -119,9 +135,11 @@ function processActions(text, universeDir, agentId, state) {
         // Proximity & Hardware Verification Lockouts
         const dbPath = path.join(universeDir, 'universe.db');
         if (target) {
+            // argv: db_path, agent_id, target
             const checkScript = `
 import sqlite3, os, sys
-conn = sqlite3.connect('${dbPath}')
+db_path, agent_id, target = sys.argv[1], sys.argv[2], sys.argv[3]
+conn = sqlite3.connect(db_path)
 conn.row_factory = sqlite3.Row
 cursor = conn.cursor()
 
@@ -149,11 +167,10 @@ except sqlite3.OperationalError:
     pass
 
 # Query agent location
-cursor.execute("SELECT location FROM v_agents WHERE id = ?", ('${agentId}',))
+cursor.execute("SELECT location FROM v_agents WHERE id = ?", (agent_id,))
 agent = cursor.fetchone()
 agent_loc = agent['location'] if agent else 'Unknown'
 
-target = '${target}'
 target_type, target_id = target.lower().split('::')
 clean_target_id = target.split('::')[1]
 
@@ -182,7 +199,7 @@ else:
 conn.close()
 `.trim();
             try {
-                const checkOut = execSync(`python3 -c "${checkScript.replace(/"/g, '\\"')}"`).toString().trim();
+                const checkOut = execFileSync(PYTHON_BIN, ['-c', checkScript, dbPath, String(agentId), target]).toString().trim();
                 if (checkOut.startsWith('[DENIED:')) {
                     feedback += checkOut + "\n";
                     continue;
@@ -199,9 +216,13 @@ conn.close()
             fs.writeFileSync(fullPath, content);
 
             // Relational SSoT Database Persistence & Linkage
+            // argv: db_path, content, file_path, agent_id, read_key, write_key, target, name, round
             const dbWriteScript = `
 import sqlite3, os, sys
-conn = sqlite3.connect('${dbPath}')
+db_path, content, file_path, agent_id = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+read_key, write_key = sys.argv[5] or None, sys.argv[6] or None
+target, name, created_cycle = sys.argv[7], sys.argv[8], int(sys.argv[9])
+conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 # Self-healing database structure initialization
@@ -227,20 +248,19 @@ try:
 except sqlite3.OperationalError:
     pass
 
-cursor.execute("SELECT id FROM scripts WHERE path = ?", ('${filePath}',))
+cursor.execute("SELECT id FROM scripts WHERE path = ?", (file_path,))
 row = cursor.fetchone()
 
 script_id = None
 if row:
     script_id = row[0]
     cursor.execute("UPDATE scripts SET content = ?, owner_id = ?, read_key = ?, write_key = ?, target = ? WHERE id = ?",
-                   (sys.argv[1], '${agentId}', ${readKey ? `'${readKey}'` : 'None'}, ${writeKeyVal ? `'${writeKeyVal}'` : 'None'}, '${target || ""}', script_id))
+                   (content, agent_id, read_key, write_key, target, script_id))
 else:
     cursor.execute("INSERT INTO scripts (name, content, path, target, owner_id, read_key, write_key, created_cycle) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                   ('${rawFileName}', sys.argv[1], '${filePath}', '${target || ""}', '${agentId}', ${readKey ? `'${readKey}'` : 'None'}, ${writeKeyVal ? `'${writeKeyVal}'` : 'None'}, ${state.round || 0}))
+                   (name, content, file_path, target, agent_id, read_key, write_key, created_cycle))
     script_id = cursor.lastrowid
 
-target = '${target || ""}'
 if target.startswith('ship::'):
     clean_target_id = target.split('::')[1]
     cursor.execute("UPDATE ships SET active_script_id = ? WHERE id = CAST(? AS INTEGER)", (script_id, clean_target_id))
@@ -253,8 +273,10 @@ conn.close()
 print(script_id)
 `.trim();
 
-            const safeContentArg = content.replace(/'/g, "'\\''");
-            const scriptId = execSync(`python3 -c "${dbWriteScript.replace(/"/g, '\\"')}" '${safeContentArg}'`).toString().trim();
+            const scriptId = execFileSync(PYTHON_BIN, ['-c', dbWriteScript,
+                dbPath, content, filePath, String(agentId), readKey || '', writeKeyVal || '',
+                target || '', rawFileName, String(parseInt(state.round, 10) || 0)
+            ]).toString().trim();
 
             // Sync with existing ACL state in-memory as backup / UI compatibility
             if (readKey || writeKeyVal || !state.security.acl[filePath]) {
@@ -280,11 +302,10 @@ print(script_id)
     // --- READ ---
     const readRegex = /\[READ:\s*([a-zA-Z0-9._\-\/]+)\]/gi;
     while ((match = readRegex.exec(safeRunText)) !== null) {
-        const filePath = match[1].trim();
+        const filePath = path.posix.normalize(match[1].trim());
         const fullPath = path.resolve(universeDir, filePath);
-        if (!fullPath.startsWith(path.resolve(universeDir))) continue;
 
-        if (!filePath.startsWith("scripts/")) {
+        if (!filePath.startsWith("scripts/") || !isInside(path.join(universeDir, 'scripts'), fullPath)) {
             feedback += `[DENIED: '${filePath}' - [READ] is only allowed for 'scripts/'.]\n`;
             continue;
         }
@@ -309,11 +330,10 @@ print(script_id)
     // --- DELETE ---
     const delRegex = /\[DELETE:\s*([a-zA-Z0-9._\-\/]+)\]/gi;
     while ((match = delRegex.exec(safeRunText)) !== null) {
-        const filePath = match[1].trim();
+        const filePath = path.posix.normalize(match[1].trim());
         const fullPath = path.resolve(universeDir, filePath);
-        if (!fullPath.startsWith(path.resolve(universeDir))) continue;
 
-        if (!filePath.startsWith("scripts/")) {
+        if (!filePath.startsWith("scripts/") || !isInside(path.join(universeDir, 'scripts'), fullPath)) {
             feedback += `[DENIED: '${filePath}' - You are only allowed to delete files in the 'scripts/' directory.]\n`;
             continue;
         }
@@ -352,50 +372,59 @@ print(script_id)
             continue;
         }
 
-        // Path Mapping for Unified CLI (V10.0 Functional)
-        if (cmd.startsWith("me ")) {
-            const funcPart = cmd.replace(/^me\s+/, "").trim();
-            const safeFuncPart = funcPart.replace(/'/g, "'\\''");
-            const aclState = state.security?.acl || {};
-            cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py '${safeFuncPart}'`;
+        // RUN-Allowlist (TCK-138): only SDK calls -> bob.py, or strictly parsed 'python3 scripts/<file>.py'.
+        // Everything is executed via execFile (argv array, no shell).
+        const expRoot = path.resolve(universeDir, '..');
+        const runEnv = {
+            ...process.env,
+            PYTHONPATH: expRoot,
+            BOB_ID: String(agentId),
+            BOB_CYCLE: String(state?.round || 0),
+            TEST_DB_PATH: path.join(universeDir, 'universe.db')
+        };
+        let argv = null;
+        let funcPart = null;
+        const scriptMatch = cmd.match(SCRIPT_RUN);
+
+        if (/^me\s/.test(cmd)) {
+            funcPart = cmd.replace(/^me\s+/, "").trim();
         } else if (cmd.startsWith("me.")) {
-            const funcPart = cmd.replace(/^me\./, "").trim();
-            const safeFuncPart = funcPart.replace(/'/g, "'\\''");
-            const aclState = state.security?.acl || {};
-            cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py '${safeFuncPart}'`;
+            funcPart = cmd.replace(/^me\./, "").trim();
         } else if (cmd.startsWith("me(")) {
-            const safeFuncPart = cmd.substring(2).replace(/'/g, "'\\''");
-            const aclState = state.security?.acl || {};
-            cmd = `BOB_ACL='${JSON.stringify(aclState)}' python3 ../core/bin/bob.py 'me${safeFuncPart}'`;
+            funcPart = cmd;
+        }
+
+        if (funcPart !== null) {
+            argv = [path.join(expRoot, 'core', 'bin', 'bob.py'), funcPart];
+            runEnv.BOB_ACL = JSON.stringify(state.security?.acl || {});
         } else if (cmd.startsWith("bob ") || cmd.startsWith("bob(")) {
             feedback += `[CLI ERROR] Syntax 'bob ...' is deprecated. Use 'me ...' (Example: [RUN: me mine()]).\n`;
             continue;
-        }
-
-        // Security Hook for python3 scripts/
-        if (cmd.includes("scripts/")) {
-            const parts = cmd.split(' ');
-            let targetScript = parts.find(p => p.includes("scripts/")).replace("_verse/", "");
-            const access = checkAccess(targetScript, 'RUN', agentId, state);
+        } else if (scriptMatch) {
+            // Manual-run agent scripts (ACL-guarded, must stay under _verse/scripts/)
+            const scriptPath = path.posix.normalize(scriptMatch[1]);
+            const fullScript = path.resolve(universeDir, scriptPath);
+            if (!scriptPath.startsWith("scripts/") || !isInside(path.join(universeDir, 'scripts'), fullScript)) {
+                feedback += `[DENIED: '${displayCmd}' - Scripts must reside in 'scripts/'.]\n`;
+                continue;
+            }
+            const access = checkAccess(scriptPath, 'RUN', agentId, state);
             if (!access.granted) {
                 feedback += `[RESPONSE: '${displayCmd}' -> ${access.reason}]\n`;
                 continue;
             }
+            argv = [fullScript];
+        } else {
+            feedback += `[DENIED: '${displayCmd}' is not an allowed command. Use the SDK: [RUN: me <method>(...)]]\n`;
+            continue;
         }
 
         try {
-            const expRoot = path.resolve(universeDir, '..');
-            const out = execSync(cmd, { 
-                cwd: universeDir, 
-                timeout: 15000, 
+            const out = execFileSync(PYTHON_BIN, argv, {
+                cwd: universeDir,
+                timeout: 15000,
                 stdio: 'pipe',
-                env: { 
-                    ...process.env, 
-                    PYTHONPATH: expRoot, 
-                    BOB_ID: agentId,
-                    BOB_CYCLE: String(state?.round || 0),
-                    TEST_DB_PATH: path.join(universeDir, 'universe.db')
-                }
+                env: runEnv
             }).toString();
             feedback += `[RESPONSE: '${displayCmd}' ::\n${out.trim() || "OK"}]\n`;
 
@@ -406,7 +435,6 @@ print(script_id)
             }
         } catch (e) {
             let err = e.stderr ? e.stderr.toString() : e.message;
-            const expRoot = path.resolve(universeDir, '..');
             err = err.split(expRoot).join('');
             feedback += `[ERROR-RESPONSE: '${displayCmd}' ::\n${err.trim()}]\n`;
 

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
+const { PYTHON_BIN } = require('../helpers/python_bin');
 
 const stateManager = require('../services/state_manager');
 const configLoader = require('../helpers/config_loader');
@@ -87,7 +88,7 @@ async function run() {
     if (!state) {
         console.log(`\n[PRERUN] Initializing world from config.json...`);
         try {
-            execSync(`python3 ${path.join(vDir, 'core', 'bin', 'init_db.py')} --seed`, {
+            execFileSync(PYTHON_BIN, [path.join(vDir, 'core', 'bin', 'init_db.py'), '--seed'], {
                 cwd: vDir,
                 env: { ...process.env, PYTHONPATH: vDir },
                 stdio: 'inherit'

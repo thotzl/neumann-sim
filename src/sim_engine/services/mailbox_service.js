@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { PYTHON_BIN } = require('../helpers/python_bin');
 const vogService = require('../modules/vog');
 
 /**
@@ -26,7 +27,7 @@ function routeMessages(vDir, universeDir, state) {
 
     try {
         const scriptPath = path.join(vDir, 'core', 'bin', 'fetch_messages.py');
-        const batchOut = execFileSync('python3', [scriptPath], {
+        const batchOut = execFileSync(PYTHON_BIN, [scriptPath], {
             env: { ...process.env, TEST_DB_PATH: dbPath },
             encoding: 'utf8'
         });

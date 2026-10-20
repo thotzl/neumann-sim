@@ -3,11 +3,12 @@ const sqlite3 = require('sqlite3').verbose();
 class Database {
     constructor(dbPath) {
         this.db = new sqlite3.Database(dbPath);
-        // Enable WAL, NORMAL synchronous, and a 30s busy timeout for concurrent safety
+        // Busy timeout first: concurrent handles switching to WAL otherwise fail with SQLITE_BUSY (TCK-141)
+        this.db.configure('busyTimeout', 30000);
+        const warn = (err) => { if (err) console.warn(`[DB] PRAGMA failed on ${dbPath}: ${err.message}`); };
         this.db.serialize(() => {
-            this.db.run("PRAGMA journal_mode = WAL");
-            this.db.run("PRAGMA synchronous = NORMAL");
-            this.db.run("PRAGMA busy_timeout = 30000");
+            this.db.run("PRAGMA journal_mode = WAL", warn);
+            this.db.run("PRAGMA synchronous = NORMAL", warn);
         });
     }
 

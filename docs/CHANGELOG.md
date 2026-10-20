@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.3** | **2026-10-19** | `RELEASED` | Linux-Container-Laufzeit & deklarierte Abhängigkeiten | `[TCK-141]` |
 | **v13.10.2** | **2026-10-19** | `RELEASED` | VoG-Server-Härtung | `[TCK-140]` |
 | **v13.10.1** | **2026-10-19** | `RELEASED` | Ticket-Pool & Epics im GitHub-Sync | `[TCK-137]` |
 | **v13.10.0** | **2026-10-19** | `RELEASED` | RUN-Allowlist & Shell-freie Prozessausführung | `[TCK-138]` |
@@ -27,6 +28,17 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.3] - 2026-10-19
+*Linux-Container-Laufzeit & deklarierte Abhängigkeiten. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Changed
+- **Linux-Container als Dev-/Test-Laufzeit:** `Dockerfile` (glibc ≥ 2.38, Node 20, Python-venv), Dev-Container, `npm run test:docker` ohne Bind-Mount, deklarierte Python-Abhängigkeiten (`requirements.txt`), CI auf `ubuntu-24.04` mit pip-Install, korrigierte Voraussetzungen im README.
+  - *Ticket:* [TCK-141](../.tickets/closed/TCK-141-linux-container-dev-and-test-runtime.md) · ADR [0001](adr/0001-linux-container-runtime.md)
+
+#### Fixed
+- **Sporadisches `SQLITE_BUSY` beim WAL-Switch paralleler DB-Handles** (`services/db.js`: Busy-Timeout vor PRAGMA).
+  - *Ticket:* [TCK-141](../.tickets/closed/TCK-141-linux-container-dev-and-test-runtime.md)
 
 ### [v13.10.2] - 2026-10-19
 *VoG-Server-Härtung. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

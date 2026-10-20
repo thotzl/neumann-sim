@@ -6,10 +6,27 @@ An autonomous multi-agent simulation framework orchestrating LLM-driven von Neum
 
 ## 1. Getting Started & Operations
 
-The project separates execution environments between the **Simulation Engine (Node.js)** and the **Tactical Command Monitor (React/Vite)**.
+The project separates execution environments between the **Simulation Engine (Node.js)** and the **Tactical Command HUD (React/Vite, `hud/`)**.
+
+### Prerequisites & Supported Runtime
+Development and tests run **only in Linux containers**; Windows and macOS are supported as Docker hosts only (see [ADR 0001](docs/adr/0001-linux-container-runtime.md)).
+
+- **Docker** (Docker Desktop on Windows/macOS) — the only host requirement.
+- The image (`Dockerfile`, base `node:20-trixie-slim`) provides:
+  - **Node.js 20** (`engines.node >= 20`; native SQLite addon, crashes under Bun),
+  - **Python 3** with the packages from `requirements.txt` (e.g. `pyyaml`),
+  - **glibc >= 2.38** (required by the `sqlite3@6` prebuilt binary; Debian 12 / Ubuntu 22.04 are too old).
+- A VS Code / Dev Containers setup using the same image is in `.devcontainer/`.
+- On a native Linux host with Node 20, Python 3 and glibc >= 2.38: `pip install -r requirements.txt && npm ci`.
+
+```bash
+# Run the complete CI test hub (35 Python, JS and E2E suites) inside the Linux container.
+# The repo is copied into the image (no bind mount: SQLite WAL hangs on Windows bind mounts).
+# Works from Git Bash, PowerShell and Linux shells.
+npm run test:docker
+```
 
 ### I. Simulation Engine (Strictly NodeJS + NPM)
-The simulation requires NodeJS (recommended: v11.11.0) due to native SQLite NAPI-addon bindings which crash under Bun.
 
 ```bash
 # 1. Install engine dependencies
@@ -41,22 +58,22 @@ npm run inject expanse_2 <path>     # Synchronizes a specific file path (e.g. sr
 # Usage: npm run reset <experiment_name> (or npm run reset -- <experiment_name>)
 npm run reset expanse_2
 
-# 6. Run the complete verification CI-test suite (25 JS, Python, and E2E suites)
+# 6. Run the complete verification CI-test suite (35 JS, Python, and E2E suites)
+#    inside a Linux environment (container or CI); from any host use `npm run test:docker`
 npm test
 ```
 
-### II. Optional Tactical Monitor (Strictly Bun)
-The monitor frontend is a React/Vite client and operates lightning-fast under Bun.
+### II. Optional Tactical HUD (`hud/`)
+The HUD frontend is a React/Vite client.
 
 ```bash
-# 1. Install monitor frontend dependencies
-cd monitor && bun install
+# 1. Install HUD frontend dependencies
+cd hud && npm install
 
 # 2. Launch the integrated development environment
-# Usage: bun run dev --v=<experiment_name>
-bun run dev --v=expanse_2
+npm run dev
 ```
-*Note: Running `bun run dev --v=<exp_name>` automatically executes the local directory symlinking to target the requested sandbox database, boots up the WebSocket in-memory broker (`vog_server.cjs`) on Port 3001, and launches Vite on Port 5173 / Port 3000.*
+*Note: `npm run dev` (`hud/dev.cjs`) regenerates the TypeScript types from the Python SSoT generator, boots the WebSocket broker (`vog_server.cjs`) on Port 3001, and launches Vite on Port 5173.*
 
 ### III. Monitor Security (VoG Server)
 The VoG server binds to `127.0.0.1` and accepts write requests (`/vog`, `/api/broadcast`) only with the shared token header `X-VoG-Token`. Put the same `VOG_TOKEN` into the root `.env` so engine and monitor match; without it `dev.cjs` generates a token per start and the engine logs a one-time 401 warning.

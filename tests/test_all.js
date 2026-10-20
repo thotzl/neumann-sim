@@ -14,6 +14,7 @@ const js = (name, file) => ({ name, bin: process.execPath, args: [file] });
 
 const SUITES = [
     py("Python Core Services", 'tests/python/test_core_services.py'),
+    py("Python Script Registry Kernel Scripts (TCK-145)", 'tests/python/test_script_registry.py'),
     pyDiscover("Python Bob SDK & Security", 'tests/python/sdk_tests', 'test_*.py'),
     // Also covers test_v3_1_logistics, test_v3_2_dashboard, test_v3_naming, test_v3_privacy
     pyDiscover("Python Physics v3 (Geometry, Logistics, Dashboard, Naming, Privacy)", 'tests/python', 'test_v3_*.py'),
@@ -39,6 +40,7 @@ const SUITES = [
     js("JS Ticket Sync & Index (TCK-137)", 'tests/js/test_ticket_sync.js'),
     js("JS VoG Server Hardening (TCK-140)", 'tests/js/test_vog_server.js'),
     js("JS Child Env Secret Isolation (TCK-139)", 'tests/js/test_child_env_isolation.js'),
+    js("JS Scripts Registry Migration / inject migrate (TCK-145)", 'tests/js/test_scripts_registry_migration.js'),
     js("JS Mailbox Service Unit", 'tests/js/test_mailbox_service.js'),
     js("JS Physics Round Service Unit", 'tests/js/test_physics_round_service.js'),
     js("JS Agent Turn Service Unit", 'tests/js/test_agent_turn_service.js'),

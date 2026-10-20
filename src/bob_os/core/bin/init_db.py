@@ -1,8 +1,23 @@
 import sqlite3
 import os
+import re
 import sys
 
 from core.lib.db_config import get_connection
+
+# SQLite has no 'ADD COLUMN IF NOT EXISTS': drop 'ALTER TABLE t ADD COLUMN c ...;' statements whose
+# column already exists (e.g. experiments where the pre-TCK-145 runtime DDL added active_script_id
+# before 0005 was applied). Same rule as scripts/migrate.js.
+ADD_COLUMN_RE = re.compile(r'ALTER\s+TABLE\s+["`]?(\w+)["`]?\s+ADD\s+(?:COLUMN\s+)?["`]?(\w+)["`]?[^;]*;', re.IGNORECASE)
+
+def strip_existing_columns(cursor, sql):
+    for match in list(ADD_COLUMN_RE.finditer(sql)):
+        table, column = match.group(1), match.group(2)
+        cols = [r[1].lower() for r in cursor.execute(f'PRAGMA table_info("{table}")').fetchall()]
+        if column.lower() in cols:
+            print(f"[PY-MIGRATOR] Column '{table}.{column}' already exists, skipping ADD COLUMN.")
+            sql = sql.replace(match.group(0), '', 1)
+    return sql
 
 def init():
     # Connect to the SQLite database
@@ -33,7 +48,7 @@ def init():
                     sql_content = f.read()
                 
                 try:
-                    cursor.executescript(sql_content)
+                    cursor.executescript(strip_existing_columns(cursor, sql_content))
                     cursor.execute("INSERT INTO schema_migrations (version) VALUES (?)", (file,))
                 except Exception as e:
                     print(f"[PY-MIGRATOR ERROR] Migration '{file}' failed: {e}")

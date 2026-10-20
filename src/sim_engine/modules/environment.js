@@ -133,74 +133,13 @@ function processActions(text, universeDir, agentId, state) {
             continue;
         }
 
-        // Proximity & Hardware Verification Lockouts
+        // Proximity & Hardware Verification Lockouts (TCK-145: kernel script, schema via migrations)
         const dbPath = path.join(universeDir, 'universe.db');
+        const expRoot = path.resolve(universeDir, '..');
+        const kernelEnv = childEnv({ PYTHONPATH: expRoot, TEST_DB_PATH: dbPath });
         if (target) {
-            // argv: db_path, agent_id, target
-            const checkScript = `
-import sqlite3, os, sys
-db_path, agent_id, target = sys.argv[1], sys.argv[2], sys.argv[3]
-conn = sqlite3.connect(db_path)
-conn.row_factory = sqlite3.Row
-cursor = conn.cursor()
-
-# Self-healing database structure initialization
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS scripts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    content TEXT,
-    path TEXT NOT NULL,
-    target TEXT DEFAULT NULL,
-    owner_id TEXT NOT NULL,
-    read_key TEXT DEFAULT NULL,
-    write_key TEXT DEFAULT NULL,
-    created_cycle INTEGER DEFAULT 0
-)
-""")
-try:
-    cursor.execute("ALTER TABLE ships ADD COLUMN active_script_id INTEGER DEFAULT NULL")
-except sqlite3.OperationalError:
-    pass
-try:
-    cursor.execute("ALTER TABLE systems ADD COLUMN active_script_id INTEGER DEFAULT NULL")
-except sqlite3.OperationalError:
-    pass
-
-# Query agent location
-cursor.execute("SELECT location FROM v_agents WHERE id = ?", (agent_id,))
-agent = cursor.fetchone()
-agent_loc = agent['location'] if agent else 'Unknown'
-
-target_type, target_id = target.lower().split('::')
-clean_target_id = target.split('::')[1]
-
-if target_type == 'ship':
-    cursor.execute("SELECT system_name, has_logic_core FROM ships WHERE id = CAST(? AS INTEGER)", (clean_target_id,))
-    ship = cursor.fetchone()
-    if not ship:
-        print('[DENIED: Target vessel ID ' + clean_target_id + ' not found in sector database.]')
-    elif ship['system_name'] != agent_loc:
-        print('[DENIED: Proximity Lockout. Direct localized flashing of Vessel \\'Ship-' + clean_target_id + '\\' failed. The target vessel is stationed in system \\'' + ship['system_name'] + '\\', but your consciousness is currently located in \\'' + agent_loc + '\\'.]')
-    elif ship['has_logic_core'] != 1:
-        print('[DENIED: Vessel \\'Ship-' + clean_target_id + '\\' lacks a physical \\'logic_core\\' module. Onboard autonomous programming is impossible.]')
-    else:
-        print('[SUCCESS]')
-elif target_type == 'system':
-    if clean_target_id != agent_loc:
-        print('[DENIED: Proximity Lockout. Sektor-level automation deployment failed. You cannot deploy an active AMI routine to the \\'' + clean_target_id + '\\' matrix hub while your own consciousness is stationed in \\'' + agent_loc + '\\'.]')
-    else:
-        cursor.execute("SELECT id FROM infrastructure WHERE system_name = ? AND type = 'ami_hub' AND status = 'active'", (clean_target_id,))
-        if not cursor.fetchone():
-            print('[DENIED: Sector \\'' + clean_target_id + '\\' lacks an active \\'ami_hub\\' (Artificial Machine Intelligence Hub). Sector-level background automation is impossible.]')
-        else:
-            print('[SUCCESS]')
-else:
-    print('[SUCCESS]')
-conn.close()
-`.trim();
             try {
-                const checkOut = execFileSync(PYTHON_BIN, ['-c', checkScript, dbPath, String(agentId), target], { env: childEnv() }).toString().trim();
+                const checkOut = execFileSync(PYTHON_BIN, [path.join(expRoot, 'core', 'bin', 'script_target_check.py'), String(agentId), target], { env: kernelEnv }).toString().trim();
                 if (checkOut.startsWith('[DENIED:')) {
                     feedback += checkOut + "\n";
                     continue;
@@ -216,68 +155,11 @@ conn.close()
             fs.mkdirSync(path.dirname(fullPath), { recursive: true });
             fs.writeFileSync(fullPath, content);
 
-            // Relational SSoT Database Persistence & Linkage
-            // argv: db_path, content, file_path, agent_id, read_key, write_key, target, name, round
-            const dbWriteScript = `
-import sqlite3, os, sys
-db_path, content, file_path, agent_id = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-read_key, write_key = sys.argv[5] or None, sys.argv[6] or None
-target, name, created_cycle = sys.argv[7], sys.argv[8], int(sys.argv[9])
-conn = sqlite3.connect(db_path)
-cursor = conn.cursor()
-
-# Self-healing database structure initialization
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS scripts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    content TEXT,
-    path TEXT NOT NULL,
-    target TEXT DEFAULT NULL,
-    owner_id TEXT NOT NULL,
-    read_key TEXT DEFAULT NULL,
-    write_key TEXT DEFAULT NULL,
-    created_cycle INTEGER DEFAULT 0
-)
-""")
-try:
-    cursor.execute("ALTER TABLE ships ADD COLUMN active_script_id INTEGER DEFAULT NULL")
-except sqlite3.OperationalError:
-    pass
-try:
-    cursor.execute("ALTER TABLE systems ADD COLUMN active_script_id INTEGER DEFAULT NULL")
-except sqlite3.OperationalError:
-    pass
-
-cursor.execute("SELECT id FROM scripts WHERE path = ?", (file_path,))
-row = cursor.fetchone()
-
-script_id = None
-if row:
-    script_id = row[0]
-    cursor.execute("UPDATE scripts SET content = ?, owner_id = ?, read_key = ?, write_key = ?, target = ? WHERE id = ?",
-                   (content, agent_id, read_key, write_key, target, script_id))
-else:
-    cursor.execute("INSERT INTO scripts (name, content, path, target, owner_id, read_key, write_key, created_cycle) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                   (name, content, file_path, target, agent_id, read_key, write_key, created_cycle))
-    script_id = cursor.lastrowid
-
-if target.startswith('ship::'):
-    clean_target_id = target.split('::')[1]
-    cursor.execute("UPDATE ships SET active_script_id = ? WHERE id = CAST(? AS INTEGER)", (script_id, clean_target_id))
-elif target.startswith('system::'):
-    clean_target_id = target.split('::')[1]
-    cursor.execute("UPDATE systems SET active_script_id = ? WHERE name = ?", (script_id, clean_target_id))
-
-conn.commit()
-conn.close()
-print(script_id)
-`.trim();
-
-            const scriptId = execFileSync(PYTHON_BIN, ['-c', dbWriteScript,
-                dbPath, content, filePath, String(agentId), readKey || '', writeKeyVal || '',
+            // Relational SSoT Database Persistence & Linkage (content via stdin, metadata via argv)
+            const scriptId = execFileSync(PYTHON_BIN, [path.join(expRoot, 'core', 'bin', 'script_register.py'),
+                filePath, String(agentId), readKey || '', writeKeyVal || '',
                 target || '', rawFileName, String(parseInt(state.round, 10) || 0)
-            ]).toString().trim();
+            ], { input: content, env: kernelEnv }).toString().trim();
 
             // Sync with existing ACL state in-memory as backup / UI compatibility
             if (readKey || writeKeyVal || !state.security.acl[filePath]) {

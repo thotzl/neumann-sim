@@ -2,7 +2,9 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { processActions } = require('../../src/sim_engine/modules/environment');
+const { PYTHON_BIN } = require('../../src/sim_engine/helpers/python_bin');
 
 // TCK-138: RUN allowlist, shell-free execution, WRITE/READ path guards
 
@@ -12,7 +14,11 @@ const verseDir = path.join(expDir, '_verse');
 const scriptsDir = path.join(verseDir, 'scripts');
 const binDir = path.join(expDir, 'core', 'bin');
 fs.mkdirSync(scriptsDir, { recursive: true });
-fs.mkdirSync(binDir, { recursive: true });
+// Real kernel (core/) + migrated DB like a built experiment: [WRITE] registers via core/bin/script_register.py (TCK-145)
+fs.cpSync(path.resolve(__dirname, '../../src/bob_os/core'), path.join(expDir, 'core'), { recursive: true });
+execFileSync(PYTHON_BIN, [path.join(binDir, 'init_db.py')], {
+    env: { ...process.env, PYTHONPATH: expDir, TEST_DB_PATH: path.join(verseDir, 'universe.db') }, stdio: 'pipe'
+});
 
 // Fake bob.py: echoes the argv it received and the identity env
 fs.writeFileSync(path.join(binDir, 'bob.py'), `import sys, os, json

@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.7** | **2026-10-19** | `RELEASED` | Kernel-Skripte statt Inline-Python, Scripts-Registry-Migration | `[TCK-145]` |
 | **v13.10.6** | **2026-10-19** | `RELEASED` | Cleanup toter Code & Artefakte | `[TCK-143]` |
 | **v13.10.5** | **2026-10-19** | `RELEASED` | Test-Hygiene & Hub-Reporting | `[TCK-142]` |
 | **v13.10.4** | **2026-10-19** | `RELEASED` | Containerisierte Simulations-Laufzeit | `[TCK-139]` |
@@ -31,6 +32,14 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.7] - 2026-10-19
+*Kernel-Skripte statt Inline-Python, Scripts-Registry-Migration. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Refactored
+- **Inline-Python in Kernel-Skripte:** Skript-Registrierung, Proximity-Check und Automation-Proxys laufen über eigenständige, getestete Skripte in `core/bin/` statt über in JavaScript eingebettete Python-Strings. Schemaänderungen zur Laufzeit ersetzt durch Migration `0007`; Migratoren tolerieren bereits vorhandene Spalten.
+  - *Ticket:* [TCK-145](../.tickets/closed/TCK-145-extract-inline-python-and-runtime-ddl.md)
+  - *Hinweis:* Laufende Experimente mit `npm run inject <exp> tools` und `npm run inject <exp> migrate` aktualisieren.
 
 ### [v13.10.6] - 2026-10-19
 *Cleanup toter Code & Artefakte. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

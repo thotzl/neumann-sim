@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.12** | **2026-10-20** | `RELEASED` | Projekt-Wiki (`wiki/`) | `[TCK-173]` |
 | **v13.10.11** | **2026-10-19** | `RELEASED` | Ticket-Sync: Label-Limit & Fehlertoleranz | `[TCK-172]` |
 | **v13.10.10** | **2026-10-19** | `RELEASED` | Doku & Projekt-Skills | `[TCK-150]` |
 | **v13.10.9** | **2026-10-19** | `RELEASED` | Generischer OpenAI-kompatibler Driver | `[TCK-146]` |
@@ -36,6 +37,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.12] - 2026-10-20
+*Projekt-Wiki. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Documentation
+- **Projekt-Wiki `wiki/`:** englisches, verlinktes Wiki (52 Artikel) aus `docs/`, geschlossenen Tickets, Projekt-Skills und Code — Architektur, Weltregeln, SDK, Betrieb, Code-Karte (ersetzt `REPO_MAP.md`), umgesetzte Features nach Bereich, Historie. README auf Einstieg und Quick Start gekürzt; im Abgleich gefundene Code/Regel-Abweichungen im Wiki dokumentiert.
+  - *Ticket:* [TCK-173](../.tickets/closed/TCK-173-wiki-compile.md)
 
 ### [v13.10.11] - 2026-10-19
 *Ticket-Sync: Label-Limit & Fehlertoleranz. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

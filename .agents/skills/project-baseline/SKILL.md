@@ -14,7 +14,7 @@ Research simulation of LLM-driven von Neumann agents ("Bobs") in a procedurally 
 
 Current version: `package.json` `version` and the top of `docs/CHANGELOG.md`.
 
-## Layout (details: `REPO_MAP.md` next to this file)
+## Layout (details: module-level code map in `wiki/project-map/`)
 | Path | Content |
 |---|---|
 | `src/sim_engine/` | Engine: `core/runner.js`, `services/`, `modules/`, `helpers/`, `drivers/`, `config/core-config.json` |
@@ -25,7 +25,8 @@ Current version: `package.json` `version` and the top of `docs/CHANGELOG.md`.
 | `tests/` | `test_all.js` hub, `python/`, `js/`, `balancing/` |
 | `hud/` | Monitor client and VoG server |
 | `.tickets/` | Git ticket system (`open/ ongoing/ closed/ pool/ epics/ resources/`) |
-| `docs/` | Changelog, ADRs (`docs/adr/`), architecture and audit docs (`docs/revisit/`) |
+| `wiki/` | Project wiki (entry `wiki/_master-index.md`): architecture, world rules, SDK, operations, code map, implemented features, history |
+| `docs/` | Changelog, ADRs (`docs/adr/`), generated ticket index; remaining docs are being replaced by `wiki/` |
 
 ## Runtime policy
 Linux containers are the only supported runtime (`docs/adr/0001-linux-container-runtime.md`). Simulations with real LLM agents run only in the runtime container (`docs/adr/0002-containerized-simulation-runtime.md`): agent-written Python must not run with host rights.
@@ -51,7 +52,7 @@ HUD: `cd hud && npm install && npm run dev` (types sync, VoG server on 3001, Vit
 
 ## Working rules
 - Inquiry-first: questions and analysis requests are read-only. Propose changes, then act on an explicit directive (see `bob-os-ops`).
-- Verify claims against code. Docs in `docs/` lag behind the code in places; the code, migrations and `rules.json` are the reference.
+- Verify claims against code. The wiki (`wiki/`) can lag behind the code in places; the code, migrations and `rules.json` are the reference. Maintain the wiki with the `wiki-builder` skill (register: `wiki/_sources.md`).
 - One ticket, one commit: `type(scope): summary (ref TCK-xxx)`.
 
 ## Project skills

@@ -1,0 +1,108 @@
+{
+  "_comment": "Python generator.py is the SSoT; hud/src/shared/generator.ts duplicates these helpers for client rendering. Asserted by tests/python/test_generator_parity.py and hud/src/shared/generator.test.ts (TCK-144).",
+  "hashStringToInt": {
+    "BobOS_V12": 267825649,
+    "OtherSeed": 58055041,
+    "": 0,
+    "Expanse-2": 2021840225,
+    "1234567": 2018166324
+  },
+  "stellarProperties": [
+    {
+      "mass": 0.08,
+      "radius": 0.13257816069359946,
+      "luminosity": 0.0006899773051727145,
+      "temperature": 2572,
+      "gravity": 4.551410507565202,
+      "hazardLevel": 0.026195121692113535
+    },
+    {
+      "mass": 0.1,
+      "radius": 0.15848931924611134,
+      "luminosity": 0.001152730637342727,
+      "temperature": 2674,
+      "gravity": 3.981071705534973,
+      "hazardLevel": 0.031205230464031005
+    },
+    {
+      "mass": 0.3,
+      "radius": 0.3816778909618176,
+      "luminosity": 0.014424697750074145,
+      "temperature": 3241,
+      "gravity": 2.05933616855804,
+      "hazardLevel": 0.07414070661530021
+    },
+    {
+      "mass": 0.43,
+      "radius": 0.5090667883351854,
+      "luminosity": 0.03418801,
+      "temperature": 3482,
+      "gravity": 1.6592771275203868,
+      "hazardLevel": 0.10238363197562197
+    },
+    {
+      "mass": 0.8,
+      "radius": 0.8365116420730186,
+      "luminosity": 0.4096000000000001,
+      "temperature": 5054,
+      "gravity": 1.1432626298183157,
+      "hazardLevel": 0.5474691483903387
+    },
+    {
+      "mass": 1.0,
+      "radius": 1.0,
+      "luminosity": 1.0,
+      "temperature": 5778,
+      "gravity": 1.0,
+      "hazardLevel": 1.0
+    },
+    {
+      "mass": 1.5,
+      "radius": 1.2600042722366593,
+      "luminosity": 5.0625,
+      "temperature": 7721,
+      "gravity": 0.9448159662759439,
+      "hazardLevel": 3.6858025592584487
+    },
+    {
+      "mass": 2.0,
+      "radius": 1.4845235706290492,
+      "luminosity": 16.970562748477143,
+      "temperature": 9625,
+      "gravity": 0.9075191553171609,
+      "hazardLevel": 9.938123812390115
+    },
+    {
+      "mass": 5.0,
+      "radius": 2.502723678140987,
+      "luminosity": 419.2627457812106,
+      "temperature": 16527,
+      "gravity": 0.7982596905316158,
+      "hazardLevel": 113.20724019186927
+    },
+    {
+      "mass": 12.0,
+      "radius": 4.12224035221585,
+      "luminosity": 8978.95138643706,
+      "temperature": 27702,
+      "gravity": 0.706178718642944,
+      "hazardLevel": 1156.9141780757452
+    },
+    {
+      "mass": 20.0,
+      "radius": 5.515528049138163,
+      "luminosity": 5492.802716530589,
+      "temperature": 21180,
+      "gravity": 0.6574395105686317,
+      "hazardLevel": 345.6749288970084
+    },
+    {
+      "mass": 40.0,
+      "radius": 8.187931393411258,
+      "luminosity": 19127.049995800742,
+      "temperature": 23747,
+      "gravity": 0.5966389493033725,
+      "hazardLevel": 578.4162244425463
+    }
+  ]
+}

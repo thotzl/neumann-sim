@@ -2,7 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const { safeReadJsonSync } = require('../helpers/io_helpers');
-const { UniverseGenerator, hashStringToInt } = require('./generator');
+// Procedural system details from the Python generator SSoT (TCK-144)
+const { loadSystemDetails } = require('../helpers/system_details');
 // Single sender for VoG broadcasts (host + X-VoG-Token handling, TCK-140)
 const { postToVogServer } = require('./broadcast_service');
 
@@ -34,30 +35,21 @@ function exportWorldState(universeDir, state, lastAgentId) {
 
         db.all("SELECT * FROM systems", (err, systems) => {
             if (err) return;
+            if (systems.length === 0) return finish(systems, [], []);
+            // Procedural starting system or natural cell system per DB system
+            loadSystemDetails(universeDir, seed, systems, (details) => processSystems(systems, details));
+        });
+
+        function processSystems(systems, details) {
             let systemsProcessed = 0;
-            if (systems.length === 0) finish(systems, [], []);
             systems.forEach(sys => {
-                // Parse coordinates from name or read from DB columns
-                const x = sys.x;
-                const y = sys.y;
-                
-                // Get procedural starting system or natural cell system
-                const startSys = UniverseGenerator.getStartingSystem(seed, 1.0);
-                let genSys = null;
-                if (sys.name === startSys.id) {
-                    genSys = startSys;
-                } else {
-                    const cx = Math.floor(x / 500);
-                    const cy = Math.floor(y / 500);
-                    genSys = UniverseGenerator.getSectorInCell(cx, cy, hashStringToInt(seed), 1.0);
-                }
-                
+                const genSys = details.get(sys.name);
                 if (genSys) {
                     sys.mass = genSys.mass;
                     sys.spectralClass = genSys.spectralClass;
                     sys.occurrence = genSys.occurrence;
                     sys.anomaly = genSys.anomaly;
-                    sys.anomalyAngle = genSys.anomalyAngle;
+                    sys.anomalyAngle = genSys.anomalyAngle ?? undefined; // HUD checks `!== undefined`
                     sys.debrisBelt = genSys.debrisBelt;
                     sys.system = genSys.system; // Dynamic planetary system details!
                     sys.warpCurrent = genSys.warpCurrent;
@@ -93,7 +85,7 @@ function exportWorldState(universeDir, state, lastAgentId) {
                     }
                 });
             });
-        });
+        }
     });
 
     function finish(systems, agents, ships, memos = [], docs = [], visual_events = [], blueprints = []) {

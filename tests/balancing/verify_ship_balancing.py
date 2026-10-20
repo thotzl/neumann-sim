@@ -2,8 +2,8 @@ import json
 import math
 
 def simulate_ship(name, matrix, rules):
-    p = rules['physics']
-    g = rules['global']
+    p = rules['ship_physics']
+    g = rules['global_settings']['ship_constants']
     
     total_mass = g['base_mass']
     total_cost = 0
@@ -133,7 +133,8 @@ def simulate_ship(name, matrix, rules):
     }
 
 def run_sim():
-    with open('src/sim_engine/config/balancing_rules.json', 'r') as f: rules = json.load(f)
+    # Production balancing rules (SSoT, TCK-144)
+    with open('src/bob_os/core/lib/rules.json', 'r') as f: rules = json.load(f)
     
     # Components Helper
     LOG = {"type": "logic_core"}

@@ -190,9 +190,17 @@ def hash_string_to_int(str_val: str) -> int:
 class UniverseGenerator:
     """Procedural Universe Generator using hierarchical Galaxy Super-Grids."""
 
+    _params_cache = None
+
     @classmethod
     def resolve_params(cls) -> dict:
-        """Resolves all cosmic parameters from rules.json and config.json overrides."""
+        """Resolves all cosmic parameters from rules.json and config.json overrides (cached per process)."""
+        if cls._params_cache is None:
+            cls._params_cache = cls._load_params()
+        return cls._params_cache
+
+    @classmethod
+    def _load_params(cls) -> dict:
         cosmic = {}
         try:
             # 1. Load global SSoT defaults from rules.json next to this file
@@ -770,6 +778,26 @@ class UniverseGenerator:
 
         return sectors
 
+    @classmethod
+    def getSystemDetails(cls, systems: list, seedStr: str, densityMultiplier: float) -> dict:
+        """
+        Procedural details for persisted DB systems, keyed by system name (engine world-state export).
+        The starting system keeps its balanced overrides; every other system resolves to the
+        procedural sector of the grid cell it lies in (None if that cell is empty).
+        """
+        p = cls.resolve_params()
+        seed = hash_string_to_int(seedStr)
+        start = cls.getStartingSystem(seedStr, densityMultiplier)
+        details = {}
+        for s in systems:
+            if s["name"] == start["id"]:
+                details[s["name"]] = start
+            else:
+                cx = int(math.floor((s.get("x") or 0) / p["CELL_SIZE"]))
+                cy = int(math.floor((s.get("y") or 0) / p["CELL_SIZE"]))
+                details[s["name"]] = cls.getSectorInCell(cx, cy, seed, densityMultiplier)
+        return details
+
 def typed_dict_to_ts(cls, name: str) -> str:
     lines = [f"export interface {name} {{"]
     annotations = cls.__annotations__
@@ -1058,6 +1086,7 @@ if __name__ == '__main__':
     parser.add_argument("--seed", type=str, default="BobOS_V12", help="World seed string")
     parser.add_argument("--density", type=float, default=1.0, help="Galaxy density multiplier")
     parser.add_argument("--generate-types", action="store_true", help="Generate TypeScript types directly from Python TypedDict annotations")
+    parser.add_argument("--systems-stdin", action="store_true", help="Read [{name, x, y}] JSON from stdin, print procedural details keyed by system name")
 
     args = parser.parse_args()
 
@@ -1067,6 +1096,16 @@ if __name__ == '__main__':
         target_path = os.path.abspath(os.path.join(lib_dir, "../../../../hud/src/shared/types.ts"))
         generate_typescript_types(target_path)
         sys.exit(0)
+
+    if args.systems_stdin:
+        try:
+            systems = json.load(sys.stdin)
+            details = UniverseGenerator.getSystemDetails(systems, args.seed, args.density)
+            json.dump(details, sys.stdout, indent=None)
+            sys.exit(0)
+        except Exception as e:
+            print(f"Error resolving system details: {e}", file=sys.stderr)
+            sys.exit(1)
 
     if args.min_x is None or args.max_x is None or args.min_y is None or args.max_y is None:
         parser.print_help()

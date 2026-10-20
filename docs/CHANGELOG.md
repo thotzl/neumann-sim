@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.8** | **2026-10-19** | `RELEASED` | Config- & Generator-SSoT | `[TCK-144]` |
 | **v13.10.7** | **2026-10-19** | `RELEASED` | Kernel-Skripte statt Inline-Python, Scripts-Registry-Migration | `[TCK-145]` |
 | **v13.10.6** | **2026-10-19** | `RELEASED` | Cleanup toter Code & Artefakte | `[TCK-143]` |
 | **v13.10.5** | **2026-10-19** | `RELEASED` | Test-Hygiene & Hub-Reporting | `[TCK-142]` |
@@ -32,6 +33,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.8] - 2026-10-19
+*Config- & Generator-SSoT. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Refactored
+- **Eine Quelle für Balancing und Generierung:** veraltete `balancing_rules.json` entfernt (Tests prüfen jetzt die Produktions-`rules.json`), JS-Generator im Engine-State-Export durch den Python-Generator ersetzt (774 Zeilen weniger), Parameter-Cache im Generator (≈15× schneller). HUD-Helper bleiben als getestetes Client-Duplikat.
+  - *Ticket:* [TCK-144](../.tickets/closed/TCK-144-config-and-generator-ssot.md)
 
 ### [v13.10.7] - 2026-10-19
 *Kernel-Skripte statt Inline-Python, Scripts-Registry-Migration. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

@@ -1,4 +1,0 @@
-{
-  "model": "Qwen/Qwen2.5-Coder-32B-Instruct",
-  "deepinfra_endpoint": "https://api.deepinfra.com/v1/openai/chat/completions"
-}

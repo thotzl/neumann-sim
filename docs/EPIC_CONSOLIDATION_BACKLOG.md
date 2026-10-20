@@ -29,7 +29,7 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 
 | Epic-ID | Titel | Status | Offen | Pool | Closed | Epic-Datei |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **EPIC-00** | Platform Hardening (Revisit 2026-10) | `open` | 5 | 3 | 10 | [Link](../.tickets/epics/EPIC-00-platform-hardening.md) |
+| **EPIC-00** | Platform Hardening (Revisit 2026-10) | `open` | 4 | 3 | 11 | [Link](../.tickets/epics/EPIC-00-platform-hardening.md) |
 | **EPIC-01** | Factions & Diplomacy | `open` | 0 | 5 | 0 | [Link](../.tickets/epics/EPIC-01-factions-and-diplomacy.md) |
 | **EPIC-02** | Goals & Endgame | `open` | 0 | 3 | 0 | [Link](../.tickets/epics/EPIC-02-goals-and-endgame.md) |
 | **EPIC-03** | Deeper Verse & Disasters | `open` | 1 | 2 | 0 | [Link](../.tickets/epics/EPIC-03-deeper-verse-and-disasters.md) |
@@ -51,7 +51,6 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 | **TCK-130** | REFACTOR: Unified SSoT Schema Consolidation (agents->instances & system_name->system_id) | EPIC-00 / Cognitive Navigation & Operational Polish | `open` | `high` | [Link](../.tickets/open/TCK-130-unified-ssot-schema-consolidation.md) | [Central Test Hub](../tests/test_all.js) |
 | **TCK-134** | Swarm Safety, SDE-Kognition Model & Self-Documenting SDK Architecture | EPIC-08 / Epic 2 (V10.0) / Phase 2.6 (Swarm Safety & Cognitive Alignment) | `open` | `high` | [Link](../.tickets/open/TCK-134-swarm-safety-and-rescue-mechanics.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-136** | Unified Environmental & Perception Physics Integration (Agile & Dynamic) | EPIC-03 / v14.1+ / Deeper Universe | `open` | `High` | [Link](../.tickets/open/TCK-136-unified-environmental-and-perception-physics.md) | [Central Test Hub](../../tests/test_all.js) |
-| **TCK-146** | REFAC: Generischer OpenAI-kompatibler Driver, keine Key-Fragmente im Log | EPIC-00 Platform Hardening | `open` | `high` | [Link](../.tickets/open/TCK-146-generic-openai-driver.md) | - |
 | **TCK-147** | STAB: Atomare State-Persistenz, einheitlicher DB-Zugriff | EPIC-00 Platform Hardening | `open` | `high` | [Link](../.tickets/open/TCK-147-atomic-state-and-db-access.md) | TCK-145 |
 | **TCK-148** | PERF: Prozess-Overhead pro Turn messen und reduzieren | EPIC-00 Platform Hardening | `open` | `high` | [Link](../.tickets/open/TCK-148-turn-process-overhead.md) | TCK-145 |
 | **TCK-150** | DOCS: Projekt-Skills, README und Links aktualisieren | EPIC-00 Platform Hardening | `open` | `high` | [Link](../.tickets/open/TCK-150-docs-and-skills-refresh.md) | TCK-137, TCK-138, TCK-139, TCK-140, TCK-141, TCK-142, TCK-143, TCK-144, TCK-145 |
@@ -139,6 +138,7 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 | **TCK-143** | CLEAN: Toter Code und Repo-Artefakte entfernen | EPIC-00 Platform Hardening | `closed` | `high` | [Link](../.tickets/closed/TCK-143-dead-code-and-artifact-cleanup.md) | TCK-142 |
 | **TCK-144** | SSOT: Configs und Generator konsolidieren | EPIC-00 Platform Hardening | `closed` | `high` | [Link](../.tickets/closed/TCK-144-config-and-generator-ssot.md) | TCK-142 |
 | **TCK-145** | REFAC: Inline-Python in Kernel-Skripte, Laufzeit-DDL in Migration | EPIC-00 Platform Hardening | `closed` | `high` | [Link](../.tickets/closed/TCK-145-extract-inline-python-and-runtime-ddl.md) | TCK-138 |
+| **TCK-146** | REFAC: Generischer OpenAI-kompatibler Driver, keine Key-Fragmente im Log | EPIC-00 Platform Hardening | `closed` | `high` | [Link](../.tickets/closed/TCK-146-generic-openai-driver.md) | - |
 
 ---
 

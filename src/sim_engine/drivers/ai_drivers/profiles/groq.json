@@ -1,0 +1,11 @@
+{
+  "label": "Groq",
+  "endpoint": "https://api.groq.com/openai/v1/chat/completions",
+  "endpoint_config_key": "groq_endpoint",
+  "model": "llama-3.1-8b-instant",
+  "api_key_env": ["GROQ_API_KEY", "API_KEY"],
+  "body_defaults": { "temperature": 0.2 },
+  "throttle_ms": 15000,
+  "retry_delay_ms": 3000,
+  "rate_limit": { "delay_ms": 8000, "patterns": ["rate limit", "limit", "tpm"] }
+}

@@ -72,19 +72,8 @@ async function run() {
     // === STARTUP AI DRIVER LOGGING (Single Source of Truth) ===
     console.log("==================================================");
     console.log("🤖 [STARTUP-AI-LOG] Initializing AI Drivers & Roles:");
-    const rawApiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
-    const maskedKey = rawApiKey 
-        ? `${rawApiKey.slice(0, 6)}...${rawApiKey.slice(-4)}` 
-        : "NOT SET (Using Mock Mode)";
-        
-    if (config.roles) {
-        Object.entries(config.roles).forEach(([role, cfg]) => {
-            const driverName = path.basename(cfg.driver_path || "unknown");
-            console.log(`   - Role: ${role.toUpperCase()} | Driver: ${driverName} | Model: ${cfg.model || "default"} | API Key: ${maskedKey}`);
-        });
-    } else {
-        console.log(`   - Default Mode | API Key: ${maskedKey}`);
-    }
+    // Only key presence per role is logged, never key characters (TCK-146)
+    AIBridge.formatStartupLog(config).forEach(line => console.log(line));
     console.log("==================================================");
 
     let state = stateManager.loadState(stateFile);

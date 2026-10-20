@@ -40,6 +40,7 @@ const SUITES = [
     js("JS Ticket Sync & Index (TCK-137)", 'tests/js/test_ticket_sync.js'),
     js("JS VoG Server Hardening (TCK-140)", 'tests/js/test_vog_server.js'),
     js("JS Child Env Secret Isolation (TCK-139)", 'tests/js/test_child_env_isolation.js'),
+    js("JS AI Drivers & Bridge (TCK-146)", 'tests/js/test_ai_drivers.js'),
     js("JS Scripts Registry Migration / inject migrate (TCK-145)", 'tests/js/test_scripts_registry_migration.js'),
     js("JS Mailbox Service Unit", 'tests/js/test_mailbox_service.js'),
     js("JS Physics Round Service Unit", 'tests/js/test_physics_round_service.js'),

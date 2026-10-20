@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.9** | **2026-10-19** | `RELEASED` | Generischer OpenAI-kompatibler Driver | `[TCK-146]` |
 | **v13.10.8** | **2026-10-19** | `RELEASED` | Config- & Generator-SSoT | `[TCK-144]` |
 | **v13.10.7** | **2026-10-19** | `RELEASED` | Kernel-Skripte statt Inline-Python, Scripts-Registry-Migration | `[TCK-145]` |
 | **v13.10.6** | **2026-10-19** | `RELEASED` | Cleanup toter Code & Artefakte | `[TCK-143]` |
@@ -33,6 +34,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.9] - 2026-10-19
+*Generischer OpenAI-kompatibler Driver. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Refactored
+- **Generischer OpenAI-kompatibler Driver:** acht nahezu identische Provider-Driver durch einen Driver mit JSON-Profilen ersetzt; Auswahl per `driver: "<name>"`, bestehende `driver_path`-Konfigurationen bleiben gültig, Pfade außerhalb des Driver-Verzeichnisses werden abgelehnt. Startup-Log zeigt keine Key-Fragmente mehr.
+  - *Ticket:* [TCK-146](../.tickets/closed/TCK-146-generic-openai-driver.md)
 
 ### [v13.10.8] - 2026-10-19
 *Config- & Generator-SSoT. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

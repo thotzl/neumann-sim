@@ -1,0 +1,10 @@
+{
+  "label": "Sambanova",
+  "endpoint": "https://api.sambanova.ai/v1/chat/completions",
+  "endpoint_config_key": "sambanova_endpoint",
+  "model": "llama-3.3-70b-instruct",
+  "api_key_env": ["SAMBANOVA_API_KEY", "API_KEY"],
+  "body_defaults": { "temperature": 0.2 },
+  "throttle_ms": 0,
+  "retry_delay_ms": 2000
+}

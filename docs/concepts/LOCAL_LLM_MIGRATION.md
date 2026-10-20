@@ -11,28 +11,17 @@ Es beschreibt die rollenbasierte Inferenz (Bobs vs. Compressor) sowie das modula
 Das Kern-Paradigma des Inferenz-Layers ist die strikte Trennung von **Simulations-Physik (Zustands-Engine)** und **Modell-Kognition (Inferenz-Engine)**. Der Runner kommuniziert nicht herstellerspezifisch mit einer Cloud-API, sondern verwendet eine universelle, asynchrone AI-Bridge:
 
 ```
-                      ┌───────────────────────┐
-                      │    sim_engine/        │ (Runner Loop)
-                      └───────────┬───────────┘
-                                  │
-                      ┌───────────▼───────────┐
-                      │ sim_engine/utils/     │ (Backwards-Compatible Facade)
-                      │      api_client.js    │
-                      └───────────┬───────────┘
-                                  │
-                      ┌───────────▼───────────┐
-                      │  sim_engine/utils/    │ (Factory & Router)
-                      │      ai_bridge.js     │
-                      └───────────┬───────────┘
-                                  │
-         ┌────────────────────────┼────────────────────────┐
-         ▼                        ▼                        ▼
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│  gemini_driver  │      │  openai_driver  │      │  ollama_driver  │ (Pluggable Drivers)
-└─────────────────┘      └─────────────────┘      └─────────────────┘
-         │                        │                        │
-         ▼                        ▼                        ▼
-    (Google API)            (OpenAI API)             (Native Ollama API)
+src/sim_engine/core/runner.js            (Runner Loop: roles.agent / roles.compressor)
+              │
+              ▼
+src/sim_engine/drivers/ai_bridge.js      (Driver-Auflösung, Startup-Log, Pfad-Restriktion)
+              │
+   ┌──────────┼───────────────────────────────┬──────────────────┐
+   ▼          ▼                               ▼                  ▼
+gemini     ollama          openai_compatible_driver.js          mock
+(native)   (native)        + profiles/<provider>.json           (E2E_MOCK=true)
+                           groq, deepinfra, cerebras, mistral,
+                           sambanova, openrouter, github, openai
 ```
 
 ---
@@ -52,32 +41,38 @@ Das System unterscheidet zwei primäre Rollen, die unabhängig voneinander auf v
 
 ## 3. Der Driver-Kontrakt (Abstraktes Interface)
 
-Jeder AI-Treiber unter `sim_engine/utils/ai_drivers/` implementiert dieselbe standardisierte Schnittstelle, um Prompts zu strukturieren und API-Antworten zu normieren:
+Jeder Treiber unter `src/sim_engine/drivers/ai_drivers/` (bzw. das generische Driver-Objekt aus `createDriver(profile)`) implementiert:
 
 ```javascript
-class BaseAIDriver {
-    /**
-     * Übersetzt das herstellerunabhängige Format (Gemini contents-Format)
-     * in das herstellerspezifische Prompt-Format.
-     */
-    buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) {
-        throw new Error("buildContext() must be implemented");
-    }
-
-    /**
-     * Sendet den Prompt an den jeweiligen Provider und liefert den rohen Text zurück.
-     */
-    async generateText(payload, config, retries) {
-        throw new Error("generateText() must be implemented");
-    }
-}
+buildContext(agentId, histories, memory, envState, globalInstr, systemPrompt) // -> Provider-Payload
+async generateText(payload, config, retries = 10)                               // -> Rohtext
 ```
+
+`ai_bridge.js` lehnt Module ab, die diese beiden Funktionen nicht exportieren.
 
 ---
 
-## 4. Implementierte Treiber & Provider
+## 4. Treiber-Auswahl & Provider (Stand TCK-146)
 
-- **Gemini-Treiber (`gemini_driver.js`):** Nativer Client für Google Vertex und Google AI Studio. Nutzen wir standardmäßig für `gemini-2.5-flash` mit einem extrem generösen Free-Limit (1 Mio. Tokens/Minute).
-- **OpenAI-Treiber (`openai_driver.js`):** OpenAI-kompatibler Universal-Client. Ermöglicht die nahtlose Anbindung serverloser Hoster wie Together AI, DeepInfra oder GLHF, welche OpenAI-kompatible Schnittstellen bereitstellen.
-- **Ollama-Treiber (`ollama_driver.js`):** Kommuniziert direkt mit der lokalen Ollama-Schnittstelle auf Port `11434`. Ermöglicht kompletten Offline-Betrieb der Simulation im eigenen LAN.
-- **GitHub-Treiber (`github_driver.js`):** High-Speed Integration für Microsofts GitHub Models (Azure Inferenz-Plattform). Liefert extrem stabile, priorisierte Free-Tiers für Inferenz von `gpt-4o` oder `llama-3.3-70b` für registrierte Entwickler-Accounts.
+Treiber werden pro Rolle in `config.json` → `roles.<role>` gewählt. Bevorzugt: `"driver": "<name>"`. Legacy `"driver_path": "./src/sim_engine/drivers/ai_drivers/<name>_driver"` wird weiter akzeptiert, muss aber innerhalb von `src/sim_engine/drivers/` auflösen (Pfade außerhalb werden abgelehnt). Priorität: `E2E_MOCK=true` (immer Mock) > `driver` > `driver_path` > Default `gemini`.
+
+**Native Treiber (eigene API):** `gemini` (Env `GEMINI_API_KEY` → `API_KEY`), `ollama` (kein Key; `config_override.ollama_endpoint`; im Container `http://host.docker.internal:11434/api/chat`), `mock` (Tests).
+
+**OpenAI-kompatible Provider** laufen über `ai_drivers/openai_compatible_driver.js` mit Profil `ai_drivers/profiles/<name>.json`:
+
+| Provider | API-Key (Env, Reihenfolge) | Default-Modell | Besonderheiten |
+| :--- | :--- | :--- | :--- |
+| `groq` | `GROQ_API_KEY` → `API_KEY` | `llama-3.1-8b-instant` | 15 s Throttle pro Request; Rate-Limit-Pause 8 s |
+| `deepinfra` | `DEEP_INFRA_KEY` → `DEEPINFRA_API_KEY` → `API_KEY` | `Qwen/Qwen2.5-Coder-32B-Instruct` | `max_tokens` = `memory.max_compression_output_tokens` oder 4096; Rate-Limit-Pause 12 s |
+| `github` | `GITHUB_TOKEN` → `GITHUB_API_KEY` → `API_KEY` | `gpt-4o` | 6 s Throttle; Rate-Limit-Pause 12 s |
+| `openrouter` | `OPENROUTER_API_KEY` → `API_KEY` | `meta-llama/llama-3.1-8b-instruct:free` | 6 s Throttle; Rate-Limit-Pause 12 s; Header `HTTP-Referer`, `X-Title` |
+| `cerebras` | `CEREBRAS_API_KEY` → `API_KEY` | `llama3.1-8b` | Retry-Pause 2 s |
+| `mistral` | `MISTRAL_API_KEY` → `API_KEY` | `codestral-latest` | Retry-Pause 2 s |
+| `sambanova` | `SAMBANOVA_API_KEY` → `API_KEY` | `llama-3.3-70b-instruct` | Retry-Pause 2 s |
+| `openai` | `config_override.openai_api_key` → `OPENAI_API_KEY` → `"dummy"` | `qwen2.5-coder:1.5b` | beliebiger OpenAI-kompatibler Server (Default `http://localhost:11434/v1/chat/completions`); Briefing und Memory als separate User-Messages |
+
+**Rollen-Konfiguration (OpenAI-kompatibel):** `model` (bzw. `config_override.model`, hat Vorrang), `endpoint` oder legacy `<provider>_endpoint` (auch unter `config_override`), `throttle_ms`, `rate_limit_delay_ms`, `retry_delay_ms` überschreiben die Profilwerte. Jeder Request sendet `temperature: 0.2`; leere Antwort → `[ERROR: <PROVIDER>_EMPTY_RESPONSE]`; hält das Rate-Limit über alle Retries (Default 10) an, wirft der Treiber einen Fehler.
+
+**Neuen Provider ergänzen:** Profil-JSON anlegen (`label`, `endpoint`, `endpoint_config_key`, `model`, `api_key_env[]`, optional `api_key_config_key`, `api_key_fallback`, `headers`, `body_defaults`, `max_tokens.default`, `throttle_ms`, `retry_delay_ms`, `rate_limit{delay_ms, patterns[]}`, `context_style: "system"|"split"`). Im Container-Betrieb zusätzlich die Key-Variable in die Env-Allowlist von `scripts/sim_docker.js` aufnehmen.
+
+**Startup-Log:** pro Rolle nur `API key: set / not set / not required` — keine Key-Fragmente.

@@ -1,12 +1,17 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 
 async function runE2ETest() {
     console.log("🚀 Starting E2E Mock-Loop Test...");
     const version = 'e2e_test_run';
-    const expDir = path.join(__dirname, '../../experiments', version);
+    // build.py and runner.js resolve experiments via BOB_EXPERIMENTS_DIR: keep fixtures out of the repo.
+    const expRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-e2e-'));
+    process.on('exit', () => fs.rmSync(expRoot, { recursive: true, force: true }));
+    process.env.BOB_EXPERIMENTS_DIR = expRoot;
+    const expDir = path.join(expRoot, version);
     const dbPath = path.join(expDir, '_verse', 'universe.db');
     const statePath = path.join(expDir, 'state.json');
 

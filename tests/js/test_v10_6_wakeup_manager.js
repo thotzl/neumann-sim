@@ -1,6 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 console.log("==================================================");
 console.log("🚀 STARTING STANDALONE WAKEUP MANAGER UNIT TESTS");
@@ -26,7 +27,10 @@ Database.prototype.close = async function() {
 Database.prototype.mock_detections = 0;
 
 // Create a dummy log file to satisfy logging calls
-const dummyLog = path.join(__dirname, 'dummy_standby.log');
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-wakeup-manager-'));
+process.on('exit', () => fs.rmSync(tmpDir, { recursive: true, force: true }));
+const dummyLog = path.join(tmpDir, 'dummy_standby.log');
+const mockDb = path.join(tmpDir, 'mock_db');
 
 async function runTests() {
     try {
@@ -68,7 +72,7 @@ async function runTests() {
             };
         };
 
-        let skipped = await wakeupManager.handleStandby(agent1, state1, {}, __dirname, dummyLog, "mock_db");
+        let skipped = await wakeupManager.handleStandby(agent1, state1, {}, tmpDir, dummyLog, mockDb);
         assert.strictEqual(skipped, false); // False because it woke up!
         assert.strictEqual(agent1.sleep_state, 0);
         assert.strictEqual(agent1.wake_reason, "Incoming sub-etheric radio transmission (SCUT).");
@@ -98,7 +102,7 @@ async function runTests() {
             }
         };
 
-        skipped = await wakeupManager.handleStandby(agent2, state2, {}, __dirname, dummyLog, "mock_db");
+        skipped = await wakeupManager.handleStandby(agent2, state2, {}, tmpDir, dummyLog, mockDb);
         assert.strictEqual(skipped, true); // True because it remained sleeping!
         assert.strictEqual(agent2.sleep_state, 2); 
         console.log("  ✅ DND flight-mode sleep successfully muted normal radio message.");
@@ -133,7 +137,7 @@ async function runTests() {
             };
         };
 
-        skipped = await wakeupManager.handleStandby(agent3, state2, {}, __dirname, dummyLog, "mock_db");
+        skipped = await wakeupManager.handleStandby(agent3, state2, {}, tmpDir, dummyLog, mockDb);
         assert.strictEqual(skipped, false); // False because it woke up!
         assert.strictEqual(agent3.sleep_state, 0); 
         assert.strictEqual(agent3.wake_reason, "Emergency Broadcast Beacon received with critical priority.");
@@ -175,7 +179,7 @@ async function runTests() {
             };
         };
 
-        skipped = await wakeupManager.handleStandby(agent4, state4, {}, __dirname, dummyLog, "mock_db");
+        skipped = await wakeupManager.handleStandby(agent4, state4, {}, tmpDir, dummyLog, mockDb);
         assert.strictEqual(skipped, false); // False because it woke up!
         assert.strictEqual(agent4.sleep_state, 0);
         assert.strictEqual(agent4.wake_reason, "Transit finished. Movement status updated to stationary.");
@@ -211,7 +215,7 @@ async function runTests() {
             };
         };
 
-        skipped = await wakeupManager.handleStandby(agent5, state4, {}, __dirname, dummyLog, "mock_db");
+        skipped = await wakeupManager.handleStandby(agent5, state4, {}, tmpDir, dummyLog, mockDb);
         assert.strictEqual(skipped, false); // False because it woke up!
         assert.strictEqual(agent5.sleep_state, 0);
         assert.ok(agent5.wake_reason.includes("Demographic contact!"));
@@ -255,7 +259,7 @@ async function runTests() {
         // Enable mock detection event for cycle 5
         Database.prototype.mock_detections = 1;
 
-        skipped = await wakeupManager.handleStandby(agent6, state6, {}, __dirname, dummyLog, "mock_db");
+        skipped = await wakeupManager.handleStandby(agent6, state6, {}, tmpDir, dummyLog, mockDb);
         assert.strictEqual(skipped, false); // False because it woke up!
         assert.strictEqual(agent6.sleep_state, 0);
         assert.strictEqual(agent6.wake_reason, "Orte neues Sternensystem! Passive Sensoren haben unbekannte stellare Signaturen erfasst.");

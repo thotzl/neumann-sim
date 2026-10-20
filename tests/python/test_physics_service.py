@@ -37,8 +37,11 @@ class TestPhysicsService(unittest.TestCase):
         self.assertEqual(y, 700)
 
     def test_calculate_upgrade_cost(self):
-        self.assertEqual(physics_service.calculate_upgrade_cost(400, 1.5), 600)
-        self.assertEqual(physics_service.calculate_upgrade_cost(100, 2.0), 200)
+        # Exponential per level: base_cost * multiplier ** current_level
+        self.assertEqual(physics_service.calculate_upgrade_cost(400, 1.5, 1), 600)
+        self.assertEqual(physics_service.calculate_upgrade_cost(100, 2.0, 1), 200)
+        self.assertEqual(physics_service.calculate_upgrade_cost(400, 1.5, 2), 900)
+        self.assertEqual(physics_service.calculate_upgrade_cost(400, 1.5, 0), 400)
 
     def test_ship_cad_diagnostics(self):
         # 1. Setup mock rules

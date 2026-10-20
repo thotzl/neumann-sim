@@ -26,5 +26,5 @@ completed: 2026-07-28
 Beseitigt jeglichen chronological Drift (Nachrichten erscheinen exakt in Ausführungsreihenfolge) und schont lokale System-Hardware (0% SSD-Schreiblast).
 
 ## References
-- SSoT Architektur-Konzept: [V12_REALTIME_REACTIVE_UPGRADE.md](../resources/done/V12_REALTIME_REACTIVE_UPGRADE.md)
-- Ur-Dossier (Frontend): [FRONTEND_ARCHITECTURE.md](../resources/done/FRONTEND_ARCHITECTURE.md)
+- SSoT Architektur-Konzept: [V12_REALTIME_REACTIVE_UPGRADE.md](../../docs/concepts/V12_REALTIME_REACTIVE_UPGRADE.md)
+- Ur-Dossier (Frontend): [FRONTEND_ARCHITECTURE.md](../../docs/concepts/FRONTEND_ARCHITECTURE.md)

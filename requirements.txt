@@ -1,0 +1,3 @@
+# Third-party Python dependencies of the Bob-OS kernel, SDK, scripts and tests.
+# Everything else imported under src/bob_os, scripts and tests is stdlib.
+PyYAML>=6.0,<7

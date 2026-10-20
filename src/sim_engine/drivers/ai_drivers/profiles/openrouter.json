@@ -1,0 +1,12 @@
+{
+  "label": "OpenRouter",
+  "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+  "endpoint_config_key": "openrouter_endpoint",
+  "model": "meta-llama/llama-3.1-8b-instruct:free",
+  "api_key_env": ["OPENROUTER_API_KEY", "API_KEY"],
+  "headers": { "HTTP-Referer": "https://github.com/thotzl/neumann-sim", "X-Title": "Bob-OS Simulation" },
+  "body_defaults": { "temperature": 0.2 },
+  "throttle_ms": 6000,
+  "retry_delay_ms": 4000,
+  "rate_limit": { "delay_ms": 12000, "patterns": ["rate limit", "limit", "quota", "exceeded"] }
+}

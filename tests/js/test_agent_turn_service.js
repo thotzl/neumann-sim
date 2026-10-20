@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const { executeTurn } = require('../../src/sim_engine/services/agent_turn_service');
@@ -7,7 +8,8 @@ console.log("==================================================");
 console.log("🚀 STARTING AGENT TURN SERVICE UNIT TESTS");
 console.log("==================================================");
 
-const testVDir = path.resolve(__dirname, 'test_agent_turn_fs');
+const testVDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-agent-turn-fs-'));
+process.on('exit', () => fs.rmSync(testVDir, { recursive: true, force: true }));
 const universeDir = path.join(testVDir, '_verse');
 
 // Ensure clean environment

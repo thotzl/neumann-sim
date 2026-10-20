@@ -1,6 +1,11 @@
 import unittest
 import math
+import os
+import json
 from core.lib import generator
+
+# Shared with hud/src/shared/generator.test.ts: the client helpers must reproduce these values (TCK-144)
+PARITY_FIXTURE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'hud', 'src', 'shared', 'generator.parity.json'))
 
 class TestGeneratorParity(unittest.TestCase):
     def test_hash_string_to_int(self):
@@ -89,6 +94,37 @@ class TestGeneratorParity(unittest.TestCase):
         self.assertEqual(start_sys['anomaly'], 'None')
         self.assertEqual(start_sys['energyDepot'], 120000)
         self.assertEqual(start_sys['matterDepot'], 180000)
+
+    def test_client_helper_fixture(self):
+        with open(PARITY_FIXTURE, 'r', encoding='utf-8') as f:
+            fixture = json.load(f)
+        for seed, expected in fixture['hashStringToInt'].items():
+            self.assertEqual(generator.hash_string_to_int(seed), expected)
+        for entry in fixture['stellarProperties']:
+            props = generator.getStellarProperties(entry['mass'])
+            self.assertEqual(props['temperature'], entry['temperature'])
+            for key in ('radius', 'luminosity', 'gravity', 'hazardLevel'):
+                self.assertAlmostEqual(props[key], entry[key], places=12)
+
+    def test_get_system_details(self):
+        # Engine world-state export source (state_exporter.js via --systems-stdin)
+        gen = generator.UniverseGenerator
+        seed = 'BobOS_V12'
+        start = gen.getStartingSystem(seed, 1.0)
+        cell = gen.resolve_params()['CELL_SIZE']
+        cx, cy = math.floor(start['x'] / cell), math.floor(start['y'] / cell)
+        neighbour = next(s for s in (gen.getSectorInCell(cx + dx, cy, generator.hash_string_to_int(seed), 1.0) for dx in range(1, 50)) if s)
+
+        details = gen.getSystemDetails([
+            {"name": start['id'], "x": start['x'], "y": start['y']},
+            {"name": neighbour['id'], "x": neighbour['x'], "y": neighbour['y']},
+            {"name": "OFF_GRID", "x": None, "y": None},
+        ], seed, 1.0)
+
+        self.assertEqual(details[start['id']], start)
+        self.assertEqual(details[neighbour['id']], neighbour)
+        self.assertIn("OFF_GRID", details)
+        self.assertEqual(details["OFF_GRID"], gen.getSectorInCell(0, 0, generator.hash_string_to_int(seed), 1.0))
 
 if __name__ == '__main__':
     unittest.main()

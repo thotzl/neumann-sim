@@ -1,0 +1,11 @@
+{
+  "label": "GitHub Models",
+  "endpoint": "https://models.inference.ai.azure.com/chat/completions",
+  "endpoint_config_key": "github_endpoint",
+  "model": "gpt-4o",
+  "api_key_env": ["GITHUB_TOKEN", "GITHUB_API_KEY", "API_KEY"],
+  "body_defaults": { "temperature": 0.2 },
+  "throttle_ms": 6000,
+  "retry_delay_ms": 4000,
+  "rate_limit": { "delay_ms": 12000, "patterns": ["rate limit", "limit", "quota", "exceeded"] }
+}

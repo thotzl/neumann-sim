@@ -22,6 +22,30 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
+// SQLite has no 'ADD COLUMN IF NOT EXISTS': drop 'ALTER TABLE t ADD COLUMN c ...;' statements whose
+// column already exists (e.g. experiments where the pre-TCK-145 runtime DDL added active_script_id
+// before 0005 was applied). Same rule as core/bin/init_db.py.
+const ADD_COLUMN_RE = /ALTER\s+TABLE\s+["`]?(\w+)["`]?\s+ADD\s+(?:COLUMN\s+)?["`]?(\w+)["`]?[^;]*;/gi;
+
+function stripExistingColumns(sql, callback) {
+    const statements = [...sql.matchAll(ADD_COLUMN_RE)];
+    let result = sql;
+    let pending = statements.length;
+    if (pending === 0) return callback(null, result);
+    let failed = false;
+    for (const [statement, table, column] of statements) {
+        db.all(`PRAGMA table_info("${table}")`, (err, cols) => {
+            if (failed) return;
+            if (err) { failed = true; return callback(err); }
+            if (cols.some(c => c.name.toLowerCase() === column.toLowerCase())) {
+                console.log(`[MIGRATOR] Column '${table}.${column}' already exists, skipping ADD COLUMN.`);
+                result = result.replace(statement, '');
+            }
+            if (--pending === 0) callback(null, result);
+        });
+    }
+}
+
 // Use serialization to guarantee order
 db.serialize(() => {
     // 1. Create migrations tracking table
@@ -80,40 +104,47 @@ db.serialize(() => {
                     // Apply migration
                     console.log(`[MIGRATOR] Applying migration: ${file}...`);
                     const sqlPath = path.join(migrationsDir, file);
-                    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-                    
-                    db.serialize(() => {
-                        db.run("BEGIN TRANSACTION");
-                        db.exec(sqlContent, (err) => {
-                            if (err) {
-                                console.error(`[MIGRATOR ERROR] Migration '${file}' failed! Rolling back. Error:`, err.message);
-                                db.run("ROLLBACK", () => {
-                                    db.close();
-                                    process.exit(1);
-                                });
-                            } else {
-                                db.run(`INSERT INTO schema_migrations (version) VALUES (?)`, [file], (err) => {
-                                    if (err) {
-                                        console.error(`[MIGRATOR ERROR] Failed to log migration version in database:`, err.message);
-                                        db.run("ROLLBACK", () => {
-                                            db.close();
-                                            process.exit(1);
-                                        });
-                                    } else {
-                                        db.run("COMMIT", (err) => {
-                                            if (err) {
-                                                console.error("[MIGRATOR ERROR] Commit failed:", err.message);
+                    const rawSql = fs.readFileSync(sqlPath, 'utf8');
+
+                    stripExistingColumns(rawSql, (err, sqlContent) => {
+                        if (err) {
+                            console.error(`[MIGRATOR ERROR] Failed to inspect columns for '${file}':`, err.message);
+                            db.close();
+                            process.exit(1);
+                        }
+                        db.serialize(() => {
+                            db.run("BEGIN TRANSACTION");
+                            db.exec(sqlContent, (err) => {
+                                if (err) {
+                                    console.error(`[MIGRATOR ERROR] Migration '${file}' failed! Rolling back. Error:`, err.message);
+                                    db.run("ROLLBACK", () => {
+                                        db.close();
+                                        process.exit(1);
+                                    });
+                                } else {
+                                    db.run(`INSERT INTO schema_migrations (version) VALUES (?)`, [file], (err) => {
+                                        if (err) {
+                                            console.error(`[MIGRATOR ERROR] Failed to log migration version in database:`, err.message);
+                                            db.run("ROLLBACK", () => {
                                                 db.close();
                                                 process.exit(1);
-                                            } else {
-                                                console.log(`[MIGRATOR SUCCESS] Migration '${file}' applied successfully.`);
-                                                index++;
-                                                processNext();
-                                            }
-                                        });
-                                    }
-                                });
-                            }
+                                            });
+                                        } else {
+                                            db.run("COMMIT", (err) => {
+                                                if (err) {
+                                                    console.error("[MIGRATOR ERROR] Commit failed:", err.message);
+                                                    db.close();
+                                                    process.exit(1);
+                                                } else {
+                                                    console.log(`[MIGRATOR SUCCESS] Migration '${file}' applied successfully.`);
+                                                    index++;
+                                                    processNext();
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
                         });
                     });
                 }

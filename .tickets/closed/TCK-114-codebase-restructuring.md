@@ -39,5 +39,5 @@ Umfassende Bereinigung der Projektstruktur und Modularisierung der Codebase. Das
 - **Synergies:** Sichert die Skalierbarkeit für kommende KI-Modelle, reduziert extrem den Token-Verbrauch bei globalen Code-Scans und senkt die Fehleranfälligkeit bei zukünftigen Features drastisch.
 
 ## References
-- Bisherige System-Architektur: [SYSTEM_ARCHITECTURE.md](../docs/SYSTEM_ARCHITECTURE.md)
+- Bisherige System-Architektur: [SYSTEM_ARCHITECTURE.md](../../docs/SYSTEM_ARCHITECTURE.md)
 - DRY Services Referenz: [REFACTORING_PLAN.md](../resources/done/REFACTORING_PLAN.md)

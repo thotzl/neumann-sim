@@ -1,4 +1,7 @@
 import unittest
+import atexit
+import shutil
+import tempfile
 import os
 import sys
 import sqlite3
@@ -8,14 +11,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from core.lib import bob_sdk, db_config
 from core.bin import init_db
 
-TEST_DB = 'test_universe_replicate.db'
-TEST_POP = 'test_population_replicate.json'
+_TMP_DIR = tempfile.mkdtemp(prefix='bob_test_')
+atexit.register(shutil.rmtree, _TMP_DIR, ignore_errors=True)
+TEST_DB = os.path.join(_TMP_DIR, 'test_universe_replicate.db')
+TEST_POP = os.path.join(_TMP_DIR, 'test_population_replicate.json')
 
 class TestReplicate(unittest.TestCase):
     def setUp(self):
         os.environ['TEST_DB_PATH'] = TEST_DB
         os.environ['TEST_POP_PATH'] = TEST_POP
-        os.environ['VERSE_DIR'] = os.getcwd()
+        os.environ['VERSE_DIR'] = _TMP_DIR
         os.environ['BOB_ID'] = 'Instance-1'
         
         if os.path.exists(TEST_DB): os.remove(TEST_DB)

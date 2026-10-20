@@ -1,4 +1,6 @@
 import unittest
+import shutil
+import tempfile
 import sqlite3
 import os
 import json
@@ -11,7 +13,12 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..
 
 class TestTransitAutoAbortAndSolar(unittest.TestCase):
     def setUp(self):
-        self.test_db = "test_auto_abort.db"
+        self._tmp_dir = tempfile.mkdtemp(prefix='bob_test_')
+        self.addCleanup(shutil.rmtree, self._tmp_dir, ignore_errors=True)
+        # seed_test_db reads config.json and writes _verse/ relative to the CWD
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self._tmp_dir)
+        self.test_db = os.path.join(self._tmp_dir, "test_auto_abort.db")
         os.environ['TEST_DB_PATH'] = self.test_db
         
         if os.path.exists(self.test_db):
@@ -26,7 +33,7 @@ class TestTransitAutoAbortAndSolar(unittest.TestCase):
         conn.commit()
         conn.close()
             
-        # Write dummy config.json at CWD for seed_test_db.py to parse
+        # Write dummy config.json at CWD (the temp dir) for seed_test_db.py to parse
         self.dummy_config = {
             "seed": "ANOMALY-SEED-99",
             "agents": [

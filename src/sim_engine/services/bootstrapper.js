@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
+const { PYTHON_BIN } = require('../helpers/python_bin');
+const { childEnv } = require('../helpers/child_env');
 const { runPython } = require('../modules/python_executor');
 const { safeReadJsonSync } = require('../helpers/io_helpers');
 
@@ -11,12 +13,11 @@ async function syncPopulation(populationFile, universeDir, vDir, state, logger, 
     if (fs.existsSync(dbPath)) {
         try {
             const scriptPath = path.join(vDir, 'core', 'bin', 'get_agent_location.py');
-            const out = execSync(`python3 "${scriptPath}"`, {
-                env: { 
-                    ...process.env, 
+            const out = execFileSync(PYTHON_BIN, [scriptPath], {
+                env: childEnv({
                     TEST_DB_PATH: dbPath,
-                    PYTHONPATH: path.resolve(universeDir, '..') 
-                }
+                    PYTHONPATH: path.resolve(universeDir, '..')
+                })
             }).toString().trim();
             resolvedLocations = JSON.parse(out);
         } catch (e) {

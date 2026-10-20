@@ -1,15 +1,18 @@
 {
   "name": "ai-testing",
-  "version": "1.0.0",
+  "version": "13.10.10",
   "description": "Projekt zur Erforschung autonomer KI-Interaktion in isolierten Umgebungen.",
   "main": "index.js",
   "scripts": {
     "test": "node tests/test_all.js",
+    "test:docker": "node scripts/test_docker.js",
     "clean": "python3 -c \"import glob, os, shutil; [os.remove(f) for f in glob.glob('*.db*') if os.path.isfile(f)]; [shutil.rmtree(d) for d in glob.glob('_verse') + glob.glob('tests/js/test_*_fs') if os.path.isdir(d)]\"",
     "build": "python3 scripts/build.py",
     "analyze": "python3 scripts/analyze_run.py",
     "migrate": "node scripts/migrate.js",
     "sim": "node scripts/run.js",
+    "sim:docker": "node scripts/sim_docker.js run",
+    "build:docker": "node scripts/sim_docker.js build",
     "inject": "node scripts/inject.js",
     "reset": "node scripts/reset.js",
     "tickets:pull": "node .github/scripts/sync_github.js --pull",
@@ -19,6 +22,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "js-yaml": "^4.3.1",
     "sqlite3": "^6.0.1",

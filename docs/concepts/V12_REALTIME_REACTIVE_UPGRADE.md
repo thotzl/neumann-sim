@@ -1,5 +1,7 @@
 # 🌐 SYSTEM SPECIFICATION: V12.0 REAL-TIME WEB-BROADCAST PROTOCOL
 
+> Stand-Hinweis (TCK-150): historisches Konzeptpapier. Das Frontend liegt heute in `hud/` (Node/Vite, kein Bun); VoG-Server `hud/vog_server.cjs` (Token-geschützt, TCK-140). Aktuelle Beschreibung: [SYSTEM_ARCHITECTURE.md](../SYSTEM_ARCHITECTURE.md#8-websocket-broadcast--monitor).
+
 Dieses Dokument definiert das implementierte, echtzeitfähige WebSocket-First Übertragungsprotokoll (V12.0) zur asynchronen Steuerung und Visualisierung der Bob-OS Simulation.
 
 Es ersetzt zyklisches, blockierendes Datei-Polling vollständig durch einen asynchronen In-Memory Datenstrom zur vollständigen Eliminierung von SSD-Schreiblasten.

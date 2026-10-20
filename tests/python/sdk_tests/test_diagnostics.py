@@ -2,6 +2,7 @@ import unittest
 import os
 import sys
 import shutil
+import tempfile
 import json
 import sqlite3
 
@@ -10,7 +11,9 @@ from core.lib import bob_sdk
 
 class TestDiagnostics(unittest.TestCase):
     def setUp(self):
-        self.verse_dir = os.path.join(os.getcwd(), 'tmp_test_verse')
+        self._tmp_dir = tempfile.mkdtemp(prefix='bob_test_')
+        self.addCleanup(shutil.rmtree, self._tmp_dir, ignore_errors=True)
+        self.verse_dir = os.path.join(self._tmp_dir, 'tmp_test_verse')
         self.test_db = os.path.join(self.verse_dir, 'universe.db')
         os.environ['VERSE_DIR'] = self.verse_dir
         os.environ['TEST_DB_PATH'] = self.test_db

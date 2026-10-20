@@ -1,4 +1,0 @@
-{
-  "model": "llama3.1-8b",
-  "cerebras_endpoint": "https://api.cerebras.ai/v1/chat/completions"
-}

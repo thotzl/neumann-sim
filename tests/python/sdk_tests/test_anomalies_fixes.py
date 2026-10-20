@@ -1,4 +1,5 @@
 import unittest
+import tempfile
 import os
 import sqlite3
 import sys
@@ -14,7 +15,12 @@ from core.lib import bob_sdk
 class TestAnomaliesFixes(unittest.TestCase):
     def setUp(self):
         # 1. Setup a clean temporary database file to avoid :memory: connection conflicts
-        self.test_db = "temp_test_anomalies.db"
+        self._tmp_dir = tempfile.mkdtemp(prefix='bob_test_')
+        self.addCleanup(shutil.rmtree, self._tmp_dir, ignore_errors=True)
+        # seed_test_db reads config.json and writes _verse/ relative to the CWD
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self._tmp_dir)
+        self.test_db = os.path.join(self._tmp_dir, "temp_test_anomalies.db")
         os.environ['TEST_DB_PATH'] = self.test_db
         os.environ['BOB_ID'] = 'Bob-Test'
         
@@ -30,7 +36,7 @@ class TestAnomaliesFixes(unittest.TestCase):
         conn.commit()
         conn.close()
             
-        # Write dummy config.json at CWD for seed_test_db.py to parse
+        # Write dummy config.json at CWD (the temp dir) for seed_test_db.py to parse
         self.dummy_config = {
             "seed": "ANOMALY-SEED-99",
             "agents": [
@@ -152,7 +158,7 @@ class TestAnomaliesFixes(unittest.TestCase):
         while strictly skipping commented out lines (Fix: Omitted .env load / Commented keys).
         """
         # 1. Write a temporary .env file (Safe custom filename!)
-        mock_env_path = "temp_test.env"
+        mock_env_path = os.path.join(self._tmp_dir, "temp_test.env")
         with open(mock_env_path, 'w', encoding='utf-8') as f:
             f.write("# This is a comment\n")
             f.write("TEST_KEY_ACTIVE=AQ.Ab8RN6\n")

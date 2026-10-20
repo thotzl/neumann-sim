@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { useState, useEffect, useRef } from 'react';
 import { useC2Store } from '../store/stateStore';
 import { LogCategory } from '../types';
@@ -26,11 +27,13 @@ export const LogPanel = ({ isMinimized, onToggleMinimize, onStartDrag }: LogPane
     if (!vogMsg.trim()) return;
     const host = window.location.hostname || 'localhost';
     try {
-      await fetch(`http://${host}:3001/vog`, { 
+      const res = await fetch(`http://${host}:3001/vog`, {
         method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
+        // Token wird von dev.cjs als VITE_VOG_TOKEN injiziert (TCK-140)
+        headers: { 'Content-Type': 'application/json', 'X-VoG-Token': import.meta.env.VITE_VOG_TOKEN ?? '' },
         body: JSON.stringify({ message: vogMsg }) 
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       console.log(`[VoG] Sent directive: "${vogMsg}"`);
     } catch (e) {
       console.error('[VoG] Failed to send message:', e);

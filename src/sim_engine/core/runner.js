@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
+const { PYTHON_BIN } = require('../helpers/python_bin');
+const { childEnv } = require('../helpers/child_env');
 
 const stateManager = require('../services/state_manager');
 const configLoader = require('../helpers/config_loader');
@@ -21,9 +23,11 @@ async function run() {
         process.exit(1);
     }
 
+    // BOB_EXPERIMENTS_DIR overrides the experiments root (tests use a temp dir); default: <repo>/experiments
+    const experimentsRoot = process.env.BOB_EXPERIMENTS_DIR || path.resolve(__dirname, '../../../experiments');
     const vDir = __dirname.includes('experiments')
         ? path.resolve(__dirname, '..', '..')
-        : path.resolve(__dirname, '../../../experiments', version);
+        : path.resolve(experimentsRoot, version);
         
     if (!fs.existsSync(vDir)) {
         console.error(`Experiment directory not found: ${vDir}`);
@@ -68,28 +72,17 @@ async function run() {
     // === STARTUP AI DRIVER LOGGING (Single Source of Truth) ===
     console.log("==================================================");
     console.log("🤖 [STARTUP-AI-LOG] Initializing AI Drivers & Roles:");
-    const rawApiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
-    const maskedKey = rawApiKey 
-        ? `${rawApiKey.slice(0, 6)}...${rawApiKey.slice(-4)}` 
-        : "NOT SET (Using Mock Mode)";
-        
-    if (config.roles) {
-        Object.entries(config.roles).forEach(([role, cfg]) => {
-            const driverName = path.basename(cfg.driver_path || "unknown");
-            console.log(`   - Role: ${role.toUpperCase()} | Driver: ${driverName} | Model: ${cfg.model || "default"} | API Key: ${maskedKey}`);
-        });
-    } else {
-        console.log(`   - Default Mode | API Key: ${maskedKey}`);
-    }
+    // Only key presence per role is logged, never key characters (TCK-146)
+    AIBridge.formatStartupLog(config).forEach(line => console.log(line));
     console.log("==================================================");
 
     let state = stateManager.loadState(stateFile);
     if (!state) {
         console.log(`\n[PRERUN] Initializing world from config.json...`);
         try {
-            execSync(`python3 ${path.join(vDir, 'core', 'bin', 'init_db.py')} --seed`, {
+            execFileSync(PYTHON_BIN, [path.join(vDir, 'core', 'bin', 'init_db.py'), '--seed'], {
                 cwd: vDir,
-                env: { ...process.env, PYTHONPATH: vDir },
+                env: childEnv({ PYTHONPATH: vDir }),
                 stdio: 'inherit'
             });
         } catch (e) {

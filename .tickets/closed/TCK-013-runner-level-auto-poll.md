@@ -19,5 +19,5 @@ Der Node.js Runner holt zu Beginn jedes Zyklus automatisch alle Funksprüche (SC
   - `sim_engine/runner.js` (Lines 222-237) -> Injiziert die gepufferten inbox-Inhalte bei Turn-Beginn des jeweiligen Agenten als `[INBOX (Events of the last cycle)]` direkt in den Prompt, wodurch das manuelle SCUT-Polling überflüssig wird.
 
 ## References
-- Source-Konzept: [IDEAS_AND_TASKS.md](../resources/todo/IDEAS_AND_TASKS.md)
-- Synergie-Spezifikation: [REALTIME_VS_STANDBY_SYNERGY.md](../resources/todo/REALTIME_VS_STANDBY_SYNERGY.md)
+- Source-Konzept: [IDEAS_AND_TASKS.md](../resources/done/IDEAS_AND_TASKS.md)
+- Synergie-Spezifikation: [REALTIME_VS_STANDBY_SYNERGY.md](../resources/done/REALTIME_VS_STANDBY_SYNERGY.md)

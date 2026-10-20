@@ -19,4 +19,4 @@ Entwicklung eines nativen, leichtgewichtigen Synchronisations-Skripts (`.github/
   - `.github/workflows/sync-tickets.yml` -> Konfiguriertes Workflow-Skript, das den Sync-Prozess bei jedem Push in den `master`-Zweig automatisch im Cloud-Runner unter Übergabe des `GITHUB_TOKEN` ausführt.
 
 ## References
-- Git-basierter Betriebsguide: [EPIC_CONSOLIDATION_BACKLOG.md](../docs/EPIC_CONSOLIDATION_BACKLOG.md)
+- Git-basierter Betriebsguide: [EPIC_CONSOLIDATION_BACKLOG.md](../../docs/EPIC_CONSOLIDATION_BACKLOG.md)

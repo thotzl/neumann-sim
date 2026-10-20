@@ -11,7 +11,8 @@ on:
 
 jobs:
   run_tests:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-24.04 ships glibc 2.39; sqlite3@6 prebuilds need glibc >= 2.38 (ADR 0001).
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -21,10 +22,43 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Dependencies
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python Dependencies
         run: |
-          npm install
+          python3 -m pip install -r requirements.txt
+
+      - name: Install Node Dependencies
+        run: |
+          npm ci
 
       - name: Run Central Test Hub (CI)
         run: |
           node tests/test_all.js
+
+  hud:
+    # HUD (React/Vite): type check and unit tests.
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: hud
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install HUD Dependencies
+        run: npm ci
+
+      - name: Type Check
+        run: npx tsc --noEmit
+
+      - name: Unit Tests
+        run: npx vitest run

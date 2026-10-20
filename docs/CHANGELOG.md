@@ -8,6 +8,17 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.10** | **2026-10-19** | `RELEASED` | Doku & Projekt-Skills | `[TCK-150]` |
+| **v13.10.9** | **2026-10-19** | `RELEASED` | Generischer OpenAI-kompatibler Driver | `[TCK-146]` |
+| **v13.10.8** | **2026-10-19** | `RELEASED` | Config- & Generator-SSoT | `[TCK-144]` |
+| **v13.10.7** | **2026-10-19** | `RELEASED` | Kernel-Skripte statt Inline-Python, Scripts-Registry-Migration | `[TCK-145]` |
+| **v13.10.6** | **2026-10-19** | `RELEASED` | Cleanup toter Code & Artefakte | `[TCK-143]` |
+| **v13.10.5** | **2026-10-19** | `RELEASED` | Test-Hygiene & Hub-Reporting | `[TCK-142]` |
+| **v13.10.4** | **2026-10-19** | `RELEASED` | Containerisierte Simulations-Laufzeit | `[TCK-139]` |
+| **v13.10.3** | **2026-10-19** | `RELEASED` | Linux-Container-Laufzeit & deklarierte Abhängigkeiten | `[TCK-141]` |
+| **v13.10.2** | **2026-10-19** | `RELEASED` | VoG-Server-Härtung | `[TCK-140]` |
+| **v13.10.1** | **2026-10-19** | `RELEASED` | Ticket-Pool & Epics im GitHub-Sync | `[TCK-137]` |
+| **v13.10.0** | **2026-10-19** | `RELEASED` | RUN-Allowlist & Shell-freie Prozessausführung | `[TCK-138]` |
 | **v13.9.2** | **2026-08-12** | `RELEASED` | Single SSoT Python Generator & Automated SQLite-to-TS Type Sync | `[TCK-108]`, `[TCK-135]` |
 | **v13.9.1** | **2026-08-12** | `RELEASED` | Hybrid Dijkstra Routing to Raw Void Coordinates | `[BUGFIX]` |
 | **v13.9** | **2026-08-10** | `RELEASED` | Polymorphic Navigation & Batched Mining Loops | `[TCK-129]` |
@@ -25,16 +36,98 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 ## 📜 STABILE RELEASES (VERLAUF)
 
+### [v13.10.10] - 2026-10-19
+*Doku & Projekt-Skills. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Documentation
+- **Doku & Projekt-Skills glattgezogen:** Projekt-Skills gegen den aktuellen Code neu geschrieben (8 statt 11, alle Pfade/Befehle geprüft), README und Engine-/Physik-/SDK-Doku aktualisiert, erledigte Ideendokumente archiviert, 0 tote Links mit automatischem Link-Check im Hub.
+  - *Ticket:* [TCK-150](../.tickets/closed/TCK-150-docs-and-skills-refresh.md)
+
+### [v13.10.9] - 2026-10-19
+*Generischer OpenAI-kompatibler Driver. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Refactored
+- **Generischer OpenAI-kompatibler Driver:** acht nahezu identische Provider-Driver durch einen Driver mit JSON-Profilen ersetzt; Auswahl per `driver: "<name>"`, bestehende `driver_path`-Konfigurationen bleiben gültig, Pfade außerhalb des Driver-Verzeichnisses werden abgelehnt. Startup-Log zeigt keine Key-Fragmente mehr.
+  - *Ticket:* [TCK-146](../.tickets/closed/TCK-146-generic-openai-driver.md)
+
+### [v13.10.8] - 2026-10-19
+*Config- & Generator-SSoT. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Refactored
+- **Eine Quelle für Balancing und Generierung:** veraltete `balancing_rules.json` entfernt (Tests prüfen jetzt die Produktions-`rules.json`), JS-Generator im Engine-State-Export durch den Python-Generator ersetzt (774 Zeilen weniger), Parameter-Cache im Generator (≈15× schneller). HUD-Helper bleiben als getestetes Client-Duplikat.
+  - *Ticket:* [TCK-144](../.tickets/closed/TCK-144-config-and-generator-ssot.md)
+
+### [v13.10.7] - 2026-10-19
+*Kernel-Skripte statt Inline-Python, Scripts-Registry-Migration. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Refactored
+- **Inline-Python in Kernel-Skripte:** Skript-Registrierung, Proximity-Check und Automation-Proxys laufen über eigenständige, getestete Skripte in `core/bin/` statt über in JavaScript eingebettete Python-Strings. Schemaänderungen zur Laufzeit ersetzt durch Migration `0007`; Migratoren tolerieren bereits vorhandene Spalten.
+  - *Ticket:* [TCK-145](../.tickets/closed/TCK-145-extract-inline-python-and-runtime-ddl.md)
+  - *Hinweis:* Laufende Experimente mit `npm run inject <exp> tools` und `npm run inject <exp> migrate` aktualisieren.
+
+### [v13.10.6] - 2026-10-19
+*Cleanup toter Code & Artefakte. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Removed
+- **Toter Code & Repo-Artefakte:** ungenutzte Engine-Module (`validator`, `api_client`, `logic_helpers`, `types`), verwaistes Snapshot-Template, Root-Transkript, doppelte Ollama-Compose-Datei; `.idea/` nicht mehr versioniert.
+  - *Ticket:* [TCK-143](../.tickets/closed/TCK-143-dead-code-and-artifact-cleanup.md)
+
+### [v13.10.5] - 2026-10-19
+*Test-Hygiene & Hub-Reporting. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Changed
+- **Test-Hygiene & vollständiges Hub-Reporting:** Tests arbeiten ausschließlich in temporären Verzeichnissen, der Hub führt alle Suites aus und gibt eine Zusammenfassung aus (48 Suites, vorher 35), HUD-Typecheck und -Tests laufen in der CI. Veraltete Tests repariert, portiert oder entfernt; manuelle Live-Skripte nach `scripts/dev/`.
+  - *Ticket:* [TCK-142](../.tickets/closed/TCK-142-test-hygiene-and-orphan-triage.md)
+
+### [v13.10.4] - 2026-10-19
+*Containerisierte Simulations-Laufzeit. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Security
+- **Simulation im Container:** `npm run build:docker` / `npm run sim:docker` starten die Simulation in einem read-only Non-Root-Container, gemountet ist nur das Experiment. Python-Kindprozesse erhalten eine Env-Allowlist ohne API-Keys (auch nativ). Bekanntes Restrisiko: Keys über `/proc` der Engine lesbar → TCK-167 (Pool, Entscheidung offen).
+  - *Ticket:* [TCK-139](../.tickets/closed/TCK-139-containerized-simulation-runtime.md) · ADR [0002](adr/0002-containerized-simulation-runtime.md)
+
+### [v13.10.3] - 2026-10-19
+*Linux-Container-Laufzeit & deklarierte Abhängigkeiten. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Changed
+- **Linux-Container als Dev-/Test-Laufzeit:** `Dockerfile` (glibc ≥ 2.38, Node 20, Python-venv), Dev-Container, `npm run test:docker` ohne Bind-Mount, deklarierte Python-Abhängigkeiten (`requirements.txt`), CI auf `ubuntu-24.04` mit pip-Install, korrigierte Voraussetzungen im README.
+  - *Ticket:* [TCK-141](../.tickets/closed/TCK-141-linux-container-dev-and-test-runtime.md) · ADR [0001](adr/0001-linux-container-runtime.md)
+
+#### Fixed
+- **Sporadisches `SQLITE_BUSY` beim WAL-Switch paralleler DB-Handles** (`services/db.js`: Busy-Timeout vor PRAGMA).
+  - *Ticket:* [TCK-141](../.tickets/closed/TCK-141-linux-container-dev-and-test-runtime.md)
+
+### [v13.10.2] - 2026-10-19
+*VoG-Server-Härtung. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Security
+- **VoG-Server abgesichert:** Bind nur auf `127.0.0.1`, CORS-Allowlist statt `*`, Token-Pflicht (`X-VoG-Token`) und Content-Type-/Größenprüfung für schreibende Endpunkte, Validierung des Sektor-Endpoints, Vite standardmäßig nur lokal. Gemeinsames `VOG_TOKEN` in `.env` für Engine und Monitor.
+  - *Ticket:* [TCK-140](../.tickets/closed/TCK-140-vog-server-hardening.md)
+
+### [v13.10.1] - 2026-10-19
+*Ticket-Pool & Epics im GitHub-Sync. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Added
+- **Ticket-Pool & Epics im GitHub-Sync:** `.tickets/pool/` (unentschiedene Ideen, Label `status:pool`) und `.tickets/epics/` (Roadmaps/Whitepaper, Label `type:epic`) werden als Issues synchronisiert. Neuer Offline-Modus `--index-only` generiert den Backlog-Index ohne GitHub-Token.
+  - *Ticket:* [TCK-137](../.tickets/closed/TCK-137-ticketing-pool-and-epics-sync.md) · ADR [0003](adr/0003-ticket-pool-and-epics.md)
+
+### [v13.10.0] - 2026-10-19
+*RUN-Allowlist & Shell-freie Prozessausführung. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Security
+- **RUN-Allowlist & shell-freie Ausführung:** LLM-Output kann nur noch SDK-Aufrufe (`me …`) und ACL-geprüfte Agenten-Skripte ausführen; beliebige Shell-Befehle werden mit `[DENIED]` abgelehnt. Alle Python-Prozesse starten ohne Shell, dynamische Werte nur als argv. Injection über `[WRITE]`-Dateinamen und Pfad-Präfix-Bypass geschlossen. Interpreter konfigurierbar über `BOB_PYTHON`.
+  - *Ticket:* [TCK-138](../.tickets/closed/TCK-138-run-allowlist-and-safe-exec.md) (schließt TCK-105)
+
 ### [v13.9.2] - 2026-08-12
 *Das "Single SSoT Generator & Automated SQLite Type Sync" Upgrade. Diese Version bereinigt massive technische Schulden. Sie eliminiert den doppelten TypeScript-Sektorgenerator und bündelt die gesamte prozedurale Logik in einem unbestechlichen Python-Core. Zudem führt sie ein vollautomatisches, reflektives Kompilierungsverfahren ein, das sowohl prozedurale Typen als auch SQLite-Views live in unfehlbare TypeScript-Schnittstellen für das React-Frontend übersetzt.*
 
 #### Refactored (Code-Sanierung & SSoT)
 - **Komplette Eliminierung des TS-Generators:** Löschung von über 1300 Zeilen dupliziertem TypeScript-Code und redundanten Test-Suiten. Der Python-Sektorgenerator (`generator.py`) ist jetzt die alleinige, physische Single Source of Truth (SSoT).
-  - *Ticket:* `[TCK-108]` ([Link](../.tickets/open/TCK-108-deeper-verse-runway-setup.md))
+  - *Ticket:* `[TCK-108]` ([Link](../.tickets/closed/TCK-108-deeper-verse-runway-setup.md))
 - **Asynchroner Viewport-Puffer & Subprozess-Zubringer:** Das HUD-Frontend fragt Sektoren asynchron über den lokalen Node.js-Server ab. Dieser schlägt automatisch ein 40%iges Viewport-Padding auf und spawnt den Python-Generator unbemerkt im Hintergrund.
-  - *Ticket:* `[TCK-108]` ([Link](../.tickets/open/TCK-108-deeper-verse-runway-setup.md))
+  - *Ticket:* `[TCK-108]` ([Link](../.tickets/closed/TCK-108-deeper-verse-runway-setup.md))
 - **Die ultimative rules.json:** Verschmelzung von `ECONOMY_RULES.json` und `COSMIC_RULES.json` zu einer einzigen `rules.json` im Python-Core. Vollständige Dünung veralteter `agent_limits` für disembodied Sonden.
-  - *Ticket:* `[TCK-108]` ([Link](../.tickets/open/TCK-108-deeper-verse-runway-setup.md))
+  - *Ticket:* `[TCK-108]` ([Link](../.tickets/closed/TCK-108-deeper-verse-runway-setup.md))
 
 #### Added (Neue Features & Automation)
 - **Reflektive SQLite-to-TypeScript Typengenerierung:** Ein neuer In-Memory-Kompiler führt alle Migrationsskripte sequentiell aus und übersetzt die exakten Datenbankspalten und Views (`v_agents`, `v_ships` etc.) live in TypeScript-Typen für das Frontend.

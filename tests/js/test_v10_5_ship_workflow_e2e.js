@@ -1,9 +1,11 @@
 const { processActions } = require('../../src/sim_engine/modules/environment.js');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const rootMockDir = './test_env_ship_workflow_e2e';
+const rootMockDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-env-ship-workflow-e2e-'));
+process.on('exit', () => fs.rmSync(rootMockDir, { recursive: true, force: true }));
 const mockDir = path.join(rootMockDir, '_verse');
 const dbPath = path.join(mockDir, 'universe.db');
 

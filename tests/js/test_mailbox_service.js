@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const { routeMessages } = require('../../src/sim_engine/services/mailbox_service');
@@ -7,7 +8,8 @@ console.log("==================================================");
 console.log("🚀 STARTING MAILBOX SERVICE UNIT TESTS");
 console.log("==================================================");
 
-const testVDir = path.resolve(__dirname, 'test_mailbox_fs');
+const testVDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-mailbox-fs-'));
+process.on('exit', () => fs.rmSync(testVDir, { recursive: true, force: true }));
 
 // Ensure clean environment
 if (fs.existsSync(testVDir)) {

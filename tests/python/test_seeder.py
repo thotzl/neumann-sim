@@ -2,53 +2,49 @@ import unittest
 import sqlite3
 import json
 import os
+import shutil
 import subprocess
+import sys
+import tempfile
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+PY_PATH = os.pathsep.join([os.path.join(PROJECT_ROOT, 'src', 'bob_os'), os.path.join(PROJECT_ROOT, 'src')])
 
 class TestSeeder(unittest.TestCase):
     def setUp(self):
-        self.db_path = os.path.join(os.getcwd(), 'tests/python/test_seeder.db')
-        self.config_path = os.path.join(os.getcwd(), 'config.json')
-        
-        # Clean potential residual DB
-        if os.path.exists(self.db_path):
-            os.remove(self.db_path)
-            
-        # Create a mock config.json if not present
-        self.wrote_mock_config = False
-        if not os.path.exists(self.config_path):
-            mock_config = {
-                "agents": [
-                    {
-                        "id": "Test-Agent-1",
-                        "chosen_name": "Testy",
-                        "location": "SYS_X0_Y0",
-                        "system_prompt": "Test"
-                    }
-                ]
-            }
-            with open(self.config_path, 'w') as f:
-                json.dump(mock_config, f)
-            self.wrote_mock_config = True
+        # The seeders read config.json and write _verse/ relative to their CWD: run them in a temp dir.
+        self.work_dir = tempfile.mkdtemp(prefix='bob_test_seeder_')
+        self.addCleanup(shutil.rmtree, self.work_dir, ignore_errors=True)
+        self.db_path = os.path.join(self.work_dir, 'test_seeder.db')
+        self.config_path = os.path.join(self.work_dir, 'config.json')
 
-    def tearDown(self):
-        if os.path.exists(self.db_path):
-            os.remove(self.db_path)
-        if self.wrote_mock_config and os.path.exists(self.config_path):
-            os.remove(self.config_path)
+        # Create a mock config.json
+        mock_config = {
+            "agents": [
+                {
+                    "id": "Test-Agent-1",
+                    "chosen_name": "Testy",
+                    "location": "SYS_X0_Y0",
+                    "system_prompt": "Test"
+                }
+            ]
+        }
+        with open(self.config_path, 'w') as f:
+            json.dump(mock_config, f)
 
     def run_migrations(self):
         # Run migrations using migrate.js
-        subprocess.run(['node', 'scripts/migrate.js', self.db_path], env=os.environ, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(['node', os.path.join(PROJECT_ROOT, 'scripts', 'migrate.js'), self.db_path], env=os.environ, cwd=PROJECT_ROOT, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     def test_test_mode_seeder(self):
         self.run_migrations()
         
         # Run the physically separated test seeder directly
-        subprocess.run(['python3', 'src/bob_os/core/bin/seed_test_db.py'], env={
+        subprocess.run([sys.executable, os.path.join(PROJECT_ROOT, 'src/bob_os/core/bin/seed_test_db.py')], env={
             **os.environ,
             "TEST_DB_PATH": self.db_path,
-            "PYTHONPATH": "src/bob_os:src"
-        }, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            "PYTHONPATH": PY_PATH
+        }, cwd=self.work_dir, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
         # Query systems to verify starting matter
         conn = sqlite3.connect(self.db_path)
@@ -64,11 +60,11 @@ class TestSeeder(unittest.TestCase):
         self.run_migrations()
         
         # Run the physically separated production seeder directly
-        test_env = {**os.environ, "TEST_DB_PATH": self.db_path, "PYTHONPATH": "src/bob_os:src"}
+        test_env = {**os.environ, "TEST_DB_PATH": self.db_path, "PYTHONPATH": PY_PATH}
         if "TEST_FORCE_GEOLOGY_MOCK" in test_env:
             del test_env["TEST_FORCE_GEOLOGY_MOCK"]
             
-        subprocess.run(['python3', 'src/bob_os/core/bin/seed_db.py'], env=test_env, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run([sys.executable, os.path.join(PROJECT_ROOT, 'src/bob_os/core/bin/seed_db.py')], env=test_env, cwd=self.work_dir, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
         # Query systems to verify randomized starting matter
         conn = sqlite3.connect(self.db_path)

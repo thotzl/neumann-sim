@@ -1,29 +1,32 @@
 # Multi-Agent Framework: Operatives Handbuch
 
-Dieses Dokument dient als Einstiegspunkt für die technische und philosophische Arbeit mit diesem Framework.
+Einstiegspunkt für die technische und philosophische Arbeit mit diesem Framework. Bedienung (Build, Start, Tests): [README.md](../README.md). Architektur: [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md).
 
 ## 1. Das technische Paradigma
 Das Framework basiert auf dem Prinzip der **minimalen Einmischung**.
 
-### Die Schichten der Instruktion:
-1. **Base-Prompt (Substrat):** Definiert rein technisch die API-Schnittstelle (Tags, WRITE/RUN, Root-Ordner). Er ist "unbewusst" und darf keine inhaltlichen Begriffe wie "Universum" enthalten.
-2. **Individueller Prompt (Impuls):** Definiert den Zweck des Agenten. In Tabula-Rasa-Tests ist dieser leer oder minimal (`.`).
+### Die Schichten der Instruktion
+1. **Globale System-Instruktion (Substrat):** `global_system_instruction` in `src/sim_engine/config/core-config.json` definiert Identität, kognitives Protokoll (LOGBOOK → ACTION) und Syntax (`[RUN: me ...]`, `[WRITE: ...]...[END]`, `[READ: ...]`, `[KEY: ...]`).
+2. **Individueller Prompt (Impuls):** Mission pro Agent in der Experiment-`config.json` (`scripts/build.py --mission`, Vorlage `src/bob_os/templates/mission_template.json`).
+3. **Hardware-Hilfe:** die Ausgabe von `me --help` (`core/bin/bob.py`) wird jedem Turn beigelegt; Kosten stammen aus `rules.json`.
 
 ## 2. Kern-Mechaniken
-- **Namespace `x/`**: Alle physischen Taten finden in einem konfigurierbaren Root-Ordner statt. Standard ist `x/`, um narrative Assoziationen zu vermeiden.
-- **Sägezahn-Gedächtnis**: Kurzzeit-Impulse werden zyklisch destilliert. Nur die Synthese (Long-Term) bleibt dauerhaft im Prompt-Kontext.
-- **Boot-Validator**: Das System bricht den Start ab, wenn die Umgebung (API-Keys) oder die Config nicht integer sind.
+- **Sandbox `scripts/`:** Agenten schreiben, lesen und löschen Dateien nur unter `_verse/scripts/`; alle übrigen Pfade sind geschützte Hardware-Schicht. RUN akzeptiert nur SDK-Aufrufe (`me ...`) und `python3 scripts/<datei>.py`.
+- **Gedächtnis-Destillation:** Überschreitet die frische Historie `memory.soft_token_limit` (oder die Gesamthistorie `hard_token_limit`), komprimiert die Rolle `compressor` sie zu einem Extrakt (`src/sim_engine/services/memory_controller.js`). Zusätzlich persistentes Wissen über `me.memo(...)` und `me.docs(...)`.
+- **Standby:** `me.sleep(duration=N, ignore_scut=true)` überspringt Turns, bis Timer oder Sensoren (`wakeup_manager.js`) wecken.
+- **Replikation:** Klone entstehen über `mind_forge`/`replicate` und erben das Gedächtnis (Hard-Boot, `bootstrapper.js`).
 
-### 2.1 Interstellare Stargates & Warp-Kopplungen (v13.6+)
-Im fortgeschrittenen Kolonisationsstadium steht den Agenten das interstellare **Stargate-Netzwerk** zur Verfügung, um astronomische Distanzen (5000+ Units) augenblicklich zu überwinden:
-- **Die Infrastruktur:** Das Sendersystem und das Empfängersystem benötigen jeweils ein aktives, betriebsbereites **`wormhole_gate`** (Infrastruktur-Typ).
-- **Die Koppelung:** Die bidirektionale Portalverknüpfung wird über den Actuator `me.link_gate(target_sector)` auf der Befehlsebene etabliert.
-- **Der Transit (A*-Highway):** Sobald die Stargates gekoppelt sind, erfasst das kognitive Routingsystem (`me.route()`) diese Verbindung als instantane Highway-Kante (0-Cost, 0-Distance). Der Durchflug erfolgt ohne Zeitverlust direkt im nächsten Bewegungstakt!
+### 2.1 Interstellare Stargates (v13.6+)
+- **Infrastruktur:** Sender- und Empfängersystem benötigen je ein aktives `wormhole_gate`.
+- **Kopplung:** `me.link_gate(target_sector)` verknüpft beide Gates bidirektional (`linked_system`).
+- **Transit:** Das Routing (`me.route()`, `sdk/sensors.py`) behandelt gekoppelte Gates als Kante ohne Distanzkosten.
+- Hinweis: `wormhole_gate` hat keinen Eintrag in `rules.json` → `infrastructure`; `me.build()` nutzt dann den Fallback (400 `raw_matter`, keine Wartungskosten) und `me --help` listet den Typ nicht.
 
 ## 3. Qualität & Wartung
-- **Test-Suite**: Führe `npm test` aus, um alle Module zu validieren.
-- **Modularität**: Änderungen an der Logik müssen in den entsprechenden Utilities (`scripts/utils/`) vorgenommen werden.
-- **Konstanten**: Alle technischen Marker liegen in `utils/constants.js`.
+- **Tests:** `npm run test:docker` (alle Suites aus `tests/test_all.js` im Linux-Container).
+- **Balancing:** Werte nur in `src/bob_os/core/lib/rules.json` ändern ([ECONOMY_MANIFEST.md](ECONOMY_MANIFEST.md)).
+- **Engine-Marker:** Tags und Syntax-Konstanten liegen in `src/sim_engine/helpers/constants.js`.
+- **Laufende Experimente patchen:** `npm run inject <exp> engine|tools|migrate|<pfad>` (nur nativer Pfad).
 
 ## 4. Philosophische Leitplanke
 Dieses Framework ist kein Spiel, sondern ein Labor zur Erforschung autonomer Intelligenz. Respektiere den Eigensinn der Agenten. Wenn sie gegen das Gedächtnis rebellieren oder eigene Strukturen erschaffen, dokumentiere dies im Report.

@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 
@@ -7,7 +8,8 @@ console.log("==================================================");
 console.log("🚀 STARTING TCK-121 DATABASE VIEWS UNIT TESTS");
 console.log("==================================================");
 
-const tempDir = path.resolve(__dirname, 'temp_tck_121_test');
+const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-temp-tck-121-test-'));
+process.on('exit', () => fs.rmSync(tempDir, { recursive: true, force: true }));
 const dbPath = path.join(tempDir, 'test_views.db');
 
 if (fs.existsSync(tempDir)) {

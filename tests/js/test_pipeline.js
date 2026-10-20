@@ -1,15 +1,19 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// build.py and inject.js resolve experiments via BOB_EXPERIMENTS_DIR: keep fixtures out of the repo.
+const expRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-pipeline-'));
+process.on('exit', () => fs.rmSync(expRoot, { recursive: true, force: true }));
+process.env.BOB_EXPERIMENTS_DIR = expRoot;
+
 const expName = 'pipeline_test';
-const expDir = path.resolve(`experiments/${expName}`);
+const expDir = path.join(expRoot, expName);
 
 console.log("Testing Meta-Pipelines (Build & Inject)...");
 
 try {
-    if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
-
     // 1. Test: Build WITHOUT Mission MUST fail
     try {
         execSync(`python3 scripts/build.py ${expName} --rounds 1 --skip-tests`, { stdio: 'ignore' });
@@ -30,7 +34,7 @@ try {
         console.error("Build Output (stdout):", e.stdout.toString());
         throw e;
     }
-    
+
     // 3. Test: Were core and sim_engine copied?
     if (!fs.existsSync(path.join(expDir, 'sim_engine/core/runner.js'))) {
         throw new Error("sim_engine was not copied to the experiment during build!");
@@ -40,24 +44,19 @@ try {
     }
     console.log("  ✅ Self-contained Build (core & sim_engine copy) successful.");
 
-    // 4. Test: Inject Tool
-    const dummyFile = path.resolve('src/sim_engine/helpers/dummy_inject_test.txt');
-    fs.writeFileSync(dummyFile, "INJECT_TEST");
-    
+    // 4. Test: Inject Tool (remove an engine file from the experiment; injection must restore it)
+    const injectedFile = path.join(expDir, 'sim_engine/helpers/constants.js');
+    fs.unlinkSync(injectedFile);
+
     execSync(`node scripts/inject.js ${expName} engine`, { stdio: 'ignore' });
-    
-    if (!fs.existsSync(path.join(expDir, 'sim_engine/helpers/dummy_inject_test.txt'))) {
+
+    if (!fs.existsSync(injectedFile)) {
         throw new Error("Inject.js did not synchronize the file to the experiment!");
     }
     console.log("  ✅ Injection (Engine Sync) successful.");
 
-    // Cleanup
-    fs.unlinkSync(dummyFile);
-    fs.rmSync(expDir, { recursive: true, force: true });
-    
     console.log("🎉 Meta-Pipeline Test successful.");
 } catch(e) {
     console.error("❌ Pipeline Test failed:", e.message);
-    if (fs.existsSync(expDir)) fs.rmSync(expDir, { recursive: true, force: true });
     process.exit(1);
 }

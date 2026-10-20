@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const { execSync } = require('child_process');
@@ -8,7 +9,11 @@ async function run() {
     console.log("🚀 STARTING E2E SLEEP KINEMATICS INTEGRATION TESTS");
     console.log("==================================================");
 
-    const testVDir = path.resolve(__dirname, '../../experiments/test_sleep_kinematics');
+    // runner.js resolves experiments via BOB_EXPERIMENTS_DIR: keep fixtures out of the repo.
+    const expRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-sleep-kinematics-'));
+    process.on('exit', () => fs.rmSync(expRoot, { recursive: true, force: true }));
+    process.env.BOB_EXPERIMENTS_DIR = expRoot;
+    const testVDir = path.join(expRoot, 'test_sleep_kinematics');
     const testVerseDir = path.join(testVDir, '_verse');
     const dbPath = path.join(testVerseDir, 'universe.db');
 

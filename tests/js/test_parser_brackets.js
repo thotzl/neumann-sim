@@ -1,10 +1,10 @@
 const { processActions } = require('../../src/sim_engine/modules/environment.js');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
-const mockDir = './test_env_brackets';
-if (fs.existsSync(mockDir)) fs.rmSync(mockDir, { recursive: true, force: true });
-fs.mkdirSync(mockDir, { recursive: true });
+const mockDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-env-brackets-'));
+process.on('exit', () => fs.rmSync(mockDir, { recursive: true, force: true }));
 
 console.log("Testing Bracket-Counting Parser (Happy & Unhappy Paths)...");
 

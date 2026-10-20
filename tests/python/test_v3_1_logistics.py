@@ -1,4 +1,7 @@
 import unittest
+import atexit
+import shutil
+import tempfile
 import os
 import sqlite3
 import json
@@ -10,8 +13,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.bin import init_db
 from core.lib import bob_sdk, db_config
 
-TEST_DB = 'test_universe_logistics.db'
-TEST_POP = 'test_population_logistics.json'
+_TMP_DIR = tempfile.mkdtemp(prefix='bob_test_')
+atexit.register(shutil.rmtree, _TMP_DIR, ignore_errors=True)
+TEST_DB = os.path.join(_TMP_DIR, 'test_universe_logistics.db')
+TEST_POP = os.path.join(_TMP_DIR, 'test_population_logistics.json')
 
 class TestBobOS_v3_1_Logistics(unittest.TestCase):
     

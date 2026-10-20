@@ -8,8 +8,8 @@ from bob_os.core.lib import physics_service
 
 class TestV105ConfigurablePhysics(unittest.TestCase):
     def setUp(self):
-        # Load balancing rules configuration
-        rules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src', 'sim_engine', 'config', 'balancing_rules.json'))
+        # Load the production balancing rules (SSoT, TCK-144)
+        rules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src', 'bob_os', 'core', 'lib', 'rules.json'))
         with open(rules_path, 'r') as f:
             self.rules = json.load(f)
 
@@ -47,12 +47,21 @@ class TestV105ConfigurablePhysics(unittest.TestCase):
         stats = physics_service.evaluate_ship_matrix("Scout-Test", scout_matrix, self.rules)
         self.assertNotIn("error", stats)
         
+        # Expected stats derived from the production rules (4 chassis tiles + engine/battery/logic/comm)
+        p = self.rules['ship_physics']
+        g = self.rules['global_settings']['ship_constants']
+        exp_mass = (g['base_mass'] + 4 * p['chassis_tile']['mass'] + 500 * p['engine']['mass_per_thrust']
+                    + 5000 * p['battery']['mass_per_energy'] + p['logic_core']['mass'] + 10000 * p['comm']['mass_per_range'])
+        exp_cost = (4 * p['chassis_tile']['cost'] + 500 * p['engine']['cost_per_thrust']
+                    + 5000 * p['battery']['cost_per_energy'] + p['logic_core']['cost'] + 10000 * p['comm']['cost_per_range'])
+        exp_drain = 500 * p['engine']['drain_per_thrust'] + p['logic_core']['idle_drain'] + p['comm']['idle_drain']
+
         # Verify stats are successfully calculated
-        self.assertEqual(stats["mass"], 290) # 50 (base) + 4 tiles * 20 (chassis) + 50 (eng) + 50 (bat) + 10 (log) + 50 (comm)
-        self.assertEqual(stats["cost"], 3750) # 100 (base) + 4 tiles * 50 (chassis) + 250 (eng) + 500 (bat) + 800 (log) + 2000 (comm)
-        self.assertAlmostEqual(stats["speed"], 34.48, places=2) # 500 / 290 * 20
+        self.assertEqual(stats["mass"], exp_mass)
+        self.assertEqual(stats["cost"], exp_cost)
+        self.assertAlmostEqual(stats["speed"], round(500 / exp_mass * g['base_speed'], 2), places=2)
         self.assertEqual(stats["regen"], 0)
-        self.assertEqual(stats["drain"], 32.0) # 500 * 0.05 (eng) + 2 (log) + 5 (comm idle)
+        self.assertEqual(stats["drain"], exp_drain)
 
     def test_module_size_guards(self):
         # 1. Create a matrix where engine thrust is too large for the allocated tiles (Should throw size error)

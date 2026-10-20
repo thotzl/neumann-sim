@@ -2,6 +2,7 @@
 id: TCK-130
 title: "REFACTOR: Unified SSoT Schema Consolidation (agents->instances & system_name->system_id)"
 epic_phase: "Cognitive Navigation & Operational Polish"
+epic: "EPIC-00"
 status: "open"
 priority: "high"
 created: 2026-08-10

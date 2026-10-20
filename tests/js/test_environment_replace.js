@@ -1,10 +1,20 @@
 const { processActions } = require('../../src/sim_engine/modules/environment.js');
+const { PYTHON_BIN } = require('../../src/sim_engine/helpers/python_bin');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
-const mockDir = './test_env_replace';
-if (fs.existsSync(mockDir)) fs.rmSync(mockDir, { recursive: true, force: true });
+const mockRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-env-replace-'));
+process.on('exit', () => fs.rmSync(mockRoot, { recursive: true, force: true }));
+// Experiment layout: mockDir is the _verse/ dir; kernel (core/) + migrated DB next to it (TCK-145)
+const mockExpRoot = path.join(mockRoot, 'exp');
+const mockDir = path.join(mockExpRoot, '_verse');
 fs.mkdirSync(mockDir, { recursive: true });
+fs.cpSync(path.resolve(__dirname, '../../src/bob_os/core'), path.join(mockExpRoot, 'core'), { recursive: true });
+execFileSync(PYTHON_BIN, [path.join(mockExpRoot, 'core', 'bin', 'init_db.py')], {
+    env: { ...process.env, PYTHONPATH: mockExpRoot, TEST_DB_PATH: path.join(mockDir, 'universe.db') }, stdio: 'pipe'
+});
 
 console.log("Testing Parser Isolation & Sandbox Guard...");
 

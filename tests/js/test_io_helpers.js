@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const { safeReadJsonSync, safeWriteJsonSync } = require('../../src/sim_engine/helpers/io_helpers');
@@ -7,7 +8,8 @@ console.log("==================================================");
 console.log("🚀 STARTING IO HELPER UNIT TESTS");
 console.log("==================================================");
 
-const testDir = path.resolve(__dirname, 'test_io_fs');
+const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-io-fs-'));
+process.on('exit', () => fs.rmSync(testDir, { recursive: true, force: true }));
 const testFile = path.join(testDir, 'subfolder/mock_data.json');
 
 // Ensure clean environment

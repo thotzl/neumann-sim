@@ -1,41 +1,18 @@
-# Bobiverse Economy Manifest v8.8 (Industrial Evolution)
+# Bobiverse Economy Manifest
 
-Dieses Dokument definiert die physikalischen Gesetze und ökonomischen Konstanten des Bob-OS Universums. Alle Agenten und Skripte unterliegen diesen harten Limits.
+Die frühere Werte-Tabelle (v8.8) ist überholt. Einzige Quelle für Kosten, Kapazitäten und Unterhalt ist **`src/bob_os/core/lib/rules.json`** (TCK-144); `me --help` zeigt die aktuellen Baukosten aus dieser Datei.
 
-## 📦 Agenten-Spezifikationen
-*   **Materie-Tank:** 300 Einheiten.
-*   **Batterie-Kapazität:** 500 Einheiten.
-*   **Passive Regeneration:** +10 Energie / Zyklus.
-*   **Standby-Verbrauch (Idle):** -5 Energie / Zyklus.
+| Abschnitt in `rules.json` | Inhalt |
+| :--- | :--- |
+| `agent_limits` | Fallback-Kapazitäten (Matter/Energie) |
+| `tool_costs` | Energie-/Materiekosten und Erträge der Aktionen (`mine`, `build`, `scan`, `move`, `replicate`, `refine`, `ping_sos`, `reclaim_sos`, `talk`, `docking`) |
+| `infrastructure` | Gebäude: `matter_cost`, `required_material` (`raw_matter`/`refined_matter`), Boni, `maintenance_energy_cost` |
+| `global_settings` | Depot-/Kernwerte, Verfall (`decay_per_tick`, `decay_interval`), Kern-Regeneration, Reparatur-/Upgrade-/Rückbau-Faktoren, Reisegeschwindigkeit, Scan-Reichweiten, `ship_constants` |
+| `ship_physics` | Modulwerte für den CAD-Blueprint-Evaluator (`physics_service.evaluate_ship_matrix`) |
+| `cosmic_settings` | Parameter des prozeduralen Generators (`generator.py`) |
 
-## 🛠️ Hardware-Aktionen (Tools)
-*   **Mine:** 30 Energie -> +100 Materie. (Setzt Ressourcen im System voraus).
-*   **Scan:** 40 Energie (Basis). Entdeckt neue Sternensysteme.
-*   **Move:** 0.1 Energie pro Distanzeinheit. ETA abhängig von Reisegeschwindigkeit (300 Einheiten/Tick).
-*   **Replicate:** 180 Energie & 1000 Materie. (Erfordert aktive `shipyard`).
-*   **Refine:** 50 Energie & 100 Roh-Materie -> 100 Veredelte Materie (`refined_matter`). (Erfordert `matter_refinery`).
-*   **Repair:** 1 Materie & 1 Energie pro 1 HP Heilung. (Erhöht `health` von Gebäuden).
+Leser: `config_service.get_economy_rules()`, `sdk/actuators.py`, `core/bin/bob.py`, `core/bin/physics_update.py`, `generator.py`. Experiment-spezifische Overrides: `physics_constants` in der Experiment-`config.json` (`config_service.get_physics_constants()`); Generator-Parameter werden ebenfalls mit der Experiment-`config.json` gemergt (`generator.py`).
 
-## 🏗️ Infrastruktur & Betriebskosten
-Jedes Gebäude verliert passiv **1 HP pro Zyklus**. Bei 0 HP schaltet sich das Gebäude ab. Aktive Gebäude verbrauchen jede Runde System-Energie.
+Bekannte Abweichung: Routenplanung rechnet mit 0.02 Energie pro Distanz (`tool_costs.move.cost_per_distance`), das Physik-Update mit dem Fallback 0.1 (`tool_costs.move_per_unit.energy` fehlt in `rules.json`) → [TCK-169](../.tickets/pool/TCK-169-move-energy-cost-mismatch.md).
 
-| Typ | Kosten (M) | Effekt | Unterhalt (E/Runde) |
-| :--- | :--- | :--- | :--- |
-| `matter_silo` | 400 | +1000 Materie-Kapazität | 1 |
-| `solar_collector` | 400 | +1000 Energie-Kapazität & +100 Regen | 1 |
-| `shipyard` | 1000 | Schaltet `replicate()` frei | 5 |
-| `battery_bank` | 600 | +5000 Energie-Kapazität | 2 |
-| `sat_link` | 500 | Halbiert Scan-Kosten im System | 2 |
-| `matter_refinery` | 800 | Schaltet `refine()` frei | 4 |
-| `comms_relay` | 300 | Erlaubt Fernfunk (>1000 Distanz) & Broadcasts | 3 |
-
-## 💡 System-Energiestatus (Blackout)
-Wenn der `energy_stored` Vorrat eines Systems auf 0 fällt:
-*   Alle Gebäude gehen in den **Low-Power Modus**.
-*   Sämtliche Kapazitäts-Boni (Silos, Batterien) und Regenerations-Raten werden deaktiviert.
-*   Agenten können keine Ressourcen mehr aus dem Depot entnehmen (`withdraw`), bis Energie manuell eingespeist wird.
-
-## 📡 Kommunikation (SCUT)
-*   **Basis-Reichweite:** 1000 Distanzeinheiten.
-*   **Broadcast ('ALL'):** Erfordert zwingend ein `comms_relay` im System des Senders.
-*   **Fern-Kommunikation:** Erfordert ein `comms_relay` im System des Senders oder Empfängers.
+Physik-Regeln (Blackout, Verfall, Transit): [physics/README.md](physics/README.md). Balancing-Tests: `tests/balancing/verify_economy_balancing.py`, `tests/balancing/verify_ship_balancing.py`.

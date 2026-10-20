@@ -41,7 +41,9 @@ def build_experiment(args):
         print("[CI] All tests passed. Continuing build...\n")
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    exp_dir = os.path.join(base_dir, 'experiments', args.version)
+    # BOB_EXPERIMENTS_DIR overrides the experiments root (tests use a temp dir); default: <repo>/experiments
+    experiments_root = os.environ.get('BOB_EXPERIMENTS_DIR') or os.path.join(base_dir, 'experiments')
+    exp_dir = os.path.join(experiments_root, args.version)
     
     # Path Definitions
     source_verse = os.path.join(base_dir, 'src', 'bob_os', '_verse')
@@ -85,7 +87,7 @@ def build_experiment(args):
             template["seed"] = str(random.randint(10000000, 99999999))
         
         # In V8.0 architecture, system_prompt contains ONLY the mission.
-        # Hardware documentation and ethics are added dynamically by the engine (api_client.js)
+        # Hardware documentation and ethics are added dynamically by the engine (environment.js getEnvState)
         # and the global_system_instruction (core-config.json).
         template["agents"][0]["system_prompt"] = args.mission
         

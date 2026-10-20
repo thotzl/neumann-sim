@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { execSync } = require('child_process');
 const sqlite3 = require('sqlite3').verbose();
@@ -7,14 +8,10 @@ console.log("==================================================");
 console.log("🚀 STARTING SQL-FILE DATABASE MIGRATION TESTS");
 console.log("==================================================");
 
-const testVDir = path.resolve(__dirname, 'test_migrations_fs');
+const testVDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-migrations-'));
+process.on('exit', () => fs.rmSync(testVDir, { recursive: true, force: true }));
 const dbPath = path.join(testVDir, 'universe.db');
-
-// Ensure clean environment
-if (fs.existsSync(testVDir)) {
-    fs.rmSync(testVDir, { recursive: true, force: true });
-}
-fs.mkdirSync(testVDir, { recursive: true });
+const repoRoot = path.resolve(__dirname, '../..');
 
 async function runSql(db, query) {
     return new Promise((resolve, reject) => {
@@ -56,7 +53,13 @@ async function runTests() {
         
         // 3. Incremental migration check
         console.log("Step 3: Creating and applying an incremental migration...");
-        const migrationsDir = path.resolve(__dirname, '../../src/bob_os/core/migrations');
+        // migrate.js reads migrations relative to its own location: run a copy of it inside the
+        // temp dir so the incremental test migration never touches src/.
+        const migratorRoot = path.join(testVDir, 'migrator');
+        const migrationsDir = path.join(migratorRoot, 'src/bob_os/core/migrations');
+        fs.cpSync(path.join(repoRoot, 'src/bob_os/core/migrations'), migrationsDir, { recursive: true });
+        fs.mkdirSync(path.join(migratorRoot, 'scripts'), { recursive: true });
+        fs.copyFileSync(path.join(repoRoot, 'scripts/migrate.js'), path.join(migratorRoot, 'scripts/migrate.js'));
         const baselineFiles = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql'));
         const baselineCount = baselineFiles.length;
 
@@ -68,8 +71,11 @@ async function runTests() {
         fs.writeFileSync(nextMigrationFile, sqlContent, 'utf8');
         
         // Execute migrator again
-        execSync(`node scripts/migrate.js ${dbPath}`, { stdio: 'pipe' });
-        
+        execSync(`node ${path.join(migratorRoot, 'scripts/migrate.js')} ${dbPath}`, {
+            stdio: 'pipe',
+            env: { ...process.env, NODE_PATH: path.join(repoRoot, 'node_modules') }
+        });
+
         // Verify applied migrations
         const updatedMigrations = await runSql(db, "SELECT version FROM schema_migrations ORDER BY version ASC");
         console.log("  Updated version tracking:", updatedMigrations.map(m => m.version));
@@ -105,8 +111,6 @@ async function runTests() {
         process.exit(0);
     } catch (e) {
         console.error("\n%s", `❌ Migration test failed: ${e.message}`);
-        const nextMigrationFile = path.resolve(__dirname, '../../src/bob_os/core/migrations/0003_test_patch.sql');
-        if (fs.existsSync(nextMigrationFile)) fs.unlinkSync(nextMigrationFile);
         if (fs.existsSync(testVDir)) fs.rmSync(testVDir, { recursive: true, force: true });
         process.exit(1);
     }

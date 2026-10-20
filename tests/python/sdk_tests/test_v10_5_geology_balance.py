@@ -1,11 +1,15 @@
 import unittest
+import shutil
+import tempfile
 import sqlite3
 import os
 import random
 
 class TestV105GeologyBalance(unittest.TestCase):
     def setUp(self):
-        self.db_path = "test_geology_balance.db"
+        self._tmp_dir = tempfile.mkdtemp(prefix='bob_test_')
+        self.addCleanup(shutil.rmtree, self._tmp_dir, ignore_errors=True)
+        self.db_path = os.path.join(self._tmp_dir, "test_geology_balance.db")
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
             

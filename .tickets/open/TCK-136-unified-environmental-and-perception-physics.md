@@ -2,6 +2,7 @@
 id: TCK-136
 title: "Unified Environmental & Perception Physics Integration (Agile & Dynamic)"
 epic_phase: "v14.1+ / Deeper Universe"
+epic: "EPIC-03"
 status: "open"
 priority: "High"
 created: 2026-08-12

@@ -178,6 +178,13 @@ function sanitizeSlug(title) {
         .replace(/(^-|-$)/g, '');
 }
 
+// GitHub rejects label names longer than 50 characters (HTTP 422)
+const GITHUB_LABEL_MAX = 50;
+
+function clampLabel(label) {
+    return label.length <= GITHUB_LABEL_MAX ? label : label.slice(0, GITHUB_LABEL_MAX).replace(/-+$/, '');
+}
+
 function isEpicId(id) {
     return /^EPIC-\d+$/.test(id || '');
 }
@@ -197,7 +204,7 @@ function mapTicketToIssue(meta) {
         labels.push(`status:${folder}`);
     }
     if (meta.epic_phase) {
-        labels.push(`epic:${sanitizeSlug(meta.epic_phase)}`);
+        labels.push(clampLabel(`epic:${sanitizeSlug(meta.epic_phase)}`));
     }
     // Epic reference label (e.g. epic:EPIC-00); epics carry their own ID for grouping
     const epicRef = meta.epic || (isEpic ? meta.id : '');
@@ -462,78 +469,90 @@ async function graphqlRequest(query, variables = {}) {
 // 5. Main PUSH Loop (Local ──> Remote)
 async function runPush(localTickets, githubIssues) {
     console.log(`📦 Starting PUSH Synchronization to GitHub...`);
+    // One failing ticket must not block the rest (TCK-172); failures are reported at the end
+    const failures = [];
     for (const local of localTickets) {
-        const meta = local.metadata;
-        const expectedTitlePrefix = `[${meta.id}]`;
+        try {
+            await pushTicket(local, githubIssues);
+        } catch (error) {
+            console.error(`❌ ${local.metadata.id}: ${error.message}`);
+            failures.push({ id: local.metadata.id, message: error.message });
+        }
+    }
+    return failures;
+}
 
-        // Map folder status to GitHub states and labels
-        const { title: fullTitle, state: githubState, labels: expectedLabels } = mapTicketToIssue(meta);
+async function pushTicket(local, githubIssues) {
+    const meta = local.metadata;
+    const expectedTitlePrefix = `[${meta.id}]`;
 
-        // Look for matching issue on GitHub
-        const existingIssue = githubIssues.find(issue => issue.title.startsWith(expectedTitlePrefix));
+    // Map folder status to GitHub states and labels
+    const { title: fullTitle, state: githubState, labels: expectedLabels } = mapTicketToIssue(meta);
 
-        if (!existingIssue) {
-            console.log(`➕ Creating new Issue on GitHub: "${fullTitle}"...`);
-            const payload = {
-                title: fullTitle,
-                body: local.body,
-                labels: expectedLabels
-            };
-            const newIssue = await apiRequest('/issues', {
-                method: 'POST',
-                body: JSON.stringify(payload)
+    // Look for matching issue on GitHub
+    const existingIssue = githubIssues.find(issue => issue.title.startsWith(expectedTitlePrefix));
+
+    if (!existingIssue) {
+        console.log(`➕ Creating new Issue on GitHub: "${fullTitle}"...`);
+        const payload = {
+            title: fullTitle,
+            body: local.body,
+            labels: expectedLabels
+        };
+        const newIssue = await apiRequest('/issues', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        console.log(`   └─ Successfully created: Issue #${newIssue.number}`);
+
+        // ATOMIC WORKAROUND: GitHub REST API creates issues as "open" by default on creation.
+        // If the ticket is locally closed, we must immediately follow up with a PATCH to close it!
+        if (githubState === 'closed') {
+            console.log(`   └─ Local ticket is closed. Instantly closing Issue #${newIssue.number} on GitHub...`);
+            await apiRequest(`/issues/${newIssue.number}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ state: 'closed' })
             });
-            console.log(`   └─ Successfully created: Issue #${newIssue.number}`);
+        }
+    } else {
+        let needsUpdate = false;
+        const updatePayload = {};
 
-            // ATOMIC WORKAROUND: GitHub REST API creates issues as "open" by default on creation.
-            // If the ticket is locally closed, we must immediately follow up with a PATCH to close it!
-            if (githubState === 'closed') {
-                console.log(`   └─ Local ticket is closed. Instantly closing Issue #${newIssue.number} on GitHub...`);
-                await apiRequest(`/issues/${newIssue.number}`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ state: 'closed' })
-                });
-            }
+        if (existingIssue.title !== fullTitle) {
+            updatePayload.title = fullTitle;
+            needsUpdate = true;
+        }
+
+        if (existingIssue.state !== githubState) {
+            updatePayload.state = githubState;
+            needsUpdate = true;
+        }
+
+        if (existingIssue.body !== local.body) {
+            updatePayload.body = local.body;
+            needsUpdate = true;
+        }
+
+        // High-precision semantic label diff check
+        const currentLabels = existingIssue.labels.map(l => l.name);
+        const managedCurrentLabels = currentLabels.filter(isManagedLabel);
+
+        const labelsChanged = expectedLabels.some(l => !currentLabels.includes(l)) ||
+                              managedCurrentLabels.some(l => !expectedLabels.includes(l));
+        if (labelsChanged) {
+            updatePayload.labels = expectedLabels;
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+            console.log(`🔄 Updating Issue #${existingIssue.number}: "${fullTitle}"...`);
+            await apiRequest(`/issues/${existingIssue.number}`, {
+                method: 'PATCH',
+                body: JSON.stringify(updatePayload)
+            });
+            console.log(`   └─ Successfully updated.`);
         } else {
-            let needsUpdate = false;
-            const updatePayload = {};
-
-            if (existingIssue.title !== fullTitle) {
-                updatePayload.title = fullTitle;
-                needsUpdate = true;
-            }
-
-            if (existingIssue.state !== githubState) {
-                updatePayload.state = githubState;
-                needsUpdate = true;
-            }
-
-            if (existingIssue.body !== local.body) {
-                updatePayload.body = local.body;
-                needsUpdate = true;
-            }
-
-            // High-precision semantic label diff check
-            const currentLabels = existingIssue.labels.map(l => l.name);
-            const managedCurrentLabels = currentLabels.filter(isManagedLabel);
-
-            const labelsChanged = expectedLabels.some(l => !currentLabels.includes(l)) ||
-                                  managedCurrentLabels.some(l => !expectedLabels.includes(l));
-            if (labelsChanged) {
-                updatePayload.labels = expectedLabels;
-                needsUpdate = true;
-            }
-
-            if (needsUpdate) {
-                console.log(`🔄 Updating Issue #${existingIssue.number}: "${fullTitle}"...`);
-                await apiRequest(`/issues/${existingIssue.number}`, {
-                    method: 'PATCH',
-                    body: JSON.stringify(updatePayload)
-                });
-                console.log(`   └─ Successfully updated.`);
-            } else {
-                console.log(`🟢 Issue #${existingIssue.number} ("${meta.title}") is already in sync.`);
-            }
+            console.log(`🟢 Issue #${existingIssue.number} ("${meta.title}") is already in sync.`);
         }
     }
 }
@@ -692,15 +711,21 @@ async function main(argv = process.argv) {
         const localTickets = getLocalTickets();
         console.log(`📦 Loaded ${localTickets.length} local tickets from .tickets/.`);
 
+        let failures = [];
         if (isPullMode) {
             await runPull(localTickets, githubIssues);
         } else {
-            await runPush(localTickets, githubIssues);
+            failures = await runPush(localTickets, githubIssues);
         }
 
         // Re-import local tickets after syncing and update the Index Register
         rebuildIndex();
 
+        if (failures.length > 0) {
+            console.error(`❌ Sync finished with ${failures.length} failed ticket(s):`);
+            failures.forEach(f => console.error(`   - ${f.id}: ${f.message}`));
+            process.exit(1);
+        }
         console.log("🎉 Sync finished successfully!");
     } catch (error) {
         console.error("❌ Sync failed with exception:", error.message);
@@ -725,6 +750,9 @@ module.exports = {
     getLocalTickets,
     sanitizeSlug,
     mapTicketToIssue,
+    GITHUB_LABEL_MAX,
+    clampLabel,
+    runPush,
     isManagedLabel,
     parseIssueTitle,
     mapIssueToLocal,

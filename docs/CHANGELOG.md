@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.11** | **2026-10-19** | `RELEASED` | Ticket-Sync: Label-Limit & Fehlertoleranz | `[TCK-172]` |
 | **v13.10.10** | **2026-10-19** | `RELEASED` | Doku & Projekt-Skills | `[TCK-150]` |
 | **v13.10.9** | **2026-10-19** | `RELEASED` | Generischer OpenAI-kompatibler Driver | `[TCK-146]` |
 | **v13.10.8** | **2026-10-19** | `RELEASED` | Config- & Generator-SSoT | `[TCK-144]` |
@@ -35,6 +36,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.11] - 2026-10-19
+*Ticket-Sync: Label-Limit & Fehlertoleranz. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Fixed
+- **Ticket-Sync auf GitHub wieder funktionsfähig:** Label-Namen werden auf das GitHub-Limit von 50 Zeichen gekürzt (seit 13.08. scheiterte jeder Sync an TCK-134); ein fehlerhaftes Ticket bricht den Lauf nicht mehr ab, Fehler werden gesammelt gemeldet.
+  - *Ticket:* [TCK-172](../.tickets/closed/TCK-172-ticket-sync-label-limit-and-resilience.md)
 
 ### [v13.10.10] - 2026-10-19
 *Doku & Projekt-Skills. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

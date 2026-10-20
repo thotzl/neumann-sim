@@ -34,3 +34,4 @@ Sanierung vor jeder Weiterentwicklung: Isolation, Plattform, Tests, SSoT, Cleanu
 - TCK-169
 - TCK-170
 - TCK-171
+- TCK-172

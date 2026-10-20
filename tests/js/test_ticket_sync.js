@@ -174,13 +174,58 @@ try {
     sync.generateIndex(testDir);
     assert.strictEqual(fs.readFileSync(backlogPath, 'utf8'), generated, "Second generation changed the index");
 
+    // 8. Label length is clamped to GitHub's 50-character limit (TCK-172)
+    console.log("Test 8: Clamping long epic_phase labels to 50 characters...");
+    const longPhase = sync.mapTicketToIssue({
+        id: 'TCK-134', title: 'Long', folder_status: 'open', priority: 'high',
+        epic_phase: 'Epic 2 (V10.0) / Phase 2.6 (Swarm Safety & Cognitive Alignment)'
+    });
+    longPhase.labels.forEach(l => assert.ok(l.length <= sync.GITHUB_LABEL_MAX, `Label too long: ${l}`));
+    const phaseLabel = longPhase.labels.find(l => l.startsWith('epic:epic-2'));
+    assert.ok(phaseLabel && !phaseLabel.endsWith('-'), `Unexpected clamped label: ${phaseLabel}`);
+    assert.strictEqual(sync.clampLabel('epic:short'), 'epic:short');
+
+    // 9. Every real ticket in the repo stays within GitHub's API limits
+    console.log("Test 9: All repository tickets respect GitHub label / title / body limits...");
+    const repoTickets = sync.getLocalTickets(path.join(__dirname, '..', '..', '.tickets'));
+    assert.ok(repoTickets.length > 0, "No repository tickets found");
+    repoTickets.forEach(t => {
+        const mapped = sync.mapTicketToIssue(t.metadata);
+        mapped.labels.forEach(l => assert.ok(l.length <= sync.GITHUB_LABEL_MAX, `${t.metadata.id}: label too long (${l.length}): ${l}`));
+        assert.ok(mapped.title.length <= 256, `${t.metadata.id}: title too long`);
+        assert.ok((t.body || '').length <= 65536, `${t.metadata.id}: body too long`);
+    });
+
     // Clean up
     fs.rmSync(testDir, { recursive: true, force: true });
-
-    console.log("\n🎉 ALL TICKET SYNC UNIT TESTS PASSED SUCCESSFULLY!");
-    process.exit(0);
 } catch (e) {
     console.error("\n❌ Ticket sync test failed:", e.message);
     if (fs.existsSync(testDir)) fs.rmSync(testDir, { recursive: true, force: true });
     process.exit(1);
 }
+
+// 10. Push continues after a failing ticket and reports it (TCK-172), fetch stubbed (no network)
+(async () => {
+    console.log("Test 10: PUSH continues after a failing ticket and returns the failures...");
+    const calls = [];
+    global.fetch = async (url, options = {}) => {
+        calls.push({ url, method: options.method || 'GET' });
+        if (url.endsWith('/issues/1')) {
+            return { ok: false, status: 422, text: async () => 'Validation Failed' };
+        }
+        return { ok: true, status: 200, json: async () => ({ number: 2 }) };
+    };
+    const ticket = (id) => ({ metadata: { id, title: id, folder_status: 'open', priority: 'high' }, body: 'new body' });
+    const issue = (number, id) => ({ number, title: `[${id}] ${id}`, state: 'open', body: 'old body', labels: [] });
+    const failures = await sync.runPush([ticket('TCK-901'), ticket('TCK-902')], [issue(1, 'TCK-901'), issue(2, 'TCK-902')]);
+
+    assert.strictEqual(failures.length, 1, "Exactly one failure expected");
+    assert.strictEqual(failures[0].id, 'TCK-901');
+    assert.ok(calls.some(c => c.url.endsWith('/issues/2') && c.method === 'PATCH'), "Second ticket was not pushed after the failure");
+
+    console.log("\n🎉 ALL TICKET SYNC UNIT TESTS PASSED SUCCESSFULLY!");
+    process.exit(0);
+})().catch(e => {
+    console.error("\n❌ Ticket sync test failed:", e.message);
+    process.exit(1);
+});

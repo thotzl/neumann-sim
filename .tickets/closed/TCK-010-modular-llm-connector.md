@@ -25,5 +25,5 @@ Einführung einer herstellerunabhängigen Abstraktionsschicht (AI-Bridge) für a
 Maximale Flexibilität bei Inferenz-Kosten und -Geschwindigkeit. Erlaubt 100% Offline-Betrieb via Ollama sowie ungedrosselten High-Speed-Betrieb via GitHub Models für bezahlte Entwickler-Accounts.
 
 ## References
-- Spezifikations-Konzept: [LOCAL_LLM_MIGRATION.md](../resources/done/LOCAL_LLM_MIGRATION.md)
+- Spezifikations-Konzept: [LOCAL_LLM_MIGRATION.md](../../docs/concepts/LOCAL_LLM_MIGRATION.md)
 - Inferenz-Benchmarks: [FREE_CLOUD_AND_AI_LABS_EVALUATION.md](../resources/done/FREE_CLOUD_AND_AI_LABS_EVALUATION.md)

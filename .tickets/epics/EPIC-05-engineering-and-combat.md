@@ -13,7 +13,7 @@ Erweiterung des CAD-Blueprint-Systems um Nachrüstung, Upgrades und Waffensystem
 
 ## Quellen
 - `docs/concepts/WEAPON_SYSTEMS_V14.md`
-- `.tickets/resources/todo/concepts/AGENT_UPGRADE_MANIFEST.md`
+- `.tickets/resources/done/concepts/AGENT_UPGRADE_MANIFEST.md`
 - `docs/concepts/SHIP_AND_ENGINEERING_V10.md`
 
 ## Tickets

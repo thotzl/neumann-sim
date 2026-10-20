@@ -10,9 +10,9 @@ Da über die Jahre hinweg mehrere spekulative Ideen-Sammlungen entstanden sind, 
 
 | Dokument / Epic | Relevanz | Haupt-Fokus | Aufgezeigter Konflikt / Entwurfs-Optionen |
 | :--- | :--- | :--- | :--- |
-| **[EPIC_2_SHIPS_AND_MINDS.md](epics/EPIC_2_SHIPS_AND_MINDS.md)** (V10.5) | Schiffsbau, Triebwerke, 2D-Gitter | 2D-Gitter-Vessel | *Konflikt:* Ältere Dokumente nutzen flache, unkonfigurierbare Chassis-Werte. *Option:* Sollen zukünftige Module ebenfalls auf Gitterkacheln basieren oder als flache Upgrades verbaut werden? |
+| **[EPIC_2_SHIPS_AND_MINDS.md](../../../docs/epics/EPIC_2_SHIPS_AND_MINDS.md)** (V10.5) | Schiffsbau, Triebwerke, 2D-Gitter | 2D-Gitter-Vessel | *Konflikt:* Ältere Dokumente nutzen flache, unkonfigurierbare Chassis-Werte. *Option:* Sollen zukünftige Module ebenfalls auf Gitterkacheln basieren oder als flache Upgrades verbaut werden? |
 | **[EPIC_3_FACTIONS_AND_FOG.md](epics/EPIC_3_FACTIONS_AND_FOG.md)** (V11.0) | Fraktionen, Fog of War, Hacking | Territorialer Kampf | *Konflikt:* Wie stark beeinflussen sich KMI-Skripte bei der Übernahme feindlicher Basen? *Option:* Werden gehackte Skripte gelöscht oder kopiert? |
-| **[SHIP_AND_ENGINEERING_V10.md](concepts/SHIP_AND_ENGINEERING_V10.md)** (V10.0) | Modularität, Software vs. Hülle | Host-Entkopplung | *Option:* Können disembodied Minds auch ohne Matrizen im All existieren? |
+| **[SHIP_AND_ENGINEERING_V10.md](../../../docs/concepts/SHIP_AND_ENGINEERING_V10.md)** (V10.0) | Modularität, Software vs. Hülle | Host-Entkopplung | *Option:* Können disembodied Minds auch ohne Matrizen im All existieren? |
 | **[ADVANCED_MECHANICS_DUMP.md](ADVANCED_MECHANICS_DUMP.md)** (V8.8) | Spekulatives Hardcore-Survival | HP-Verschleiß & Spionage | *Konflikt:* Wie skaliert der mechanische Verschleiß mit Gitterkacheln? *Option:* Nimmt das gesamte Schiff Schaden oder einzelne Segmente? |
 | **[MECHANIC_IDEAS.md](concepts/MECHANIC_IDEAS.md)** (V4.0) | Gamification & RTS-Fokus | Passive Extraktoren | *Option:* Passive Abbaugebäude vs. aktive Sonden-Interaktion im Sektor. |
 

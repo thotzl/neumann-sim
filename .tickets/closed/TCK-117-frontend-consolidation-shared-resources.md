@@ -49,7 +49,7 @@ Dabei wird die veraltete Karte des Monitors durch das hochauflösende 2D-Canvas-
 ---
 
 ## References
-- **Handoff SSoT Guide:** [DEEPER_VERSE_HANDOFF.md](../../docs/DEEPER_VERSE_HANDOFF.md)
+- **Handoff SSoT Guide:** [TCK-116-deeper-verse-sim-integration-handoff.md](../resources/done/TCK-116-deeper-verse-sim-integration-handoff.md) (Nachfolger des entfernten `docs/DEEPER_VERSE_HANDOFF.md`)
 - **Closed Sandbox Ticket:** [TCK-115](../closed/TCK-115-procedural-universe-sandbox.md)
 - **Active Integration Ticket:** [TCK-116](./TCK-116-deeper-verse-sim-integration.md) (Abhängig von dieser Frontend-Konsolidierung!)
 - Backlog Index: [EPIC_CONSOLIDATION_BACKLOG.md](../../docs/EPIC_CONSOLIDATION_BACKLOG.md)

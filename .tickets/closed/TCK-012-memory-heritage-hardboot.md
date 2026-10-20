@@ -20,4 +20,4 @@ Erschafft ein stabiles, psychologisches Fundament für neu geklonte Instanzen. E
 - **Unit-Tests:** Erfolgreich abgesichert in `bob_os/test_suite/test_v10_6_clone_compression.js` und `test_runner_boot.js`.
 
 ## References
-- Source-Konzept: [IDEAS_AND_TASKS.md](../resources/todo/IDEAS_AND_TASKS.md)
+- Source-Konzept: [IDEAS_AND_TASKS.md](../resources/done/IDEAS_AND_TASKS.md)

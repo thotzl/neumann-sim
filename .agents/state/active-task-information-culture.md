@@ -73,9 +73,9 @@ Das folgende Schema zeigt präzise, welche Informations-Elemente aktuell existie
 **Status:** Exportiert & Referenziert
 
 *   *Soll-Zustand (SDE-Modell):* Der konzipierte, SDE-Kognitions-konforme Eintritts-Prompt wurde als separate, maschinenlesbare JSON-Datei exportiert:
-    *   *Datei:* [TCK-134-initial-prompt-bootstrap-snapshot.json](concepts/TCK-134-initial-prompt-bootstrap-snapshot.json)
+    *   *Datei:* [TCK-134-initial-prompt-bootstrap-snapshot.json](../../.tickets/resources/todo/concepts/TCK-134-initial-prompt-bootstrap-snapshot.json)
 *   *Ist-Zustand (Tatsächliche unzensierte Variablen):* Um jegliches Fehlerpotenzial auszuschließen, wurde der unbestechliche, tatsächliche Spiel-Eintritts-Prompt im Originalzustand (wie ihn der Bootstrapper an Runde 1 übergibt) programmatisch aus dem laufenden Spiel abgefangen und als JSON-Audit-File gespeichert:
-    *   *Original-Dump-Datei:* [TCK-134-initial-prompt-bootstrap-snapshot-TRUE.json](concepts/TCK-134-initial-prompt-bootstrap-snapshot-TRUE.json)
+    *   *Original-Dump-Datei:* [TCK-134-initial-prompt-bootstrap-snapshot-TRUE.json](../../.tickets/resources/todo/concepts/TCK-134-initial-prompt-bootstrap-snapshot-TRUE.json)
 
 ### Eintrag #5: Entkoppelung von Existenz und Inkarnation (Philosophische Dekomposition)
 **Status:** Bestätigt

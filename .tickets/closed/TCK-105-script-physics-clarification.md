@@ -24,7 +24,7 @@ Ergänzung der `global_system_instruction` in `core-config.json` um den explizit
 - **Dependencies:** `TCK-DONE-006` (Sandbox Hardening).
 
 ## References
-- Source: [IDEAS_AND_TASKS.md](../resources/todo/IDEAS_AND_TASKS.md)
+- Source: [IDEAS_AND_TASKS.md](../resources/done/IDEAS_AND_TASKS.md)
 
 ## Verification (Code SSoT)
 - Durch [TCK-138](TCK-138-run-allowlist-and-safe-exec.md) technisch erzwungen statt per Prompt: `[RUN: …]` aus Skript-Output wird von `processActions` (`src/sim_engine/modules/environment.js`) gegen die RUN-Allowlist geprüft; nur SDK-Aufrufe werden ausgeführt.

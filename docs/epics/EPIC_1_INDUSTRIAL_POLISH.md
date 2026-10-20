@@ -35,5 +35,5 @@ Einführung veredelter Materie (`refined_matter`) zur Freischaltung spezialisier
 
 ## 4. Beteiligte Core-Tickets (Schnittstellen-Verknüpfung)
 Sämtliche Meilensteine dieses Epics sind vollständig implementiert und über folgende Tickets versioniert:
-- **`[TCK-DONE-007]` Geological Planetary Core Regeneration** ([Link](../../.tickets/closed/TCK-DONE-007-geological-regeneration.md))
-- **`[TCK-DONE-008]` Structural Decay & Maintenance Grace Period** ([Link](../../.tickets/closed/TCK-DONE-008-structural-decay.md))
+- **`[TCK-DONE-007]` Geological Planetary Core Regeneration** ([Link](../../.tickets/closed/TCK-007-geological-regeneration.md))
+- **`[TCK-DONE-008]` Structural Decay & Maintenance Grace Period** ([Link](../../.tickets/closed/TCK-008-structural-decay.md))

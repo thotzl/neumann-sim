@@ -12,8 +12,8 @@ created: 2026-10-19
 Messbare Meilensteine, Achievements und langfristige Missionsziele für den Schwarm.
 
 ## Quellen
-- `.tickets/resources/todo/ROADMAP_WORLD_MECHANICS.md (Säule B)`
-- `.tickets/resources/todo/ROADMAP.md (Meilenstein 4)`
+- `.tickets/resources/done/ROADMAP_WORLD_MECHANICS.md (Säule B)`
+- `.tickets/resources/done/ROADMAP.md (Meilenstein 4)`
 
 ## Tickets
 - TCK-107

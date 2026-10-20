@@ -1,5 +1,7 @@
 # 🖥️ SYSTEM DOCUMENTATION: FRONTEND MONITOR ARCHITECTURE
 
+> Stand-Hinweis (TCK-150): historisches Konzeptpapier. Das Frontend liegt heute in `hud/` (Node/Vite, kein Bun); VoG-Server `hud/vog_server.cjs` (Token-geschützt, TCK-140). Aktuelle Beschreibung: [SYSTEM_ARCHITECTURE.md](../SYSTEM_ARCHITECTURE.md#8-websocket-broadcast--monitor).
+
 Dieses Dokument beschreibt die implementierte Architektur des taktischen Frontend-Monitors von Bob-OS ("Operation Watchtower"). Es dokumentiert die Daten-Aggregations-Pipeline, die Resilienz-Strategie und die dezentrale Struktur des Benutzeroberflächen-Dienstes.
 
 ---

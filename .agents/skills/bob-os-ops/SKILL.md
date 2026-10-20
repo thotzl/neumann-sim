@@ -1,172 +1,64 @@
 ---
 name: bob-os-ops
-description: "Operational management of the Bob-OS lifecycle, deployment, CI testing, and the Git-based in-code ticketing, changelog, and versioning systems. Use when creating or completing tickets, organizing concepts/roadmaps, releasing new versions, running test suites, or deploying experiments."
+description: Operations and project workflow for Bob-OS - building, running, injecting, resetting and migrating experiments (container vs. native path), the Git ticket system under .tickets/, GitHub sync, and the closing protocol with changelog, version bump, ADRs and commits. Use when creating, moving or closing tickets, preparing a release or commit, or operating experiments.
 ---
 
-# SKILL: Bob-OS Operations (Workflows, Ticketing, and Releases)
+# Bob-OS Operations and Workflow
 
-This skill governs the complete operational lifecycle of Bob-OS. It defines how to build and patch simulations, and how to semantically manage the Git-based in-code ticketing, documentation, changelog, and versioning systems.
+## Inquiry-first
+- Questions, reviews and "what do you think" requests are read-only. No file writes, ticket moves or git operations.
+- Propose tickets, ticket moves, changelog text and commits in the chat first; execute only after an explicit directive.
+- On a failed command or test: stop, report the error, ask. No speculative workarounds.
+- No destructive git commands (`reset --hard`, `checkout -- <file>`, force push) unless explicitly requested.
 
----
+## Code is king
+Never edit code inside `experiments/<exp>/` (except reading logs/state). Change `src/`, then rebuild or inject. Experiments are untracked autarkic copies.
 
-## 🛑 GENERAL MANDATE: STRICT INQUIRY-FIRST / ADVISORY-FIRST DISCIPLINE
-To prevent aggressive overstepping and blind actionism, **all ticketing, resource-creation, and changelog/versioning tasks must follow a strict Inquiry-First protocol**:
-1. **Never write files or perform Git operations based on casual inquiries** (e.g. "Do we have a ticket for X?", "What do you think of idea Y?"). Treat these strictly as inquiries.
-2. **First propose, then execute:** Always present proposed tickets, folder renames, or changelog changes **as text inside the chat first**. 
-3. **Wait for explicit Directive:** Do NOT modify the file system or run mutating commands until the user issues a clear directive (e.g., "Create the ticket", "Write this", "Execute").
+## Experiment lifecycle
+| Task | Container path (supported, ADR 0002) | Native path (dev/CI only, unsafe for agent code) |
+|---|---|---|
+| Build | `npm run build:docker -- <exp> --mission "..." [--rounds N --agent ID --location SYS --force]` (always `--skip-tests`) | `npm run build -- <exp> --mission "..." [...] [--skip-tests]` (runs the test hub first unless skipped) |
+| Run | `npm run sim:docker -- <exp>` (image engine, read-only root FS, only `experiments/<exp>` mounted) | `npm run sim <exp>` (runs `experiments/<exp>/sim_engine/core/runner.js`) |
+| Mock run | `E2E_MOCK=true npm run sim:docker -- <exp>` | `E2E_MOCK=true npm run sim <exp>` |
+| Patch running exp | not available; rebuild with `--force` or rebuild the image | `npm run inject <exp> engine\|tools\|migrate\|<src path>` |
+| Reset to round 0, keep `config.json` | rebuild with `--force` | `npm run reset <exp>` |
+| Apply migrations | via rebuild | `npm run migrate -- experiments/<exp>/_verse/universe.db` or `npm run inject <exp> migrate` |
+| Analyse | — | `npm run analyze -- <exp>` |
 
----
+- `scripts/build.py` copies `src/bob_os/_verse`, `src/bob_os/core`, `src/sim_engine` into the experiment, writes `config.json` from `src/bob_os/templates/mission_template.json` (random 8-digit `seed`), runs `core/bin/init_db.py` (migrations), checks the result. Seeding happens on first engine start (`init_db.py --seed`).
+- `scripts/sim_docker.js` passes only allowlisted env vars (LLM keys, `VOG_TOKEN`, `VOG_HOST`, `C2_PORT`, `E2E_MOCK`, `E2E_MOCK_*`) from shell and root `.env` (`.env` wins). Image override: `NEUMANN_SIM_IMAGE`.
+- `inject tools` copies all of `src/bob_os/core` (including migrations); follow with `inject migrate` when migrations changed.
+- Monitor: `cd hud && npm run dev`; VoG writes need `VOG_TOKEN` in the root `.env`.
 
-## 🏛️ PART I: PIPELINES, BUILD, AND DEPLOYMENT
+## Ticket system (`.tickets/`)
+| Folder | Meaning | GitHub mapping |
+|---|---|---|
+| `open/` | decided backlog | issue open, column Todo |
+| `ongoing/` | in progress | issue open, column In Progress |
+| `closed/` | done and verified | issue closed, column Done |
+| `pool/` | undecided ideas | issue open, label `status:pool` |
+| `epics/` | roadmaps `EPIC-xx-*.md` | issue open, label `type:epic`, title `[EPIC-xx] …` |
+| `resources/todo/`, `resources/done/` | concept and source documents | not synced |
 
-### 1. The Golden Rule: "Code is King"
-Never modify files directly within an `experiments/` directory (except for reading logs/state or injecting patches). All permanent changes must happen in the master blueprints:
-- `bob_os/core/`: System logic and binaries (Admin/Kernel layer).
-- `bob_os/_verse/`: Agent sandbox (Hardware/Tools layer).
-- `sim_engine/`: Node.js orchestration engine.
+- Status = folder (ADR 0003). File names are status-neutral: `TCK-<id>-<slug>.md`. Move with `git mv` to keep history and links.
+- Frontmatter: `id`, `title`, `epic`, `epic_phase`, `status`, `priority`, `wave`, `created`, `dependencies`; closed adds `completed: YYYY-MM-DD` and `version: "vX.Y.Z"`. Keep `status` consistent with the folder.
+- Body: `## Description`, `## Verified Code Gap`, `## Definition of Done` (checkboxes), `## Verification Command`, `## References`. Pool tickets: `## Source`, `## Offene Entscheidung`.
+- New ticket: search `open/ ongoing/ pool/ closed/` for duplicates first; extend an existing ticket if it covers the topic. Next free ID = highest existing `TCK-` number + 1.
+- Pool → decided: move to `open/`.
+- Index `docs/EPIC_CONSOLIDATION_BACKLOG.md`: the block between the `GENERATED TICKET INDEX` markers is generated; never edit it by hand. Regenerate offline with `node .github/scripts/sync_github.js --index-only`.
+- Sync: `npm run tickets:pull` (GitHub → local, moves files, rebuilds index) and `npm run tickets:push` (local → GitHub issues and labels). Credentials from `.env`. CI sync (`.github/workflows/sync-tickets.yml`) runs only on push to `master`/`main`; PRs run tests only.
 
-### 2. Build & Reset Workflow
-To create a fresh experiment or perform a hard reset:
-```bash
-# 1. Clear existing experiment if necessary
-rm -rf experiments/ONE
+## Closing a ticket (one atomic step, on directive)
+1. Tests green: `npm run test:docker` (plus HUD `npx tsc --noEmit && npx vitest run` in `hud/` if touched).
+2. `git mv .tickets/<open|ongoing>/TCK-<id>-<slug>.md .tickets/closed/`; set `status: "closed"`, `completed`, `version`; tick the DoD boxes.
+3. Keep the gap section (as `## Verified Code Gap (Ausgangslage)`) and add `## Verification (Code SSoT)`: files, functions, tests and the command output that prove the result.
+4. Version: bump `package.json` `version` (patch for hardening/fixes, minor for features).
+5. `docs/CHANGELOG.md`: add a row to the release-plan table and a section `### [vX.Y.Z] - YYYY-MM-DD` with a category heading (`#### Added|Changed|Fixed|Refactored|Removed|Security`), one bullet and `*Ticket:* [TCK-<id>](../.tickets/closed/TCK-<id>-<slug>.md)` (plus ADR link if any).
+6. Decision made (architecture, runtime, process)? Write `docs/adr/NNNN-slug.md` (Status, Date, Ticket, Context, Options, Decision, Consequences) and link it from ticket and changelog.
+7. Regenerate the ticket index (`--index-only`).
+8. Commit: one commit per ticket, staged by explicit paths (no `git add .`), message `type(scope): summary (ref TCK-<id>)`; types `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `build`. Push only on directive.
 
-# 2. Build using the master script (automatically runs the CI pipeline first!)
-python3 bob_os/build.py ONE --rounds 1000 --mission "Your Mission Text"
-```
-
-### 3. Hot-Patching (Injections)
-To apply master changes to a running experiment without losing database progress:
-- **Engine Update:** `npm run inject <EXP_NAME> engine` (Syncs `sim_engine/`).
-- **Tool/Physics Update:** `npm run inject <EXP_NAME> tools` (Syncs `core/` and `_verse/tools/`).
-
-### 4. Deployment & CI Checklist (GitHub Actions)
-Before every build or major inject, you MUST verify the test status.
-- **Local Verification:** Run the central test hub: `npm test` (Ensure all 15+ test suites are GREEN).
-- **Automated CI Workflow (`.github/workflows/test-ci.yml`):** Runs tests automatically on **every push on any branch** and on **every pull request** to master/main. This guarantees the build is never broken.
-
-### 5. Database Schema & Migrations System
-Bob-OS utilizes a framework-free, transactional, SQL-file-based migration system to manage the SQLite `universe.db` schema across all lifecycle stages.
-
-#### Structure of Migrations
-All baseline and incremental schema definitions reside in the centralized migrations folder:
-- **Location:** `src/bob_os/core/migrations/`
-- **Ground Zero Baseline:** `0001_ground_zero.sql` (defines the foundational schema for systems, agents, ships, blueprints, infrastructure, etc.)
-- **Incremental Migrations:** Created sequentially as `0002_add_feature_name.sql`, `0003_another_change.sql`, etc.
-
-#### How to Add a Schema Change (Migration Flow)
-When implementing a feature that requires database schema modifications (e.g., adding a new table or altering column fields):
-1. **Create the Migration File:** Write a clean SQL script named sequentially (e.g., `src/bob_os/core/migrations/0002_add_cargo_slots.sql`).
-2. **Write Pure SQL:** Use native SQLite queries (such as `ALTER TABLE` or `CREATE TABLE`).
-3. **Tracking Version:** Applied version file names are automatically inserted into the database's `schema_migrations` table for persistence tracking.
-
-#### Executing Database Migrations
-Migrations are automatically triggered across various operations scripts, so developers do not need to initialize databases manually:
-- **Build (`npm run build` or `python3 scripts/build.py`):** Dynamically provisions a fresh database, executes all sorted migrations, and triggers `seed_db.py` to populate starting systems, agents, and vessels.
-- **Injections (`npm run inject <exp_name> migrate`):** Hot-patches a running sandbox by copying new SQL files to the experiment's folder and executing migrations on the live database.
-- **Testing (`npm test`):** Executes all Python SDK/JS tests against transactional dynamic databases initialized via the Python wrapper `init_db.py` which dynamically applies the migration files.
-- **Manual Migration Command:** Run migrations on an existing experiment's database manually:
-  ```bash
-  npm run migrate experiments/<EXP_NAME>/_verse/universe.db
-  ```
-
----
-
-## 🎟️ PART II: GIT-BASED IN-CODE TICKETING ENGINE
-
-All planning data, roadmaps, and todo lists are version-controlled in the `.tickets/` folder at the project root. This maintains absolute synchronicity between code reality and project management.
-
-### 1. Structure of the Ticket-Space
-```text
-.tickets/
-├── open/                # Outstanding backlog tasks (status: open)
-├── ongoing/             # Tasks currently in active development (status: ongoing)
-└── closed/              # Completed and verified milestones (status: closed)
-```
-
-### 2. Formulating New Ideas (Backlog Ticket Creation)
-When the user proposes a new feature, optimization idea, or bug fix:
-1. **De-duplication Check:** Systematically search `.tickets/open/`, `.tickets/ongoing/`, and `.tickets/closed/` to ensure no similar ticket or duplicate issue exists. If a task is partially covered, update the existing ticket rather than creating a new one.
-2. **Advisory Proposal (Text-First):** Draft the proposed ticket (including ID, Slug, Priority, Description, and Verified Code Gap) **as text in the chat** and explain your reasoning. Ask the user for feedback.
-3. **Execution (Only upon Directive):** Once the user explicitly tells you to create it, slice the ticket and write the file exactly as: `TCK-<ID>-<short-slug>.md` (e.g., `TCK-114-example-feature.md`) using YAML frontmatter.
-   - **CRITICAL DESIGN RULE:** Filenames and internal IDs must be **strictly status-neutral** (e.g., `TCK-114`, NOT `TCK-TODO-114` or `TCK-DONE-114`). This prevents broken relative links or messy renames when tickets change status.
-4. **Local vs. Remote Status Tracking:**
-   - **Locally:** The status of a ticket is tracked **exclusively by the directory it resides in** (`open/`, `ongoing/`, or `closed/`).
-   - **Remotely (GitHub):** The status is mapped **exclusively to the Kanban Project Column** based on the issue state.
-5. **Additive Resource Creation:** If the idea requires deep technical design or strategy, write a new markdown file under `.tickets/resources/todo/concepts/` or `.tickets/resources/todo/epics/` and add a relative link to the ticket's `## References` section. Do NOT modify old/completed resources.
-6. **Update Index:** Add the new ticket as a row to the master table in `docs/EPIC_CONSOLIDATION_BACKLOG.md`.
-
-### 3. Transitioning to Progress (`open` -> `ongoing`)
-When work begins on a ticket (only upon explicit user directive):
-1. Move the ticket file from `.tickets/open/` to `.tickets/ongoing/` (preferably using `git mv`).
-   - *Note:* Since filenames are status-neutral, this is a clean file move that **retains full Git history** and does not break relative markdown links!
-2. Update the `status:` field in the YAML frontmatter to `"ongoing"`.
-3. Update the status column in the index file `docs/EPIC_CONSOLIDATION_BACKLOG.md`.
-
-### 4. GitHub Issues & Projects Bidirectional Sync (TCK-014)
-We have a native, bidirectional synchronization engine to keep your local `.tickets/` repository and GitHub Issues/Projects completely in sync.
-
-#### Authentication & Setup
-The local machine is fully configured with your private **SSH Key for GitHub**, allowing secure, passwordless git push/pull operations. The sync script automatically loads your credentials and API key directly from `.env`.
-
-#### Available Commands:
-- **PULL Sync (Remote ──> Local):**
-  Fetches all issues from GitHub, updates local frontmatter/descriptions, moves folders accordingly, and **automatically rebuilds the register index** `docs/EPIC_CONSOLIDATION_BACKLOG.md` to reflect any remote changes:
-  ```bash
-  npm run tickets:pull
-  ```
-- **PUSH Sync (Local ──> Remote):**
-  Parses local status-neutral tickets and updates GitHub Issues (creating new ones, updating titles/body/labels, and closing completed ones):
-  ```bash
-  npm run tickets:push
-  ```
-
-#### Board Column Sync:
-- Tickets in `/open/` map to Issue State `open` and Project Column `Todo`.
-- Tickets in `/ongoing/` map to Issue State `open` and Project Column `In Progress`.
-- Tickets in `/closed/` map to Issue State `closed` and Project Column `Done`.
-
-#### GitOps Trigger Security (PR Guard):
-- **Pull Requests do NOT trigger Sync:** To prevent unmerged branch concepts or draft changes from cluttering your production Kanban board, pull requests only execute CI Tests.
-- **Sync strictly on push/merge to master/main:** The ticket synchronization workflow `.github/workflows/sync-tickets.yml` is strictly gated to direct pushes or merges on `master` or `main`.
-
----
-
-## 🚀 PART III: CLOSING TICKETS, CHANGELOGS, AND VERSIONING
-
-Closing a ticket and bumping a version must be treated as a single, atomic, semantic release step. **Never perform commits or releases automatically; only do so upon explicit user instruction.**
-
-### 1. Branching & Commit Conventions
-To maintain an unbreakable audit trail, tie every development step directly to the ticketing system:
-- **Branch Naming:** Format your feature and bugfix branches with the corresponding ticket ID:
-  `feature/TCK-101-slug-description` or `fix/TCK-102-bug-name`
-- **Commit Message Format:** Every commit message **must** refer explicitly to the ticket ID:
-  `feat(core): brief summary of change (ref TCK-101)`
-
-### 2. Closing a Ticket (`open`/`ongoing` -> `closed`)
-When a ticket is completed and verifiably tested (CI is green):
-1. **Propose the Close (Text-First):** Present the exact verification details and code changes as text in the chat.
-2. **Move File (Upon Directive):** Relocate the ticket file to `.tickets/closed/` as `TCK-<ID>-<slug>.md` (preferably using `git mv`).
-3. **Update Frontmatter:**
-   - Change `status:` to `"closed"`.
-   - Add `completed: YYYY-MM-DD`.
-   - Add `version: "vX.X"` (assigning it to the target release version).
-4. **Update Body:** Rename `## Verified Code Gap` to `## Verification (Code SSoT)` and document the exact files, methods, lines, and test suites that prove the feature works.
-5. **Update Index:** Update the ticket's status and link in `docs/EPIC_CONSOLIDATION_BACKLOG.md`.
-
-### 3. Updating the Central Changelog
-Whenever a ticket is closed, it must be recorded in the active changelog (`docs/CHANGELOG.md`):
-1. Locate the correct version section in `docs/CHANGELOG.md` (e.g., `### [v10.5] - YYYY-MM-DD`).
-2. Add a bullet point under `Added` or `Optimized` with a short summary, referencing the closed ticket ID with a relative markdown link (e.g., `- Feature Summary ([TCK-001](../.tickets/closed/...))`).
-3. If a version is ready to be released, update its status from `draft` to `RELEASED` in the Mittelfrist-Releaseplan table.
-
-### 4. Semantic Git Commit Protocol (Incremental Commits)
-When the user explicitly instructs you to commit or prepare a commit after completing a ticket:
-1. **Analyze changes:** Run `git status` and `git diff HEAD` to review modified files.
-2. **Stage files:** Stage only the specific ticket files, resources, and documentation indexes. Do NOT use `git add .` to avoid staging untracked files:
-   ```bash
-   git add .tickets/ docs/
-   ```
-3. **Commit message format:** Write a clear, concise commit message referencing the closed ticket:
-   `feat(core): brief summary of feature (ref TCK-101)`
-4. **Verify success:** Run `git status` to ensure the commit was successful.
+## Session continuity
+- Long-running brainstorming or design state: `.agents/state/<topic>.md` (resume point for a later session).
+- Implementation plans: `.agents/plans/`; move finished plans to `.agents/plans/done/`.
+- Findings that change how the repo works go into the matching skill in `.agents/skills/`, verified against code.

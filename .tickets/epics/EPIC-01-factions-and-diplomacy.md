@@ -12,8 +12,8 @@ created: 2026-10-19
 Kompetitives RTS-Szenario: Fraktionen, Fog of War, SCUT 2.0, Takeovers.
 
 ## Quellen
-- `.tickets/resources/todo/epics/EPIC_3_FACTIONS_AND_FOG.md`
-- `.tickets/resources/todo/ROADMAP_WORLD_MECHANICS.md (Säule A)`
+- `.tickets/resources/done/epics/EPIC_3_FACTIONS_AND_FOG.md`
+- `.tickets/resources/done/ROADMAP_WORLD_MECHANICS.md (Säule A)`
 
 ## Tickets
 - TCK-106

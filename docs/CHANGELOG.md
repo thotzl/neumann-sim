@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.10** | **2026-10-19** | `RELEASED` | Doku & Projekt-Skills | `[TCK-150]` |
 | **v13.10.9** | **2026-10-19** | `RELEASED` | Generischer OpenAI-kompatibler Driver | `[TCK-146]` |
 | **v13.10.8** | **2026-10-19** | `RELEASED` | Config- & Generator-SSoT | `[TCK-144]` |
 | **v13.10.7** | **2026-10-19** | `RELEASED` | Kernel-Skripte statt Inline-Python, Scripts-Registry-Migration | `[TCK-145]` |
@@ -34,6 +35,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.10] - 2026-10-19
+*Doku & Projekt-Skills. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Documentation
+- **Doku & Projekt-Skills glattgezogen:** Projekt-Skills gegen den aktuellen Code neu geschrieben (8 statt 11, alle Pfade/Befehle geprüft), README und Engine-/Physik-/SDK-Doku aktualisiert, erledigte Ideendokumente archiviert, 0 tote Links mit automatischem Link-Check im Hub.
+  - *Ticket:* [TCK-150](../.tickets/closed/TCK-150-docs-and-skills-refresh.md)
 
 ### [v13.10.9] - 2026-10-19
 *Generischer OpenAI-kompatibler Driver. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
@@ -115,11 +123,11 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 #### Refactored (Code-Sanierung & SSoT)
 - **Komplette Eliminierung des TS-Generators:** Löschung von über 1300 Zeilen dupliziertem TypeScript-Code und redundanten Test-Suiten. Der Python-Sektorgenerator (`generator.py`) ist jetzt die alleinige, physische Single Source of Truth (SSoT).
-  - *Ticket:* `[TCK-108]` ([Link](../.tickets/open/TCK-108-deeper-verse-runway-setup.md))
+  - *Ticket:* `[TCK-108]` ([Link](../.tickets/closed/TCK-108-deeper-verse-runway-setup.md))
 - **Asynchroner Viewport-Puffer & Subprozess-Zubringer:** Das HUD-Frontend fragt Sektoren asynchron über den lokalen Node.js-Server ab. Dieser schlägt automatisch ein 40%iges Viewport-Padding auf und spawnt den Python-Generator unbemerkt im Hintergrund.
-  - *Ticket:* `[TCK-108]` ([Link](../.tickets/open/TCK-108-deeper-verse-runway-setup.md))
+  - *Ticket:* `[TCK-108]` ([Link](../.tickets/closed/TCK-108-deeper-verse-runway-setup.md))
 - **Die ultimative rules.json:** Verschmelzung von `ECONOMY_RULES.json` und `COSMIC_RULES.json` zu einer einzigen `rules.json` im Python-Core. Vollständige Dünung veralteter `agent_limits` für disembodied Sonden.
-  - *Ticket:* `[TCK-108]` ([Link](../.tickets/open/TCK-108-deeper-verse-runway-setup.md))
+  - *Ticket:* `[TCK-108]` ([Link](../.tickets/closed/TCK-108-deeper-verse-runway-setup.md))
 
 #### Added (Neue Features & Automation)
 - **Reflektive SQLite-to-TypeScript Typengenerierung:** Ein neuer In-Memory-Kompiler führt alle Migrationsskripte sequentiell aus und übersetzt die exakten Datenbankspalten und Views (`v_agents`, `v_ships` etc.) live in TypeScript-Typen für das Frontend.

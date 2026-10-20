@@ -26,6 +26,6 @@ Schiffe werden nicht mehr als statische Typen gekauft, sondern von den Agenten s
 
 ## 4. Beteiligte Core-Tickets (Schnittstellen-Verknüpfung)
 Sämtliche Meilensteine dieses Epics sind vollständig implementiert und über folgende Tickets versioniert:
-- **`[TCK-DONE-001]` Separation of Bob & Vessel (Host-Decoupled Software)** ([Link](../../.tickets/closed/TCK-DONE-001-bob-vessel-separation.md))
-- **`[TCK-DONE-004]` Persistent CAD Blueprints & Shipyard Construction** ([Link](../../.tickets/closed/TCK-DONE-004-cad-blueprints-shipyard.md))
-- **`[TCK-DONE-010]` Modular LLM-Connector-Layer & AI-Bridge** ([Link](../../.tickets/closed/TCK-DONE-010-modular-llm-connector.md))
+- **`[TCK-DONE-001]` Separation of Bob & Vessel (Host-Decoupled Software)** ([Link](../../.tickets/closed/TCK-001-bob-vessel-separation.md))
+- **`[TCK-DONE-004]` Persistent CAD Blueprints & Shipyard Construction** ([Link](../../.tickets/closed/TCK-004-cad-blueprints-shipyard.md))
+- **`[TCK-DONE-010]` Modular LLM-Connector-Layer & AI-Bridge** ([Link](../../.tickets/closed/TCK-010-modular-llm-connector.md))

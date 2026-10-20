@@ -18,3 +18,6 @@ TCK-142 (Ursachenanalyse `tests/js/test_v14_safety_grid.js`; eingeführt mit Com
 
 ## Offene Entscheidung
 Welcher Wert ist der beabsichtigte (0.02 oder 0.1)? Danach: ein Schlüssel in `rules.json`, von Planung und Physik gemeinsam gelesen; Test `test_v14_safety_grid.js` liest dann ohne Override.
+
+## Ergänzung (TCK-150)
+Die Physik liest zuerst `physics_constants.energy_cost_per_distance` aus der Experiment-`config.json` (0.1 in `src/bob_os/templates/mission_template.json` und `src/sim_engine/config/core-config.json`); der fehlende `rules.json`-Schlüssel ist nur der Fallback. Ein Fix muss Config-Templates und `rules.json` gemeinsam bereinigen.

@@ -1,24 +1,66 @@
 ---
 name: project-baseline
-description: Root architecture and entry point for Bob-OS V8.0
+description: Entry point for the neumann-sim / Bob-OS repository. Use at the start of any session in this repo to learn what the project is, where code lives, how to build, run and test it, and which project skill covers which area.
 ---
 
-# SKILL: Bob-OS Project Baseline (V8.0)
+# Project Baseline (neumann-sim / Bob-OS)
 
-This is the central nervous system for the Bob-OS simulation. It defines the core architecture.
+## What the project is
+Research simulation of LLM-driven von Neumann agents ("Bobs") in a procedurally generated universe.
+- **Engine (Node.js 20, `src/sim_engine/`):** turn-based state machine. Each turn it builds a prompt, calls an LLM driver, parses the action tags in the reply and executes them.
+- **Kernel (Python 3, `src/bob_os/core/`):** world physics and the agent SDK/CLI (`me …`). All world state lives in SQLite (`_verse/universe.db` per experiment).
+- **HUD (React/Vite, `hud/`):** monitor client plus the VoG WebSocket server (`hud/vog_server.cjs`).
+- **Experiments (`experiments/<exp>/`, untracked):** self-contained copies of engine, kernel and `_verse/` built by `scripts/build.py`. Never edit code there; fix `src/` and re-inject or rebuild.
 
-## 1. Project Philosophy
-- **Bob-OS** is a multi-agent survival simulation powered by LLMs (Gemini 2.5 Flash).
-- **Core Loop:** The Node.js engine (`sim_engine/runner.js`) queries the LLM. The LLM responds with `[ANALYZE]` and `[ACTION]`. The engine parses the actions, executes them in a Python sandbox, updates SQLite, and feeds the feedback into the next prompt.
-- **V8.0 Unified Functional Logic:** No more raw bash commands. Agents use a functional syntax both in the Prompt CLI and the Python SDK.
+Current version: `package.json` `version` and the top of `docs/CHANGELOG.md`.
 
-## 2. Directory Structure
-- `bob_os/core/`: The Python Kernel. Contains the unified CLI (`bin/bob.py`) and the SDK (`lib/bob_sdk.py`, `lib/db_config.py`). Protected from agents.
-- `bob_os/templates/`: Blueprints for new experiments (e.g., `mission_template.json`).
-- `sim_engine/`: The Node.js Runner. Handles API calls (`api_client.js`), security/parsing (`environment.js`), automation (`automation.js`), and VoG (`vog.js`).
-- `experiments/<version>/`: Isolated runtime environments. Built by `bob_os/build.py`. Each gets its own `_verse/universe.db`.
+## Layout (details: `REPO_MAP.md` next to this file)
+| Path | Content |
+|---|---|
+| `src/sim_engine/` | Engine: `core/runner.js`, `services/`, `modules/`, `helpers/`, `drivers/`, `config/core-config.json` |
+| `src/bob_os/core/` | Kernel: `bin/` (CLI + kernel scripts), `lib/` (SDK, services, `rules.json`, generator), `migrations/*.sql` |
+| `src/bob_os/_verse/` | Sandbox blueprint copied into each experiment (`population.json`) |
+| `src/bob_os/templates/mission_template.json` | Template for `experiments/<exp>/config.json` |
+| `scripts/` | Operator CLIs behind `npm run …` (build, run, inject, reset, migrate, docker wrappers, analyze); `scripts/dev/` manual live scripts |
+| `tests/` | `test_all.js` hub, `python/`, `js/`, `balancing/` |
+| `hud/` | Monitor client and VoG server |
+| `.tickets/` | Git ticket system (`open/ ongoing/ closed/ pool/ epics/ resources/`) |
+| `docs/` | Changelog, ADRs (`docs/adr/`), architecture and audit docs (`docs/revisit/`) |
 
-## 3. Development Workflow (TDD)
-- **CI Hub:** ALWAYS run `node sim_engine/test_all.js` to validate the entire Python and JS stack before pushing or building.
-- **Build:** `python3 bob_os/build.py <version> --rounds <X> --mission "<prompt>"` creates a clean sandbox.
-- **Run:** `npm run sim <version>` starts the simulation loop.
+## Runtime policy
+Linux containers are the only supported runtime (`docs/adr/0001-linux-container-runtime.md`). Simulations with real LLM agents run only in the runtime container (`docs/adr/0002-containerized-simulation-runtime.md`): agent-written Python must not run with host rights.
+
+## Commands
+Container path (any host, including Windows):
+```bash
+npm run test:docker                                   # full test hub in the test image
+npm run build:docker -- <exp> --mission "..." [--rounds N --force]
+npm run sim:docker -- <exp>                           # E2E_MOCK=true for a run without LLM calls
+```
+Native path (Linux dev container or CI only; agent code runs with your rights):
+```bash
+npm test                                              # node tests/test_all.js [--fail-fast]
+npm run build -- <exp> --mission "..." [--rounds N --skip-tests --force]
+npm run sim <exp>
+npm run inject <exp> engine|tools|migrate|<path>
+npm run reset <exp>
+npm run migrate -- experiments/<exp>/_verse/universe.db
+npm run analyze -- <exp>
+```
+HUD: `cd hud && npm install && npm run dev` (types sync, VoG server on 3001, Vite on 5173).
+
+## Working rules
+- Inquiry-first: questions and analysis requests are read-only. Propose changes, then act on an explicit directive (see `bob-os-ops`).
+- Verify claims against code. Docs in `docs/` lag behind the code in places; the code, migrations and `rules.json` are the reference.
+- One ticket, one commit: `type(scope): summary (ref TCK-xxx)`.
+
+## Project skills
+| Skill | Use for |
+|---|---|
+| `bob-os-core` | Engine architecture, turn loop, action tags, RUN allowlist, child env, ACL/keyring, automation, state split, coding standards |
+| `bob-os-sdk` | The `me …` CLI/SDK: syntax, parser, adding methods, how scripts call it |
+| `bob-os-physics` | Schema, `rules.json`, host decoupling, transit/energy, infrastructure, economy |
+| `bob-os-ops` | Build/inject/reset/migrate, container vs. native, ticketing, closing protocol, changelog, versioning |
+| `bob-os-testing` | Test hub, layers, fixtures, mock driver, registering tests |
+| `experiment-analyst` | Analysing a run: DB metrics, logs, agent behaviour, bug triage |
+| `identity-anchors` | Research philosophy behind prompts and agent design |

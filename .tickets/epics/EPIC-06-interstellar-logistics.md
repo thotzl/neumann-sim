@@ -12,8 +12,8 @@ created: 2026-10-19
 Interstellarer Güter- und Informationsfluss: Mass Driver, Kommunikationslatenz.
 
 ## Quellen
-- `.tickets/resources/todo/ROADMAP.md (Meilenstein 3)`
-- `.tickets/resources/todo/ADVANCED_MECHANICS_DUMP.md (§2)`
+- `.tickets/resources/done/ROADMAP.md (Meilenstein 3)`
+- `.tickets/resources/done/ADVANCED_MECHANICS_DUMP.md (§2)`
 
 ## Tickets
 - TCK-159

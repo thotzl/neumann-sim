@@ -30,6 +30,6 @@ Visuelle Aufwertung des Echtzeit-Monitors durch Rendering flüchtiger physikalis
 - **Synergies:** Erhöht die ästhetische Aussagekraft der Simulation drastisch und erleichtert die optische Fehlerdiagnose für den menschlichen Operator.
 
 ## References
-- Ur-Dossier (Frontend): [FRONTEND_ARCHITECTURE.md](../resources/done/FRONTEND_ARCHITECTURE.md)
-- WebSocket-Spezifikation: [V12_REALTIME_REACTIVE_UPGRADE.md](../resources/done/V12_REALTIME_REACTIVE_UPGRADE.md)
+- Ur-Dossier (Frontend): [FRONTEND_ARCHITECTURE.md](../../docs/concepts/FRONTEND_ARCHITECTURE.md)
+- WebSocket-Spezifikation: [V12_REALTIME_REACTIVE_UPGRADE.md](../../docs/concepts/V12_REALTIME_REACTIVE_UPGRADE.md)
 - Vorarbeit Transit-Linien: [TCK-132](../closed/TCK-132-transit-path-lines.md)

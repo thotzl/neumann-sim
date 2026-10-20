@@ -25,5 +25,5 @@ Ermöglicht den physischen Aufstieg von Replicanten-Hüllen (nicht Schiffen!) in
 - **Synergies:** Die Timeouts für autonome Skripte in `/src/sim_engine/modules/automation.js` und `/src/sim_engine/services/agent_turn_service.js` sollen direkt mit dem `core_level` des betreibenden Geists skalieren.
 
 ## References
-- Source: [IDEAS_AND_TASKS.md](../resources/todo/IDEAS_AND_TASKS.md)
+- Source: [IDEAS_AND_TASKS.md](../resources/done/IDEAS_AND_TASKS.md)
 - Waffen-Konzept (V14.0): [WEAPON_SYSTEMS_V14.md](../../docs/concepts/WEAPON_SYSTEMS_V14.md)

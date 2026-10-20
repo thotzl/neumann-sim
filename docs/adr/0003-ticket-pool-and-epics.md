@@ -3,7 +3,7 @@
 - Status: Accepted
 - Datum: 2026-10-19
 - Entscheider: Projekt-Architekt
-- Ticket: [TCK-137](../../.tickets/open/TCK-137-ticketing-pool-and-epics-sync.md), [EPIC-00](../../.tickets/epics/EPIC-00-platform-hardening.md)
+- Ticket: [TCK-137](../../.tickets/closed/TCK-137-ticketing-pool-and-epics-sync.md), [EPIC-00](../../.tickets/epics/EPIC-00-platform-hardening.md)
 
 ## Kontext
 

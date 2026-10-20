@@ -21,6 +21,6 @@ Vorbereitende relationale Datenbank-Struktur im Kernel zur Vorbereitung auf Fog-
 - **Synergies:** Fundament für kompetitives Gameplay.
 
 ## References
-- Source: [ROADMAP.md](../resources/todo/ROADMAP.md)
-- Fraktionen & Ideologien: [ADVANCED_MECHANICS_DUMP.md](../resources/todo/ADVANCED_MECHANICS_DUMP.md)
+- Source: [ROADMAP.md](../resources/done/ROADMAP.md)
+- Fraktionen & Ideologien: [ADVANCED_MECHANICS_DUMP.md](../resources/done/ADVANCED_MECHANICS_DUMP.md)
 - Waffen-Konzept (V14.0): [WEAPON_SYSTEMS_V14.md](../../docs/concepts/WEAPON_SYSTEMS_V14.md)

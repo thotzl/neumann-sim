@@ -41,5 +41,5 @@ Die gesamte Sandbox-Logik ist zustandsfrei (0-Byte-Datenbankabdruck) und determi
 
 ## References
 - Closed by: Gemini CLI
-- Parent Ticket: [TCK-108](../open/TCK-108-deeper-verse-runway-setup.md)
+- Parent Ticket: [TCK-108](TCK-108-deeper-verse-runway-setup.md)
 - Backlog Index: [EPIC_CONSOLIDATION_BACKLOG.md](../../docs/EPIC_CONSOLIDATION_BACKLOG.md)

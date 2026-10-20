@@ -21,4 +21,4 @@ Vorbereitende relationale Tabellen für Achievements und Missions-Meilensteine s
 - **Synergies:** Gibt den Agenten einen harten mathematischen "Drive", Meilensteine anzustreben, anstatt ziellos Rohstoffe zu horten.
 
 ## References
-- Source: [ROADMAP.md](../resources/todo/ROADMAP.md)
+- Source: [ROADMAP.md](../resources/done/ROADMAP.md)

@@ -59,5 +59,5 @@ Die `thoughts`-Zeichenkette wird nach erfolgreichem Parse-Handshake direkt und u
 ---
 
 ## References
-- Kognitives Design-Board: [SYSTEM_ARCHITECTURE.md](../docs/SYSTEM_ARCHITECTURE.md)
+- Kognitives Design-Board: [SYSTEM_ARCHITECTURE.md](../../docs/SYSTEM_ARCHITECTURE.md)
 - Design-Sparring: Gemini-CLI / Torsten Hötzel (V13.5 Run-Protokoll)

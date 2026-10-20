@@ -12,8 +12,8 @@ created: 2026-10-19
 Autonome Software ohne LLM: Roamer-Wrapper, geteilte Skript-Bibliotheken. Phasen 1–3 des Whitepapers sind umgesetzt (UBCL, System-Runde, KMI-Hub, logic_core).
 
 ## Quellen
-- `.tickets/resources/todo/ROAD_TO_ROAMER.md`
-- `.tickets/resources/todo/concepts/RTS_SURVIVAL_MECHANICS.md`
+- `.tickets/resources/done/ROAD_TO_ROAMER.md`
+- `.tickets/resources/done/concepts/RTS_SURVIVAL_MECHANICS.md`
 
 ## Tickets
 - TCK-156

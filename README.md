@@ -26,7 +26,29 @@ Development and tests run **only in Linux containers**; Windows and macOS are su
 npm run test:docker
 ```
 
-### I. Simulation Engine (Strictly NodeJS + NPM)
+### I. Starting the Simulation (Container)
+Simulations run **only in the runtime container** (see [ADR 0002](docs/adr/0002-containerized-simulation-runtime.md)). Agent-authored Python must never run with host rights. The container runs as a non-root user with a read-only root filesystem. Only `experiments/<exp>/` is bind-mounted writable. The root `.env` is not mounted.
+
+```bash
+# 1. Build an experiment inside the container (wraps scripts/build.py; same options as below,
+#    --skip-tests is always added: run the tests with `npm run test:docker`)
+npm run build:docker -- expanse_2 --rounds 1500 --mission "Establish permanent colonization cradle."
+
+# 2. Run the simulation inside the container (builds/refreshes the image `neumann-sim:runtime` first)
+npm run sim:docker -- expanse_2
+
+# Smoke run without LLM calls (mock driver), from Git Bash / Linux shells:
+E2E_MOCK=true npm run sim:docker -- expanse_2
+```
+
+- **Secrets:** `scripts/sim_docker.js` passes only allowlisted variables from the shell or the root `.env` (`.env` wins) into the container: the LLM driver keys (`API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`, `CEREBRAS_API_KEY`, `SAMBANOVA_API_KEY`, `OPENROUTER_API_KEY`, `DEEP_INFRA_KEY`/`DEEPINFRA_API_KEY`, `GITHUB_TOKEN`/`GITHUB_API_KEY`), `VOG_TOKEN`, `VOG_HOST`, `C2_PORT`, `E2E_MOCK` and `E2E_MOCK_*`. The engine passes no keys or tokens to Python children (`src/sim_engine/helpers/child_env.js`). Use dedicated, rate-limited keys: agent code running as the same user can still read the engine's process environment via `/proc` (see ADR 0002).
+- **Monitor:** the engine in the container reaches the VoG server on the host through `host.docker.internal`; a host-local `VOG_HOST` is mapped automatically. This works with Docker Desktop out of the box. On a Linux host, start the VoG server on the Docker bridge address, e.g. `VOG_HOST=172.17.0.1 npm run dev` in `hud/` (the wrapper always adds `--add-host=host.docker.internal:host-gateway`).
+- **Ollama:** set `"ollama_endpoint": "http://host.docker.internal:11434/api/chat"` in the experiment's `config.json`.
+- **Image override:** `NEUMANN_SIM_IMAGE` (default `neumann-sim:runtime`).
+- `npm run inject` / `npm run reset` are native-only. In container mode the image's engine always runs; rebuild an experiment with `npm run build:docker -- <exp> ... --force`.
+
+#### Native path (development only, unsafe)
+Runs agent Python with your user's rights on the host: it can read the repository, the `.env` and the rest of the filesystem. Use it only in a disposable Linux environment (devcontainer/CI) and never with real keys.
 
 ```bash
 # 1. Install engine dependencies

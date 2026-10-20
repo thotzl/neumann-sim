@@ -4,6 +4,7 @@ const { execFileSync } = require('child_process');
 const { checkAccess } = require('../services/acl_service');
 const { parseRunBlocks } = require('./action_parser');
 const { PYTHON_BIN } = require('../helpers/python_bin');
+const { childEnv } = require('../helpers/child_env');
 
 // TCK-138: Allowlist & path guards (no shell anywhere)
 const SAFE_FILE_NAME = /^[A-Za-z0-9._/-]+$/;
@@ -19,7 +20,7 @@ function getEnvState(universeDir) {
     const expRoot = path.resolve(universeDir, '..');
     try {
         const out = execFileSync(PYTHON_BIN, [bobPath, '--help'], {
-            env: { ...process.env, PYTHONPATH: expRoot }
+            env: childEnv({ PYTHONPATH: expRoot })
         }).toString();
         
         const parts = out.split("-".repeat(50));
@@ -199,7 +200,7 @@ else:
 conn.close()
 `.trim();
             try {
-                const checkOut = execFileSync(PYTHON_BIN, ['-c', checkScript, dbPath, String(agentId), target]).toString().trim();
+                const checkOut = execFileSync(PYTHON_BIN, ['-c', checkScript, dbPath, String(agentId), target], { env: childEnv() }).toString().trim();
                 if (checkOut.startsWith('[DENIED:')) {
                     feedback += checkOut + "\n";
                     continue;
@@ -375,13 +376,13 @@ print(script_id)
         // RUN-Allowlist (TCK-138): only SDK calls -> bob.py, or strictly parsed 'python3 scripts/<file>.py'.
         // Everything is executed via execFile (argv array, no shell).
         const expRoot = path.resolve(universeDir, '..');
-        const runEnv = {
-            ...process.env,
+        // TCK-139: allowlisted env, no API keys/tokens for agent-reachable Python
+        const runEnv = childEnv({
             PYTHONPATH: expRoot,
             BOB_ID: String(agentId),
             BOB_CYCLE: String(state?.round || 0),
             TEST_DB_PATH: path.join(universeDir, 'universe.db')
-        };
+        });
         let argv = null;
         let funcPart = null;
         const scriptMatch = cmd.match(SCRIPT_RUN);

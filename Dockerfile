@@ -1,9 +1,11 @@
-# Linux dev/test runtime for neumann-sim (ADR 0001, TCK-141).
-# Designed as the base for the containerized simulation runtime (TCK-139).
+# Linux dev/test runtime (ADR 0001, TCK-141) and simulation runtime (ADR 0002, TCK-139).
+# Stages: deps (OS + Python + npm deps), runtime (`--target runtime`, non-root
+# simulation with only the engine blueprint), test (default/last stage: full
+# repo for the test hub and the devcontainer).
 #
 # Base: Debian 13 "trixie" ships glibc 2.41; the sqlite3@6 prebuilt binary
 # requires glibc >= 2.38 (Debian 12 / Ubuntu 22.04 fail with GLIBC_2.38).
-FROM node:20-trixie-slim
+FROM node:20-trixie-slim AS deps
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -28,8 +30,19 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
-# Source is copied in (no bind mount): SQLite WAL hangs on Docker Desktop
-# Windows bind mounts, so tests must run on the container's own filesystem.
-COPY . .
+# Simulation runtime (TCK-139), started by `npm run sim:docker` / `build:docker`
+# with --read-only, tmpfs /tmp and only /app/experiments/<exp> mounted writable.
+# Contains just the engine and blueprints (no tests, docs, tickets, .env); the
+# files stay root-owned, so the non-root user cannot alter the engine.
+FROM deps AS runtime
+COPY src ./src
+COPY scripts/build.py ./scripts/build.py
+ENV HOME=/tmp
+USER node
+CMD ["node", "src/sim_engine/core/runner.js"]
 
+# Test hub and devcontainer. Source is copied in (no bind mount): SQLite WAL
+# hangs on Docker Desktop Windows bind mounts in the test hub (ADR 0001).
+FROM deps AS test
+COPY . .
 CMD ["node", "tests/test_all.js"]

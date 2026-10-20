@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { PYTHON_BIN } = require('../helpers/python_bin');
+const { childEnv } = require('../helpers/child_env');
 const stateExporter = require('./state_exporter');
 const automation = require('../modules/automation');
 
@@ -28,7 +29,7 @@ function executeSystemRound(vDir, universeDir, state, logger, logFile) {
         // 2. Run physical turn-loop update (decay, mineral regen, power grids)
         const physicsScript = path.join(vDir, 'core', 'bin', 'physics_update.py');
         execFileSync(PYTHON_BIN, [physicsScript, String(state.round)], {
-            env: { ...process.env, TEST_DB_PATH: dbPath, PYTHONPATH: vDir },
+            env: childEnv({ TEST_DB_PATH: dbPath, PYTHONPATH: vDir }),
             stdio: 'inherit'
         });
 

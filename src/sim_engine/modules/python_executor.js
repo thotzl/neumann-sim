@@ -1,6 +1,7 @@
 const { execFileSync } = require('child_process');
 const path = require('path');
 const { PYTHON_BIN } = require('../helpers/python_bin');
+const { childEnv } = require('../helpers/child_env');
 
 /**
  * Executes a Python script or tool within the experiment context.
@@ -9,10 +10,10 @@ const { PYTHON_BIN } = require('../helpers/python_bin');
 function runPython(vDir, scriptPath, args = [], options = {}) {
     const bobId = options.bobId || null;
     const coreLibPath = path.resolve(vDir, 'core', 'lib');
-    const env = {
-        ...process.env,
+    // TCK-139: allowlisted env, no API keys/tokens for agent-authored Python
+    const env = childEnv({
         PYTHONPATH: [path.resolve(vDir), coreLibPath].join(path.delimiter)
-    };
+    });
     if (bobId) {
         env.BOB_ID = bobId;
     }

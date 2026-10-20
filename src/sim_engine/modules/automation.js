@@ -3,6 +3,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { runPython } = require('./python_executor');
 const { PYTHON_BIN } = require('../helpers/python_bin');
+const { childEnv } = require('../helpers/child_env');
 const envManager = require('./environment');
 
 function runSystemAutomations(vDir, universeDir, state) {
@@ -66,7 +67,7 @@ print(json.dumps(active_scripts))
 
     let activeScripts = [];
     try {
-        const jsonOut = execFileSync(PYTHON_BIN, ['-c', getScriptsScript, dbPath]).toString().trim();
+        const jsonOut = execFileSync(PYTHON_BIN, ['-c', getScriptsScript, dbPath], { env: childEnv() }).toString().trim();
         activeScripts = JSON.parse(jsonOut);
     } catch (e) {
         // Fallback silently if table doesn't exist yet
@@ -184,7 +185,7 @@ conn.close()
 `.trim();
 
         try {
-            execFileSync(PYTHON_BIN, ['-c', syncProxyScript, dbPath, String(item.target_type), String(item.target_id), proxyId]);
+            execFileSync(PYTHON_BIN, ['-c', syncProxyScript, dbPath, String(item.target_type), String(item.target_id), proxyId], { env: childEnv() });
         } catch (e) {
             console.error("[AUTOMATION ERROR] Failed to sync proxy:", e.message);
         }

@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.4** | **2026-10-19** | `RELEASED` | Containerisierte Simulations-Laufzeit | `[TCK-139]` |
 | **v13.10.3** | **2026-10-19** | `RELEASED` | Linux-Container-Laufzeit & deklarierte Abhängigkeiten | `[TCK-141]` |
 | **v13.10.2** | **2026-10-19** | `RELEASED` | VoG-Server-Härtung | `[TCK-140]` |
 | **v13.10.1** | **2026-10-19** | `RELEASED` | Ticket-Pool & Epics im GitHub-Sync | `[TCK-137]` |
@@ -28,6 +29,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.4] - 2026-10-19
+*Containerisierte Simulations-Laufzeit. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Security
+- **Simulation im Container:** `npm run build:docker` / `npm run sim:docker` starten die Simulation in einem read-only Non-Root-Container, gemountet ist nur das Experiment. Python-Kindprozesse erhalten eine Env-Allowlist ohne API-Keys (auch nativ). Bekanntes Restrisiko: Keys über `/proc` der Engine lesbar → TCK-167 (Pool, Entscheidung offen).
+  - *Ticket:* [TCK-139](../.tickets/closed/TCK-139-containerized-simulation-runtime.md) · ADR [0002](adr/0002-containerized-simulation-runtime.md)
 
 ### [v13.10.3] - 2026-10-19
 *Linux-Container-Laufzeit & deklarierte Abhängigkeiten. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

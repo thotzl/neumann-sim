@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { PYTHON_BIN } = require('../helpers/python_bin');
+const { childEnv } = require('../helpers/child_env');
 
 const stateManager = require('../services/state_manager');
 const configLoader = require('../helpers/config_loader');
@@ -90,7 +91,7 @@ async function run() {
         try {
             execFileSync(PYTHON_BIN, [path.join(vDir, 'core', 'bin', 'init_db.py'), '--seed'], {
                 cwd: vDir,
-                env: { ...process.env, PYTHONPATH: vDir },
+                env: childEnv({ PYTHONPATH: vDir }),
                 stdio: 'inherit'
             });
         } catch (e) {

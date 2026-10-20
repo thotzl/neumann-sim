@@ -2,9 +2,26 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// Ticket folders and their role. Status is defined by the folder (see docs/adr/0003-ticket-pool-and-epics.md).
+// pool/  = undecided ideas (open issue, label status:pool)
+// epics/ = roadmaps / whitepapers (open issue, label type:epic, title "[EPIC-xx] ...")
+const TICKET_FOLDERS = ['open', 'ongoing', 'pool', 'epics', 'closed'];
+const EPIC_FOLDER = 'epics';
+const POOL_FOLDER = 'pool';
+const EPIC_LABEL = 'type:epic';
+
+const INDEX_BEGIN = '<!-- BEGIN GENERATED TICKET INDEX (node .github/scripts/sync_github.js --index-only) -->';
+const INDEX_END = '<!-- END GENERATED TICKET INDEX -->';
+
+// GitHub context (initialized in main(), only required for PUSH / PULL)
+let token = null;
+let BASE_URL = null;
+let HEADERS = null;
+
 // Automatically load local .env variables if running locally (Dependency-Free!)
-const envPath = path.join(process.cwd(), '.env');
-if (fs.existsSync(envPath)) {
+function loadDotEnv() {
+    const envPath = path.join(process.cwd(), '.env');
+    if (!fs.existsSync(envPath)) return;
     fs.readFileSync(envPath, 'utf-8').split(/\r?\n/).forEach(line => {
         const trimmed = line.trim();
         if (trimmed && !trimmed.startsWith('#')) {
@@ -23,63 +40,64 @@ if (fs.existsSync(envPath)) {
 }
 
 // 1. Get GitHub credentials & repository info
-let token = process.env.GITHUB_TOKEN;
-if (!token) {
-    console.error("❌ GITHUB_TOKEN environment variable is missing. Synchronization aborted.");
-    process.exit(1);
-}
-
-// Clean up any trailing/leading whitespaces or quote artifacts from the token
-token = token.trim();
-
-// Log token diagnostic info (secure, only prefix and length)
-const tokenPrefix = token.substring(0, 4);
-console.log(`🔑 Diagnostics: Token prefix="${tokenPrefix}", length=${token.length}`);
-
-let repository = process.env.GITHUB_REPOSITORY; // Injected automatically by GitHub Actions
-if (!repository) {
-    try {
-        const remoteUrl = execSync('git config --get remote.origin.url').toString().trim();
-        // Match formats: git@github.com:owner/repo.git or https://github.com/owner/repo.git
-        const match = remoteUrl.match(/github\.com[:/]([^/]+\/[^.]+)(?:\.git)?$/);
-        if (match && match[1]) {
-            repository = match[1];
-        }
-    } catch (e) {
-        console.warn("⚠️ Could not extract repository path from local git config. Fallback to manual setup.");
+function initGitHubContext() {
+    token = process.env.GITHUB_TOKEN;
+    if (!token) {
+        console.error("❌ GITHUB_TOKEN environment variable is missing. Synchronization aborted.");
+        process.exit(1);
     }
+
+    // Clean up any trailing/leading whitespaces or quote artifacts from the token
+    token = token.trim();
+
+    // Log token diagnostic info (secure, only prefix and length)
+    const tokenPrefix = token.substring(0, 4);
+    console.log(`🔑 Diagnostics: Token prefix="${tokenPrefix}", length=${token.length}`);
+
+    let repository = process.env.GITHUB_REPOSITORY; // Injected automatically by GitHub Actions
+    if (!repository) {
+        try {
+            const remoteUrl = execSync('git config --get remote.origin.url').toString().trim();
+            // Match formats: git@github.com:owner/repo.git or https://github.com/owner/repo.git
+            const match = remoteUrl.match(/github\.com[:/]([^/]+\/[^.]+)(?:\.git)?$/);
+            if (match && match[1]) {
+                repository = match[1];
+            }
+        } catch (e) {
+            console.warn("⚠️ Could not extract repository path from local git config. Fallback to manual setup.");
+        }
+    }
+
+    if (!repository) {
+        console.error("❌ Could not identify the GitHub repository path (owner/repo). Please set GITHUB_REPOSITORY.");
+        process.exit(1);
+    }
+
+    const [owner, repoName] = repository.split('/');
+    console.log(`📂 Repository: https://github.com/${owner}/${repoName}`);
+
+    BASE_URL = `https://api.github.com/repos/${owner}/${repoName}`;
+
+    // COMPATIBILITY WORKAROUND: Classic Personal Access Tokens (PATs) starting with ghp_ or older Classic Tokens
+    // require 'token <token>' authorization header on classical GitHub APIs to prevent 404 unauthorized errors.
+    const authHeader = (token.startsWith('ghp_') || token.startsWith('github_pat_'))
+        ? `token ${token}`
+        : `Bearer ${token}`;
+
+    HEADERS = {
+        'Authorization': authHeader,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'Bob-OS-Sync-Script'
+    };
 }
-
-if (!repository) {
-    console.error("❌ Could not identify the GitHub repository path (owner/repo). Please set GITHUB_REPOSITORY.");
-    process.exit(1);
-}
-
-const [owner, repoName] = repository.split('/');
-const isPullMode = process.argv.includes('--pull') || process.argv.includes('-p');
-console.log(`🛰️ Mode: ${isPullMode ? 'PULL (Remote ──> Local)' : 'PUSH (Local ──> Remote)'}`);
-console.log(`📂 Repository: https://github.com/${owner}/${repoName}`);
-
-const BASE_URL = `https://api.github.com/repos/${owner}/${repoName}`;
-
-// COMPATIBILITY WORKAROUND: Classic Personal Access Tokens (PATs) starting with ghp_ or older Classic Tokens
-// require 'token <token>' authorization header on classical GitHub APIs to prevent 404 unauthorized errors.
-const authHeader = (token.startsWith('ghp_') || token.startsWith('github_pat_'))
-    ? `token ${token}`
-    : `Bearer ${token}`;
-
-const HEADERS = {
-    'Authorization': authHeader,
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-    'User-Agent': 'Bob-OS-Sync-Script'
-};
 
 // Simple, robust YAML Frontmatter parser & serializer (Dependency-Free!)
-function parseTicket(filePath) {
-    const rawContent = fs.readFileSync(filePath, 'utf-8');
-    const frontmatterRegex = /^---\r?\n([\s\S]+?)\r?\n---\r?\n([\s\S]*)$/;
-    const match = rawContent.match(frontmatterRegex);
+// Line endings are normalized to LF so CRLF checkouts (Windows) produce identical bodies.
+function parseTicketContent(rawContent, filePath = '') {
+    const content = rawContent.replace(/\r\n/g, '\n');
+    const frontmatterRegex = /^---\n([\s\S]+?)\n---\n([\s\S]*)$/;
+    const match = content.match(frontmatterRegex);
     if (!match) return null;
 
     const yamlStr = match[1];
@@ -91,14 +109,17 @@ function parseTicket(filePath) {
         if (idx !== -1) {
             const key = line.substring(0, idx).trim();
             let val = line.substring(idx + 1).trim();
-            // Clean up quotes
-            if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
-            if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
-            // Handle arrays
+            // Clean up quotes (and undo the \" escaping written by stringifyTicket)
+            if (val.length >= 2 && val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1).replace(/\\"/g, '"');
+            else if (val.length >= 2 && val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
+            // Handle arrays (quoted JSON style or unquoted [A, B])
             if (val.startsWith('[') && val.endsWith(']')) {
                 try {
                     val = JSON.parse(val.replace(/'/g, '"'));
-                } catch(e) {}
+                } catch(e) {
+                    const inner = val.slice(1, -1).trim();
+                    val = inner ? inner.split(',').map(s => s.trim()).filter(Boolean) : [];
+                }
             }
             metadata[key] = val;
         }
@@ -107,11 +128,16 @@ function parseTicket(filePath) {
     return { metadata, body: bodyStr, raw_path: filePath, filename: path.basename(filePath) };
 }
 
+function parseTicket(filePath) {
+    return parseTicketContent(fs.readFileSync(filePath, 'utf-8'), filePath);
+}
+
 function stringifyTicket(metadata, body) {
     let yamlLines = ['---'];
     Object.keys(metadata).forEach(key => {
         if (key === 'folder_status' || key === 'raw_path' || key === 'filename') return; // Skip temporary fields
         let val = metadata[key];
+        if (val === undefined || val === null) return;
         if (Array.isArray(val)) {
             yamlLines.push(`${key}: ${JSON.stringify(val)}`);
         } else if (typeof val === 'string' && (val.includes(':') || val.includes('#') || val.includes('"') || val.includes("'"))) {
@@ -124,20 +150,18 @@ function stringifyTicket(metadata, body) {
     return yamlLines.join('\n') + '\n\n' + body + '\n';
 }
 
-// 2. Scan all local tickets across status directories
-function getLocalTickets() {
-    const ticketDir = path.join(process.cwd(), '.tickets');
-    const statuses = ['open', 'ongoing', 'closed'];
+// 2. Scan all local tickets across status directories (open, ongoing, pool, epics, closed)
+function getLocalTickets(ticketDir = path.join(process.cwd(), '.tickets')) {
     const tickets = [];
 
-    statuses.forEach(status => {
+    TICKET_FOLDERS.forEach(status => {
         const dirPath = path.join(ticketDir, status);
         if (!fs.existsSync(dirPath)) return;
 
         const files = fs.readdirSync(dirPath).filter(file => file.endsWith('.md'));
         files.forEach(file => {
             const parsed = parseTicket(path.join(dirPath, file));
-            if (parsed) {
+            if (parsed && parsed.metadata.id) {
                 parsed.metadata.folder_status = status;
                 tickets.push(parsed);
             }
@@ -147,7 +171,258 @@ function getLocalTickets() {
     return tickets;
 }
 
-// 3. Make REST API helper calls via native fetch
+// Helper to sanitize filenames
+function sanitizeSlug(title) {
+    return title.toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+}
+
+function isEpicId(id) {
+    return /^EPIC-\d+$/.test(id || '');
+}
+
+// Map a local ticket (folder + frontmatter) to the expected GitHub issue title, state and managed labels
+function mapTicketToIssue(meta) {
+    const folder = meta.folder_status;
+    const isEpic = folder === EPIC_FOLDER;
+    const labels = [];
+
+    if (meta.priority || !isEpic) {
+        labels.push(`priority:${meta.priority || 'medium'}`);
+    }
+    if (isEpic) {
+        labels.push(EPIC_LABEL);
+    } else {
+        labels.push(`status:${folder}`);
+    }
+    if (meta.epic_phase) {
+        labels.push(`epic:${sanitizeSlug(meta.epic_phase)}`);
+    }
+    // Epic reference label (e.g. epic:EPIC-00); epics carry their own ID for grouping
+    const epicRef = meta.epic || (isEpic ? meta.id : '');
+    if (isEpicId(epicRef) && !labels.includes(`epic:${epicRef}`)) {
+        labels.push(`epic:${epicRef}`);
+    }
+
+    return {
+        title: `[${meta.id}] ${meta.title}`,
+        state: folder === 'closed' ? 'closed' : 'open',
+        labels
+    };
+}
+
+// Labels owned by this script (considered by the push label diff check)
+function isManagedLabel(label) {
+    return label.startsWith('priority:') || label.startsWith('status:') || label.startsWith('epic:') || label === EPIC_LABEL;
+}
+
+// Parse issue title "[TCK-101] Title" or "[EPIC-00] Title" (status-neutral)
+function parseIssueTitle(title) {
+    const titleMatch = title.match(/^\[((?:TCK|EPIC)-\d+)\]\s*(.*)$/);
+    if (!titleMatch) return null;
+    return { id: titleMatch[1], title: titleMatch[2].trim() };
+}
+
+// Map a GitHub issue back to its local folder and metadata hints.
+// pool/ and epics/ items stay in their folder; unknown status labels keep the legacy pass-through behavior.
+function mapIssueToLocal(issue, localFolder = null) {
+    let priority = null;
+    let statusLabel = null;
+    let epicPhase = '';
+    let epic = '';
+    let hasEpicLabel = false;
+
+    issue.labels.forEach(labelObj => {
+        const label = typeof labelObj === 'string' ? labelObj : labelObj.name;
+        if (label === EPIC_LABEL) hasEpicLabel = true;
+        else if (label.startsWith('priority:')) priority = label.substring(9);
+        else if (label.startsWith('status:')) statusLabel = label.substring(7);
+        else if (/^epic:EPIC-\d+$/.test(label)) epic = label.substring(5);
+        else if (label.startsWith('epic:')) epicPhase = label.substring(5);
+    });
+
+    const parsedTitle = parseIssueTitle(issue.title);
+    const isEpic = hasEpicLabel || localFolder === EPIC_FOLDER || (parsedTitle && isEpicId(parsedTitle.id));
+
+    let folderStatus;
+    if (isEpic) {
+        folderStatus = EPIC_FOLDER;
+    } else {
+        folderStatus = statusLabel || (issue.state === 'closed' ? 'closed' : 'open');
+        // Missing status label: an open issue keeps a pool item in pool/
+        if (!statusLabel && issue.state === 'open' && localFolder === POOL_FOLDER) {
+            folderStatus = POOL_FOLDER;
+        }
+
+        // Double check state alignment
+        if (issue.state === 'closed' && folderStatus !== 'closed') {
+            folderStatus = 'closed';
+        } else if (issue.state === 'open' && folderStatus === 'closed') {
+            folderStatus = 'open';
+        }
+    }
+
+    return { folderStatus, priority, epicPhase, epic, isEpic };
+}
+
+// Frontmatter "status" value for a folder (unknown folders fall back to "open" as before)
+function statusForFolder(folder) {
+    if (folder === 'closed' || folder === 'ongoing' || folder === POOL_FOLDER) return folder;
+    return 'open';
+}
+
+// 3. Backlog Index Generator (offline, no GitHub token required)
+function escapeCell(value) {
+    return String(value === undefined || value === null || value === '' ? '-' : value).replace(/\|/g, '\\|');
+}
+
+function idNumber(id) {
+    const m = String(id || '').match(/\d+/);
+    return m ? parseInt(m[0], 10) : Number.MAX_SAFE_INTEGER;
+}
+
+function byId(a, b) {
+    return idNumber(a.metadata.id) - idNumber(b.metadata.id);
+}
+
+// Extract the hand-curated "Verknüpfte Quell-Ressource" cells from an existing index so regeneration keeps them
+function extractResourceCells(content) {
+    const resources = {};
+    (content || '').replace(/\r\n/g, '\n').split('\n').forEach(line => {
+        const m = line.match(/^\| \*\*((?:TCK|EPIC)-\d+)\*\* \|/);
+        if (!m) return;
+        const cells = line.split(' | ');
+        if (cells.length !== 7) return;
+        const last = cells[6].replace(/\s*\|\s*$/, '').trim();
+        if (last && last !== '-') resources[m[1]] = last;
+    });
+    return resources;
+}
+
+function epicColumn(meta) {
+    const epic = meta.epic || '';
+    const phase = meta.epic_phase || '';
+    if (epic && phase && !phase.startsWith(epic)) return `${epic} / ${phase}`;
+    return phase || epic || '-';
+}
+
+function renderTicketTable(tickets, resources) {
+    const rows = [
+        '| Ticket-ID | Titel | Epic / Phase | Status | Prio | Ticket-Datei | Verknüpfte Quell-Ressource |',
+        '| :--- | :--- | :--- | :--- | :--- | :--- | :--- |'
+    ];
+    tickets.slice().sort(byId).forEach(t => {
+        const m = t.metadata;
+        const linkStr = `[Link](../.tickets/${m.folder_status}/${t.filename})`;
+        let resourceStr = resources[m.id];
+        if (!resourceStr) {
+            const deps = Array.isArray(m.dependencies) ? m.dependencies : [];
+            resourceStr = deps.length > 0 ? deps.join(', ') : '-';
+        }
+        rows.push(`| **${m.id}** | ${escapeCell(m.title)} | ${escapeCell(epicColumn(m))} | \`${m.folder_status}\` | \`${m.priority || 'medium'}\` | ${linkStr} | ${resourceStr} |`);
+    });
+    if (tickets.length === 0) rows.push('| - | - | - | - | - | - | - |');
+    return rows.join('\n');
+}
+
+function renderEpicTable(epics, tickets) {
+    const rows = [
+        '| Epic-ID | Titel | Status | Offen | Pool | Closed | Epic-Datei |',
+        '| :--- | :--- | :--- | :--- | :--- | :--- | :--- |'
+    ];
+    epics.slice().sort(byId).forEach(e => {
+        const m = e.metadata;
+        const children = tickets.filter(t => t.metadata.epic === m.id);
+        const count = folders => children.filter(t => folders.includes(t.metadata.folder_status)).length;
+        rows.push(`| **${m.id}** | ${escapeCell(m.title)} | \`${m.status || 'open'}\` | ${count(['open', 'ongoing'])} | ${count([POOL_FOLDER])} | ${count(['closed'])} | [Link](../.tickets/${EPIC_FOLDER}/${e.filename}) |`);
+    });
+    if (epics.length === 0) rows.push('| - | - | - | - | - | - | - |');
+    return rows.join('\n');
+}
+
+// Build the generated index block (between INDEX_BEGIN and INDEX_END)
+function buildIndexBlock(tickets, resources = {}) {
+    const inFolders = folders => tickets.filter(t => folders.includes(t.metadata.folder_status));
+    const epics = inFolders([EPIC_FOLDER]);
+    const others = tickets.filter(t => t.metadata.folder_status !== EPIC_FOLDER);
+
+    return [
+        INDEX_BEGIN,
+        '',
+        '## 🗺️ EPICS (ROADMAPS & WHITEPAPER)',
+        '',
+        'Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (unentschiedene Ideen, GitHub-Label `status:pool`), `epics/` (Roadmaps/Whitepaper, GitHub-Label `type:epic`), `closed/`. Revisit-Audit: [docs/revisit/README.md](revisit/README.md). Dieser Abschnitt wird generiert, nicht manuell bearbeiten.',
+        '',
+        renderEpicTable(epics, others),
+        '',
+        '---',
+        '',
+        '## 🧭 AKTUELLES TICKET-REGISTER (INDEX)',
+        '',
+        '### Open / Ongoing',
+        '',
+        renderTicketTable(inFolders(['open', 'ongoing']), resources),
+        '',
+        '### Pool (unentschieden)',
+        '',
+        renderTicketTable(inFolders([POOL_FOLDER]), resources),
+        '',
+        '### Closed',
+        '',
+        renderTicketTable(inFolders(['closed']), resources),
+        '',
+        '---',
+        '',
+        INDEX_END
+    ].join('\n');
+}
+
+// Split an existing index into preserved header / footer around the generated block.
+// Legacy layout (no markers): the generated region spans from the first section containing a ticket table
+// to the next section heading after the last ticket row (keeps intro, directory tree and operating manual).
+function splitBacklog(content) {
+    const text = content.replace(/\r\n/g, '\n');
+    const b = text.indexOf(INDEX_BEGIN);
+    const e = text.indexOf(INDEX_END);
+    if (b !== -1 && e > b) {
+        return { head: text.substring(0, b), tail: text.substring(e + INDEX_END.length) };
+    }
+
+    const firstTable = text.indexOf('| Ticket-ID | Titel |');
+    if (firstTable === -1) return null;
+    const headingIdx = text.lastIndexOf('\n## ', firstTable);
+    const start = headingIdx === -1 ? firstTable : headingIdx + 1;
+    const lastRow = text.lastIndexOf('\n| **');
+    const nextHeading = text.indexOf('\n## ', Math.max(lastRow, firstTable));
+    const tail = nextHeading === -1 ? '\n' : '\n\n' + text.substring(nextHeading + 1);
+    return { head: text.substring(0, start), tail };
+}
+
+function renderBacklog(existingContent, tickets) {
+    const resources = extractResourceCells(existingContent);
+    const block = buildIndexBlock(tickets, resources);
+    const parts = existingContent ? splitBacklog(existingContent) : null;
+    if (!parts) {
+        return '# 🛸 BOB-OS GIT-BASED TICKETING ENGINE\n\n' + block + '\n';
+    }
+    return parts.head + block + parts.tail;
+}
+
+// Regenerate docs/EPIC_CONSOLIDATION_BACKLOG.md from the local .tickets/ tree (no network)
+function generateIndex(rootDir = process.cwd()) {
+    const ticketDir = path.join(rootDir, '.tickets');
+    const backlogPath = path.join(rootDir, 'docs', 'EPIC_CONSOLIDATION_BACKLOG.md');
+    const tickets = getLocalTickets(ticketDir);
+    const existing = fs.existsSync(backlogPath) ? fs.readFileSync(backlogPath, 'utf-8') : '';
+    const updated = renderBacklog(existing, tickets);
+
+    if (!fs.existsSync(path.dirname(backlogPath))) fs.mkdirSync(path.dirname(backlogPath), { recursive: true });
+    fs.writeFileSync(backlogPath, updated, 'utf-8');
+    return { backlogPath, ticketCount: tickets.length };
+}
+
+// 4. Make REST API helper calls via native fetch
 async function apiRequest(endpoint, options = {}) {
     const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
     const response = await fetch(url, {
@@ -184,31 +459,15 @@ async function graphqlRequest(query, variables = {}) {
     return data.data;
 }
 
-// Helper to sanitize filenames
-function sanitizeSlug(title) {
-    return title.toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-}
-
-// 4. Main PUSH Loop (Local ──> Remote)
+// 5. Main PUSH Loop (Local ──> Remote)
 async function runPush(localTickets, githubIssues) {
     console.log(`📦 Starting PUSH Synchronization to GitHub...`);
     for (const local of localTickets) {
         const meta = local.metadata;
         const expectedTitlePrefix = `[${meta.id}]`;
-        const fullTitle = `${expectedTitlePrefix} ${meta.title}`;
 
         // Map folder status to GitHub states and labels
-        const githubState = meta.folder_status === 'closed' ? 'closed' : 'open';
-        const expectedLabels = [
-            `priority:${meta.priority || 'medium'}`,
-            `status:${meta.folder_status}`
-        ];
-        if (meta.epic_phase) {
-            const epicSlug = sanitizeSlug(meta.epic_phase);
-            expectedLabels.push(`epic:${epicSlug}`);
-        }
+        const { title: fullTitle, state: githubState, labels: expectedLabels } = mapTicketToIssue(meta);
 
         // Look for matching issue on GitHub
         const existingIssue = githubIssues.find(issue => issue.title.startsWith(expectedTitlePrefix));
@@ -256,9 +515,9 @@ async function runPush(localTickets, githubIssues) {
 
             // High-precision semantic label diff check
             const currentLabels = existingIssue.labels.map(l => l.name);
-            const managedCurrentLabels = currentLabels.filter(l => l.startsWith('priority:') || l.startsWith('status:') || l.startsWith('epic:'));
-            
-            const labelsChanged = expectedLabels.some(l => !currentLabels.includes(l)) || 
+            const managedCurrentLabels = currentLabels.filter(isManagedLabel);
+
+            const labelsChanged = expectedLabels.some(l => !currentLabels.includes(l)) ||
                                   managedCurrentLabels.some(l => !expectedLabels.includes(l));
             if (labelsChanged) {
                 updatePayload.labels = expectedLabels;
@@ -279,7 +538,7 @@ async function runPush(localTickets, githubIssues) {
     }
 }
 
-// 5. Main PULL Loop (Remote ──> Local)
+// 6. Main PULL Loop (Remote ──> Local)
 async function runPull(localTickets, githubIssues) {
     console.log(`📥 Starting PULL Synchronization to Local Workspace...`);
     const ticketDir = path.join(process.cwd(), '.tickets');
@@ -291,55 +550,40 @@ async function runPull(localTickets, githubIssues) {
     });
 
     for (const issue of githubIssues) {
-        // Parse Title: "[TCK-101] Title" (Now completely status-neutral!)
-        const titleMatch = issue.title.match(/^\[(TCK-\d+)\]\s*(.*)$/);
-        if (!titleMatch) {
+        // Parse Title: "[TCK-101] Title" / "[EPIC-00] Title" (Now completely status-neutral!)
+        const parsedTitle = parseIssueTitle(issue.title);
+        if (!parsedTitle) {
             // Ignore non-ticket issues
             continue;
         }
 
-        const ticketId = titleMatch[1];
-        const ticketTitle = titleMatch[2].trim();
-
-        // Extract metadata from labels
-        let priority = 'medium';
-        let folderStatus = issue.state === 'closed' ? 'closed' : 'open';
-        let epicPhase = '';
-
-        issue.labels.forEach(labelObj => {
-            const label = labelObj.name;
-            if (label.startsWith('priority:')) priority = label.substring(9);
-            if (label.startsWith('status:')) folderStatus = label.substring(7);
-            if (label.startsWith('epic:')) epicPhase = label.substring(5);
-        });
-
-        // Double check state alignment
-        if (issue.state === 'closed' && folderStatus !== 'closed') {
-            folderStatus = 'closed';
-        } else if (issue.state === 'open' && folderStatus === 'closed') {
-            folderStatus = 'open';
-        }
-
+        const ticketId = parsedTitle.id;
+        const ticketTitle = parsedTitle.title;
         const localTicket = localMap[ticketId];
+
+        // Extract metadata from labels (pool/ and epics/ items stay in their folder)
+        const mapped = mapIssueToLocal(issue, localTicket ? localTicket.metadata.folder_status : null);
+        const folderStatus = mapped.folderStatus;
 
         if (localTicket) {
             // UPDATE LOCAL TICKET
             const meta = localTicket.metadata;
+            const priority = mapped.priority || meta.priority || (mapped.isEpic ? undefined : 'medium');
             let needsMove = meta.folder_status !== folderStatus;
-            let needsUpdate = needsMove || 
-                              meta.title !== ticketTitle || 
-                              meta.priority !== priority || 
+            let needsUpdate = needsMove ||
+                              meta.title !== ticketTitle ||
+                              meta.priority !== priority ||
                               localTicket.body !== issue.body;
 
             if (needsUpdate) {
                 console.log(`🔄 Updating Local Ticket ${ticketId} based on GitHub Issue #${issue.number}...`);
-                
+
                 // Keep existing local metadata that isn't on GitHub
                 const updatedMetadata = {
                     ...meta,
                     title: ticketTitle,
                     priority: priority,
-                    status: folderStatus === 'closed' ? 'closed' : (folderStatus === 'ongoing' ? 'ongoing' : 'open')
+                    status: mapped.isEpic ? (meta.status || 'open') : statusForFolder(folderStatus)
                 };
 
                 if (folderStatus === 'closed' && !updatedMetadata.completed) {
@@ -377,18 +621,22 @@ async function runPull(localTickets, githubIssues) {
         } else {
             // CREATE NEW LOCAL TICKET (Someone created an Issue directly on GitHub!)
             console.log(`➕ Creating new local Ticket for GitHub Issue #${issue.number} ("${ticketTitle}")...`);
-            
-            const newMetadata = {
-                id: ticketId,
-                title: ticketTitle,
-                epic_phase: epicPhase || "Unassigned",
-                status: folderStatus === 'closed' ? 'closed' : (folderStatus === 'ongoing' ? 'ongoing' : 'open'),
-                priority: priority,
-                created: new Date().toISOString().split('T')[0]
-            };
+
+            const today = new Date().toISOString().split('T')[0];
+            const newMetadata = mapped.isEpic
+                ? { id: ticketId, title: ticketTitle, type: 'epic', status: 'open', priority: mapped.priority || undefined, created: today }
+                : {
+                    id: ticketId,
+                    title: ticketTitle,
+                    epic_phase: mapped.epicPhase || "Unassigned",
+                    epic: mapped.epic || undefined,
+                    status: statusForFolder(folderStatus),
+                    priority: mapped.priority || 'medium',
+                    created: today
+                };
 
             if (folderStatus === 'closed') {
-                newMetadata.completed = new Date().toISOString().split('T')[0];
+                newMetadata.completed = today;
             }
 
             const serializedContent = stringifyTicket(newMetadata, issue.body || "No description provided.");
@@ -408,8 +656,26 @@ async function runPull(localTickets, githubIssues) {
     }
 }
 
-// 6. Bootstrap Exec
-async function run() {
+function rebuildIndex() {
+    console.log("📝 Re-building the central Index Register (EPIC_CONSOLIDATION_BACKLOG.md)...");
+    const { ticketCount } = generateIndex();
+    console.log(`   └─ Successfully updated index register (${ticketCount} tickets).`);
+}
+
+// 7. Bootstrap Exec
+async function main(argv = process.argv) {
+    loadDotEnv();
+
+    if (argv.includes('--index-only')) {
+        console.log(`🛰️ Mode: INDEX-ONLY (Local .tickets/ ──> docs/EPIC_CONSOLIDATION_BACKLOG.md)`);
+        rebuildIndex();
+        return;
+    }
+
+    const isPullMode = argv.includes('--pull') || argv.includes('-p');
+    console.log(`🛰️ Mode: ${isPullMode ? 'PULL (Remote ──> Local)' : 'PUSH (Local ──> Remote)'}`);
+    initGitHubContext();
+
     try {
         console.log("📥 Fetching active and closed issues from GitHub...");
         let githubIssues = [];
@@ -428,56 +694,12 @@ async function run() {
 
         if (isPullMode) {
             await runPull(localTickets, githubIssues);
-            
-            // Re-import local tickets after pulling and update the Index Register
-            console.log("📝 Re-building the central Index Register (EPIC_CONSOLIDATION_BACKLOG.md)...");
-            const freshLocalTickets = getLocalTickets();
-            const backlogPath = path.join(process.cwd(), 'docs', 'EPIC_CONSOLIDATION_BACKLOG.md');
-            if (fs.existsSync(backlogPath)) {
-                let backlogContent = fs.readFileSync(backlogPath, 'utf-8');
-                
-                // Parse and rebuild table rows
-                let tableHeaderIdx = backlogContent.indexOf('| Ticket-ID | Titel |');
-                if (tableHeaderIdx !== -1) {
-                    const beforeTable = backlogContent.substring(0, tableHeaderIdx);
-                    let afterTableIdx = backlogContent.indexOf('---', tableHeaderIdx + 100);
-                    if (afterTableIdx === -1) afterTableIdx = backlogContent.length;
-                    const afterTable = backlogContent.substring(afterTableIdx);
-
-                    // Rebuild Table
-                    const tableRows = [
-                        '| Ticket-ID | Titel | Epic / Phase | Status | Prio | Ticket-Datei | Verknüpfte Quell-Ressource |',
-                        '| :--- | :--- | :--- | :--- | :--- | :--- | :--- |'
-                    ];
-
-                    freshLocalTickets.sort((a,b) => {
-                        const idA = parseInt(a.metadata.id.match(/\d+/)[0]);
-                        const idB = parseInt(b.metadata.id.match(/\d+/)[0]);
-                        // Closed first, then Todo
-                        const isAClosed = a.metadata.folder_status === 'closed';
-                        const isBClosed = b.metadata.folder_status === 'closed';
-                        if (isAClosed && !isBClosed) return -1;
-                        if (!isAClosed && isBClosed) return 1;
-                        return idA - idB;
-                    }).forEach(t => {
-                        const m = t.metadata;
-                        const statusBadge = `\`${m.status}\``;
-                        const linkStr = `[Link](../.tickets/${m.folder_status}/${m.filename})`;
-                        let resourceStr = '-';
-                        if (m.dependencies && m.dependencies.length > 0) {
-                            resourceStr = m.dependencies.map(d => `${d}`).join(', ');
-                        }
-                        tableRows.push(`| **${m.id}** | ${m.title} | ${m.epic_phase} | ${statusBadge} | \`${m.priority || 'medium'}\` | ${linkStr} | ${resourceStr} |`);
-                    });
-
-                    const updatedBacklog = beforeTable + tableRows.join('\n') + '\n\n' + afterTable;
-                    fs.writeFileSync(backlogPath, updatedBacklog, 'utf-8');
-                    console.log(`   └─ Successfully updated index register.`);
-                }
-            }
         } else {
             await runPush(localTickets, githubIssues);
         }
+
+        // Re-import local tickets after syncing and update the Index Register
+        rebuildIndex();
 
         console.log("🎉 Sync finished successfully!");
     } catch (error) {
@@ -486,4 +708,30 @@ async function run() {
     }
 }
 
-run();
+if (require.main === module) {
+    main().catch(error => {
+        console.error("❌ Sync failed with exception:", error.message);
+        process.exit(1);
+    });
+}
+
+module.exports = {
+    TICKET_FOLDERS,
+    INDEX_BEGIN,
+    INDEX_END,
+    parseTicketContent,
+    parseTicket,
+    stringifyTicket,
+    getLocalTickets,
+    sanitizeSlug,
+    mapTicketToIssue,
+    isManagedLabel,
+    parseIssueTitle,
+    mapIssueToLocal,
+    statusForFolder,
+    extractResourceCells,
+    buildIndexBlock,
+    splitBacklog,
+    renderBacklog,
+    generateIndex
+};

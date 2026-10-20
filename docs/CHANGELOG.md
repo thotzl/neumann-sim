@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.1** | **2026-10-19** | `RELEASED` | Ticket-Pool & Epics im GitHub-Sync | `[TCK-137]` |
 | **v13.10.0** | **2026-10-19** | `RELEASED` | RUN-Allowlist & Shell-freie Prozessausführung | `[TCK-138]` |
 | **v13.9.2** | **2026-08-12** | `RELEASED` | Single SSoT Python Generator & Automated SQLite-to-TS Type Sync | `[TCK-108]`, `[TCK-135]` |
 | **v13.9.1** | **2026-08-12** | `RELEASED` | Hybrid Dijkstra Routing to Raw Void Coordinates | `[BUGFIX]` |
@@ -25,6 +26,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.1] - 2026-10-19
+*Ticket-Pool & Epics im GitHub-Sync. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Added
+- **Ticket-Pool & Epics im GitHub-Sync:** `.tickets/pool/` (unentschiedene Ideen, Label `status:pool`) und `.tickets/epics/` (Roadmaps/Whitepaper, Label `type:epic`) werden als Issues synchronisiert. Neuer Offline-Modus `--index-only` generiert den Backlog-Index ohne GitHub-Token.
+  - *Ticket:* [TCK-137](../.tickets/closed/TCK-137-ticketing-pool-and-epics-sync.md) · ADR [0003](adr/0003-ticket-pool-and-epics.md)
 
 ### [v13.10.0] - 2026-10-19
 *RUN-Allowlist & Shell-freie Prozessausführung. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

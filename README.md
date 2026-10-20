@@ -58,6 +58,18 @@ bun run dev --v=expanse_2
 ```
 *Note: Running `bun run dev --v=<exp_name>` automatically executes the local directory symlinking to target the requested sandbox database, boots up the WebSocket in-memory broker (`vog_server.cjs`) on Port 3001, and launches Vite on Port 5173 / Port 3000.*
 
+### III. Monitor Security (VoG Server)
+The VoG server binds to `127.0.0.1` and accepts write requests (`/vog`, `/api/broadcast`) only with the shared token header `X-VoG-Token`. Put the same `VOG_TOKEN` into the root `.env` so engine and monitor match; without it `dev.cjs` generates a token per start and the engine logs a one-time 401 warning.
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `VOG_TOKEN` | generated per start | Shared secret for write endpoints (engine, server, `dev.cjs`) |
+| `VOG_HOST` | `127.0.0.1` | Server bind address (engine target unless wildcard) |
+| `VOG_PORT` | `3001` | Server port (`0` = ephemeral, tests) |
+| `VOG_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Allowed browser origins (CORS + WebSocket) |
+| `VOG_MAX_BROADCAST_BYTES` | 16 MB | Body limit for broadcasts/events |
+| `VITE_HOST` | `localhost` | Vite bind host (`0.0.0.0` for LAN access, together with `VOG_HOST`/`VOG_ALLOWED_ORIGINS`) |
+
 ---
 
 ## 2. Core Simulation Engine Architecture (`src/sim_engine/`)

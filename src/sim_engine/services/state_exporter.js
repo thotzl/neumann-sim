@@ -3,6 +3,8 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const { safeReadJsonSync } = require('../helpers/io_helpers');
 const { UniverseGenerator, hashStringToInt } = require('./generator');
+// Single sender for VoG broadcasts (host + X-VoG-Token handling, TCK-140)
+const { postToVogServer } = require('./broadcast_service');
 
 function exportWorldState(universeDir, state, lastAgentId) {
     const dbPath = path.join(universeDir, 'universe.db');
@@ -262,40 +264,6 @@ function exportWorldState(universeDir, state, lastAgentId) {
         postToVogServer(payload);
 
         db.close();
-    }
-}
-
-/**
- * Sends a JSON WebSocket broadcast payload to the local VoG C2 server.
- * Operates purely in-memory and fails silently in <1ms on socket blockages.
- */
-function postToVogServer(payload) {
-    try {
-        const http = require('http');
-        const broadcastPort = process.env.C2_PORT || 3001;
-        const req = http.request({
-            hostname: 'localhost',
-            port: broadcastPort,
-            path: '/api/broadcast',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(payload)
-            }
-        }, () => {});
-
-        req.on('error', () => {
-            // Fail silently
-        });
-
-        req.setTimeout(500, () => {
-            req.destroy();
-        });
-
-        req.write(payload);
-        req.end();
-    } catch (e) {
-        // Fail silently
     }
 }
 

@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.2** | **2026-10-19** | `RELEASED` | VoG-Server-Härtung | `[TCK-140]` |
 | **v13.10.1** | **2026-10-19** | `RELEASED` | Ticket-Pool & Epics im GitHub-Sync | `[TCK-137]` |
 | **v13.10.0** | **2026-10-19** | `RELEASED` | RUN-Allowlist & Shell-freie Prozessausführung | `[TCK-138]` |
 | **v13.9.2** | **2026-08-12** | `RELEASED` | Single SSoT Python Generator & Automated SQLite-to-TS Type Sync | `[TCK-108]`, `[TCK-135]` |
@@ -26,6 +27,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.2] - 2026-10-19
+*VoG-Server-Härtung. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Security
+- **VoG-Server abgesichert:** Bind nur auf `127.0.0.1`, CORS-Allowlist statt `*`, Token-Pflicht (`X-VoG-Token`) und Content-Type-/Größenprüfung für schreibende Endpunkte, Validierung des Sektor-Endpoints, Vite standardmäßig nur lokal. Gemeinsames `VOG_TOKEN` in `.env` für Engine und Monitor.
+  - *Ticket:* [TCK-140](../.tickets/closed/TCK-140-vog-server-hardening.md)
 
 ### [v13.10.1] - 2026-10-19
 *Ticket-Pool & Epics im GitHub-Sync. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

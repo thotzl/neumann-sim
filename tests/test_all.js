@@ -38,6 +38,7 @@ async function start() {
         { name: "JS Action Parser Unit", cmd: "node tests/js/test_action_parser.js" },
         { name: "JS RUN Allowlist & Safe Exec (TCK-138)", cmd: "node tests/js/test_run_allowlist.js" },
         { name: "JS Ticket Sync & Index (TCK-137)", cmd: "node tests/js/test_ticket_sync.js" },
+        { name: "JS VoG Server Hardening (TCK-140)", cmd: "node tests/js/test_vog_server.js" },
         { name: "JS Mailbox Service Unit", cmd: "node tests/js/test_mailbox_service.js" },
         { name: "JS Physics Round Service Unit", cmd: "node tests/js/test_physics_round_service.js" },
         { name: "JS Agent Turn Service Unit", cmd: "node tests/js/test_agent_turn_service.js" },

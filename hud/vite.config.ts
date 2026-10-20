@@ -8,4 +8,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    // Nur lokal erreichbar (TCK-140); LAN-Zugriff explizit per VITE_HOST=0.0.0.0
+    host: process.env.VITE_HOST || 'localhost',
+  },
 })

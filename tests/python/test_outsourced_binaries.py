@@ -1,5 +1,7 @@
 import unittest
 import os
+import shutil
+import tempfile
 import sys
 import sqlite3
 import json
@@ -12,7 +14,9 @@ sys.path.append(os.path.join(PROJECT_ROOT, 'src', 'bob_os'))
 class TestOutsourcedBinaries(unittest.TestCase):
     def setUp(self):
         # Create a unique temporary database file path
-        self.test_db = os.path.join(PROJECT_ROOT, 'tests', 'python', 'test_binary_mock.db')
+        self._tmp_dir = tempfile.mkdtemp(prefix='bob_test_')
+        self.addCleanup(shutil.rmtree, self._tmp_dir, ignore_errors=True)
+        self.test_db = os.path.join(self._tmp_dir, 'test_binary_mock.db')
         if os.path.exists(self.test_db):
             os.remove(self.test_db)
             

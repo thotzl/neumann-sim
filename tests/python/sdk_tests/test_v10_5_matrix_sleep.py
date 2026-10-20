@@ -1,4 +1,6 @@
 import unittest
+import shutil
+import tempfile
 import os
 import sys
 import sqlite3
@@ -10,7 +12,9 @@ from core.lib import bob_sdk, db_config
 
 class TestMatrixSleep(unittest.TestCase):
     def setUp(self):
-        self.test_db = "sleep_test.db"
+        self._tmp_dir = tempfile.mkdtemp(prefix='bob_test_')
+        self.addCleanup(shutil.rmtree, self._tmp_dir, ignore_errors=True)
+        self.test_db = os.path.join(self._tmp_dir, "sleep_test.db")
         os.environ['TEST_DB_PATH'] = self.test_db
         os.environ['BOB_ID'] = 'Instance-1'
         os.environ['BOB_CYCLE'] = '5' # Simulation is currently in cycle 5

@@ -1,9 +1,11 @@
 const { processActions } = require('../../src/sim_engine/modules/environment.js');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const rootMockDir = './test_env_staged_ship';
+const rootMockDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-env-staged-ship-'));
+process.on('exit', () => fs.rmSync(rootMockDir, { recursive: true, force: true }));
 const mockDir = path.join(rootMockDir, '_verse');
 const dbPath = path.join(mockDir, 'universe.db');
 
@@ -54,7 +56,7 @@ try {
 
 // Helper function to fire Bob commands
 function runBobAction(actionString) {
-    const pythonCmd = `TEST_DB_PATH=${dbPath} PYTHONPATH=src/bob_os:test_env_staged_ship/core VERSE_DIR=test_env_staged_ship BOB_CYCLE=1 BOB_ID=Instance-1 python3 -m core.bin.bob "${actionString}"`;
+    const pythonCmd = `TEST_DB_PATH=${dbPath} PYTHONPATH=src/bob_os:${rootMockDir}/core VERSE_DIR=${rootMockDir} BOB_CYCLE=1 BOB_ID=Instance-1 python3 -m core.bin.bob "${actionString}"`;
     try {
         const out = execSync(pythonCmd, { encoding: 'utf8' });
         return out;

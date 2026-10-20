@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const sqlite3 = require('sqlite3').verbose();
@@ -7,7 +8,8 @@ const { execSync } = require('child_process');
 // Import under-test modules
 const { processActions } = require('../../src/sim_engine/modules/environment');
 
-const testDir = path.resolve(__dirname, 'test_autonomy_fs');
+const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-autonomy-fs-'));
+process.on('exit', () => fs.rmSync(testDir, { recursive: true, force: true }));
 const mockVerseDir = path.join(testDir, '_verse');
 const mockBinDir = path.join(testDir, 'core', 'bin');
 const mockLibDir = path.join(testDir, 'core', 'lib');

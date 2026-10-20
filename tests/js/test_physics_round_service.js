@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const { executeSystemRound } = require('../../src/sim_engine/services/physics_round_service');
@@ -7,7 +8,8 @@ console.log("==================================================");
 console.log("🚀 STARTING PHYSICS ROUND SERVICE UNIT TESTS");
 console.log("==================================================");
 
-const testVDir = path.resolve(__dirname, 'test_physics_fs');
+const testVDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-physics-fs-'));
+process.on('exit', () => fs.rmSync(testVDir, { recursive: true, force: true }));
 const universeDir = path.join(testVDir, '_verse');
 
 // Ensure clean environment

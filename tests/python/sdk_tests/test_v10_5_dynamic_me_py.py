@@ -1,4 +1,7 @@
 import unittest
+import atexit
+import shutil
+import tempfile
 import sqlite3
 import os
 import sys
@@ -8,8 +11,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from bob_os.core.lib import db_config
 from bob_os.core.bin import init_db
 
-TEST_DB = 'test_universe_me_py.db'
-TEST_ME_SCRIPT = 'test_me_py_execution.py'
+_TMP_DIR = tempfile.mkdtemp(prefix='bob_test_')
+atexit.register(shutil.rmtree, _TMP_DIR, ignore_errors=True)
+TEST_DB = os.path.join(_TMP_DIR, 'test_universe_me_py.db')
+TEST_ME_SCRIPT = os.path.join(_TMP_DIR, 'test_me_py_execution.py')
 
 class TestV105DynamicMePy(unittest.TestCase):
     def setUp(self):
@@ -28,7 +33,7 @@ class TestV105DynamicMePy(unittest.TestCase):
         conn.commit()
         conn.close()
         
-        # We write the identical me.py to the local directory for testing.
+        # We write the identical me.py to the temp directory for testing.
         self._write_local_me_py()
         
         # Write sitecustomize.py directly beside me.py to simulate the active sandbox environment
@@ -36,14 +41,14 @@ class TestV105DynamicMePy(unittest.TestCase):
 import me
 builtins.me = me
 """
-        with open('sitecustomize.py', 'w') as f:
+        with open(os.path.join(_TMP_DIR, 'sitecustomize.py'), 'w') as f:
             f.write(site_content)
 
     def tearDown(self):
         if os.path.exists(TEST_DB): os.remove(TEST_DB)
         if os.path.exists(TEST_ME_SCRIPT): os.remove(TEST_ME_SCRIPT)
-        if os.path.exists('me.py'): os.remove('me.py')
-        if os.path.exists('sitecustomize.py'): os.remove('sitecustomize.py')
+        if os.path.exists(os.path.join(_TMP_DIR, 'me.py')): os.remove(os.path.join(_TMP_DIR, 'me.py'))
+        if os.path.exists(os.path.join(_TMP_DIR, 'sitecustomize.py')): os.remove(os.path.join(_TMP_DIR, 'sitecustomize.py'))
         if 'BOB_ID' in os.environ: del os.environ['BOB_ID']
 
     def _write_local_me_py(self):
@@ -99,7 +104,7 @@ for _name in dir(_agent):
         if callable(_attr):
             globals()[_name] = _attr
 """
-        with open('me.py', 'w') as f:
+        with open(os.path.join(_TMP_DIR, 'me.py'), 'w') as f:
             f.write(me_content)
 
     def test_dynamic_me_py_execution(self):
@@ -122,7 +127,7 @@ me.scan()
             f.write(script_content)
 
         # 2. Execute the python script in a separate sub-process
-        env = { **os.environ, "PYTHONPATH": os.path.join(os.getcwd(), 'src') + os.path.pathsep + os.path.join(os.getcwd(), 'src', 'bob_os') + os.path.pathsep + os.getcwd() }
+        env = { **os.environ, "PYTHONPATH": os.path.join(os.getcwd(), 'src') + os.path.pathsep + os.path.join(os.getcwd(), 'src', 'bob_os') + os.path.pathsep + _TMP_DIR }
         res = subprocess.run([sys.executable, TEST_ME_SCRIPT], capture_output=True, text=True, env=env)
         
         # Verify output matches expected results!

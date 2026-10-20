@@ -1,9 +1,11 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const sqlite3 = require('sqlite3');
 const { execSync } = require('child_process');
 
-const rootMockDir = path.join(__dirname, 'mock_scut_name_universe');
+const rootMockDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-mock-scut-name-universe-'));
+process.on('exit', () => fs.rmSync(rootMockDir, { recursive: true, force: true }));
 const universeDir = path.join(rootMockDir, '_verse');
 const dbPath = path.join(universeDir, 'universe.db');
 

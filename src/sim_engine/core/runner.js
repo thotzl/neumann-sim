@@ -23,9 +23,11 @@ async function run() {
         process.exit(1);
     }
 
+    // BOB_EXPERIMENTS_DIR overrides the experiments root (tests use a temp dir); default: <repo>/experiments
+    const experimentsRoot = process.env.BOB_EXPERIMENTS_DIR || path.resolve(__dirname, '../../../experiments');
     const vDir = __dirname.includes('experiments')
         ? path.resolve(__dirname, '..', '..')
-        : path.resolve(__dirname, '../../../experiments', version);
+        : path.resolve(experimentsRoot, version);
         
     if (!fs.existsSync(vDir)) {
         console.error(`Experiment directory not found: ${vDir}`);

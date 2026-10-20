@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const { execSync } = require('child_process');
@@ -9,7 +10,8 @@ async function run() {
     console.log("🚀 STARTING E2E INTERSTELLAR STRANDING INTEGRATION TESTS");
     console.log("==================================================");
 
-    const testVDir = path.resolve(__dirname, 'test_energy_stranding_e2e_fs');
+    const testVDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-energy-stranding-e2e-fs-'));
+    process.on('exit', () => fs.rmSync(testVDir, { recursive: true, force: true }));
     const testVerseDir = path.join(testVDir, '_verse');
     const dbPath = path.join(testVerseDir, 'universe.db');
 

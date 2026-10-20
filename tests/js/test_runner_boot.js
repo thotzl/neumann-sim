@@ -1,9 +1,15 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// runner.js resolves experiments via BOB_EXPERIMENTS_DIR: keep fixtures out of the repo.
+const expRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-runner-boot-'));
+process.on('exit', () => fs.rmSync(expRoot, { recursive: true, force: true }));
+process.env.BOB_EXPERIMENTS_DIR = expRoot;
+
 const expName = 'test_boot';
-const expDir = path.resolve(`experiments/${expName}`);
+const expDir = path.join(expRoot, expName);
 const verseDir = path.join(expDir, '_verse');
 const coreDir = path.join(expDir, 'core');
 

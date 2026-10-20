@@ -41,7 +41,9 @@ def build_experiment(args):
         print("[CI] All tests passed. Continuing build...\n")
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    exp_dir = os.path.join(base_dir, 'experiments', args.version)
+    # BOB_EXPERIMENTS_DIR overrides the experiments root (tests use a temp dir); default: <repo>/experiments
+    experiments_root = os.environ.get('BOB_EXPERIMENTS_DIR') or os.path.join(base_dir, 'experiments')
+    exp_dir = os.path.join(experiments_root, args.version)
     
     # Path Definitions
     source_verse = os.path.join(base_dir, 'src', 'bob_os', '_verse')

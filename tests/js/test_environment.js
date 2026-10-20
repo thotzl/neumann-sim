@@ -1,11 +1,15 @@
 const assert = require('assert');
 const envManager = require('../../src/sim_engine/modules/environment');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+
+const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-env-'));
+process.on('exit', () => fs.rmSync(tmpRoot, { recursive: true, force: true }));
 
 function testEnvState() {
     console.log("Testing Environment State Simplification...");
-    const mockDir = './test_env_fs';
+    const mockDir = path.join(tmpRoot, 'test_env_fs');
     const toolsDir = path.join(mockDir, 'tools');
     
     if (fs.existsSync(mockDir)) fs.rmSync(mockDir, { recursive: true });
@@ -43,7 +47,7 @@ ACTION:
 [RUN: echo "echt"]
 `;
     // We need an empty dummy_verse for execSync
-    const mockDir = './test_env_fs_phantom';
+    const mockDir = path.join(tmpRoot, 'test_env_fs_phantom');
     if (fs.existsSync(mockDir)) fs.rmSync(mockDir, { recursive: true });
     fs.mkdirSync(mockDir, { recursive: true });
 

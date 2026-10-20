@@ -29,7 +29,7 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 
 | Epic-ID | Titel | Status | Offen | Pool | Closed | Epic-Datei |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **EPIC-00** | Platform Hardening (Revisit 2026-10) | `open` | 9 | 2 | 6 | [Link](../.tickets/epics/EPIC-00-platform-hardening.md) |
+| **EPIC-00** | Platform Hardening (Revisit 2026-10) | `open` | 8 | 3 | 7 | [Link](../.tickets/epics/EPIC-00-platform-hardening.md) |
 | **EPIC-01** | Factions & Diplomacy | `open` | 0 | 5 | 0 | [Link](../.tickets/epics/EPIC-01-factions-and-diplomacy.md) |
 | **EPIC-02** | Goals & Endgame | `open` | 0 | 3 | 0 | [Link](../.tickets/epics/EPIC-02-goals-and-endgame.md) |
 | **EPIC-03** | Deeper Verse & Disasters | `open` | 1 | 2 | 0 | [Link](../.tickets/epics/EPIC-03-deeper-verse-and-disasters.md) |
@@ -51,7 +51,6 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 | **TCK-130** | REFACTOR: Unified SSoT Schema Consolidation (agents->instances & system_name->system_id) | EPIC-00 / Cognitive Navigation & Operational Polish | `open` | `high` | [Link](../.tickets/open/TCK-130-unified-ssot-schema-consolidation.md) | [Central Test Hub](../tests/test_all.js) |
 | **TCK-134** | Swarm Safety, SDE-Kognition Model & Self-Documenting SDK Architecture | EPIC-08 / Epic 2 (V10.0) / Phase 2.6 (Swarm Safety & Cognitive Alignment) | `open` | `high` | [Link](../.tickets/open/TCK-134-swarm-safety-and-rescue-mechanics.md) | [Central Test Hub](../../tests/test_all.js) |
 | **TCK-136** | Unified Environmental & Perception Physics Integration (Agile & Dynamic) | EPIC-03 / v14.1+ / Deeper Universe | `open` | `High` | [Link](../.tickets/open/TCK-136-unified-environmental-and-perception-physics.md) | [Central Test Hub](../../tests/test_all.js) |
-| **TCK-142** | TEST: Test-Hygiene, Hub-Reporting, HUD in CI, verwaiste Tests | EPIC-00 Platform Hardening | `open` | `high` | [Link](../.tickets/open/TCK-142-test-hygiene-and-orphan-triage.md) | - |
 | **TCK-143** | CLEAN: Toter Code und Repo-Artefakte entfernen | EPIC-00 Platform Hardening | `open` | `high` | [Link](../.tickets/open/TCK-143-dead-code-and-artifact-cleanup.md) | TCK-142 |
 | **TCK-144** | SSOT: Configs und Generator konsolidieren | EPIC-00 Platform Hardening | `open` | `high` | [Link](../.tickets/open/TCK-144-config-and-generator-ssot.md) | TCK-142 |
 | **TCK-145** | REFAC: Inline-Python in Kernel-Skripte, Laufzeit-DDL in Migration | EPIC-00 Platform Hardening | `open` | `high` | [Link](../.tickets/open/TCK-145-extract-inline-python-and-runtime-ddl.md) | TCK-138 |
@@ -93,6 +92,7 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 | **TCK-166** | Natural Disasters & Hazard Sectors | EPIC-03 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-166-natural-disasters-hazard-sectors.md) | - |
 | **TCK-167** | SEC: LLM-Key-Isolation gegenüber Agenten-Code (/proc, driver_path) | EPIC-00 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-167-llm-key-isolation.md) | TCK-139 |
 | **TCK-168** | VoG-Server: experiment_dir im Container-Modus | EPIC-07 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-168-vog-experiment-dir-container-mode.md) | TCK-139 |
+| **TCK-169** | BUG: Transit-Energiekosten — Planung 0.02 vs. Physik 0.1 pro Distanz | EPIC-00 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-169-move-energy-cost-mismatch.md) | - |
 
 ### Closed
 
@@ -138,6 +138,7 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 | **TCK-139** | SEC: Simulation vollständig im Container isolieren | EPIC-00 Platform Hardening | `closed` | `high` | [Link](../.tickets/closed/TCK-139-containerized-simulation-runtime.md) | TCK-138, TCK-141 |
 | **TCK-140** | SEC: VoG-Server absichern | EPIC-00 Platform Hardening | `closed` | `high` | [Link](../.tickets/closed/TCK-140-vog-server-hardening.md) | - |
 | **TCK-141** | STAB: Linux-Container als Dev-/Test-Laufzeit, deklarierte Abhängigkeiten | EPIC-00 Platform Hardening | `closed` | `high` | [Link](../.tickets/closed/TCK-141-linux-container-dev-and-test-runtime.md) | - |
+| **TCK-142** | TEST: Test-Hygiene, Hub-Reporting, HUD in CI, verwaiste Tests | EPIC-00 Platform Hardening | `closed` | `high` | [Link](../.tickets/closed/TCK-142-test-hygiene-and-orphan-triage.md) | - |
 
 ---
 

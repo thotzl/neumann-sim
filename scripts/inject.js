@@ -13,7 +13,8 @@ if (!expName || !sourcePath) {
     process.exit(1);
 }
 
-const expDir = path.join(__dirname, '../experiments', expName);
+// BOB_EXPERIMENTS_DIR overrides the experiments root (tests use a temp dir); default: <repo>/experiments
+const expDir = path.join(process.env.BOB_EXPERIMENTS_DIR || path.join(__dirname, '../experiments'), expName);
 if (!fs.existsSync(expDir)) {
     console.error(`[ERROR] Experiment '${expName}' does not exist.`);
     process.exit(1);
@@ -52,7 +53,7 @@ if (sourcePath === 'engine') {
     copyRecursiveSync(srcMigrations, targetMigrations);
     try {
         const { execSync } = require('child_process');
-        execSync(`node scripts/migrate.js experiments/${expName}/_verse/universe.db`, {
+        execSync(`node scripts/migrate.js "${path.join(expDir, '_verse', 'universe.db')}"`, {
             cwd: path.resolve(path.join(__dirname, '..')),
             stdio: 'inherit'
         });

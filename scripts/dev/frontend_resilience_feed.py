@@ -1,3 +1,6 @@
+# Manual dev script (formerly tests/python/test_frontend_resilience.py, no assertions):
+# feeds world_state.json updates into experiments/v48 for a running HUD to observe.
+# Run from the repository root: python3 scripts/dev/frontend_resilience_feed.py
 import os
 import json
 import time

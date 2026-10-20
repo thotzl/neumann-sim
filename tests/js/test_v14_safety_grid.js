@@ -1,14 +1,17 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const sqlite3 = require('sqlite3').verbose();
 const { execSync } = require('child_process');
 
-const testDir = path.resolve(__dirname, 'test_safety_fs');
+const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-safety-fs-'));
+process.on('exit', () => fs.rmSync(testDir, { recursive: true, force: true }));
 const mockVerseDir = path.join(testDir, '_verse');
 const mockBinDir = path.join(testDir, 'core', 'bin');
 const mockLibDir = path.join(testDir, 'core', 'lib');
 const dbPath = path.join(mockVerseDir, 'universe.db');
+let moveCost; // energy per distance unit, aligned in the fixture rules (see runSafetyTests)
 
 function cleanup() {
     if (fs.existsSync(testDir)) {
@@ -30,6 +33,15 @@ async function runSafetyTests() {
 
     // Copy rules.json to testDir/core/lib/ to use our updated rules!
     fs.copyFileSync(path.resolve(__dirname, '../../src/bob_os/core/lib/rules.json'), path.join(mockLibDir, 'rules.json'));
+
+    // The planner (sensors.route / actuators.move) prices moves with tool_costs.move.cost_per_distance,
+    // while physics_update.py charges tool_costs.move_per_unit.energy (default 0.1). These scenarios need
+    // planner == kinematics, so the fixture aligns the planner cost with the kinematic cost from the rules.
+    const fixtureRulesPath = path.join(mockLibDir, 'rules.json');
+    const fixtureRules = JSON.parse(fs.readFileSync(fixtureRulesPath, 'utf8'));
+    moveCost = (fixtureRules.tool_costs.move_per_unit || {}).energy ?? 0.1;
+    fixtureRules.tool_costs.move.cost_per_distance = moveCost;
+    fs.writeFileSync(fixtureRulesPath, JSON.stringify(fixtureRules, null, 2));
 
     // 1. Initialize SQLite Database & apply all migrations
     console.log("Step 1: Initializing test database and applying migrations...");
@@ -61,10 +73,13 @@ async function runSafetyTests() {
             // Seed active solar_collectors in SYS_MID so Dijkstra recharge is possible
             db.run("INSERT INTO infrastructure (system_name, type, status) VALUES ('SYS_MID', 'solar_collector', 'active')");
 
-            // Seed Ship 1 (energy_capacity = 300, current energy = 40)
-            // Note: cost_per_distance is 0.1, so max_energy_range is 300 / 0.1 = 3000 units.
+            // Seed Ship 1 (energy_capacity = 300, current energy = 40) with a registered blueprint:
+            // route() derives the structural range from energy_capacity only for ships with a blueprint
+            // (otherwise it falls back to 1200 E).
+            // With cost_per_distance 0.1, max_energy_range is 300 / 0.1 = 3000 units.
             // But current range is only 40 / 0.1 = 400 units!
-            db.run("INSERT INTO ships (id, name, system_name, x, y, energy_inventory, energy_capacity) VALUES (1, 'Explorer-1', 'SYS_START', 100, 100, 40, 300)");
+            db.run("INSERT INTO blueprints (name, author_id, matrix_json, stats_json) VALUES ('Explorer', 'Instance-1', '[[\"engine\", \"battery\"]]', '{}')");
+            db.run("INSERT INTO ships (id, name, blueprint_name, system_name, x, y, energy_inventory, energy_capacity) VALUES (1, 'Explorer-1', 'Explorer', 'SYS_START', 100, 100, 40, 300)");
 
             // Seed Agent (Robert) inside Ship 1
             db.run("INSERT INTO agents (id, chosen_name, host_type, host_id, active_ship_id, current_x, current_y, status) " +
@@ -195,8 +210,9 @@ conn.close()
     const routeObj = JSON.parse(routeOutputJson);
     
     assert.strictEqual(routeObj.status, "routable", "Test 2 FAILED: Staging path should be routable. Got: " + routeOutputJson);
-    assert.strictEqual(routeObj.structural_range_capacity, 3000, "Test 2 FAILED: Structural range capacity is incorrect. Got: " + routeObj.structural_range_capacity);
-    assert.strictEqual(routeObj.current_charge_range, 400, "Test 2 FAILED: Current charge range is incorrect. Got: " + routeObj.current_charge_range);
+    const toRange = (energy) => Math.round(energy / moveCost * 10) / 10;
+    assert.strictEqual(routeObj.structural_range_capacity, toRange(300), "Test 2 FAILED: Structural range capacity is incorrect. Got: " + routeObj.structural_range_capacity);
+    assert.strictEqual(routeObj.current_charge_range, toRange(40), "Test 2 FAILED: Current charge range is incorrect. Got: " + routeObj.current_charge_range);
     console.log("  ✅ Test 2 successful: Dual ranges displayed correctly in the route telemetry.");
 
 

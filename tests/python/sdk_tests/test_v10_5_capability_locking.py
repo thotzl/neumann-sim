@@ -1,4 +1,7 @@
 import unittest
+import atexit
+import shutil
+import tempfile
 import sqlite3
 import os
 import sys
@@ -7,7 +10,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from bob_os.core.lib import bob_sdk, db_config, agent_service
 from bob_os.core.bin import init_db
 
-TEST_DB = 'test_universe_locking.db'
+_TMP_DIR = tempfile.mkdtemp(prefix='bob_test_')
+atexit.register(shutil.rmtree, _TMP_DIR, ignore_errors=True)
+TEST_DB = os.path.join(_TMP_DIR, 'test_universe_locking.db')
 
 class TestV105CapabilityLocking(unittest.TestCase):
     def setUp(self):

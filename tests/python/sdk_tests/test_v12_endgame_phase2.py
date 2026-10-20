@@ -1,4 +1,6 @@
 import unittest
+import shutil
+import tempfile
 import os
 import sqlite3
 import json
@@ -8,7 +10,9 @@ from core.bin import init_db, physics_update
 
 class TestEndgamePhase2(unittest.TestCase):
     def setUp(self):
-        self.test_db = "endgame_phase2_test.db"
+        self._tmp_dir = tempfile.mkdtemp(prefix='bob_test_')
+        self.addCleanup(shutil.rmtree, self._tmp_dir, ignore_errors=True)
+        self.test_db = os.path.join(self._tmp_dir, "endgame_phase2_test.db")
         os.environ['TEST_DB_PATH'] = self.test_db
         os.environ['BOB_ID'] = 'Instance-1'
         if os.path.exists(self.test_db): os.remove(self.test_db)

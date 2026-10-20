@@ -1,10 +1,12 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const { execSync } = require('child_process');
 const { runSystemAutomations } = require('../../src/sim_engine/modules/automation');
 
-const testVDir = path.resolve(__dirname, 'test_sandbox_isolation');
+const testVDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-test-sandbox-isolation-'));
+process.on('exit', () => fs.rmSync(testVDir, { recursive: true, force: true }));
 const testVerseDir = path.join(testVDir, '_verse');
 const activeScriptsDir = path.join(testVerseDir, 'scripts', 'active');
 

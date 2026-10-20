@@ -1,4 +1,6 @@
 import unittest
+import shutil
+import tempfile
 import os
 import sys
 import subprocess
@@ -12,7 +14,9 @@ from core.lib import db_config
 
 class TestUBCL(unittest.TestCase):
     def setUp(self):
-        self.test_db = "ubcl_test.db"
+        self._tmp_dir = tempfile.mkdtemp(prefix='bob_test_')
+        self.addCleanup(shutil.rmtree, self._tmp_dir, ignore_errors=True)
+        self.test_db = os.path.join(self._tmp_dir, "ubcl_test.db")
         os.environ['TEST_DB_PATH'] = self.test_db
         if os.path.exists(self.test_db): os.remove(self.test_db)
         

@@ -1,6 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 console.log("==========================================================");
 console.log("🚀 STARTING CLONE COMPRESSION (SPLIT & STITCH) UNIT TESTS");
@@ -11,8 +12,10 @@ const bootstrapper = require('../../src/sim_engine/services/bootstrapper');
 const stateManager = require('../../src/sim_engine/services/state_manager');
 
 // Dummy file paths
-const populationFile = path.join(__dirname, 'dummy_population.json');
-const logFile = path.join(__dirname, 'dummy_birth.log');
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bob-clone-compression-'));
+process.on('exit', () => fs.rmSync(tmpDir, { recursive: true, force: true }));
+const populationFile = path.join(tmpDir, 'dummy_population.json');
+const logFile = path.join(tmpDir, 'dummy_birth.log');
 
 // Setup mock state
 let state = {

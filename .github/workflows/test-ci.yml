@@ -38,3 +38,27 @@ jobs:
       - name: Run Central Test Hub (CI)
         run: |
           node tests/test_all.js
+
+  hud:
+    # HUD (React/Vite): type check and unit tests.
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: hud
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install HUD Dependencies
+        run: npm ci
+
+      - name: Type Check
+        run: npx tsc --noEmit
+
+      - name: Unit Tests
+        run: npx vitest run

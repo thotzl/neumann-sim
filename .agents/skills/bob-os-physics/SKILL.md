@@ -45,7 +45,7 @@ Views: `v_agents` (agent + resolved `location`, inventories and capacities from 
 
 ## Round physics (`core/bin/physics_update.py`, once per round)
 1. Construction sites with `progress_matter >= required_matter` become `active`.
-2. Transit: travelling agents move by ship `max_speed` (fallback `global_settings.travel_speed_per_tick`); energy per tick = distance × `physics_constants.energy_cost_per_distance` + `energy_drain_idle`. Not enough energy → transit aborts, ship strands (TCK-109). Proximity materialises nearby systems.
+2. Transit: travelling agents move by ship `max_speed` (fallback `global_settings.travel_speed_per_tick`); energy per tick = distance × `config_service.get_move_energy_per_distance()` (`physics_constants.energy_cost_per_distance`, fallback `tool_costs.move.cost_per_distance`; same value as planning) + `energy_drain_idle`. Not enough energy → transit aborts, ship strands (TCK-109). Proximity materialises nearby systems.
 3. Ship energy: module regen/drain; solar regen is lost outside stellar proximity (`R_inf = 150 * sqrt(mass)`), fusion reactor consumes raw matter.
 4. Systems: core regeneration, infrastructure decay every `decay_interval` rounds (paused by `maintenance_cooldown`), capacities and generation recomputed from active buildings × level, maintenance energy budget (solar output is not cut by blackouts).
 
@@ -57,6 +57,5 @@ Views: `v_agents` (agent + resolved `location`, inventories and capacities from 
 - Automation hardware: `ships.has_logic_core` (ship scripts) or active `ami_hub` (system scripts).
 
 ## Known open issues
-- **TCK-169 (pool):** planning (`sensors.route/eta`, actuators safety gate) uses `tool_costs.move.cost_per_distance` (0.02); physics charges `physics_constants.energy_cost_per_distance` from the experiment config (template and fallback 0.1; the `rules.json` fallback key `tool_costs.move_per_unit.energy` does not exist). Transit costs about 5x the plan.
 - `physics_constants.idle_drain` in configs is not used by `physics_update.py`; it reads `global_settings.energy_drain_idle`.
 - The ship-construction manual in `bob.py print_help` hard-codes module values that differ from `ship_physics` (e.g. cargo, solar).

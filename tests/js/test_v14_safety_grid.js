@@ -34,14 +34,11 @@ async function runSafetyTests() {
     // Copy rules.json to testDir/core/lib/ to use our updated rules!
     fs.copyFileSync(path.resolve(__dirname, '../../src/bob_os/core/lib/rules.json'), path.join(mockLibDir, 'rules.json'));
 
-    // The planner (sensors.route / actuators.move) prices moves with tool_costs.move.cost_per_distance,
-    // while physics_update.py charges tool_costs.move_per_unit.energy (default 0.1). These scenarios need
-    // planner == kinematics, so the fixture aligns the planner cost with the kinematic cost from the rules.
-    const fixtureRulesPath = path.join(mockLibDir, 'rules.json');
-    const fixtureRules = JSON.parse(fs.readFileSync(fixtureRulesPath, 'utf8'));
-    moveCost = (fixtureRules.tool_costs.move_per_unit || {}).energy ?? 0.1;
-    fixtureRules.tool_costs.move.cost_per_distance = moveCost;
-    fs.writeFileSync(fixtureRulesPath, JSON.stringify(fixtureRules, null, 2));
+    // Planner (sensors.route / actuators.move) and physics_update.py share
+    // config_service.get_move_energy_per_distance() (TCK-169); without an experiment config it is
+    // rules.json tool_costs.move.cost_per_distance.
+    const fixtureRules = JSON.parse(fs.readFileSync(path.join(mockLibDir, 'rules.json'), 'utf8'));
+    moveCost = fixtureRules.tool_costs.move.cost_per_distance;
 
     // 1. Initialize SQLite Database & apply all migrations
     console.log("Step 1: Initializing test database and applying migrations...");

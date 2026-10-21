@@ -130,7 +130,7 @@ def get_physics_constants():
     # Hard defaults from Economy-JSON if available, otherwise fallback
     defaults = {
         "travel_speed_per_tick": 300,
-        "energy_cost_per_distance": rules.get('tool_costs', {}).get('move_per_unit', {}).get('energy', 0.1),
+        "energy_cost_per_distance": rules.get('tool_costs', {}).get('move', {}).get('cost_per_distance', 0.1),
         "idle_drain": rules.get('agent_limits', {}).get('energy_drain_idle', 0), # Torsten Ref: Default idle drain is 0!
         "scan_range_min": 500,
         "scan_range_max": 1500
@@ -139,3 +139,9 @@ def get_physics_constants():
     if 'physics_constants' in conf:
         return conf['physics_constants']
     return defaults
+
+def get_move_energy_per_distance():
+    """Transit energy per distance unit, shared by planning and physics (TCK-169).
+    Experiment config physics_constants.energy_cost_per_distance wins; fallback rules.json tool_costs.move.cost_per_distance."""
+    rules_default = get_economy_rules().get('tool_costs', {}).get('move', {}).get('cost_per_distance', 0.1)
+    return float(get_physics_constants().get('energy_cost_per_distance', rules_default))

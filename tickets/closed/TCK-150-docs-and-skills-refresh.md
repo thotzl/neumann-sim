@@ -39,7 +39,7 @@ Projekt-Skills und Dokumentation auf den Stand nach EPIC-00 bringen.
 - Doku: README (Version, Architektur-Tabelle aller Engine-Module, Daten-/Physikmodell, Skill-Liste, Ticketing inkl. pool/epics/ADRs), `docs/engine`, `docs/physics`, `docs/sdk`, `SYSTEM_ARCHITECTURE`, `SIMULATION_GUIDE`, `docs/README.md` aktualisiert; `ECONOMY_MANIFEST.md` → Verweis auf `rules.json`; Driver-Beschreibungen an TCK-146 angepasst.
 - 12 erledigte/in Epics überführte Ressourcen von `tickets/resources/todo/` nach `done/` (`git mv`); TCK-134-Snapshots bleiben (offenes TCK-134). Ungenutzte Templates `config_template.json`, `expansion_standard.json` entfernt. `.gitignore` von toten Einträgen bereinigt.
 - Tote Links: 48 → 0 (155 Markdown-Dateien inkl. `.agents/`); neuer Hub-Test `tests/js/test_doc_links.js` verhindert Rückfälle.
-- Beim Abgleich gefundene Code-Widersprüche als Pool-Tickets: [TCK-170](../pool/TCK-170-production-uses-test-seeder.md) (Produktion seedet mit Test-Seeder), [TCK-171](../pool/TCK-171-code-doc-inconsistencies.md) (Sammelticket), Ergänzung zu [TCK-169](../pool/TCK-169-move-energy-cost-mismatch.md).
+- Beim Abgleich gefundene Code-Widersprüche als Pool-Tickets: [TCK-170](../pool/TCK-170-production-uses-test-seeder.md) (Produktion seedet mit Test-Seeder), [TCK-171](../pool/TCK-171-code-doc-inconsistencies.md) (Sammelticket), Ergänzung zu [TCK-169](TCK-169-move-energy-cost-mismatch.md).
 - Verifikation: Container-Runner Hub grün (inkl. Link-Check), HUD `tsc` 0, Vitest 11/11.
 
 ## References

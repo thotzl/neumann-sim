@@ -19,8 +19,8 @@ sources: [.agents/skills/bob-os-sdk/SKILL.md, .agents/skills/bob-os-physics/SKIL
 - Both systems need an active `wormhole_gate`; `me.link_gate(target_sector)` couples them bidirectionally (`linked_system`).
 - `route()` treats linked gates as an edge without distance cost (TCK-111).
 
-## Known deviation
-Planned move energy differs from charged energy by ≈ 5× → TCK-169.
+## Energy per distance
+Planning (`route`, `eta`, safety gate) and the round physics use the same value, `config_service.get_move_energy_per_distance()` (default 0.1 per unit, [TCK-169](../../tickets/closed/TCK-169-move-energy-cost-mismatch.md)); see [[wiki/world/rules-json]].
 
 ## Key Takeaways
 - Navigate by ID (`system_id`/`ship_id`/`instance_id`) or coordinates; routes go hop by hop over known systems.

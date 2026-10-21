@@ -39,7 +39,7 @@ Tests schreiben nur in temporäre Verzeichnisse, der Hub meldet alle Ergebnisse,
 - Hub `tests/test_all.js`: deklarative Liste, `spawnSync` ohne Shell, Env statt `PYTHONPATH=…`-Präfix, `BOB_PYTHON`; Summary-Tabelle, Exit 1 bei Fehlern, `--fail-fast` optional. Suites 38 → 48.
 - CI: neuer `hud`-Job (`npm ci`, `tsc --noEmit`, `vitest run`, ubuntu-24.04).
 - Verwaiste Tests: Jest-Altbestand gelöscht bzw. nach `tests/js/test_engine_helpers.js` portiert; `test_physics_service.py`, `test_transfer.py`, `test_v10_physics_ship_transit.py` repariert; `test_v14_hardware_autonomy`, `test_v13_8_sleep_kinematics_e2e`, `test_v14_safety_grid`, `test_birth_log`, `test_generator_parity`, `test_v8_syntax` registriert; Live-Skripte (`trigger_*`, `setup_flight_matrix`, `frontend_resilience_feed`) nach `scripts/dev/`; veraltete gelöscht (Entscheidungstabelle im Abschlussbericht, Begründung je Datei).
-- `test_v14_safety_grid`: Test war seit Einführung (`6fc2ce0`) veraltet (Schiff ohne Blueprint, hartkodierte Reichweiten), keine Regression aus `7a93cf6`. Dabei gefundener Produktionsfehler → [TCK-169](../pool/TCK-169-move-energy-cost-mismatch.md).
+- `test_v14_safety_grid`: Test war seit Einführung (`6fc2ce0`) veraltet (Schiff ohne Blueprint, hartkodierte Reichweiten), keine Regression aus `7a93cf6`. Dabei gefundener Produktionsfehler → [TCK-169](TCK-169-move-energy-cost-mismatch.md).
 - Verifikation: Container-Runner Hub grün, keine von Tests erzeugten Dateien; HUD `tsc` 0, Vitest 9/9; `npm run test:docker` → „48 passed, 0 failed“.
 
 ## References

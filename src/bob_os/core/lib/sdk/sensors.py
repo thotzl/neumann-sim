@@ -258,8 +258,7 @@ class Sensors:
                 if s_row and s_row[0] is not None:
                     ship_speed = float(s_row[0])
             
-            phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
-            cost_per_dist = phys.get('cost_per_distance', 0.1)
+            cost_per_dist = config_service.get_move_energy_per_distance()
             drain_idle = config_service.get_economy_rules().get('global_settings', {}).get('energy_drain_idle', 0)
             tick_cost = ship_speed * cost_per_dist + drain_idle
             
@@ -572,8 +571,7 @@ class Sensors:
 
        dist = physics_service.calc_distance(cx, cy, tx, ty)
 
-       phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
-       cost_per_dist = phys.get('cost_per_distance', 0.1)
+       cost_per_dist = config_service.get_move_energy_per_distance()
        energy_cost = round(dist * cost_per_dist, 2)
 
        speed = float(config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300))
@@ -651,8 +649,7 @@ class Sensors:
                 "flight_plan": []
             }
             
-        phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
-        cost_per_dist = phys.get('cost_per_distance', 0.1)
+        cost_per_dist = config_service.get_move_energy_per_distance()
 
         # Determine fuel/energy range limit of the ship (Hebel 5)
         max_energy_range = 1200 # Default fallback range
@@ -721,8 +718,7 @@ class Sensors:
         seen = set()
         min_dist = {start_sys: 0}
 
-        phys = config_service.get_economy_rules().get('tool_costs', {}).get('move', {})
-        cost_per_dist = phys.get('cost_per_distance', 0.1)
+        cost_per_dist = config_service.get_move_energy_per_distance()
         
         speed = float(config_service.get_economy_rules().get('global_settings', {}).get('travel_speed_per_tick', 300))
         if agent['active_ship_id']:

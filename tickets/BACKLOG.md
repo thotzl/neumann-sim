@@ -29,7 +29,7 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 
 | Epic-ID | Titel | Status | Offen | Pool | Closed | Epic-Datei |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **EPIC-00** | Platform Hardening (Revisit 2026-10) | `open` | 3 | 5 | 17 | [Link](epics/EPIC-00-platform-hardening.md) |
+| **EPIC-00** | Platform Hardening (Revisit 2026-10) | `open` | 3 | 4 | 18 | [Link](epics/EPIC-00-platform-hardening.md) |
 | **EPIC-01** | Factions & Diplomacy | `open` | 0 | 6 | 0 | [Link](epics/EPIC-01-factions-and-diplomacy.md) |
 | **EPIC-02** | Goals & Endgame | `open` | 0 | 3 | 0 | [Link](epics/EPIC-02-goals-and-endgame.md) |
 | **EPIC-03** | Deeper Verse & Disasters | `open` | 1 | 3 | 0 | [Link](epics/EPIC-03-deeper-verse-and-disasters.md) |
@@ -87,7 +87,6 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 | **TCK-166** | Natural Disasters & Hazard Sectors | EPIC-03 | `pool` | `undecided` | [Link](pool/TCK-166-natural-disasters-hazard-sectors.md) | - |
 | **TCK-167** | SEC: LLM-Key-Isolation gegenüber Agenten-Code (/proc, driver_path) | EPIC-00 | `pool` | `undecided` | [Link](pool/TCK-167-llm-key-isolation.md) | TCK-139 |
 | **TCK-168** | VoG-Server: experiment_dir im Container-Modus | EPIC-07 | `pool` | `undecided` | [Link](pool/TCK-168-vog-experiment-dir-container-mode.md) | TCK-139 |
-| **TCK-169** | BUG: Transit-Energiekosten — Planung 0.02 vs. Physik 0.1 pro Distanz | EPIC-00 | `pool` | `undecided` | [Link](pool/TCK-169-move-energy-cost-mismatch.md) | - |
 | **TCK-170** | BUG: Produktivläufe seeden mit seed_test_db.py (fixe Geologie) | EPIC-00 | `pool` | `undecided` | [Link](pool/TCK-170-production-uses-test-seeder.md) | - |
 | **TCK-171** | Sammelticket: Code-Inkonsistenzen aus dem Doku-Abgleich (TCK-150) | EPIC-00 | `pool` | `undecided` | [Link](pool/TCK-171-code-doc-inconsistencies.md) | - |
 | **TCK-177** | Passive Abbaugebäude (deep_extractor) | EPIC-03 | `pool` | `undecided` | [Link](pool/TCK-177-passive-extraction-buildings.md) | - |
@@ -144,6 +143,7 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 | **TCK-145** | REFAC: Inline-Python in Kernel-Skripte, Laufzeit-DDL in Migration | EPIC-00 Platform Hardening | `closed` | `high` | [Link](closed/TCK-145-extract-inline-python-and-runtime-ddl.md) | TCK-138 |
 | **TCK-146** | REFAC: Generischer OpenAI-kompatibler Driver, keine Key-Fragmente im Log | EPIC-00 Platform Hardening | `closed` | `high` | [Link](closed/TCK-146-generic-openai-driver.md) | - |
 | **TCK-150** | DOCS: Projekt-Skills, README und Links aktualisieren | EPIC-00 Platform Hardening | `closed` | `high` | [Link](closed/TCK-150-docs-and-skills-refresh.md) | TCK-137, TCK-138, TCK-139, TCK-140, TCK-141, TCK-142, TCK-143, TCK-144, TCK-145 |
+| **TCK-169** | BUG: Transit-Energiekosten — Planung 0.02 vs. Physik 0.1 pro Distanz | EPIC-00 Platform Hardening | `closed` | `high` | [Link](closed/TCK-169-move-energy-cost-mismatch.md) | - |
 | **TCK-172** | BUG: Ticket-Sync scheitert an GitHub-Label-Limit und bricht komplett ab | EPIC-00 Platform Hardening | `closed` | `high` | [Link](closed/TCK-172-ticket-sync-label-limit-and-resilience.md) | TCK-137 |
 | **TCK-173** | DOCS: Wiki aufbauen (wiki/) aus docs, geschlossenen Tickets, Skills und Code | EPIC-00 Platform Hardening | `closed` | `medium` | [Link](closed/TCK-173-wiki-compile.md) | - |
 | **TCK-174** | FIX: rules.json an Code-Verhalten angleichen (SOS-Kosten, talk-Reichweite) | EPIC-00 Platform Hardening | `closed` | `medium` | [Link](closed/TCK-174-align-config-with-code.md) | TCK-173 |

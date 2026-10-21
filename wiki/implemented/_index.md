@@ -4,7 +4,7 @@ What has been built, bundled by feature area. Each article links the closed tick
 
 - [[wiki/implemented/host-decoupling-and-ships|Host decoupling and ships]] — TCK-001, 004, 121
 - [[wiki/implemented/economy-and-world-physics|Economy and world physics]] — TCK-005, 007, 008, 109, 118, 129
-- [[wiki/implemented/navigation-and-transit|Navigation and transit]] — TCK-109, 111, 128, 129, 131
+- [[wiki/implemented/navigation-and-transit|Navigation and transit]] — TCK-109, 111, 128, 129, 131, 169
 - [[wiki/implemented/communication-and-rescue|Communication, perception and rescue]] — TCK-002, 003, 013, 118, 120, 122, 131
 - [[wiki/implemented/memory-and-cognition|Memory and cognition]] — TCK-012, 105, 119
 - [[wiki/implemented/autonomy-and-automation|Autonomy and automation]] — TCK-125, 145

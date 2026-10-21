@@ -618,9 +618,8 @@ class Actuators:
                 print("[DENIED] Coordinate format error. target_x and target_y must be numeric.")
                 return False
 
-        phys = self.rules.get('tool_costs', {}).get('move', {})
         dist = physics_service.calc_distance(agent['current_x'], agent['current_y'], tx, ty)
-        cost_per_dist = phys.get('cost_per_distance', 0.1)
+        cost_per_dist = config_service.get_move_energy_per_distance()
         cost = dist * cost_per_dist
 
         # Determine if ship has fusion reactor fuel capacity (Hebel A)

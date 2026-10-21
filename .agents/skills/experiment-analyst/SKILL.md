@@ -74,7 +74,7 @@ When an agent fails or a simulation state becomes unstable, distinguish between:
 - **Indicators:** 
     - `[CLI ERROR] Internal error: …`, Python tracebacks in `[ERROR-RESPONSE: …]`, `Status: FAILED` in `[AUTOMATION-REPORT]`, or `[PHYSICS-ROUND-ERROR]` / `[BOOTSTRAP ERROR]` on the engine console.
     - Tools output JSON that isn't valid, or scripts crash during execution.
-    - Physics rules are inconsistent (e.g., energy drain without action beyond `rules.json` `global_settings.energy_drain_idle` and module drains; compare transit costs with TCK-169).
+    - Physics rules are inconsistent (e.g., energy drain without action beyond `rules.json` `global_settings.energy_drain_idle` and module drains).
     - Database state shows an action was successful, but the agent's inventory wasn't updated.
 - **Verdict:** This is a bug in the engine (`src/sim_engine/`) or kernel (`src/bob_os/core/`). Fix it in `src/`, never in the experiment copy; open or extend a ticket (see `bob-os-ops`).
 

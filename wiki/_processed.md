@@ -6,30 +6,30 @@ Compiled 2026-10-20 (TCK-173). Directory rows (code) carry the newest modificati
 |---|---|---|
 | .agents/skills/bob-os-core/SKILL.md | 2026-10-20 15:15 | architecture/action-processing, architecture/automation, architecture/memory-and-heritage, architecture/security-and-isolation, architecture/state-and-persistence, architecture/system-overview, architecture/turn-loop, overview/glossary, project-map/runtime-data-flow |
 | .agents/skills/bob-os-ops/SKILL.md | 2026-10-21 16:10 | operations/running-experiments, operations/ticket-workflow |
-| .agents/skills/bob-os-physics/SKILL.md | 2026-10-20 15:15 | overview/glossary, project-map/configuration-files, world/data-model, world/economy-and-infrastructure, world/navigation-and-transit, world/procedural-universe, world/round-physics, world/rules-json, world/ships-and-blueprints |
+| .agents/skills/bob-os-physics/SKILL.md | 2026-10-21 16:28 | overview/glossary, project-map/configuration-files, world/data-model, world/economy-and-infrastructure, world/navigation-and-transit, world/procedural-universe, world/round-physics, world/rules-json, world/ships-and-blueprints |
 | .agents/skills/bob-os-sdk/SKILL.md | 2026-10-20 15:15 | architecture/automation, project-map/kernel-modules, sdk/functional-parser, sdk/me-cli, sdk/sdk-methods, world/navigation-and-transit, world/ships-and-blueprints |
 | .agents/skills/bob-os-testing/SKILL.md | 2026-10-20 15:15 | architecture/llm-drivers, operations/testing, project-map/tooling-and-ci |
-| .agents/skills/experiment-analyst/SKILL.md | 2026-10-20 15:15 | operations/experiment-analysis |
+| .agents/skills/experiment-analyst/SKILL.md | 2026-10-21 16:28 | operations/experiment-analysis |
 | .agents/skills/identity-anchors/SKILL.md | 2026-10-20 15:15 | overview/research-philosophy |
 | .agents/skills/project-baseline/SKILL.md | 2026-10-21 16:10 | operations/running-experiments, operations/runtime-and-setup, overview/project, project-map/repository-layout |
 | .github/ | 2026-10-21 16:10 | project-map/tooling-and-ci |
 | Dockerfile | 2026-10-20 15:15 | project-map/tooling-and-ci |
-| README.md | 2026-10-21 16:14 | architecture/llm-drivers, architecture/security-and-isolation, architecture/system-overview, architecture/turn-loop, operations/hud-and-monitor, operations/running-experiments, operations/runtime-and-setup, operations/testing, operations/ticket-workflow, overview/glossary, overview/project, project-map/engine-modules, project-map/repository-layout, world/data-model, world/procedural-universe |
+| README.md | 2026-10-21 16:29 | architecture/llm-drivers, architecture/security-and-isolation, architecture/system-overview, architecture/turn-loop, operations/hud-and-monitor, operations/running-experiments, operations/runtime-and-setup, operations/testing, operations/ticket-workflow, overview/glossary, overview/project, project-map/engine-modules, project-map/repository-layout, world/data-model, world/procedural-universe |
 | hud/ | 2026-10-20 15:15 | project-map/hud-modules |
 | hud/mock_server.cjs | 2026-10-19 21:35 | operations/hud-and-monitor |
 | hud/package.json | 2026-10-19 21:35 | operations/hud-and-monitor, project-map/configuration-files |
 | hud/src/main.tsx | 2026-10-19 21:35 | operations/hud-and-monitor |
 | hud/vog_server.cjs | 2026-10-20 15:15 | architecture/monitor-and-broadcast |
-| package.json | 2026-10-21 16:14 | project-map/configuration-files, project-map/repository-layout |
+| package.json | 2026-10-21 16:29 | project-map/configuration-files, project-map/repository-layout |
 | scripts/ | 2026-10-20 15:15 | operations/running-experiments, project-map/tooling-and-ci |
 | scripts/analyze_run.py | 2026-10-19 21:35 | operations/experiment-analysis |
-| src/bob_os/ | 2026-10-21 15:51 | project-map/kernel-modules |
-| src/bob_os/core/bin/ | 2026-10-20 15:15 | project-map/runtime-data-flow |
-| src/bob_os/core/lib/rules.json | 2026-10-21 15:51 | project-map/configuration-files, world/communication, world/economy-and-infrastructure, world/rules-json |
-| src/bob_os/core/lib/sdk/ | 2026-10-19 21:35 | sdk/sdk-methods |
-| src/bob_os/core/lib/sdk/actuators.py | 2026-10-19 21:35 | world/navigation-and-transit, world/ships-and-blueprints |
+| src/bob_os/ | 2026-10-21 16:24 | project-map/kernel-modules |
+| src/bob_os/core/bin/ | 2026-10-21 16:24 | project-map/runtime-data-flow |
+| src/bob_os/core/lib/rules.json | 2026-10-21 16:24 | project-map/configuration-files, world/communication, world/economy-and-infrastructure, world/rules-json |
+| src/bob_os/core/lib/sdk/ | 2026-10-21 16:24 | sdk/sdk-methods |
+| src/bob_os/core/lib/sdk/actuators.py | 2026-10-21 16:24 | world/navigation-and-transit, world/ships-and-blueprints |
 | src/bob_os/core/lib/sdk/comms.py | 2026-10-19 21:35 | world/communication, world/rules-json |
-| src/bob_os/core/lib/sdk/sensors.py | 2026-10-19 21:35 | world/navigation-and-transit |
+| src/bob_os/core/lib/sdk/sensors.py | 2026-10-21 16:24 | world/navigation-and-transit |
 | src/bob_os/core/migrations/ | 2026-10-20 15:15 | world/data-model |
 | src/bob_os/templates/mission_template.json | 2026-10-19 21:35 | architecture/memory-and-heritage, project-map/configuration-files |
 | src/sim_engine/ | 2026-10-20 15:15 | project-map/engine-modules, project-map/runtime-data-flow |
@@ -40,7 +40,7 @@ Compiled 2026-10-20 (TCK-173). Directory rows (code) carry the newest modificati
 | src/sim_engine/services/state_exporter.js | 2026-10-20 15:15 | architecture/monitor-and-broadcast |
 | src/sim_engine/services/state_manager.js | 2026-10-19 21:35 | history/expanse-run-report |
 | src/sim_engine/services/wakeup_manager.js | 2026-10-19 21:35 | architecture/turn-loop |
-| tests/ | 2026-10-21 16:10 | project-map/tooling-and-ci |
+| tests/ | 2026-10-21 16:28 | project-map/tooling-and-ci |
 | tests/test_all.js | 2026-10-20 15:15 | operations/testing |
 | tickets/closed/TCK-001-bob-vessel-separation.md | 2026-10-19 21:35 | implemented/host-decoupling-and-ships, world/data-model |
 | tickets/closed/TCK-002-info-buffering.md | 2026-10-19 21:35 | implemented/communication-and-rescue, world/communication |
@@ -82,12 +82,13 @@ Compiled 2026-10-20 (TCK-173). Directory rows (code) carry the newest modificati
 | tickets/closed/TCK-139-containerized-simulation-runtime.md | 2026-10-21 16:05 | architecture/security-and-isolation, implemented/security-and-runtime, operations/runtime-and-setup |
 | tickets/closed/TCK-140-vog-server-hardening.md | 2026-10-21 16:05 | architecture/monitor-and-broadcast, architecture/security-and-isolation, implemented/frontend-and-monitor, implemented/security-and-runtime, operations/hud-and-monitor |
 | tickets/closed/TCK-141-linux-container-dev-and-test-runtime.md | 2026-10-21 16:05 | architecture/security-and-isolation, implemented/security-and-runtime, operations/runtime-and-setup |
-| tickets/closed/TCK-142-test-hygiene-and-orphan-triage.md | 2026-10-21 16:05 | implemented/quality-and-tooling, operations/testing |
+| tickets/closed/TCK-142-test-hygiene-and-orphan-triage.md | 2026-10-21 16:28 | implemented/quality-and-tooling, operations/testing |
 | tickets/closed/TCK-143-dead-code-and-artifact-cleanup.md | 2026-10-21 16:10 | implemented/quality-and-tooling |
 | tickets/closed/TCK-144-config-and-generator-ssot.md | 2026-10-21 16:05 | implemented/architecture-and-performance, implemented/procedural-universe, world/procedural-universe, world/rules-json |
 | tickets/closed/TCK-145-extract-inline-python-and-runtime-ddl.md | 2026-10-21 16:05 | architecture/automation, architecture/state-and-persistence, implemented/architecture-and-performance, implemented/autonomy-and-automation |
 | tickets/closed/TCK-146-generic-openai-driver.md | 2026-10-21 16:05 | architecture/llm-drivers, architecture/security-and-isolation, implemented/llm-integration, implemented/security-and-runtime |
-| tickets/closed/TCK-150-docs-and-skills-refresh.md | 2026-10-21 16:10 | implemented/quality-and-tooling, operations/testing |
+| tickets/closed/TCK-150-docs-and-skills-refresh.md | 2026-10-21 16:28 | implemented/quality-and-tooling, operations/testing |
+| tickets/closed/TCK-169-move-energy-cost-mismatch.md | 2026-10-21 16:29 | implemented/navigation-and-transit |
 | tickets/closed/TCK-172-ticket-sync-label-limit-and-resilience.md | 2026-10-20 15:22 | implemented/quality-and-tooling, operations/ticket-workflow |
 | tickets/closed/TCK-174-align-config-with-code.md | 2026-10-21 15:54 | world/communication, world/rules-json |
 | tickets/closed/TCK-175-idea-triage-into-pool.md | 2026-10-21 16:10 | operations/ticket-workflow |

@@ -20,8 +20,10 @@ sources: [.agents/skills/bob-os-physics/SKILL.md, tickets/closed/TCK-144-config-
 - Readers: `config_service.get_economy_rules()`, `sdk/actuators.py`, `core/bin/bob.py`, `core/bin/physics_update.py`, `generator.py`, balancing tests (`tests/balancing/verify_*_balancing.py`).
 - Experiment overrides: `physics_constants` in the experiment `config.json` (`config_service.get_physics_constants()`); generator parameters are merged with the experiment config too.
 
+## Transit energy
+- One value for planning and physics: `config_service.get_move_energy_per_distance()` — experiment `physics_constants.energy_cost_per_distance` (template 0.1), fallback `tool_costs.move.cost_per_distance` (0.1). Used by `physics_update.py`, `sensors.route/eta/map` and the move safety gate (TCK-169).
+
 ## Known deviations
-- **Move energy:** planning (`sensors.route/eta`, the move safety gate) uses `tool_costs.move.cost_per_distance` (0.02); physics charges `physics_constants.energy_cost_per_distance` (template/fallback 0.1). Transit costs ≈ 5× the plan → TCK-169.
 - `physics_constants.idle_drain` is not read; `physics_update.py` uses `global_settings.energy_drain_idle`. `bob.py` help hard-codes some module values. `wormhole_gate` has no `infrastructure` entry (build falls back to 400 `raw_matter`, no upkeep, not listed in help) → TCK-171.
 ## Values fixed in code (not read from `rules.json`)
 - `ping_sos` is free: `comms.py` uses cost 0; `tool_costs.ping_sos.refined_matter_cost` is kept at 0 only for the help text (TCK-174).
@@ -29,7 +31,7 @@ sources: [.agents/skills/bob-os-physics/SKILL.md, tickets/closed/TCK-144-config-
 - Local SOS propagation without relays: 100 units, hard-coded in `comms.py` and `sensors.py`.
 
 ## Rule for deviations
-When code and `rules.json`, help text or docs disagree, the code is the truth; the other side is aligned to it. Conflicts between two code paths (e.g. TCK-169) are decided case by case.
+When code and `rules.json`, help text or docs disagree, the code is the truth; the other side is aligned to it. Conflicts between two code paths are decided case by case (TCK-169: the charged physics value won over the planning value).
 
 ## Key Takeaways
 - Change balancing only in `rules.json`; tests read expectations from it.

@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.16** | **2026-10-21** | `RELEASED` | Transit-Energie: Planung = Physik | `[TCK-169]` |
 | **v13.10.15** | **2026-10-21** | `RELEASED` | docs/ abgelöst, Ticket-Ordner `tickets/`, Obsidian-Vault | `[TCK-176]` |
 | **v13.10.14** | **2026-10-21** | `RELEASED` | Ideen-Triage in den Ticket-Pool | `[TCK-175]` |
 | **v13.10.13** | **2026-10-21** | `RELEASED` | rules.json an Code angeglichen | `[TCK-174]` |
@@ -40,6 +41,14 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.16] - 2026-10-21
+*Transit-Energie: Planung = Physik. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](wiki/history/revisit-2026-10.md)).*
+
+#### Fixed
+- **Routenplanung rechnet mit den tatsächlichen Transitkosten:** `route`, `eta`, Dashboard-Reichweite und das Safety-Gate von `move` nutzen denselben Wert wie das Physik-Update (0.1 Energie pro Distanzeinheit statt 0.02). Agenten sehen damit realistische, ≈ 5× kürzere Reichweiten und stranden nicht mehr wegen zu optimistischer Planung.
+  - *Ticket:* [TCK-169](tickets/closed/TCK-169-move-energy-cost-mismatch.md)
+  - *Hinweis:* Laufende Experimente mit `npm run inject <exp> tools` aktualisieren (Container: Neubau mit `--force`).
 
 ### [v13.10.15] - 2026-10-21
 *docs/ abgelöst. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](wiki/history/revisit-2026-10.md)).*

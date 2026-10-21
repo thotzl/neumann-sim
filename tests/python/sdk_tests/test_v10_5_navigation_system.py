@@ -8,7 +8,12 @@ import json
 
 # Adjust path to find core.lib
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from core.lib import bob_sdk, db_config
+from core.lib import bob_sdk, db_config, config_service
+
+# Transit energy per distance unit as used by planner and physics (TCK-169)
+MOVE_COST = config_service.get_move_energy_per_distance()
+# Jump range of the fixture ship: 750 units (> 500-unit legs, < 1000-unit direct flight)
+JUMP_RANGE = 750
 
 class TestNavigationSystem(unittest.TestCase):
     def setUp(self):
@@ -49,8 +54,8 @@ class TestNavigationSystem(unittest.TestCase):
         # Populate infrastructure (Instance-2's host matrix in SYS_B)
         c.execute("INSERT INTO infrastructure (id, system_name, type, status) VALUES (2, 'SYS_B', 'sem_matrix', 'active')")
         
-        # Populate ships (Active host ship for Instance-1 - Energy capacity set to 15 to force hop-by-hop routing!)
-        c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory, blueprint_name) VALUES (1, 'Pioneer-1', 'Scout-MK1', 'Instance-1', 'SYS_A', 15, 5000, 'Scout-MK1')")
+        # Populate ships (Active host ship for Instance-1 - energy capacity limits the jump range to JUMP_RANGE to force hop-by-hop routing!)
+        c.execute("INSERT INTO ships (id, name, chassis, pilot_id, system_name, energy_capacity, energy_inventory, blueprint_name) VALUES (1, 'Pioneer-1', 'Scout-MK1', 'Instance-1', 'SYS_A', ?, 5000, 'Scout-MK1')", (JUMP_RANGE * MOVE_COST,))
         c.execute("INSERT INTO blueprints (name, stats_json) VALUES ('Scout-MK1', '{\"cost\":1000}')")
         
         # Populate memos (1 open, 1 completed)
@@ -102,11 +107,11 @@ class TestNavigationSystem(unittest.TestCase):
         self.assertEqual(eta['destination_coords'], 'X300.0-Y400.0')
         self.assertEqual(eta['distance'], 500.0)
         self.assertEqual(eta['estimated_ticks'], 2) # math.ceil(500/300) = 2
-        self.assertEqual(eta['estimated_energy_cost'], 10.0) # 500 * 0.02 = 10
+        self.assertEqual(eta['estimated_energy_cost'], round(500 * MOVE_COST, 2))
 
     def test_dijkstra_routing(self):
-        # Setup ship's energy/fuel jump range limit to 600
-        # Direct path from SYS_A -> SYS_C is 1000 units (impossible with 600 energy range!).
+        # Ship's energy/fuel jump range limit is JUMP_RANGE (750)
+        # Direct path from SYS_A -> SYS_C is 1000 units (impossible with 750 energy range!).
         # But Hop-by-Hop route is possible: SYS_A -> SYS_B (500 units) -> SYS_C (500 units).
         route = self.agent.route(target_x=600, target_y=800)
         self.assertTrue(route)

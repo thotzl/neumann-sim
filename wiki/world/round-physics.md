@@ -8,7 +8,7 @@ sources: [.agents/skills/bob-os-physics/SKILL.md, tickets/closed/TCK-007-geologi
 
 ## Steps
 1. **Construction:** sites with `progress_matter >= required_matter` become `active`.
-2. **Transit:** travelling agents move by ship `max_speed` (fallback `global_settings.travel_speed_per_tick`); energy per tick = distance × `physics_constants.energy_cost_per_distance` + `energy_drain_idle`. Not enough energy for the next segment → transit aborts at the current position, status back to stationary, `[CRITICAL BLACKOUT]` visual event (TCK-109). Passing near stars reveals them (passive discovery).
+2. **Transit:** travelling agents move by ship `max_speed` (fallback `global_settings.travel_speed_per_tick`); energy per tick = distance × `config_service.get_move_energy_per_distance()` (`physics_constants.energy_cost_per_distance`, fallback `tool_costs.move.cost_per_distance`; same value as planning) + `energy_drain_idle`. Not enough energy for the next segment → transit aborts at the current position, status back to stationary, `[CRITICAL BLACKOUT]` visual event (TCK-109). Passing near stars reveals them (passive discovery).
 3. **Ship energy:** module regen/drain. Solar modules charge the ship battery directly, stationary or in transit, but only within stellar proximity (`R_inf = 150 * sqrt(mass)`); fusion reactors work in the void and consume raw matter (TCK-109).
 4. **Systems:**
    - Core regeneration: `core_regen_per_tick` up to `max_extractable_matter` (TCK-007).

@@ -58,7 +58,7 @@ def update(current_tick=1):
         speed = float(t['max_speed']) if t['max_speed'] is not None and float(t['max_speed']) > 0 else float(rules.get('global_settings', {}).get('travel_speed_per_tick', 300))
         dist = physics_service.calc_distance(start_x, start_y, target_x, target_y)
         
-        energy_cost_per_distance = physics_config.get('energy_cost_per_distance', 0.1)
+        energy_cost_per_distance = config_service.get_move_energy_per_distance()
         
         if dist <= speed:
             next_x = target_x

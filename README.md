@@ -1,4 +1,4 @@
-# The Neumann Simulation (Bob-OS v13.10.15)
+# The Neumann Simulation (Bob-OS v13.10.16)
 
 An autonomous multi-agent simulation framework orchestrating LLM-driven von Neumann agents ("Bobs") inside a procedurally generated, sandboxed SQLite universe.
 

@@ -60,11 +60,12 @@ Compiled 2026-10-20 (TCK-173). Directory rows (code) carry the newest modificati
 | .tickets/closed/TCK-146-generic-openai-driver.md | 2026-10-20 15:15 | architecture/llm-drivers, architecture/security-and-isolation, implemented/llm-integration, implemented/security-and-runtime |
 | .tickets/closed/TCK-150-docs-and-skills-refresh.md | 2026-10-20 15:15 | implemented/quality-and-tooling, operations/testing |
 | .tickets/closed/TCK-172-ticket-sync-label-limit-and-resilience.md | 2026-10-20 15:22 | implemented/quality-and-tooling, operations/ticket-workflow |
+| .tickets/closed/TCK-174-align-config-with-code.md | 2026-10-21 15:54 | world/communication, world/rules-json |
 | .tickets/epics/ | 2026-10-20 15:22 | operations/ticket-workflow |
 | .tickets/epics/EPIC-00-platform-hardening.md | 2026-10-20 15:22 | history/revisit-2026-10 |
 | .tickets/epics/EPIC-04-roamer-and-autonomy.md | 2026-10-20 15:15 | implemented/autonomy-and-automation |
 | Dockerfile | 2026-10-20 15:15 | project-map/tooling-and-ci |
-| README.md | 2026-10-20 15:22 | architecture/llm-drivers, architecture/security-and-isolation, architecture/system-overview, architecture/turn-loop, operations/hud-and-monitor, operations/running-experiments, operations/runtime-and-setup, operations/testing, operations/ticket-workflow, overview/glossary, overview/project, project-map/engine-modules, project-map/repository-layout, world/data-model, world/procedural-universe |
+| README.md | 2026-10-21 15:54 | architecture/llm-drivers, architecture/security-and-isolation, architecture/system-overview, architecture/turn-loop, operations/hud-and-monitor, operations/running-experiments, operations/runtime-and-setup, operations/testing, operations/ticket-workflow, overview/glossary, overview/project, project-map/engine-modules, project-map/repository-layout, world/data-model, world/procedural-universe |
 | docs/ECONOMY_MANIFEST.md | 2026-10-20 15:15 | project-map/configuration-files, world/economy-and-infrastructure, world/rules-json |
 | docs/EXPANSE_RUN_REPORT.md | 2026-10-19 21:35 | architecture/memory-and-heritage, history/expanse-run-report |
 | docs/README.md | 2026-10-20 15:15 | overview/project |
@@ -92,12 +93,12 @@ Compiled 2026-10-20 (TCK-173). Directory rows (code) carry the newest modificati
 | hud/package.json | 2026-10-19 21:35 | operations/hud-and-monitor, project-map/configuration-files |
 | hud/src/main.tsx | 2026-10-19 21:35 | operations/hud-and-monitor |
 | hud/vog_server.cjs | 2026-10-20 15:15 | architecture/monitor-and-broadcast |
-| package.json | 2026-10-20 15:22 | project-map/configuration-files, project-map/repository-layout |
+| package.json | 2026-10-21 15:54 | project-map/configuration-files, project-map/repository-layout |
 | scripts/ | 2026-10-20 15:15 | operations/running-experiments, project-map/tooling-and-ci |
 | scripts/analyze_run.py | 2026-10-19 21:35 | operations/experiment-analysis |
-| src/bob_os/ | 2026-10-20 15:15 | project-map/kernel-modules |
+| src/bob_os/ | 2026-10-21 15:51 | project-map/kernel-modules |
 | src/bob_os/core/bin/ | 2026-10-20 15:15 | project-map/runtime-data-flow |
-| src/bob_os/core/lib/rules.json | 2026-10-19 21:35 | project-map/configuration-files, world/communication, world/economy-and-infrastructure, world/rules-json |
+| src/bob_os/core/lib/rules.json | 2026-10-21 15:51 | project-map/configuration-files, world/communication, world/economy-and-infrastructure, world/rules-json |
 | src/bob_os/core/lib/sdk/ | 2026-10-19 21:35 | sdk/sdk-methods |
 | src/bob_os/core/lib/sdk/actuators.py | 2026-10-19 21:35 | world/navigation-and-transit, world/ships-and-blueprints |
 | src/bob_os/core/lib/sdk/comms.py | 2026-10-19 21:35 | world/communication, world/rules-json |

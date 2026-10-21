@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.13** | **2026-10-21** | `RELEASED` | rules.json an Code angeglichen | `[TCK-174]` |
 | **v13.10.12** | **2026-10-20** | `RELEASED` | Projekt-Wiki (`wiki/`) | `[TCK-173]` |
 | **v13.10.11** | **2026-10-19** | `RELEASED` | Ticket-Sync: Label-Limit & Fehlertoleranz | `[TCK-172]` |
 | **v13.10.10** | **2026-10-19** | `RELEASED` | Doku & Projekt-Skills | `[TCK-150]` |
@@ -37,6 +38,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.13] - 2026-10-21
+*rules.json an Code angeglichen. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Fixed
+- **Agenten-Hilfe zeigt die tatsächlichen Werte:** SOS-Bake kostet laut Hilfe jetzt 0 statt 10 `refined_matter` (wie im Code seit TCK-122); ungenutzter Schlüssel `talk.proximity_range` entfernt (`talk` nutzt die Docking-Reichweite). Grundsatz: bei Abweichungen ist der Code die Wahrheit.
+  - *Ticket:* [TCK-174](../.tickets/closed/TCK-174-align-config-with-code.md)
 
 ### [v13.10.12] - 2026-10-20
 *Projekt-Wiki. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

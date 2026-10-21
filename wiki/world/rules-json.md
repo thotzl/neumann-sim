@@ -1,5 +1,5 @@
 ---
-sources: [docs/ECONOMY_MANIFEST.md, .agents/skills/bob-os-physics/SKILL.md, docs/SIMULATION_GUIDE.md, .tickets/closed/TCK-144-config-and-generator-ssot.md, src/bob_os/core/lib/rules.json, src/bob_os/core/lib/sdk/comms.py]
+sources: [docs/ECONOMY_MANIFEST.md, .agents/skills/bob-os-physics/SKILL.md, docs/SIMULATION_GUIDE.md, .tickets/closed/TCK-144-config-and-generator-ssot.md, .tickets/closed/TCK-174-align-config-with-code.md, src/bob_os/core/lib/rules.json, src/bob_os/core/lib/sdk/comms.py]
 ---
 
 # rules.json (balancing SSoT)
@@ -23,10 +23,15 @@ sources: [docs/ECONOMY_MANIFEST.md, .agents/skills/bob-os-physics/SKILL.md, docs
 ## Known deviations
 - **Move energy:** planning (`sensors.route/eta`, the move safety gate) uses `tool_costs.move.cost_per_distance` (0.02); physics charges `physics_constants.energy_cost_per_distance` (template/fallback 0.1). Transit costs ≈ 5× the plan → [TCK-169](../../.tickets/pool/TCK-169-move-energy-cost-mismatch.md).
 - `physics_constants.idle_drain` is not read; `physics_update.py` uses `global_settings.energy_drain_idle`. `bob.py` help hard-codes some module values. `wormhole_gate` has no `infrastructure` entry (build falls back to 400 `raw_matter`, no upkeep, not listed in help) → [TCK-171](../../.tickets/pool/TCK-171-code-doc-inconsistencies.md).
-- **SOS cost:** `rules.json` `tool_costs.ping_sos.refined_matter_cost` is 10 and `bob.py` help shows it, but `comms.py` `ping_sos` uses cost 0 (free since TCK-122).
-- **Talk range:** `comms.py` `talk` uses `tool_costs.docking.proximity_range` (50), not `tool_costs.talk.proximity_range` (100).
+## Values fixed in code (not read from `rules.json`)
+- `ping_sos` is free: `comms.py` uses cost 0; `tool_costs.ping_sos.refined_matter_cost` is kept at 0 only for the help text (TCK-174).
+- `talk` range is `tool_costs.docking.proximity_range`; there is no separate talk range (TCK-174).
+- Local SOS propagation without relays: 100 units, hard-coded in `comms.py` and `sensors.py`.
+
+## Rule for deviations
+When code and `rules.json`, help text or docs disagree, the code is the truth; the other side is aligned to it. Conflicts between two code paths (e.g. TCK-169) are decided case by case.
 
 ## Key Takeaways
 - Change balancing only in `rules.json`; tests read expectations from it.
 - Experiment `physics_constants` override selected values per run.
-- Several code paths still ignore or duplicate rules.json keys; see the deviations above before trusting a number.
+- Some values are fixed in code or read from other keys; check the lists above before trusting a number.

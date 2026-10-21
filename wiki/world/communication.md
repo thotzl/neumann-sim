@@ -1,5 +1,5 @@
 ---
-sources: [docs/SYSTEM_ARCHITECTURE.md, docs/physics/README.md, .tickets/closed/TCK-002-info-buffering.md, .tickets/closed/TCK-003-scope-filtered-dashboard.md, .tickets/closed/TCK-013-runner-level-auto-poll.md, .tickets/closed/TCK-118-timeline-purity-and-masked-logging.md, .tickets/closed/TCK-120-sos-proximity-logistics.md, .tickets/closed/TCK-122-sub-etheric-emergency-grid.md, src/bob_os/core/lib/sdk/comms.py, src/bob_os/core/lib/rules.json]
+sources: [docs/SYSTEM_ARCHITECTURE.md, docs/physics/README.md, .tickets/closed/TCK-002-info-buffering.md, .tickets/closed/TCK-003-scope-filtered-dashboard.md, .tickets/closed/TCK-013-runner-level-auto-poll.md, .tickets/closed/TCK-118-timeline-purity-and-masked-logging.md, .tickets/closed/TCK-120-sos-proximity-logistics.md, .tickets/closed/TCK-122-sub-etheric-emergency-grid.md, .tickets/closed/TCK-174-align-config-with-code.md, src/bob_os/core/lib/sdk/comms.py, src/bob_os/core/lib/rules.json]
 ---
 
 # Communication and perception
@@ -15,11 +15,11 @@ sources: [docs/SYSTEM_ARCHITECTURE.md, docs/physics/README.md, .tickets/closed/T
 - Messages carry `sent_at` so the inbox is chronological (TCK-118).
 
 ## Local talk
-- `me talk(target_id, message)` costs 0 energy; works in the same system or within range. The code uses `tool_costs.docking.proximity_range` (50), not `tool_costs.talk.proximity_range` (100) (TCK-120).
+- `me talk(target_id, message)` costs 0 energy; works in the same system or within `tool_costs.docking.proximity_range` (50) (TCK-120).
 
 ## Emergency grid (SEEG, TCK-122)
-- `me ping_sos(message)` deploys a beacon; free in code (`rules.json` still lists 10 refined matter, see [[wiki/world/rules-json]]); `me reclaim_sos` refunds within 50 units.
-- Propagation: global if the sender's or receiver's system has an active `comms_relay`, otherwise local within 100 units.
+- `me ping_sos(message)` deploys a beacon free of charge; `me reclaim_sos` refunds within `tool_costs.reclaim_sos.refund_proximity_range` (50).
+- Propagation: global if the sender's or receiver's system has an active `comms_relay`, otherwise local within 100 units (hard-coded).
 - Eligible agents get a priority-1 message (who, when, where, what) that wakes sleepers.
 - The dashboard shows `global_emergency_grid.active_sos_pings`; `me network()` lists beacons with coordinates.
 
@@ -29,4 +29,4 @@ Operator messages via `POST /vog` or `creator_msg.txt` are routed by `mailbox_se
 ## Key Takeaways
 - Perception = injected, sector-scoped dashboard; messages are buffered and delivered at round start.
 - `talk` is free and local; SCUT is global and buffered; SOS beacons wake rescuers.
-- Two code/rules mismatches (SOS cost, talk range) are documented in [[wiki/world/rules-json]].
+- Values fixed in code (SOS cost, ranges) are listed in [[wiki/world/rules-json]].

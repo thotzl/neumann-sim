@@ -12,7 +12,7 @@ Research simulation of LLM-driven von Neumann agents ("Bobs") in a procedurally 
 - **HUD (React/Vite, `hud/`):** monitor client plus the VoG WebSocket server (`hud/vog_server.cjs`).
 - **Experiments (`experiments/<exp>/`, untracked):** self-contained copies of engine, kernel and `_verse/` built by `scripts/build.py`. Never edit code there; fix `src/` and re-inject or rebuild.
 
-Current version: `package.json` `version` and the top of `docs/CHANGELOG.md`.
+Current version: `package.json` `version` and the top of `CHANGELOG.md`.
 
 ## Layout (details: module-level code map in `wiki/project-map/`)
 | Path | Content |
@@ -24,12 +24,12 @@ Current version: `package.json` `version` and the top of `docs/CHANGELOG.md`.
 | `scripts/` | Operator CLIs behind `npm run …` (build, run, inject, reset, migrate, docker wrappers, analyze); `scripts/dev/` manual live scripts |
 | `tests/` | `test_all.js` hub, `python/`, `js/`, `balancing/` |
 | `hud/` | Monitor client and VoG server |
-| `.tickets/` | Git ticket system (`open/ ongoing/ closed/ pool/ epics/ resources/`) |
+| `tickets/` | Git ticket system (`open/ ongoing/ closed/ pool/ epics/ resources/`), generated index `tickets/BACKLOG.md` |
+| `CHANGELOG.md` | Release notes per version |
 | `wiki/` | Project wiki (entry `wiki/_master-index.md`): architecture, world rules, SDK, operations, code map, implemented features, history |
-| `docs/` | Changelog, ADRs (`docs/adr/`), generated ticket index; remaining docs are being replaced by `wiki/` |
 
 ## Runtime policy
-Linux containers are the only supported runtime (`docs/adr/0001-linux-container-runtime.md`). Simulations with real LLM agents run only in the runtime container (`docs/adr/0002-containerized-simulation-runtime.md`): agent-written Python must not run with host rights.
+Linux containers are the only supported runtime (`wiki/decisions/0001-linux-container-runtime.md`). Simulations with real LLM agents run only in the runtime container (`wiki/decisions/0002-containerized-simulation-runtime.md`): agent-written Python must not run with host rights.
 
 ## Commands
 Container path (any host, including Windows):

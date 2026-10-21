@@ -1,4 +1,4 @@
-# The Neumann Simulation (Bob-OS v13.10.14)
+# The Neumann Simulation (Bob-OS v13.10.15)
 
 An autonomous multi-agent simulation framework orchestrating LLM-driven von Neumann agents ("Bobs") inside a procedurally generated, sandboxed SQLite universe.
 
@@ -6,7 +6,7 @@ An autonomous multi-agent simulation framework orchestrating LLM-driven von Neum
 - **Kernel** (`src/bob_os/core/`, Python 3): SDK (`me ...` commands via `core/bin/bob.py`), physics, procedural generator, SQLite migrations. Balancing values live in `src/bob_os/core/lib/rules.json`.
 - **HUD** (`hud/`, React/Vite): live monitor and Deeper-Verse sandbox, fed by the VoG WebSocket server (`hud/vog_server.cjs`).
 
-Version and release notes: [docs/CHANGELOG.md](docs/CHANGELOG.md) (version source: `package.json`).
+Version and release notes: [CHANGELOG.md](CHANGELOG.md) (version source: `package.json`).
 
 ## Documentation
 
@@ -23,11 +23,11 @@ The project wiki is the documentation: **[wiki/_master-index.md](wiki/_master-in
 | What has been built (closed tickets by area) | [wiki/implemented/](wiki/implemented/_index.md) |
 | Architecture decisions | [wiki/decisions/](wiki/decisions/_index.md) |
 
-The Obsidian-style links (`[[wiki/...]]`) resolve with the repository root as vault.
+Open the repository root as an Obsidian vault: wiki, tickets, README and changelog are visible; code and runtime folders are excluded via `.obsidian/app.json`. The Obsidian-style links (`[[wiki/...]]`) resolve from the repository root.
 
 ## Quick start
 
-Development, tests and simulations run in Linux containers; Docker is the only host requirement ([ADR 0001](docs/adr/0001-linux-container-runtime.md), [ADR 0002](docs/adr/0002-containerized-simulation-runtime.md)). Details: [wiki/operations/runtime-and-setup.md](wiki/operations/runtime-and-setup.md).
+Development, tests and simulations run in Linux containers; Docker is the only host requirement ([ADR 0001](wiki/decisions/0001-linux-container-runtime.md), [ADR 0002](wiki/decisions/0002-containerized-simulation-runtime.md)). Details: [wiki/operations/runtime-and-setup.md](wiki/operations/runtime-and-setup.md).
 
 ```bash
 # Run the complete test hub (tests/test_all.js) inside the Linux container
@@ -55,6 +55,6 @@ Configuration and security: [wiki/operations/hud-and-monitor.md](wiki/operations
 
 ## Contributing & Ticketing
 
-Git-tracked tickets under `.tickets/`; the folder defines the status (`open/`, `ongoing/`, `closed/`, `pool/` for ideas, `epics/` for roadmaps). Commits reference the ticket (`... (ref TCK-nnn)`); closing a ticket bumps the version and adds a changelog entry. Workflow: [wiki/operations/ticket-workflow.md](wiki/operations/ticket-workflow.md). Generated ticket index: [docs/EPIC_CONSOLIDATION_BACKLOG.md](docs/EPIC_CONSOLIDATION_BACKLOG.md).
+Git-tracked tickets under `tickets/`; the folder defines the status (`open/`, `ongoing/`, `closed/`, `pool/` for ideas, `epics/` for roadmaps). Commits reference the ticket (`... (ref TCK-nnn)`); closing a ticket bumps the version and adds a changelog entry. Workflow: [wiki/operations/ticket-workflow.md](wiki/operations/ticket-workflow.md). Generated ticket index: [tickets/BACKLOG.md](tickets/BACKLOG.md).
 
 AI agents working in this repository start with the project skills under `.agents/skills/` (entry: `project-baseline`).

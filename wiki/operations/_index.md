@@ -6,4 +6,4 @@
 - [[wiki/operations/testing|Testing]] — test hub, layers, fixtures, mock LLM, CI
 - [[wiki/operations/ticket-workflow|Ticket workflow]] — ticket folders, epics, closing protocol, sync
 - [[wiki/operations/experiment-analysis|Experiment analysis]] — metrics, log reading, agent error vs. system bug
-- [CHANGELOG](../../docs/CHANGELOG.md) — releases and versions (kept outside the wiki)
+- [CHANGELOG](../../CHANGELOG.md) — releases and versions (kept outside the wiki)

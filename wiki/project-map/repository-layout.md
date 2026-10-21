@@ -18,10 +18,10 @@ Top level of the tracked repository. Regenerate the directory list with `git ls-
 | `.github/` | CI workflows, ticket sync script | [[wiki/project-map/tooling-and-ci]] |
 | `Dockerfile`, `.dockerignore`, `docker-compose.yml`, `.devcontainer/` | Container runtime and dev container | [[wiki/operations/runtime-and-setup]] |
 | `package.json`, `requirements.txt` | npm scripts (all operator commands), Node ≥ 20; Python deps (`PyYAML`) | |
-| `.tickets/` | Git ticket system | [[wiki/operations/ticket-workflow]] |
+| `tickets/` | Git ticket system, generated index `tickets/BACKLOG.md` | [[wiki/operations/ticket-workflow]] |
 | `.agents/` | Agent skills (`skills/`), plans, session state | |
-| `wiki/` | This wiki | [[wiki/_master-index]] |
-| `docs/` | Changelog, ADRs, generated ticket index (being replaced by the wiki) | |
+| `wiki/` | This wiki, including ADRs in `wiki/decisions/` | [[wiki/_master-index]] |
+| `CHANGELOG.md` | Release notes per version (kept outside the wiki) | |
 | `experiments/<exp>/` | Built experiments (git-ignored, runtime output) | [[wiki/operations/running-experiments]] |
 
 ## npm scripts (`package.json`)

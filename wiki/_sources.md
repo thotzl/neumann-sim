@@ -6,11 +6,12 @@ Tickets and wiki reference each other but do not depend on each other: the wiki 
 
 | Source | Instructions |
 |---|---|
-| docs/**/*.md (except docs/adr/, docs/CHANGELOG.md, docs/EPIC_CONSOLIDATION_BACKLOG.md) | All content. Do not link `docs/` inline (it will be removed); cite only in `sources:`. After `docs/` is deleted, drop these entries from `sources:` — the wiki becomes the source for this content. |
 | README.md | Setup, runtime, architecture overview. |
-| .tickets/closed/*.md | Bundle by feature area into `implemented/`; link each ticket; current behaviour goes into the matching topic article. Tickets stay the source of record. |
-| .tickets/epics/*.md | Only for statements about what is implemented (e.g. EPIC-00 results); no planning content. |
+| tickets/closed/*.md | Bundle by feature area into `implemented/`; link each ticket; current behaviour goes into the matching topic article. Tickets stay the source of record. |
+| tickets/epics/*.md | Only for statements about what is implemented (e.g. EPIC-00 results); no planning content. |
 | .agents/skills/*/SKILL.md | Verified reference for architecture, SDK, physics, ops, testing, analysis, research philosophy. Summarise for humans; link the skill for agent procedures. |
 | src/, hud/, scripts/, tests/, .github/, Dockerfile, package.json | Code, confirmed 2026-10-20: module purpose, entry points, key files, runtime data flow, configuration files. No function-level detail. Verify doc statements against code; record deviations in the article. |
 
-Not compiled (kept outside the wiki, linked only): `docs/CHANGELOG.md`, `docs/adr/` (linked from `decisions/_index`), `docs/EPIC_CONSOLIDATION_BACKLOG.md` (ticket system), `.tickets/open/`, `.tickets/pool/`, `.tickets/resources/`.
+Not compiled (kept outside the wiki, linked only): `CHANGELOG.md`, `tickets/BACKLOG.md` (generated ticket index), `tickets/open/`, `tickets/pool/`. `tickets/resources/` is read only to classify ideas (see TCK-175).
+
+Former source `docs/` (compiled in TCK-173, removed in TCK-176): its content now lives only in the wiki; articles derived from it are maintained in the wiki directly (articles without `sources:` are manual). ADRs live 1:1 in `wiki/decisions/` (manual, German, not regenerated).

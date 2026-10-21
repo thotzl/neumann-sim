@@ -1,10 +1,6 @@
----
-sources: [docs/epics/EPIC_1_INDUSTRIAL_POLISH.md, docs/epics/EPIC_2_SHIPS_AND_MINDS.md]
----
-
 # Early epics (Epic 1 and 2)
 
-The two completed epics before the current `EPIC-xx` numbering in `.tickets/epics/`.
+The two completed epics before the current `EPIC-xx` numbering in `tickets/epics/`.
 
 ## Epic 1 — Industrial evolution and world physics (v8.8+)
 - Goal: a consistent planetary economy before ship physics.

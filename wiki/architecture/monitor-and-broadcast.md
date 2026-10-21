@@ -1,5 +1,5 @@
 ---
-sources: [docs/SYSTEM_ARCHITECTURE.md, docs/concepts/FRONTEND_ARCHITECTURE.md, docs/concepts/V12_REALTIME_REACTIVE_UPGRADE.md, docs/concepts/WORLD_STATE_OBJECT.md, .tickets/closed/TCK-011-v12-websocket-architecture.md, .tickets/closed/TCK-121-dry-queries-and-selectors.md, .tickets/closed/TCK-135-sqlite-schema-to-typescript-compiler.md, .tickets/closed/TCK-140-vog-server-hardening.md, hud/vog_server.cjs, src/sim_engine/services/broadcast_service.js, src/sim_engine/services/state_exporter.js]
+sources: [tickets/closed/TCK-011-v12-websocket-architecture.md, tickets/closed/TCK-121-dry-queries-and-selectors.md, tickets/closed/TCK-135-sqlite-schema-to-typescript-compiler.md, tickets/closed/TCK-140-vog-server-hardening.md, hud/vog_server.cjs, src/sim_engine/services/broadcast_service.js, src/sim_engine/services/state_exporter.js]
 ---
 
 # Monitor and broadcast

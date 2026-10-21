@@ -1,5 +1,5 @@
 ---
-sources: [docs/SYSTEM_ARCHITECTURE.md, docs/physics/README.md, .tickets/closed/TCK-002-info-buffering.md, .tickets/closed/TCK-003-scope-filtered-dashboard.md, .tickets/closed/TCK-013-runner-level-auto-poll.md, .tickets/closed/TCK-118-timeline-purity-and-masked-logging.md, .tickets/closed/TCK-120-sos-proximity-logistics.md, .tickets/closed/TCK-122-sub-etheric-emergency-grid.md, .tickets/closed/TCK-174-align-config-with-code.md, src/bob_os/core/lib/sdk/comms.py, src/bob_os/core/lib/rules.json]
+sources: [tickets/closed/TCK-002-info-buffering.md, tickets/closed/TCK-003-scope-filtered-dashboard.md, tickets/closed/TCK-013-runner-level-auto-poll.md, tickets/closed/TCK-118-timeline-purity-and-masked-logging.md, tickets/closed/TCK-120-sos-proximity-logistics.md, tickets/closed/TCK-122-sub-etheric-emergency-grid.md, tickets/closed/TCK-174-align-config-with-code.md, src/bob_os/core/lib/sdk/comms.py, src/bob_os/core/lib/rules.json]
 ---
 
 # Communication and perception

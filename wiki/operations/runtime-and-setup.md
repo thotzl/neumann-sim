@@ -1,5 +1,5 @@
 ---
-sources: [README.md, .agents/skills/project-baseline/SKILL.md, .tickets/closed/TCK-141-linux-container-dev-and-test-runtime.md, .tickets/closed/TCK-139-containerized-simulation-runtime.md]
+sources: [README.md, .agents/skills/project-baseline/SKILL.md, tickets/closed/TCK-141-linux-container-dev-and-test-runtime.md, tickets/closed/TCK-139-containerized-simulation-runtime.md]
 ---
 
 # Runtime and setup

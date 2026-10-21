@@ -1,5 +1,5 @@
 ---
-sources: [docs/sdk/README.md, .agents/skills/bob-os-sdk/SKILL.md]
+sources: [.agents/skills/bob-os-sdk/SKILL.md]
 ---
 
 # Functional parser

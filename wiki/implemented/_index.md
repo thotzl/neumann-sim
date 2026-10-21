@@ -1,6 +1,6 @@
 # Implemented
 
-What has been built, bundled by feature area. Each article links the closed tickets (the tickets stay the source of record) and the article describing current behaviour. Release notes: [CHANGELOG](../../docs/CHANGELOG.md).
+What has been built, bundled by feature area. Each article links the closed tickets (the tickets stay the source of record) and the article describing current behaviour. Release notes: [CHANGELOG](../../CHANGELOG.md).
 
 - [[wiki/implemented/host-decoupling-and-ships|Host decoupling and ships]] — TCK-001, 004, 121
 - [[wiki/implemented/economy-and-world-physics|Economy and world physics]] — TCK-005, 007, 008, 109, 118, 129

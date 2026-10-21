@@ -1,5 +1,5 @@
 ---
-sources: [docs/physics/README.md, docs/ECONOMY_MANIFEST.md, .agents/skills/bob-os-physics/SKILL.md, docs/epics/EPIC_1_INDUSTRIAL_POLISH.md, .tickets/closed/TCK-005-networked-replication.md, .tickets/closed/TCK-118-timeline-purity-and-masked-logging.md, .tickets/closed/TCK-129-navigation-and-batched-loops.md, src/bob_os/core/lib/rules.json]
+sources: [.agents/skills/bob-os-physics/SKILL.md, tickets/closed/TCK-005-networked-replication.md, tickets/closed/TCK-118-timeline-purity-and-masked-logging.md, tickets/closed/TCK-129-navigation-and-batched-loops.md, src/bob_os/core/lib/rules.json]
 ---
 
 # Economy and infrastructure

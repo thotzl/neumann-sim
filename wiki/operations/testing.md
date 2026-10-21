@@ -1,5 +1,5 @@
 ---
-sources: [.agents/skills/bob-os-testing/SKILL.md, README.md, .tickets/closed/TCK-142-test-hygiene-and-orphan-triage.md, .tickets/closed/TCK-150-docs-and-skills-refresh.md, tests/test_all.js]
+sources: [.agents/skills/bob-os-testing/SKILL.md, README.md, tickets/closed/TCK-142-test-hygiene-and-orphan-triage.md, tickets/closed/TCK-150-docs-and-skills-refresh.md, tests/test_all.js]
 ---
 
 # Testing

@@ -1,5 +1,5 @@
 ---
-sources: [docs/sdk/README.md, .agents/skills/bob-os-sdk/SKILL.md, src/bob_os/core/lib/sdk/]
+sources: [.agents/skills/bob-os-sdk/SKILL.md, src/bob_os/core/lib/sdk/]
 ---
 
 # SDK methods

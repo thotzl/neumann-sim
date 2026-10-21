@@ -1,5 +1,5 @@
 ---
-sources: [README.md, docs/SYSTEM_ARCHITECTURE.md, docs/SIMULATION_GUIDE.md, .agents/skills/bob-os-core/SKILL.md, .agents/skills/bob-os-physics/SKILL.md, .tickets/closed/TCK-122-sub-etheric-emergency-grid.md, .tickets/closed/TCK-125-hardware-bound-scripts-and-kmi-hub.md, .tickets/closed/TCK-119-logbook-cognitive-rebranding.md, .tickets/closed/TCK-116-deeper-verse-sim-integration.md]
+sources: [README.md, .agents/skills/bob-os-core/SKILL.md, .agents/skills/bob-os-physics/SKILL.md, tickets/closed/TCK-122-sub-etheric-emergency-grid.md, tickets/closed/TCK-125-hardware-bound-scripts-and-kmi-hub.md, tickets/closed/TCK-119-logbook-cognitive-rebranding.md, tickets/closed/TCK-116-deeper-verse-sim-integration.md]
 ---
 
 # Glossary

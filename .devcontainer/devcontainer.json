@@ -5,7 +5,7 @@
     "context": ".."
   },
   // A named volume instead of a host bind mount: SQLite WAL hangs on
-  // Docker Desktop Windows bind mounts (see docs/adr/0001-linux-container-runtime.md).
+  // Docker Desktop Windows bind mounts (see wiki/decisions/0001-linux-container-runtime.md).
   // On first start Docker seeds the empty volume with the image's /app.
   "workspaceMount": "source=neumann-sim-workspace,target=/app,type=volume",
   "workspaceFolder": "/app",

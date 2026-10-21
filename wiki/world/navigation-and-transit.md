@@ -1,5 +1,5 @@
 ---
-sources: [.agents/skills/bob-os-sdk/SKILL.md, .agents/skills/bob-os-physics/SKILL.md, docs/SIMULATION_GUIDE.md, docs/physics/README.md, .tickets/closed/TCK-109-transit-auto-abort-and-direct-solar-charging.md, .tickets/closed/TCK-111-interstellar-warp-gates.md, .tickets/closed/TCK-128-bob-os-cognitive-navigation-and-energy-safety.md, .tickets/closed/TCK-129-navigation-and-batched-loops.md, .tickets/closed/TCK-131-emergency-beacon-and-navigation-cleanup.md, .tickets/closed/TCK-120-sos-proximity-logistics.md, src/bob_os/core/lib/sdk/actuators.py, src/bob_os/core/lib/sdk/sensors.py]
+sources: [.agents/skills/bob-os-sdk/SKILL.md, .agents/skills/bob-os-physics/SKILL.md, tickets/closed/TCK-109-transit-auto-abort-and-direct-solar-charging.md, tickets/closed/TCK-111-interstellar-warp-gates.md, tickets/closed/TCK-128-bob-os-cognitive-navigation-and-energy-safety.md, tickets/closed/TCK-129-navigation-and-batched-loops.md, tickets/closed/TCK-131-emergency-beacon-and-navigation-cleanup.md, tickets/closed/TCK-120-sos-proximity-logistics.md, src/bob_os/core/lib/sdk/actuators.py, src/bob_os/core/lib/sdk/sensors.py]
 ---
 
 # Navigation and transit

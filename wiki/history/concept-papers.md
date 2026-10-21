@@ -1,10 +1,6 @@
----
-sources: [docs/concepts/FRONTEND_ARCHITECTURE.md, docs/concepts/LOCAL_LLM_MIGRATION.md, docs/concepts/SHIP_AND_ENGINEERING_V10.md, docs/concepts/V12_REALTIME_REACTIVE_UPGRADE.md, docs/concepts/WEAPON_SYSTEMS_V14.md, docs/concepts/WORLD_STATE_OBJECT.md]
----
-
 # Concept papers (V10–V14)
 
-The concept papers from `docs/concepts/` and where their content lives now.
+The concept papers from the former `docs/concepts/` (removed in TCK-176; originals in the Git history) and where their content lives now. The unimplemented weapon concept was moved to the ticket resources.
 
 | Paper | Topic | Status | Current article |
 |---|---|---|---|

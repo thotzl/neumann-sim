@@ -1,5 +1,5 @@
 ---
-sources: [docs/concepts/LOCAL_LLM_MIGRATION.md, docs/engine/README.md, README.md, .tickets/closed/TCK-010-modular-llm-connector.md, .tickets/closed/TCK-146-generic-openai-driver.md, .agents/skills/bob-os-testing/SKILL.md]
+sources: [README.md, tickets/closed/TCK-010-modular-llm-connector.md, tickets/closed/TCK-146-generic-openai-driver.md, .agents/skills/bob-os-testing/SKILL.md]
 ---
 
 # LLM drivers

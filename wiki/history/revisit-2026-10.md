@@ -1,5 +1,5 @@
 ---
-sources: [docs/revisit/README.md, docs/revisit/01-security.md, docs/revisit/02-tests-platform.md, docs/revisit/03-ssot-architecture.md, docs/revisit/04-cleanup.md, docs/revisit/05-docs-ticketing.md, .tickets/epics/EPIC-00-platform-hardening.md]
+sources: [tickets/epics/EPIC-00-platform-hardening.md]
 ---
 
 # Revisit 2026-10 (platform audit)

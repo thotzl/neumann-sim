@@ -1,5 +1,5 @@
 ---
-sources: [docs/engine/README.md, docs/SYSTEM_ARCHITECTURE.md, README.md, .agents/skills/bob-os-core/SKILL.md, src/sim_engine/core/runner.js, src/sim_engine/services/wakeup_manager.js]
+sources: [README.md, .agents/skills/bob-os-core/SKILL.md, src/sim_engine/core/runner.js, src/sim_engine/services/wakeup_manager.js]
 ---
 
 # Turn loop

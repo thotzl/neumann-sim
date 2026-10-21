@@ -1,5 +1,5 @@
 ---
-sources: [docs/engine/README.md, docs/SIMULATION_GUIDE.md, docs/EXPANSE_RUN_REPORT.md, .tickets/closed/TCK-012-memory-heritage-hardboot.md, .tickets/closed/TCK-119-logbook-cognitive-rebranding.md, .agents/skills/bob-os-core/SKILL.md, src/sim_engine/services/memory_controller.js, src/sim_engine/config/core-config.json, src/bob_os/templates/mission_template.json, .tickets/resources/done/OPTIMIZATION_LEVER_3_LANGUAGE_ALIGNMENT.md, .tickets/resources/done/OPTIMIZATION_LEVER_4_RECURSIVE_MEMORY.md]
+sources: [tickets/closed/TCK-012-memory-heritage-hardboot.md, tickets/closed/TCK-119-logbook-cognitive-rebranding.md, .agents/skills/bob-os-core/SKILL.md, src/sim_engine/services/memory_controller.js, src/sim_engine/config/core-config.json, src/bob_os/templates/mission_template.json, tickets/resources/done/OPTIMIZATION_LEVER_3_LANGUAGE_ALIGNMENT.md, tickets/resources/done/OPTIMIZATION_LEVER_4_RECURSIVE_MEMORY.md]
 ---
 
 # Memory and heritage

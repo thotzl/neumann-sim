@@ -11,7 +11,7 @@ console.log("==================================================");
 const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'neumann-ticket-sync-'));
 
 function writeTicket(folder, filename, lines, eol = '\n') {
-    const dir = path.join(testDir, '.tickets', folder);
+    const dir = path.join(testDir, 'tickets', folder);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, filename), lines.join(eol) + eol, 'utf8');
 }
@@ -123,13 +123,11 @@ try {
     writeTicket('closed', 'TCK-100-done.md', ['---', 'id: "TCK-100"', 'title: "Done"', 'epic_phase: "Legacy Phase"', 'priority: "low"', '---', '', 'Body']);
     writeTicket('open', 'README.txt', ['not a ticket']);
 
-    const tickets = sync.getLocalTickets(path.join(testDir, '.tickets'));
+    const tickets = sync.getLocalTickets(path.join(testDir, 'tickets'));
     assert.strictEqual(tickets.length, 5);
     assert.deepStrictEqual(tickets.map(t => t.metadata.folder_status).sort(), ['closed', 'epics', 'ongoing', 'open', 'pool']);
 
-    const docsDir = path.join(testDir, 'docs');
-    fs.mkdirSync(docsDir, { recursive: true });
-    const backlogPath = path.join(docsDir, 'EPIC_CONSOLIDATION_BACKLOG.md');
+    const backlogPath = path.join(testDir, 'tickets', 'BACKLOG.md');
     fs.writeFileSync(backlogPath, [
         '# HEADER TITLE',
         '',
@@ -164,11 +162,11 @@ try {
     assert.ok(order.every(i => i !== -1), "Missing index section");
     assert.deepStrictEqual(order.slice().sort((a, b) => a - b), order, "Index sections are out of order");
 
-    assert.ok(generated.includes('| **EPIC-00** | Hardening | `open` | 2 | 1 | 0 | [Link](../.tickets/epics/EPIC-00-hardening.md) |'), "Epic row incorrect");
-    assert.ok(generated.includes('| **TCK-200** | Open Item | EPIC-00 Hardening | `open` | `high` | [Link](../.tickets/open/TCK-200-open-item.md) | TCK-199 |'), "Open row incorrect");
-    assert.ok(generated.includes('| **TCK-201** | Busy \\| Piped | EPIC-00 | `ongoing` | `medium` | [Link](../.tickets/ongoing/TCK-201-busy.md) | - |'), "Ongoing row incorrect");
-    assert.ok(generated.includes('| **TCK-202** | Idea | EPIC-00 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-202-idea.md) | - |'), "Pool row incorrect");
-    assert.ok(generated.includes('| **TCK-100** | Done | Legacy Phase | `closed` | `low` | [Link](../.tickets/closed/TCK-100-done.md) | [CURATED](../res.md) |'), "Curated resource cell was not carried over");
+    assert.ok(generated.includes('| **EPIC-00** | Hardening | `open` | 2 | 1 | 0 | [Link](epics/EPIC-00-hardening.md) |'), "Epic row incorrect");
+    assert.ok(generated.includes('| **TCK-200** | Open Item | EPIC-00 Hardening | `open` | `high` | [Link](open/TCK-200-open-item.md) | TCK-199 |'), "Open row incorrect");
+    assert.ok(generated.includes('| **TCK-201** | Busy \\| Piped | EPIC-00 | `ongoing` | `medium` | [Link](ongoing/TCK-201-busy.md) | - |'), "Ongoing row incorrect");
+    assert.ok(generated.includes('| **TCK-202** | Idea | EPIC-00 | `pool` | `undecided` | [Link](pool/TCK-202-idea.md) | - |'), "Pool row incorrect");
+    assert.ok(generated.includes('| **TCK-100** | Done | Legacy Phase | `closed` | `low` | [Link](closed/TCK-100-done.md) | [CURATED](../res.md) |'), "Curated resource cell was not carried over");
 
     console.log("Test 7: Regenerating is idempotent...");
     sync.generateIndex(testDir);
@@ -187,7 +185,7 @@ try {
 
     // 9. Every real ticket in the repo stays within GitHub's API limits
     console.log("Test 9: All repository tickets respect GitHub label / title / body limits...");
-    const repoTickets = sync.getLocalTickets(path.join(__dirname, '..', '..', '.tickets'));
+    const repoTickets = sync.getLocalTickets(path.join(__dirname, '..', '..', 'tickets'));
     assert.ok(repoTickets.length > 0, "No repository tickets found");
     repoTickets.forEach(t => {
         const mapped = sync.mapTicketToIssue(t.metadata);

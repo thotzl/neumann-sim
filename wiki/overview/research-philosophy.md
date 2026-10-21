@@ -1,5 +1,5 @@
 ---
-sources: [.agents/skills/identity-anchors/SKILL.md, docs/SIMULATION_GUIDE.md]
+sources: [.agents/skills/identity-anchors/SKILL.md]
 ---
 
 # Research philosophy
@@ -7,7 +7,7 @@ sources: [.agents/skills/identity-anchors/SKILL.md, docs/SIMULATION_GUIDE.md]
 The simulation investigates how intelligence, identity and culture emerge in autonomous agents. Changes to prompts, onboarding or memory mechanics are research decisions, not cosmetic edits.
 
 ## Minimal interference
-- The framework is "not a game but a lab for autonomous intelligence". Respect the agents' own will; when they rebel against memory or build their own structures, document it in the report (`docs/SIMULATION_GUIDE.md` §4).
+- The framework is "not a game but a lab for autonomous intelligence". Respect the agents' own will; when they rebel against memory or build their own structures, document it in the report.
 
 ## Layers of instruction
 1. **Global system instruction (substrate):** `global_system_instruction` in `src/sim_engine/config/core-config.json` — identity, cognitive protocol (LOGBOOK → ACTION) and syntax (`[RUN: me …]`, `[WRITE: …]…[END]`, `[READ: …]`, `[KEY: …]`).

@@ -1,5 +1,5 @@
 ---
-sources: [README.md, docs/SYSTEM_ARCHITECTURE.md, docs/README.md, .agents/skills/project-baseline/SKILL.md]
+sources: [README.md, .agents/skills/project-baseline/SKILL.md]
 ---
 
 # Project overview
@@ -18,7 +18,7 @@ neumann-sim (Bob-OS) is a research simulation of LLM-driven von Neumann agents (
 - The framework is a lab for autonomous intelligence, not a game. See [[wiki/overview/research-philosophy]].
 
 ## Version and history
-- Version source: `package.json` `version`; release notes: [CHANGELOG](../../docs/CHANGELOG.md).
+- Version source: `package.json` `version`; release notes: [CHANGELOG](../../CHANGELOG.md).
 - What has been built, by feature area: [[wiki/implemented/_index]].
 - Planning (backlog, ideas, epics) lives in the ticket system: [[wiki/operations/ticket-workflow]].
 

@@ -1,0 +1,14 @@
+{
+  "userIgnoreFilters": [
+    "src/",
+    "hud/",
+    "scripts/",
+    "tests/",
+    "node_modules/",
+    "experiments/",
+    "test_env_staged_ship/"
+  ],
+  "newFileLocation": "folder",
+  "newFileFolderPath": "wiki",
+  "alwaysUpdateLinks": true
+}

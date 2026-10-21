@@ -1,5 +1,5 @@
 ---
-sources: [docs/SYSTEM_ARCHITECTURE.md, README.md, .agents/skills/bob-os-core/SKILL.md]
+sources: [README.md, .agents/skills/bob-os-core/SKILL.md]
 ---
 
 # System overview

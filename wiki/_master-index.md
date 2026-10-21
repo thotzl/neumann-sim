@@ -1,6 +1,6 @@
 # neumann-sim wiki
 
-Entry point. The wiki describes the current system, what has been built and where things live in the code. Planning (backlog, ideas, epics) lives in the ticket system (`.tickets/`); release notes in the [CHANGELOG](../docs/CHANGELOG.md).
+Entry point. The wiki describes the current system, what has been built and where things live in the code. Planning (backlog, ideas, epics) lives in the ticket system (`tickets/`); release notes in the [CHANGELOG](../CHANGELOG.md).
 
 | Topic | Description |
 |---|---|

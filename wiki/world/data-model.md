@@ -1,5 +1,5 @@
 ---
-sources: [.agents/skills/bob-os-physics/SKILL.md, docs/SYSTEM_ARCHITECTURE.md, docs/physics/README.md, README.md, docs/concepts/WORLD_STATE_OBJECT.md, .tickets/closed/TCK-001-bob-vessel-separation.md, .tickets/closed/TCK-121-dry-queries-and-selectors.md, src/bob_os/core/migrations/]
+sources: [.agents/skills/bob-os-physics/SKILL.md, README.md, tickets/closed/TCK-001-bob-vessel-separation.md, tickets/closed/TCK-121-dry-queries-and-selectors.md, src/bob_os/core/migrations/]
 ---
 
 # Data model

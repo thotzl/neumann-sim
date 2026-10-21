@@ -1,5 +1,5 @@
 ---
-sources: [docs/sdk/README.md, .agents/skills/bob-os-sdk/SKILL.md, .tickets/closed/TCK-009-dry-services-unified-sdk.md, .tickets/closed/TCK-138-run-allowlist-and-safe-exec.md]
+sources: [.agents/skills/bob-os-sdk/SKILL.md, tickets/closed/TCK-009-dry-services-unified-sdk.md, tickets/closed/TCK-138-run-allowlist-and-safe-exec.md]
 ---
 
 # The `me` CLI and SDK

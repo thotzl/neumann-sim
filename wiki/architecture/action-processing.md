@@ -1,5 +1,5 @@
 ---
-sources: [docs/engine/README.md, docs/sdk/README.md, .agents/skills/bob-os-core/SKILL.md, .tickets/closed/TCK-138-run-allowlist-and-safe-exec.md, .tickets/closed/TCK-006-sandbox-hardening.md]
+sources: [.agents/skills/bob-os-core/SKILL.md, tickets/closed/TCK-138-run-allowlist-and-safe-exec.md, tickets/closed/TCK-006-sandbox-hardening.md]
 ---
 
 # Action processing

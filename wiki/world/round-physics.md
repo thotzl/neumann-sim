@@ -1,5 +1,5 @@
 ---
-sources: [docs/physics/README.md, .agents/skills/bob-os-physics/SKILL.md, docs/epics/EPIC_1_INDUSTRIAL_POLISH.md, .tickets/closed/TCK-007-geological-regeneration.md, .tickets/closed/TCK-008-structural-decay.md, .tickets/closed/TCK-109-transit-auto-abort-and-direct-solar-charging.md]
+sources: [.agents/skills/bob-os-physics/SKILL.md, tickets/closed/TCK-007-geological-regeneration.md, tickets/closed/TCK-008-structural-decay.md, tickets/closed/TCK-109-transit-auto-abort-and-direct-solar-charging.md]
 ---
 
 # Round physics

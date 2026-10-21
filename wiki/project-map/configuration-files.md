@@ -1,5 +1,5 @@
 ---
-sources: [.agents/skills/bob-os-physics/SKILL.md, docs/ECONOMY_MANIFEST.md, src/bob_os/core/lib/rules.json, src/sim_engine/config/core-config.json, src/bob_os/templates/mission_template.json, package.json, hud/package.json]
+sources: [.agents/skills/bob-os-physics/SKILL.md, src/bob_os/core/lib/rules.json, src/sim_engine/config/core-config.json, src/bob_os/templates/mission_template.json, package.json, hud/package.json]
 ---
 
 # Configuration files

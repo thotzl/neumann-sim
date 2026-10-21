@@ -1,5 +1,5 @@
 ---
-sources: [docs/ECONOMY_MANIFEST.md, .agents/skills/bob-os-physics/SKILL.md, docs/SIMULATION_GUIDE.md, .tickets/closed/TCK-144-config-and-generator-ssot.md, .tickets/closed/TCK-174-align-config-with-code.md, src/bob_os/core/lib/rules.json, src/bob_os/core/lib/sdk/comms.py]
+sources: [.agents/skills/bob-os-physics/SKILL.md, tickets/closed/TCK-144-config-and-generator-ssot.md, tickets/closed/TCK-174-align-config-with-code.md, src/bob_os/core/lib/rules.json, src/bob_os/core/lib/sdk/comms.py]
 ---
 
 # rules.json (balancing SSoT)

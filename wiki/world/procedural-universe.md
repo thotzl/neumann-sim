@@ -1,5 +1,5 @@
 ---
-sources: [.agents/skills/bob-os-physics/SKILL.md, README.md, .tickets/closed/TCK-108-deeper-verse-runway-setup.md, .tickets/closed/TCK-115-procedural-universe-sandbox.md, .tickets/closed/TCK-116-deeper-verse-sim-integration.md, .tickets/closed/TCK-135-sqlite-schema-to-typescript-compiler.md, .tickets/closed/TCK-144-config-and-generator-ssot.md]
+sources: [.agents/skills/bob-os-physics/SKILL.md, README.md, tickets/closed/TCK-108-deeper-verse-runway-setup.md, tickets/closed/TCK-115-procedural-universe-sandbox.md, tickets/closed/TCK-116-deeper-verse-sim-integration.md, tickets/closed/TCK-135-sqlite-schema-to-typescript-compiler.md, tickets/closed/TCK-144-config-and-generator-ssot.md]
 ---
 
 # Procedural universe (Deeper Verse)

@@ -1,5 +1,5 @@
 ---
-sources: [docs/EXPANSE_RUN_REPORT.md, src/sim_engine/services/memory_controller.js, src/sim_engine/services/state_manager.js, .tickets/resources/done/OPTIMIZATION_LEVER_3_LANGUAGE_ALIGNMENT.md, .tickets/resources/done/OPTIMIZATION_LEVER_4_RECURSIVE_MEMORY.md, .tickets/resources/done/TOKEN_ROADMAP.md]
+sources: [src/sim_engine/services/memory_controller.js, src/sim_engine/services/state_manager.js, tickets/resources/done/OPTIMIZATION_LEVER_3_LANGUAGE_ALIGNMENT.md, tickets/resources/done/OPTIMIZATION_LEVER_4_RECURSIVE_MEMORY.md, tickets/resources/done/TOKEN_ROADMAP.md]
 ---
 
 # EXPANSE run report (v10.5)
@@ -23,7 +23,7 @@ Historical run report. Numbers describe the run at the time, not the current cod
 | 3. Token heuristic | `length / 2.8` instead of `/ 4` | Resolved differently: prompts moved to English, `/ 4` kept (lever-3 blueprint) |
 | 4. Recursive memory | Bounded compression instead of an ever-growing extract | Done as configurable recursive compression with an output budget ([[wiki/architecture/memory-and-heritage]]) |
 
-Follow-up blueprints (`.tickets/resources/done/OPTIMIZATION_LEVER_1…5`, `TOKEN_ROADMAP.md`) refined the levers; lever 5 (model split agent/compressor, a lower soft limit of ≈ 4000) is a configuration choice per experiment, not a code feature.
+Follow-up blueprints (`tickets/resources/done/OPTIMIZATION_LEVER_1…5`, `TOKEN_ROADMAP.md`) refined the levers; lever 5 (model split agent/compressor, a lower soft limit of ≈ 4000) is a configuration choice per experiment, not a code feature.
 
 ## Key Takeaways
 - The v10.5 swarm expanded stably; cost, not stability, was the limit.

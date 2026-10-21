@@ -1,5 +1,5 @@
 ---
-sources: [README.md, docs/revisit/01-security.md, .agents/skills/bob-os-core/SKILL.md, .tickets/closed/TCK-138-run-allowlist-and-safe-exec.md, .tickets/closed/TCK-139-containerized-simulation-runtime.md, .tickets/closed/TCK-140-vog-server-hardening.md, .tickets/closed/TCK-141-linux-container-dev-and-test-runtime.md, .tickets/closed/TCK-146-generic-openai-driver.md]
+sources: [README.md, .agents/skills/bob-os-core/SKILL.md, tickets/closed/TCK-138-run-allowlist-and-safe-exec.md, tickets/closed/TCK-139-containerized-simulation-runtime.md, tickets/closed/TCK-140-vog-server-hardening.md, tickets/closed/TCK-141-linux-container-dev-and-test-runtime.md, tickets/closed/TCK-146-generic-openai-driver.md]
 ---
 
 # Security and isolation

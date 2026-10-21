@@ -24,3 +24,7 @@ coverage/
 
 # IDE
 .idea/
+
+# Obsidian vault (repo root): only the shared app settings are versioned
+.obsidian/*
+!.obsidian/app.json

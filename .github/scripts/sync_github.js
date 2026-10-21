@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// Ticket folders and their role. Status is defined by the folder (see docs/adr/0003-ticket-pool-and-epics.md).
+// Ticket folders and their role. Status is defined by the folder (see wiki/decisions/0003-ticket-pool-and-epics.md).
 // pool/  = undecided ideas (open issue, label status:pool)
 // epics/ = roadmaps / whitepapers (open issue, label type:epic, title "[EPIC-xx] ...")
 const TICKET_FOLDERS = ['open', 'ongoing', 'pool', 'epics', 'closed'];
@@ -151,7 +151,7 @@ function stringifyTicket(metadata, body) {
 }
 
 // 2. Scan all local tickets across status directories (open, ongoing, pool, epics, closed)
-function getLocalTickets(ticketDir = path.join(process.cwd(), '.tickets')) {
+function getLocalTickets(ticketDir = path.join(process.cwd(), 'tickets')) {
     const tickets = [];
 
     TICKET_FOLDERS.forEach(status => {
@@ -321,7 +321,7 @@ function renderTicketTable(tickets, resources) {
     ];
     tickets.slice().sort(byId).forEach(t => {
         const m = t.metadata;
-        const linkStr = `[Link](../.tickets/${m.folder_status}/${t.filename})`;
+        const linkStr = `[Link](${m.folder_status}/${t.filename})`;
         let resourceStr = resources[m.id];
         if (!resourceStr) {
             const deps = Array.isArray(m.dependencies) ? m.dependencies : [];
@@ -342,7 +342,7 @@ function renderEpicTable(epics, tickets) {
         const m = e.metadata;
         const children = tickets.filter(t => t.metadata.epic === m.id);
         const count = folders => children.filter(t => folders.includes(t.metadata.folder_status)).length;
-        rows.push(`| **${m.id}** | ${escapeCell(m.title)} | \`${m.status || 'open'}\` | ${count(['open', 'ongoing'])} | ${count([POOL_FOLDER])} | ${count(['closed'])} | [Link](../.tickets/${EPIC_FOLDER}/${e.filename}) |`);
+        rows.push(`| **${m.id}** | ${escapeCell(m.title)} | \`${m.status || 'open'}\` | ${count(['open', 'ongoing'])} | ${count([POOL_FOLDER])} | ${count(['closed'])} | [Link](${EPIC_FOLDER}/${e.filename}) |`);
     });
     if (epics.length === 0) rows.push('| - | - | - | - | - | - | - |');
     return rows.join('\n');
@@ -359,7 +359,7 @@ function buildIndexBlock(tickets, resources = {}) {
         '',
         '## 🗺️ EPICS (ROADMAPS & WHITEPAPER)',
         '',
-        'Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (unentschiedene Ideen, GitHub-Label `status:pool`), `epics/` (Roadmaps/Whitepaper, GitHub-Label `type:epic`), `closed/`. Revisit-Audit: [docs/revisit/README.md](revisit/README.md). Dieser Abschnitt wird generiert, nicht manuell bearbeiten.',
+        'Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (unentschiedene Ideen, GitHub-Label `status:pool`), `epics/` (Roadmaps/Whitepaper, GitHub-Label `type:epic`), `closed/`. Revisit-Audit: [wiki/history/revisit-2026-10.md](../wiki/history/revisit-2026-10.md). Dieser Abschnitt wird generiert, nicht manuell bearbeiten.',
         '',
         renderEpicTable(epics, others),
         '',
@@ -416,10 +416,10 @@ function renderBacklog(existingContent, tickets) {
     return parts.head + block + parts.tail;
 }
 
-// Regenerate docs/EPIC_CONSOLIDATION_BACKLOG.md from the local .tickets/ tree (no network)
+// Regenerate tickets/BACKLOG.md from the local tickets/ tree (no network)
 function generateIndex(rootDir = process.cwd()) {
-    const ticketDir = path.join(rootDir, '.tickets');
-    const backlogPath = path.join(rootDir, 'docs', 'EPIC_CONSOLIDATION_BACKLOG.md');
+    const ticketDir = path.join(rootDir, 'tickets');
+    const backlogPath = path.join(rootDir, 'tickets', 'BACKLOG.md');
     const tickets = getLocalTickets(ticketDir);
     const existing = fs.existsSync(backlogPath) ? fs.readFileSync(backlogPath, 'utf-8') : '';
     const updated = renderBacklog(existing, tickets);
@@ -560,7 +560,7 @@ async function pushTicket(local, githubIssues) {
 // 6. Main PULL Loop (Remote ──> Local)
 async function runPull(localTickets, githubIssues) {
     console.log(`📥 Starting PULL Synchronization to Local Workspace...`);
-    const ticketDir = path.join(process.cwd(), '.tickets');
+    const ticketDir = path.join(process.cwd(), 'tickets');
 
     // Group local tickets by ID for quick lookup
     const localMap = {};
@@ -670,13 +670,13 @@ async function runPull(localTickets, githubIssues) {
             try {
                 execSync(`git add "${targetPath}"`);
             } catch (e) {}
-            console.log(`   └─ Created local file: .tickets/${folderStatus}/${filename}`);
+            console.log(`   └─ Created local file: tickets/${folderStatus}/${filename}`);
         }
     }
 }
 
 function rebuildIndex() {
-    console.log("📝 Re-building the central Index Register (EPIC_CONSOLIDATION_BACKLOG.md)...");
+    console.log("📝 Re-building the central Index Register (tickets/BACKLOG.md)...");
     const { ticketCount } = generateIndex();
     console.log(`   └─ Successfully updated index register (${ticketCount} tickets).`);
 }
@@ -686,7 +686,7 @@ async function main(argv = process.argv) {
     loadDotEnv();
 
     if (argv.includes('--index-only')) {
-        console.log(`🛰️ Mode: INDEX-ONLY (Local .tickets/ ──> docs/EPIC_CONSOLIDATION_BACKLOG.md)`);
+        console.log(`🛰️ Mode: INDEX-ONLY (Local tickets/ ──> tickets/BACKLOG.md)`);
         rebuildIndex();
         return;
     }
@@ -709,7 +709,7 @@ async function main(argv = process.argv) {
         console.log(`✅ Loaded ${githubIssues.length} issues from GitHub.`);
 
         const localTickets = getLocalTickets();
-        console.log(`📦 Loaded ${localTickets.length} local tickets from .tickets/.`);
+        console.log(`📦 Loaded ${localTickets.length} local tickets from tickets/.`);
 
         let failures = [];
         if (isPullMode) {

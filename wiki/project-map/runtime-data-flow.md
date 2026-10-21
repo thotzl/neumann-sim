@@ -1,5 +1,5 @@
 ---
-sources: [docs/SYSTEM_ARCHITECTURE.md, .agents/skills/bob-os-core/SKILL.md, src/sim_engine/, src/bob_os/core/bin/]
+sources: [.agents/skills/bob-os-core/SKILL.md, src/sim_engine/, src/bob_os/core/bin/]
 ---
 
 # Runtime data flow

@@ -1,6 +1,6 @@
 # History
 
-Historical documents, summarised with their current status. Release history: [CHANGELOG](../../docs/CHANGELOG.md).
+Historical documents, summarised with their current status. Release history: [CHANGELOG](../../CHANGELOG.md).
 
 - [[wiki/history/early-epics|Early epics]] — Epic 1 (industrial evolution) and Epic 2 (ships and minds)
 - [[wiki/history/concept-papers|Concept papers]] — V10–V14 papers and where their content lives now

@@ -1,5 +1,5 @@
 ---
-sources: [.agents/skills/bob-os-core/SKILL.md, docs/SYSTEM_ARCHITECTURE.md, docs/revisit/03-ssot-architecture.md, .tickets/closed/TCK-127-runner-performance-optimization-and-process-caching.md, .tickets/closed/TCK-145-extract-inline-python-and-runtime-ddl.md, .tickets/closed/TCK-118-timeline-purity-and-masked-logging.md]
+sources: [.agents/skills/bob-os-core/SKILL.md, tickets/closed/TCK-127-runner-performance-optimization-and-process-caching.md, tickets/closed/TCK-145-extract-inline-python-and-runtime-ddl.md, tickets/closed/TCK-118-timeline-purity-and-masked-logging.md]
 ---
 
 # State and persistence

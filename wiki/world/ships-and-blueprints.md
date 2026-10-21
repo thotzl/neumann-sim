@@ -1,5 +1,5 @@
 ---
-sources: [docs/concepts/SHIP_AND_ENGINEERING_V10.md, docs/epics/EPIC_2_SHIPS_AND_MINDS.md, .agents/skills/bob-os-physics/SKILL.md, .agents/skills/bob-os-sdk/SKILL.md, .tickets/closed/TCK-004-cad-blueprints-shipyard.md, .tickets/closed/TCK-125-hardware-bound-scripts-and-kmi-hub.md, src/bob_os/core/lib/sdk/actuators.py]
+sources: [.agents/skills/bob-os-physics/SKILL.md, .agents/skills/bob-os-sdk/SKILL.md, tickets/closed/TCK-004-cad-blueprints-shipyard.md, tickets/closed/TCK-125-hardware-bound-scripts-and-kmi-hub.md, src/bob_os/core/lib/sdk/actuators.py]
 ---
 
 # Ships and blueprints

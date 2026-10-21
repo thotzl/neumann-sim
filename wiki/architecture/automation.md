@@ -1,5 +1,5 @@
 ---
-sources: [docs/SYSTEM_ARCHITECTURE.md, docs/sdk/README.md, .agents/skills/bob-os-core/SKILL.md, .agents/skills/bob-os-sdk/SKILL.md, .tickets/closed/TCK-125-hardware-bound-scripts-and-kmi-hub.md, .tickets/closed/TCK-145-extract-inline-python-and-runtime-ddl.md]
+sources: [.agents/skills/bob-os-core/SKILL.md, .agents/skills/bob-os-sdk/SKILL.md, tickets/closed/TCK-125-hardware-bound-scripts-and-kmi-hub.md, tickets/closed/TCK-145-extract-inline-python-and-runtime-ddl.md]
 ---
 
 # Automation (target-bound scripts)

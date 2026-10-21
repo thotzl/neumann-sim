@@ -1,6 +1,6 @@
 ---
 name: bob-os-ops
-description: Operations and project workflow for Bob-OS - building, running, injecting, resetting and migrating experiments (container vs. native path), the Git ticket system under .tickets/, GitHub sync, and the closing protocol with changelog, version bump, ADRs and commits. Use when creating, moving or closing tickets, preparing a release or commit, or operating experiments.
+description: Operations and project workflow for Bob-OS - building, running, injecting, resetting and migrating experiments (container vs. native path), the Git ticket system under tickets/, GitHub sync, and the closing protocol with changelog, version bump, ADRs and commits. Use when creating, moving or closing tickets, preparing a release or commit, or operating experiments.
 ---
 
 # Bob-OS Operations and Workflow
@@ -30,7 +30,7 @@ Never edit code inside `experiments/<exp>/` (except reading logs/state). Change 
 - `inject tools` copies all of `src/bob_os/core` (including migrations); follow with `inject migrate` when migrations changed.
 - Monitor: `cd hud && npm run dev`; VoG writes need `VOG_TOKEN` in the root `.env`.
 
-## Ticket system (`.tickets/`)
+## Ticket system (`tickets/`)
 | Folder | Meaning | GitHub mapping |
 |---|---|---|
 | `open/` | decided backlog | issue open, column Todo |
@@ -45,16 +45,17 @@ Never edit code inside `experiments/<exp>/` (except reading logs/state). Change 
 - Body: `## Description`, `## Verified Code Gap`, `## Definition of Done` (checkboxes), `## Verification Command`, `## References`. Pool tickets: `## Source`, `## Offene Entscheidung`.
 - New ticket: search `open/ ongoing/ pool/ closed/` for duplicates first; extend an existing ticket if it covers the topic. Next free ID = highest existing `TCK-` number + 1.
 - Pool → decided: move to `open/`.
-- Index `docs/EPIC_CONSOLIDATION_BACKLOG.md`: the block between the `GENERATED TICKET INDEX` markers is generated; never edit it by hand. Regenerate offline with `node .github/scripts/sync_github.js --index-only`.
+- Index `tickets/BACKLOG.md`: the block between the `GENERATED TICKET INDEX` markers is generated; never edit it by hand. Regenerate offline with `node .github/scripts/sync_github.js --index-only`.
 - Sync: `npm run tickets:pull` (GitHub → local, moves files, rebuilds index) and `npm run tickets:push` (local → GitHub issues and labels). Credentials from `.env`. CI sync (`.github/workflows/sync-tickets.yml`) runs only on push to `master`/`main`; PRs run tests only.
 
 ## Closing a ticket (one atomic step, on directive)
 1. Tests green: `npm run test:docker` (plus HUD `npx tsc --noEmit && npx vitest run` in `hud/` if touched).
-2. `git mv .tickets/<open|ongoing>/TCK-<id>-<slug>.md .tickets/closed/`; set `status: "closed"`, `completed`, `version`; tick the DoD boxes.
+2. `git mv tickets/<open|ongoing>/TCK-<id>-<slug>.md tickets/closed/`; set `status: "closed"`, `completed`, `version`; tick the DoD boxes.
 3. Keep the gap section (as `## Verified Code Gap (Ausgangslage)`) and add `## Verification (Code SSoT)`: files, functions, tests and the command output that prove the result.
 4. Version: bump `package.json` `version` (patch for hardening/fixes, minor for features).
-5. `docs/CHANGELOG.md`: add a row to the release-plan table and a section `### [vX.Y.Z] - YYYY-MM-DD` with a category heading (`#### Added|Changed|Fixed|Refactored|Removed|Security`), one bullet and `*Ticket:* [TCK-<id>](../.tickets/closed/TCK-<id>-<slug>.md)` (plus ADR link if any).
-6. Decision made (architecture, runtime, process)? Write `docs/adr/NNNN-slug.md` (Status, Date, Ticket, Context, Options, Decision, Consequences) and link it from ticket and changelog.
+5. `CHANGELOG.md` (repo root): add a row to the release-plan table and a section `### [vX.Y.Z] - YYYY-MM-DD` with a category heading (`#### Added|Changed|Fixed|Refactored|Removed|Security`), one bullet and `*Ticket:* [TCK-<id>](tickets/closed/TCK-<id>-<slug>.md)` (plus ADR link if any).
+6. Decision made (architecture, runtime, process)? Write `wiki/decisions/NNNN-slug.md` (Status, Date, Ticket, Context, Options, Decision, Consequences), add it to `wiki/decisions/_index.md` and link it from ticket and changelog.
+6a. Implemented behaviour changed? Update the wiki (`wiki-builder` skill): describe current behaviour in the topic article and link the closed ticket in `wiki/implemented/`. Do not put planning (open/pool/epics) into the wiki.
 7. Regenerate the ticket index (`--index-only`).
 8. Commit: one commit per ticket, staged by explicit paths (no `git add .`), message `type(scope): summary (ref TCK-<id>)`; types `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `build`. Push only on directive.
 

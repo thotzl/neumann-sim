@@ -1,10 +1,10 @@
 ---
-sources: [.agents/skills/bob-os-ops/SKILL.md, README.md, .tickets/closed/TCK-014-github-sync.md, .tickets/closed/TCK-137-ticketing-pool-and-epics-sync.md, .tickets/closed/TCK-172-ticket-sync-label-limit-and-resilience.md, .tickets/closed/TCK-175-idea-triage-into-pool.md]
+sources: [.agents/skills/bob-os-ops/SKILL.md, README.md, tickets/closed/TCK-014-github-sync.md, tickets/closed/TCK-137-ticketing-pool-and-epics-sync.md, tickets/closed/TCK-172-ticket-sync-label-limit-and-resilience.md, tickets/closed/TCK-175-idea-triage-into-pool.md]
 ---
 
 # Ticket workflow
 
-Planning lives in the Git ticket system under `.tickets/`, not in this wiki. The wiki documents what was built ([[wiki/implemented/_index]]) and links into the tickets.
+Planning lives in the Git ticket system under `tickets/`, not in this wiki. The wiki documents what was built ([[wiki/implemented/_index]]) and links into the tickets.
 
 ## Folders (status = folder, ADR 0003)
 | Folder | Meaning | GitHub |
@@ -28,11 +28,11 @@ Planning lives in the Git ticket system under `.tickets/`, not in this wiki. The
 - Pool → decided: move to `open/`.
 
 ## Closing (one atomic step)
-Tests green → move to `closed/` with a `## Verification (Code SSoT)` section → bump `package.json` version → [CHANGELOG](../../docs/CHANGELOG.md) entry → ADR if a decision was made ([[wiki/decisions/_index]]) → regenerate the ticket index → one commit `type(scope): summary (ref TCK-<id>)`.
+Tests green → move to `closed/` with a `## Verification (Code SSoT)` section → bump `package.json` version → [CHANGELOG](../../CHANGELOG.md) entry → ADR in `wiki/decisions/` if a decision was made ([[wiki/decisions/_index]]) → wiki update for changed behaviour (topic article + `implemented/`, with a link to the closed ticket) → regenerate the ticket index → one commit `type(scope): summary (ref TCK-<id>)`.
 
 ## Sync and index
 - `npm run tickets:push` / `tickets:pull` sync with GitHub Issues (`.github/scripts/sync_github.js`); CI sync on push to `master`/`main`.
-- Generated backlog index: `node .github/scripts/sync_github.js --index-only` (offline).
+- Generated backlog index [tickets/BACKLOG.md](../../tickets/BACKLOG.md): `node .github/scripts/sync_github.js --index-only` (offline).
 
 ## Key Takeaways
 - Status is the folder; ideas go to `pool/`, roadmaps to `epics/`.

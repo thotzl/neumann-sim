@@ -1,5 +1,5 @@
 ---
-sources: [README.md, .tickets/closed/TCK-140-vog-server-hardening.md, .tickets/closed/TCK-117-frontend-consolidation-shared-resources.md, hud/package.json, hud/src/main.tsx, hud/mock_server.cjs]
+sources: [README.md, tickets/closed/TCK-140-vog-server-hardening.md, tickets/closed/TCK-117-frontend-consolidation-shared-resources.md, hud/package.json, hud/src/main.tsx, hud/mock_server.cjs]
 ---
 
 # HUD and monitor

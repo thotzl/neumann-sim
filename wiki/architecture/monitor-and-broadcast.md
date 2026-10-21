@@ -14,7 +14,7 @@ state_exporter.js ──POST /api/broadcast──> vog_server.cjs (RAM cache) �
 - After active turns and system rounds `services/state_exporter.js` builds the world state from SQLite (via view `v_agents`) and runner state, and posts it in memory via `services/broadcast_service.js` (header `X-VoG-Token`; target `127.0.0.1` / `VOG_HOST`, port `C2_PORT` or 3001). Skipped turns send partial updates.
 - Procedural system details (mass, spectral class, anomalies, planets, warp flow) come from `generator.py --systems-stdin` through `helpers/system_details.js` (TCK-144).
 - Export and broadcast are fire-and-forget; errors never block the simulation. A one-time warning is logged on 401.
-- Replaced the earlier `world_state.json` file polling (up to 1.5 GB/h SSD writes) in V12 (TCK-011). `state_exporter.js` still defines a `world_state.json` path but does not write it ([TCK-171](../../.tickets/pool/TCK-171-code-doc-inconsistencies.md)).
+- Replaced the earlier `world_state.json` file polling (up to 1.5 GB/h SSD writes) in V12 (TCK-011). `state_exporter.js` still defines a `world_state.json` path but does not write it (TCK-171).
 
 ## Message types
 - `LIVE_STATE_UPDATE` — full or partial world state (`state`, optional `history`).

@@ -8,6 +8,7 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 
 | Version | Release-Datum | Status | Primärer Fokus | Verknüpfte Meilensteine |
 | :--- | :--- | :--- | :--- | :--- |
+| **v13.10.14** | **2026-10-21** | `RELEASED` | Ideen-Triage in den Ticket-Pool | `[TCK-175]` |
 | **v13.10.13** | **2026-10-21** | `RELEASED` | rules.json an Code angeglichen | `[TCK-174]` |
 | **v13.10.12** | **2026-10-20** | `RELEASED` | Projekt-Wiki (`wiki/`) | `[TCK-173]` |
 | **v13.10.11** | **2026-10-19** | `RELEASED` | Ticket-Sync: Label-Limit & Fehlertoleranz | `[TCK-172]` |
@@ -38,6 +39,13 @@ Dieses Dokument ist das offizielle Logbuch (Changelog) für alle Releases und Ve
 ---
 
 ## 📜 STABILE RELEASES (VERLAUF)
+
+### [v13.10.14] - 2026-10-21
+*Ideen-Triage in den Ticket-Pool. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*
+
+#### Documentation
+- **Ideen-Dokumente gegen Code und Tickets abgeglichen:** jeder Punkt aus `.tickets/resources/done/` und den Konzeptpapieren eingeordnet; neue Pool-Tickets TCK-177 (passive Abbaugebäude), TCK-178 (NPC-Fraktion), TCK-179 (Cloud-Dauerbetrieb); TCK-154/164/166 ergänzt, TCK-101 auf Schiffe präzisiert. Wiki verlinkt nur noch geschlossene Tickets und enthält keine Planung mehr.
+  - *Ticket:* [TCK-175](../.tickets/closed/TCK-175-idea-triage-into-pool.md)
 
 ### [v13.10.13] - 2026-10-21
 *rules.json an Code angeglichen. Teil von EPIC-00 Platform Hardening ([Revisit 2026-10](revisit/README.md)).*

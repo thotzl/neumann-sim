@@ -29,14 +29,14 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 
 | Epic-ID | Titel | Status | Offen | Pool | Closed | Epic-Datei |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **EPIC-00** | Platform Hardening (Revisit 2026-10) | `open` | 3 | 5 | 15 | [Link](../.tickets/epics/EPIC-00-platform-hardening.md) |
-| **EPIC-01** | Factions & Diplomacy | `open` | 0 | 5 | 0 | [Link](../.tickets/epics/EPIC-01-factions-and-diplomacy.md) |
+| **EPIC-00** | Platform Hardening (Revisit 2026-10) | `open` | 3 | 5 | 16 | [Link](../.tickets/epics/EPIC-00-platform-hardening.md) |
+| **EPIC-01** | Factions & Diplomacy | `open` | 0 | 6 | 0 | [Link](../.tickets/epics/EPIC-01-factions-and-diplomacy.md) |
 | **EPIC-02** | Goals & Endgame | `open` | 0 | 3 | 0 | [Link](../.tickets/epics/EPIC-02-goals-and-endgame.md) |
-| **EPIC-03** | Deeper Verse & Disasters | `open` | 1 | 2 | 0 | [Link](../.tickets/epics/EPIC-03-deeper-verse-and-disasters.md) |
+| **EPIC-03** | Deeper Verse & Disasters | `open` | 1 | 3 | 0 | [Link](../.tickets/epics/EPIC-03-deeper-verse-and-disasters.md) |
 | **EPIC-04** | Roamer & Autonomy | `open` | 0 | 2 | 0 | [Link](../.tickets/epics/EPIC-04-roamer-and-autonomy.md) |
 | **EPIC-05** | Engineering & Combat | `open` | 0 | 3 | 0 | [Link](../.tickets/epics/EPIC-05-engineering-and-combat.md) |
 | **EPIC-06** | Interstellar Logistics | `open` | 0 | 2 | 0 | [Link](../.tickets/epics/EPIC-06-interstellar-logistics.md) |
-| **EPIC-07** | Operator Tooling | `open` | 0 | 7 | 0 | [Link](../.tickets/epics/EPIC-07-operator-tooling.md) |
+| **EPIC-07** | Operator Tooling | `open` | 0 | 8 | 0 | [Link](../.tickets/epics/EPIC-07-operator-tooling.md) |
 | **EPIC-08** | Cognition & Swarm Safety | `open` | 2 | 3 | 0 | [Link](../.tickets/epics/EPIC-08-cognition-and-swarm-safety.md) |
 
 ---
@@ -58,7 +58,7 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 
 | Ticket-ID | Titel | Epic / Phase | Status | Prio | Ticket-Datei | Verknüpfte Quell-Ressource |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **TCK-101** | Agent Hardware Upgrades & Leveling | EPIC-05 / Epic 2 (V10.0) / Phase 2.5 (Agenten-Upgrades) | `pool` | `high` | [Link](../.tickets/pool/TCK-101-agent-hardware-upgrades.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/done/IDEAS_AND_TASKS.md) |
+| **TCK-101** | Ship Hardware Upgrades & Leveling | EPIC-05 / Epic 2 (V10.0) / Phase 2.5 (Agenten-Upgrades) | `pool` | `high` | [Link](../.tickets/pool/TCK-101-agent-hardware-upgrades.md) | [IDEAS_AND_TASKS.md](../.tickets/resources/done/IDEAS_AND_TASKS.md) |
 | **TCK-102** | Vessel Retrofitting (Feld-Upgrades) | EPIC-05 / Epic 2 (V10.0) / Freestyle Engineering | `pool` | `medium` | [Link](../.tickets/pool/TCK-102-vessel-retrofitting.md) | [ROADMAP.md](../.tickets/resources/done/ROADMAP.md), [ROADMAP_WORLD](../.tickets/resources/done/ROADMAP_WORLD_MECHANICS.md), [ADV_MECH_DUMP](../.tickets/resources/done/ADVANCED_MECHANICS_DUMP.md) |
 | **TCK-103** | Unified me.tick() Cognitive Protocol (V14.0) | EPIC-08 / Epic 2 (V14.0) / Phase 2.6 (Kognitive Dichte) | `pool` | `high` | [Link](../.tickets/pool/TCK-103-unified-tick-cognitive-protocol.md) | [SYSTEM_ARCHITECTURE](../docs/SYSTEM_ARCHITECTURE.md) |
 | **TCK-106** | SSoT Sektor-Weichen: 'Ready for Factions' (Epic 3 Setup) | EPIC-01 / Epic 3 (V11.0) / Runway | `pool` | `medium` | [Link](../.tickets/pool/TCK-106-factions-runway-setup.md) | [ROADMAP.md](../.tickets/resources/done/ROADMAP.md), [ADV_MECH_DUMP](../.tickets/resources/done/ADVANCED_MECHANICS_DUMP.md) |
@@ -90,6 +90,9 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 | **TCK-169** | BUG: Transit-Energiekosten — Planung 0.02 vs. Physik 0.1 pro Distanz | EPIC-00 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-169-move-energy-cost-mismatch.md) | - |
 | **TCK-170** | BUG: Produktivläufe seeden mit seed_test_db.py (fixe Geologie) | EPIC-00 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-170-production-uses-test-seeder.md) | - |
 | **TCK-171** | Sammelticket: Code-Inkonsistenzen aus dem Doku-Abgleich (TCK-150) | EPIC-00 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-171-code-doc-inconsistencies.md) | - |
+| **TCK-177** | Passive Abbaugebäude (deep_extractor) | EPIC-03 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-177-passive-extraction-buildings.md) | - |
+| **TCK-178** | Fremde NPC-Fraktion ("The Others") | EPIC-01 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-178-npc-antagonist-faction.md) | - |
+| **TCK-179** | Dauerbetrieb des Runtime-Containers auf einer Cloud-VM | EPIC-07 | `pool` | `undecided` | [Link](../.tickets/pool/TCK-179-remote-runtime-host.md) | - |
 
 ### Closed
 
@@ -144,6 +147,7 @@ Status ergibt sich aus dem Ordner: `open/` und `ongoing/` (Backlog), `pool/` (un
 | **TCK-172** | BUG: Ticket-Sync scheitert an GitHub-Label-Limit und bricht komplett ab | EPIC-00 Platform Hardening | `closed` | `high` | [Link](../.tickets/closed/TCK-172-ticket-sync-label-limit-and-resilience.md) | TCK-137 |
 | **TCK-173** | DOCS: Wiki aufbauen (wiki/) aus docs, geschlossenen Tickets, Skills und Code | EPIC-00 Platform Hardening | `closed` | `medium` | [Link](../.tickets/closed/TCK-173-wiki-compile.md) | - |
 | **TCK-174** | FIX: rules.json an Code-Verhalten angleichen (SOS-Kosten, talk-Reichweite) | EPIC-00 Platform Hardening | `closed` | `medium` | [Link](../.tickets/closed/TCK-174-align-config-with-code.md) | TCK-173 |
+| **TCK-175** | TRIAGE: Ideen aus resources/done und docs/concepts in den Ticket-Pool | EPIC-00 Platform Hardening | `closed` | `medium` | [Link](../.tickets/closed/TCK-175-idea-triage-into-pool.md) | TCK-173 |
 
 ---
 

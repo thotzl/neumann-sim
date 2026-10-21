@@ -34,4 +34,3 @@ A ship can only use actuators it has modules for; the SDK denies the action othe
 - Ships are agent-designed grids of tiles evaluated by a deterministic physics function.
 - Modules gate capabilities (drill, fabricator, logic core, engine).
 - Construction is incremental and can be financed cooperatively.
-- Planned extensions (retrofitting, weapons): EPIC-05 in [.tickets/epics](../../.tickets/epics/EPIC-05-engineering-and-combat.md).

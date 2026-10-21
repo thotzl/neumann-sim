@@ -13,7 +13,7 @@ The concept papers from `docs/concepts/` and where their content lives now.
 | Frontend architecture | Decoupled monitor, resilient emitter, Zustand + signals (Bun, `monitor/`) | Implemented; now Node/Vite in `hud/` | [[wiki/architecture/monitor-and-broadcast]] |
 | V12 real-time protocol | WebSocket-first broadcast, `LIVE_STATE_UPDATE`, `REALTIME_LOGS` | Implemented (TCK-011) | [[wiki/architecture/monitor-and-broadcast]] |
 | World state object V12 | Hand-written TypeScript data contract, location resolving | Superseded by generated types (TCK-135) and `v_agents` | [[wiki/world/data-model]] |
-| Weapon systems V14 | Local combat (laser, railgun, torpedo, "buster"), interstellar missiles and particle beam, ammunition logistics | Concept only; pool [TCK-158](../../.tickets/pool/TCK-158-weapon-systems-ballistics.md), EPIC-05 | — |
+| Weapon systems V14 | Local combat (laser, railgun, torpedo, "buster"), interstellar missiles and particle beam, ammunition logistics | Concept only, not implemented (TCK-158) | — |
 
 ## Weapon concept in brief
 - Same-sector combat resolved in one tick (no projectile paths); interstellar weapons fly over several rounds against fixed coordinates.
@@ -22,4 +22,4 @@ The concept papers from `docs/concepts/` and where their content lives now.
 
 ## Key Takeaways
 - Five of six papers are implemented and described in current articles.
-- The weapon concept is an open idea in the ticket pool.
+- The weapon concept is not implemented; planning lives in the ticket system.

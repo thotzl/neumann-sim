@@ -20,7 +20,7 @@ sources: [.agents/skills/bob-os-sdk/SKILL.md, .agents/skills/bob-os-physics/SKIL
 - `route()` treats linked gates as an edge without distance cost (TCK-111).
 
 ## Known deviation
-Planned move energy differs from charged energy by ≈ 5× → [TCK-169](../../.tickets/pool/TCK-169-move-energy-cost-mismatch.md).
+Planned move energy differs from charged energy by ≈ 5× → TCK-169.
 
 ## Key Takeaways
 - Navigate by ID (`system_id`/`ship_id`/`instance_id`) or coordinates; routes go hop by hop over known systems.

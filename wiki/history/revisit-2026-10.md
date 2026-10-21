@@ -4,7 +4,7 @@ sources: [docs/revisit/README.md, docs/revisit/01-security.md, docs/revisit/02-t
 
 # Revisit 2026-10 (platform audit)
 
-Deep audit on 2026-10-19 (base commit `b32e5d6`) before further feature work; drives [EPIC-00](../../.tickets/epics/EPIC-00-platform-hardening.md).
+Deep audit on 2026-10-19 (base commit `b32e5d6`) before further feature work; drives EPIC-00.
 
 ## Baseline
 - Core was functionally stable: 35/35 hub suites green on Linux with glibc 2.41.

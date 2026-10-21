@@ -13,10 +13,7 @@ sources: [.tickets/closed/TCK-009-dry-services-unified-sdk.md, .tickets/closed/T
 | [TCK-144](../../.tickets/closed/TCK-144-config-and-generator-ssot.md) | One balancing config (`rules.json`) and one generator (`generator.py`) |
 | [TCK-145](../../.tickets/closed/TCK-145-extract-inline-python-and-runtime-ddl.md) | No inline Python in JS; no runtime DDL |
 
-## Open follow-ups
-[TCK-147](../../.tickets/open/TCK-147-atomic-state-and-db-access.md) (atomic state, DB access), [TCK-148](../../.tickets/open/TCK-148-turn-process-overhead.md) (process starts per turn), [TCK-130](../../.tickets/open/TCK-130-unified-ssot-schema-consolidation.md) (schema consolidation).
-
 ## Key Takeaways
 - The codebase moved from monolithic scripts to services with single sources for config, generator and queries.
-- Process overhead per turn and atomic persistence are the remaining structural items.
+- Known limits of the current persistence: [[wiki/architecture/state-and-persistence]].
 - Code map: [[wiki/project-map/_index]].

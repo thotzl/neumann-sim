@@ -19,4 +19,4 @@ sources: [.tickets/closed/TCK-006-sandbox-hardening.md, .tickets/closed/TCK-118-
 
 ## Key Takeaways
 - The 2026-10 revisit closed shell execution, host-rights agent code and the open monitor server.
-- Open residual risks: [TCK-167](../../.tickets/pool/TCK-167-llm-key-isolation.md), [TCK-168](../../.tickets/pool/TCK-168-vog-experiment-dir-container-mode.md).
+- Open residual risks: TCK-167, TCK-168.

@@ -13,7 +13,8 @@ created: 2026-10-19
 Erfassung von Input/Output-Tokens und Kosten pro Agent und Turn, Anzeige im HUD.
 
 ## Source
-docs/EXPANSE_RUN_REPORT.md §4
+EXPANSE-Laufbericht §4 (Wiki `history/expanse-run-report`)
+Ergänzung (Triage TCK-175): Kalibrierung von Modellwahl pro Rolle und `memory.soft_token_limit` anhand der Telemetrie — OPTIMIZATION_LEVER_5_MATHEMATICAL_CALIBRATION.md.
 
 ## Offene Entscheidung
 Speicherort (DB vs. Log), Provider-Abdeckung.

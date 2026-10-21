@@ -14,7 +14,7 @@ npm run dev
 ## Routes (`hud/src/main.tsx`)
 - default → monitor (`hud/src/monitor/App.tsx`)
 - `sandbox` → Deeper-Verse sandbox (`hud/src/sandbox/App.tsx`)
-- `gpu-test-pixijs`, `gpu-test-threejs` → GPU prototypes (decision pending: [TCK-162](../../.tickets/pool/TCK-162-gpu-prototype-decision.md))
+- `gpu-test-pixijs`, `gpu-test-threejs` → GPU prototypes (decision pending: TCK-162)
 
 ## VoG server configuration
 | Variable | Default | Purpose |

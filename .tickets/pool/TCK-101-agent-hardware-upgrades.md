@@ -1,6 +1,6 @@
 ---
 id: TCK-101
-title: "Agent Hardware Upgrades & Leveling"
+title: "Ship Hardware Upgrades & Leveling"
 epic_phase: "Epic 2 (V10.0) / Phase 2.5 (Agenten-Upgrades)"
 epic: "EPIC-05"
 status: "pool"
@@ -9,20 +9,20 @@ created: 2026-07-28
 dependencies: ["TCK-DONE-001"]
 ---
 
-> **Revisit 2026-10:** Redesign nötig — widerspricht dem Host-Decoupling (TCK-001): Agenten besitzen keine eigene Hülle mehr. Upgrades müssten am Host (Schiff/Matrix) ansetzen.
+> **Klarstellung 2026-10-21 (Architekt):** Das Ticket betrifft Schiffe. Die frühere Formulierung „Replicanten-Hüllen“ war falsches Wording; Agenten besitzen seit TCK-001 keine eigene Hülle.
 
 ## Description
-Ermöglicht den physischen Aufstieg von Replicanten-Hüllen (nicht Schiffen!) in vier Attributen: `storage_level`, `engine_level`, `sensor_level` und `core_level` über exponentielle Materie-/Energiekosten mittels eines neuen SDK-Befehls `me.upgrade_self(module_type)`.
+Ermöglicht den Aufstieg von Schiffen in vier Attributen: `storage_level`, `engine_level`, `sensor_level` und `core_level` über exponentielle Materie-/Energiekosten mittels eines neuen SDK-Befehls (Arbeitstitel `me.upgrade_ship(module_type)`). Abgrenzung zu TCK-102 (Nachrüstung des Blueprint-Rasters).
 
 ## Verified Code Gap
-- **DB Schema:** In `init_db.py` (Tabelle `agents`) fehlen die Spalten `storage_level`, `engine_level`, `sensor_level` und `core_level`.
+- **DB Schema:** Tabelle `ships` hat keine Level-Spalten `storage_level`, `engine_level`, `sensor_level`, `core_level`.
 - **Code Path:** 
-  - In `bob_os/core/lib/sdk/actuators.py` fehlt die Implementierung einer `upgrade_self(module_type)` Methode.
+  - In `bob_os/core/lib/sdk/actuators.py` fehlt eine Upgrade-Methode für Schiffe.
   - In `bob_os/core/bin/bob.py` fehlt das CLI-Binding.
 
 ## Synergies & Dependencies
 - **Dependencies:** `TCK-DONE-001` (Separation of Bob & Vessel).
-- **Synergies:** Die Timeouts für autonome Skripte in `/src/sim_engine/modules/automation.js` und `/src/sim_engine/services/agent_turn_service.js` sollen direkt mit dem `core_level` des betreibenden Geists skalieren.
+- **Synergies:** Die Timeouts für autonome Skripte in `/src/sim_engine/modules/automation.js` und `/src/sim_engine/services/agent_turn_service.js` sollen direkt mit dem `core_level` des Schiffs skalieren, auf dem das Skript läuft.
 
 ## References
 - Source: [IDEAS_AND_TASKS.md](../resources/done/IDEAS_AND_TASKS.md)

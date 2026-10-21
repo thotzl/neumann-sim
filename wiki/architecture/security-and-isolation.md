@@ -20,8 +20,8 @@ Agents are LLMs with free-form output; any gap is reachable by chance or emergen
 `npm run build` / `npm run sim` run agent Python with the user's rights on the host (repo, `.env`, filesystem). Use only in a disposable Linux environment (devcontainer/CI), never with real keys.
 
 ## Residual risks (open)
-- Agent code running as the same user can read the engine's environment via `/proc` → use dedicated, rate-limited keys ([TCK-167](../../.tickets/pool/TCK-167-llm-key-isolation.md)).
-- With a valid token, `/api/broadcast` can still set `experiment_dir` ([TCK-168](../../.tickets/pool/TCK-168-vog-experiment-dir-container-mode.md)).
+- Agent code running as the same user can read the engine's environment via `/proc` → use dedicated, rate-limited keys (TCK-167).
+- With a valid token, `/api/broadcast` can still set `experiment_dir` (TCK-168).
 - Network egress is open (needed for LLM endpoints).
 - Agent Python is full CPython; the prompt rule "no subprocess" is a convention, the control is the container.
 

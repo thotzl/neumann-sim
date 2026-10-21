@@ -20,4 +20,3 @@ sources: [.agents/skills/bob-os-physics/SKILL.md, README.md, .tickets/closed/TCK
 ## Key Takeaways
 - One Python generator, seeded per experiment; systems exist in SQLite only once touched.
 - The TypeScript copy is kept in sync by a parity fixture tested on both sides.
-- Planned environment physics and disasters: EPIC-03 ([epic](../../.tickets/epics/EPIC-03-deeper-verse-and-disasters.md)).

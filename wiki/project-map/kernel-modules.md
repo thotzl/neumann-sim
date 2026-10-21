@@ -36,4 +36,4 @@ Python 3. In an experiment the kernel is `core/` and runs with `PYTHONPATH` = ex
 ## Key Takeaways
 - `bin/` holds entry scripts called by the engine; `lib/` holds the SDK and services.
 - Every engine → Python boundary is a `core/bin/*.py` script with argv parameters.
-- `poll_radio.py` has no caller ([TCK-171](../../.tickets/pool/TCK-171-code-doc-inconsistencies.md)).
+- `poll_radio.py` has no caller (TCK-171).

@@ -21,7 +21,7 @@ sources: [.agents/skills/bob-os-core/SKILL.md, docs/SYSTEM_ARCHITECTURE.md, docs
 - JS: `services/db.js` (promise wrapper; WAL, synchronous NORMAL, 30 s busy timeout, set before the WAL switch). Performance indexes in `0004_add_performance_indexes.sql` (TCK-127).
 
 ## Open issues
-- `state_manager.js` writes `state.json` non-atomically; several direct SQLite connections in the engine; naming mismatch `sleep_until_cycle` (state) vs. `sleep_until_round` (schema) → [TCK-147](../../.tickets/open/TCK-147-atomic-state-and-db-access.md), overlapping [TCK-130](../../.tickets/open/TCK-130-unified-ssot-schema-consolidation.md).
+- `state_manager.js` writes `state.json` non-atomically; several direct SQLite connections in the engine; naming mismatch `sleep_until_cycle` (state) vs. `sleep_until_round` (schema) → TCK-147, overlapping TCK-130.
 
 ## Key Takeaways
 - Engine bookkeeping in `state.json`, world in SQLite; ACL and keyring are engine state.
